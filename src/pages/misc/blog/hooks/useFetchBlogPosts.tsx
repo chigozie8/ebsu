@@ -27,21 +27,26 @@ export const useFetchBlogPosts = () => {
   const fetchBlogPosts = async () => {
     const postsQuery = query(postsRef);
     setBlogPostsLoading(true);
-    onSnapshot(
-      postsQuery,
-      (querySnapshot) => {
-        const list: IBlogPost[] = [];
-        querySnapshot.forEach((doc) => {
-          list.push({ ...doc.data(), id: doc.id } as IBlogPost);
-        });
-        setBlogPosts(list);
-        setBlogPostsLoading(false);
-      },
-      (error: any) => {
-        setBlogPostsLoading(false);
-        setBlogPostsError(error);
-      }
-    );
+    try {
+      onSnapshot(
+        postsQuery,
+        (querySnapshot) => {
+          const list: IBlogPost[] = [];
+          querySnapshot.forEach((doc) => {
+            list.push({ ...doc.data(), id: doc.id } as IBlogPost);
+          });
+          setBlogPosts(list);
+          setBlogPostsLoading(false);
+        },
+        (error: any) => {
+          setBlogPostsLoading(false);
+          setBlogPostsError(error);
+        }
+      );
+    } catch (error) {
+      setBlogPostsLoading(false);
+      setBlogPostsError(true);
+    }
   };
   const fetchHomeBlogPosts = async () => {
     const postsQuery = query(postsRef);
@@ -75,13 +80,12 @@ export const useFetchBlogPosts = () => {
         setBlogPostLoading(false);
       } else {
         setBlogPost(null);
-        console.log("Doc doesnt exist");
+        setBlogPostLoading(false);
       }
     } catch (error) {
       setBlogPostLoading(false);
       setBlogPostError(true);
       notifyUser("error", "An error occured. Please try again");
-      console.log(error);
     }
   };
 
