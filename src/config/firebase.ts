@@ -16,6 +16,9 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_MEASUREMENT_ID || "",
 };
 
+console.log("[v0] Firebase config projectId:", firebaseConfig.projectId);
+console.log("[v0] Firebase config apiKey exists:", !!firebaseConfig.apiKey);
+
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

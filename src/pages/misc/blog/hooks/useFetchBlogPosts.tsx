@@ -25,23 +25,32 @@ export const useFetchBlogPosts = () => {
   const postsRef = collection(db, "blogPosts");
 
   const fetchBlogPosts = async () => {
+    console.log("[v0] fetchBlogPosts called");
     const postsQuery = query(postsRef);
     setBlogPostsLoading(true);
-    onSnapshot(
-      postsQuery,
-      (querySnapshot) => {
-        const list: IBlogPost[] = [];
-        querySnapshot.forEach((doc) => {
-          list.push({ ...doc.data(), id: doc.id } as IBlogPost);
-        });
-        setBlogPosts(list);
-        setBlogPostsLoading(false);
-      },
-      (error: any) => {
-        setBlogPostsLoading(false);
-        setBlogPostsError(error);
-      }
-    );
+    try {
+      onSnapshot(
+        postsQuery,
+        (querySnapshot) => {
+          console.log("[v0] Got snapshot with", querySnapshot.size, "docs");
+          const list: IBlogPost[] = [];
+          querySnapshot.forEach((doc) => {
+            list.push({ ...doc.data(), id: doc.id } as IBlogPost);
+          });
+          setBlogPosts(list);
+          setBlogPostsLoading(false);
+        },
+        (error: any) => {
+          console.log("[v0] Snapshot error:", error);
+          setBlogPostsLoading(false);
+          setBlogPostsError(error);
+        }
+      );
+    } catch (error) {
+      console.log("[v0] fetchBlogPosts catch error:", error);
+      setBlogPostsLoading(false);
+      setBlogPostsError(true);
+    }
   };
   const fetchHomeBlogPosts = async () => {
     const postsQuery = query(postsRef);
@@ -65,23 +74,27 @@ export const useFetchBlogPosts = () => {
     );
   };
   const fetchBlogPost = async (id: string) => {
+    console.log("[v0] fetchBlogPost called with id:", id);
     const postRef = doc(db, "blogPosts", id);
     setBlogPostLoading(true);
     try {
       const postSnap = await getDoc(postRef);
+      console.log("[v0] postSnap exists:", postSnap.exists());
       if (postSnap.exists()) {
         const postData = postSnap.data() as TBlogPost;
+        console.log("[v0] postData:", postData);
         setBlogPost(postData);
         setBlogPostLoading(false);
       } else {
         setBlogPost(null);
-        console.log("Doc doesnt exist");
+        setBlogPostLoading(false);
+        console.log("[v0] Doc doesnt exist");
       }
     } catch (error) {
+      console.log("[v0] fetchBlogPost error:", error);
       setBlogPostLoading(false);
       setBlogPostError(true);
       notifyUser("error", "An error occured. Please try again");
-      console.log(error);
     }
   };
 
