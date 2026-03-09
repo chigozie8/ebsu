@@ -4,19 +4,44 @@ import link from "../../json/animation/link.json";
 import git from "../../json/animation/git.json";
 import mail from "../../json/animation/mail.json";
 import dev from "../../json/animation/dev.json";
+
 import chris from "../../assets/img/team/img6.jpg";
-// Add your 3 new member images here:
 import member2 from "../../assets/img/team/img2.jpg";
 import member3 from "../../assets/img/team/img3.jpg";
 import member4 from "../../assets/img/team/img4.jpg";
+
 import { Link } from "react-router-dom";
 import futo from "../../assets/img/gallery/front-gate2.jpg";
 import Footer from "../../components/footer/Footer";
+
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import { useEffect } from "react";
 
-const teamMembers = [
+// =============================================
+// TypeScript Interfaces
+// =============================================
+interface TeamMember {
+  name: string;
+  department: string;
+  level: string;
+  role: string;
+  email: string;
+  portfolio: string;
+  github: string;
+  linkedin: string;
+  image: string; // imported image paths resolve to string in Vite/React
+}
+
+interface TeamCardProps {
+  member: TeamMember;
+  index: number;
+}
+
+// =============================================
+// Team Data
+// =============================================
+const teamMembers: TeamMember[] = [
   {
     name: "Christian Endwell Mbah",
     department: "Polymer and Textile Engineering Department",
@@ -63,7 +88,10 @@ const teamMembers = [
   },
 ];
 
-const TeamCard = ({ member, index }) => (
+// =============================================
+// TeamCard Component (Typed)
+// =============================================
+const TeamCard = ({ member, index }: TeamCardProps) => (
   <motion.div
     variants={fadeInVariants3}
     initial="initial"
@@ -75,6 +103,7 @@ const TeamCard = ({ member, index }) => (
     <div className="rounded-t-lg h-32 w-full overflow-hidden bg-gray-100">
       <img src={futo} alt="futo" className="w-full h-full object-cover" />
     </div>
+
     <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 relative -mt-12 sm:-mt-16 border-4 border-white rounded-full overflow-hidden">
       <img
         className="object-cover object-center w-full bg-gray-100"
@@ -82,6 +111,7 @@ const TeamCard = ({ member, index }) => (
         alt={member.name}
       />
     </div>
+
     <div className="text-center mt-2 rounded-lg px-4">
       <motion.h4
         variants={fadeInVariants3}
@@ -93,6 +123,7 @@ const TeamCard = ({ member, index }) => (
       >
         {member.name}
       </motion.h4>
+
       <motion.p
         variants={fadeInVariants3}
         initial="initial"
@@ -103,6 +134,7 @@ const TeamCard = ({ member, index }) => (
       >
         {member.department}
       </motion.p>
+
       <motion.p
         variants={fadeInVariants3}
         initial="initial"
@@ -113,6 +145,7 @@ const TeamCard = ({ member, index }) => (
       >
         {member.level}
       </motion.p>
+
       <motion.p
         variants={fadeInVariants3}
         initial="initial"
@@ -128,6 +161,7 @@ const TeamCard = ({ member, index }) => (
         />{" "}
         {member.role}
       </motion.p>
+
       <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 pb-12 sm:pb-8">
         <Link to={`mailto:${member.email}`}>
           <motion.div
@@ -142,6 +176,7 @@ const TeamCard = ({ member, index }) => (
             <p className="font-semibold text-xss ss:text-ss sm:text-sm">Email</p>
           </motion.div>
         </Link>
+
         <Link to={member.portfolio}>
           <motion.div
             variants={fadeInVariants3}
@@ -155,6 +190,7 @@ const TeamCard = ({ member, index }) => (
             <p className="font-semibold text-xss ss:text-ss sm:text-sm">Portfolio</p>
           </motion.div>
         </Link>
+
         <Link to={member.github}>
           <motion.div
             variants={fadeInVariants3}
@@ -168,6 +204,7 @@ const TeamCard = ({ member, index }) => (
             <p className="font-semibold text-xss ss:text-ss sm:text-sm">Github</p>
           </motion.div>
         </Link>
+
         <Link to={member.linkedin}>
           <motion.div
             variants={fadeInVariants3}
@@ -186,9 +223,12 @@ const TeamCard = ({ member, index }) => (
   </motion.div>
 );
 
+// =============================================
+// Main Component (Typed)
+// =============================================
 export default function ProjectTeam() {
   useEffect(() => {
-    window.scroll(0, 0);
+    window.scrollTo(0, 0);
   }, []);
 
   return (
