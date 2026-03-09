@@ -231,9 +231,12 @@ export default function ProjectTeam() {
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
           <div className="flex items-center justify-center flex-col">
             <h2>
-              <div className="bar-style" />
+              <div className="bar-style py-10" />
               Meet the Team
             </h2>
+            <h3 className="text-gray-700 font-[500] text-ss ss:text-sm xlg:text-xs">
+              The Creative Minds Behind This Project
+            </h3>
             
           </div>
 
