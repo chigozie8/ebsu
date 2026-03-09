@@ -86,7 +86,7 @@ export default function SignUp() {
                     type="number"
                     id="regNo"
                     className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
-                    placeholder="eg. 20191189227"
+                    placeholder="eg. 91141"
                     {...register("regNo")}
                   />
                   {errors.regNo && (
@@ -114,6 +114,7 @@ export default function SignUp() {
                     <option value="300L">300L</option>
                     <option value="400L">400L</option>
                     <option value="500L">500L</option>
+                    <option value="600L">600L</option>
                     <option value="Visitor">Visitor</option>
                   </select>
                   {errors.level && (
