@@ -7,17 +7,6 @@ export default {
     "node_modules/flowbite-react/lib/esm/**/*.js",
   ],
   theme: {
-    colors: {
-      'green1': '#1A56DB',
-      'green2': '#1648B8',
-      'green3': '#1E2A4A',
-      'green4': '#1A56DB',
-      'green5': '#2563EB',
-      'yellow1': '#ecd504',
-      'navy': '#1E2A4A',
-      'primary': '#1A56DB',
-      'primary-dark': '#1648B8'
-    },
     fontFamily: {
       dmSans: ['Dm Sans', 'sans-serif'],
       inter: ['Inter', 'serif'],
@@ -76,7 +65,19 @@ export default {
       '4xl': '2.441rem',
       '5xl': '3.052rem',
     },
-    extend: {},
+    extend: {
+      colors: {
+        'green1': '#1A56DB',
+        'green2': '#1648B8',
+        'green3': '#1E2A4A',
+        'green4': '#1A56DB',
+        'green5': '#2563EB',
+        'yellow1': '#ecd504',
+        'navy': '#1E2A4A',
+        'primary': '#1A56DB',
+        'primary-dark': '#1648B8'
+      }
+    },
   },
   plugins: [
     require('flowbite/plugin'),
