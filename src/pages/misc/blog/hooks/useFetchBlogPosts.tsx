@@ -58,7 +58,7 @@ export const useFetchBlogPosts = () => {
           setBlogPostsError(false);
         }
       );
-    } catch (error) {
+    } catch {
       // Use local fallback on catch
       setBlogPosts(localBlogPosts);
       setBlogPostsLoading(false);
@@ -104,7 +104,7 @@ export const useFetchBlogPosts = () => {
           setHomeBlogPostsError(false);
         }
       );
-    } catch (error) {
+    } catch {
       // Use local fallback on catch
       const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
       setHomeBlogPosts(shuffled);
