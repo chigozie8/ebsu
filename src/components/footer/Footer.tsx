@@ -5,7 +5,7 @@ import { FacebookIcon } from "../icons/socials/FacebookIcon";
 
 export default function Footer() {
   return (
-    <footer className="bg-green1 text-white">
+    <footer className="bg-navy text-white">
       <div className="box-width p-4 py-6 lg:py-8 xsm:px-14">
         <div className="md:flex md:justify-between">
           <div className="mb-6 md:mb-0">

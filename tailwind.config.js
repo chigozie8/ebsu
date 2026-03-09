@@ -8,12 +8,15 @@ export default {
   ],
   theme: {
     colors: {
-      'green1': '#00875a',
-      'green2': '#21875a',
-      'green3':'#1c3f21',
-      'green4':'#03875b',
-      'green5': '#03ab73',
-      'yellow1': '#ecd504'
+      'green1': '#1A56DB',
+      'green2': '#1648B8',
+      'green3': '#1E2A4A',
+      'green4': '#1A56DB',
+      'green5': '#2563EB',
+      'yellow1': '#ecd504',
+      'navy': '#1E2A4A',
+      'primary': '#1A56DB',
+      'primary-dark': '#1648B8'
     },
     fontFamily: {
       dmSans: ['Dm Sans', 'sans-serif'],
