@@ -211,7 +211,7 @@ export default function Gallery() {
                   >
                     <button
                       onClick={() => openModal(0, "grid")}
-                      className="group flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-medium text-sm hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl"
+                      className="group flex items-center gap-2 px-6 py-3 bg-green1 text-white rounded-full font-medium text-sm hover:bg-green5 transition-all shadow-lg hover:shadow-xl"
                     >
                       <IoGrid className="text-lg" />
                       View All Photos
