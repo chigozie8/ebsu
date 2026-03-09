@@ -51,7 +51,7 @@ const teamMembers: TeamMember[] = [
     portfolio: "https://codeblockportfolio.vercel.app",
     github: "https://github.com/kenchigozie23",
     linkedin: "https://linkedin.com/in/kenneth-okoronkwo",
-    image: k,
+    image: chris,
   },
   {
     name: "Blu",
@@ -62,7 +62,7 @@ const teamMembers: TeamMember[] = [
     portfolio: "https://vercel.app",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
-    image: b,
+    image: member2,
   },
   {
     name: "Red",
@@ -73,7 +73,7 @@ const teamMembers: TeamMember[] = [
     portfolio: "https://vercel.app",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
-    image: u,
+    image: member3,
   },
   
 ];
