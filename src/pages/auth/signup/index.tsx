@@ -44,7 +44,7 @@ export default function SignUp() {
                     type="text"
                     id="firstName"
                     className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
-                    placeholder="eg. Chris"
+                    placeholder="eg. Ken"
                     {...register("firstName")}
                   />
                   {errors.firstName && (
@@ -64,7 +64,7 @@ export default function SignUp() {
                     type="text"
                     id="lastName"
                     className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
-                    placeholder="eg. Mbah"
+                    placeholder="eg. Chigozie"
                     {...register("lastName")}
                   />
                   {errors.lastName && (
