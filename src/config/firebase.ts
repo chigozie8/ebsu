@@ -16,6 +16,9 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_MEASUREMENT_ID || "",
 };
 
+// Check if Firebase config is valid
+export const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
+
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

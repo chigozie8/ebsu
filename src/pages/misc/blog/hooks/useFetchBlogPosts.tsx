@@ -8,7 +8,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { IBlogPost, TBlogPost } from "../../../../models/misc/blog/blogPosts";
-import { db } from "../../../../config/firebase";
+import { db, isFirebaseConfigured } from "../../../../config/firebase";
 import { notifyUser } from "../../../../helpers/notifyUser";
 import { localBlogPosts } from "../../../../data/misc/blog/posts";
 
@@ -23,11 +23,18 @@ export const useFetchBlogPosts = () => {
   const [blogPostLoading, setBlogPostLoading] = useState(true);
   const [blogPostError, setBlogPostError] = useState(false);
 
-  const postsRef = collection(db, "blogPosts");
-
   const fetchBlogPosts = async () => {
-    const postsQuery = query(postsRef);
     setBlogPostsLoading(true);
+    
+    // If Firebase is not configured, use local data
+    if (!isFirebaseConfigured) {
+      setBlogPosts(localBlogPosts);
+      setBlogPostsLoading(false);
+      return;
+    }
+
+    const postsRef = collection(db, "blogPosts");
+    const postsQuery = query(postsRef);
     try {
       onSnapshot(
         postsQuery,
@@ -59,8 +66,18 @@ export const useFetchBlogPosts = () => {
     }
   };
   const fetchHomeBlogPosts = async () => {
-    const postsQuery = query(postsRef);
     setHomeBlogPostsLoading(true);
+    
+    // If Firebase is not configured, use local data
+    if (!isFirebaseConfigured) {
+      const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
+      setHomeBlogPosts(shuffled);
+      setHomeBlogPostsLoading(false);
+      return;
+    }
+
+    const postsRef = collection(db, "blogPosts");
+    const postsQuery = query(postsRef);
     try {
       onSnapshot(
         postsQuery,
@@ -96,8 +113,21 @@ export const useFetchBlogPosts = () => {
     }
   };
   const fetchBlogPost = async (id: string) => {
-    const postRef = doc(db, "blogPosts", id);
     setBlogPostLoading(true);
+    
+    // If Firebase is not configured, use local data
+    if (!isFirebaseConfigured) {
+      const localPost = localBlogPosts.find(p => p.id === id);
+      if (localPost) {
+        setBlogPost(localPost as unknown as TBlogPost);
+      } else {
+        setBlogPost(null);
+      }
+      setBlogPostLoading(false);
+      return;
+    }
+
+    const postRef = doc(db, "blogPosts", id);
     try {
       const postSnap = await getDoc(postRef);
       if (postSnap.exists()) {
