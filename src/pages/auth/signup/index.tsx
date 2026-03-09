@@ -27,7 +27,7 @@ export default function SignUp() {
               <img src={logo} alt="PTE LOGO" className="w-14 h-14" />
               <div className="text-center mb-4 mt-2">
                 <p className="font-bold text-xs sm:text-base text-wrap">
-                  Polymer and Textile Engineering Department, FUTO
+                  Medicine and Surgery Department, EBSU
                 </p>
               </div>
             </div>
