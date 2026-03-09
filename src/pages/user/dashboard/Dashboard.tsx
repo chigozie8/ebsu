@@ -145,7 +145,7 @@ export default function Dashboard() {
                         <p className="text-gray-800 text-ss sm:text-sm ss:text-xs font-medium">
                           {studentDetails?.level !== "Aspirant" &&
                           studentDetails?.level !== "Visitor"
-                            ? "Polymer and Textile Engineering "
+                            ? "Medicine and Surgery"
                             : "None"}
                         </p>
                       </div>
