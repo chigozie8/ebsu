@@ -68,7 +68,7 @@ const teamMembers: TeamMember[] = [
     name: "Red",
     department: "Medicine and Surgery",
     level: "400 Level",
-    role: "UI designer",
+    role: "Backend Engineer",
     email: "Redress6310.com@gmail.com",
     portfolio: "https://vercel.app",
     github: "https://github.com",
