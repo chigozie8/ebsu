@@ -56,7 +56,7 @@ export const GeneralNavbar = () => {
                     alt="PTE Logo"
                   />
                   <div className="mr-2 text-black w-[100%] sm:w-[70%] self-center whitespace-wrap text-xss ss:text-ss lg:text-sm font-[900]">
-                    Polymer and Textile <br /> Engineering, FUTO
+                    Medicine and Surgery <br /> Department, EBSU
                   </div>
                 </div>
               </a>
