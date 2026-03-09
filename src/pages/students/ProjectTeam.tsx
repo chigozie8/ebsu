@@ -11,7 +11,7 @@ import member3 from "../../assets/img/team/uuu.jpg";
 //import member4 from "../../assets/img/team/img4.jpg";
 
 import { Link } from "react-router-dom";
-import futo from "../../assets/img/gallery/ai.jpg";
+//import futo from "../../assets/img/gallery/ai.jpg";
 import Footer from "../../components/footer/Footer";
 
 import { motion } from "framer-motion";
