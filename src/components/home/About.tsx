@@ -3,7 +3,7 @@ import consultation from "../../json/animation/consultation.json";
 import glasses from "../../json/animation/glasses.json";
 import img2 from "../../assets/img/gallery/senate-building.webp";
 import img3 from "../../assets/img/gallery/ebsu.jpeg";
-import img4 from "../../assets/img/gallery/statue.jpg";
+import img4 from "../../assets/img/gallery/senate.png";
 import { motion } from "framer-motion";
 import {
   fadeInVariants1,
