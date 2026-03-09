@@ -88,74 +88,6 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
     whileInView="animate"
     viewport={{ once: true }}
     custom={index}
-    className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900"
-  >
-  
-
-    <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 relative -mt-12 sm:-mt-16 border-4 border-white rounded-full overflow-hidden">
-      <img
-        className="object-cover object-center w-full bg-gray-100"
-        src={member.image}
-        alt={member.name}
-      />
-    </div>
-
-    <div className="text-center mt-2 rounded-lg px-4">
-      <motion.h4
-        variants={fadeInVariants3}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true }}
-        custom={2}
-        className="font-bold text-md ss:text-xl sm:text-2xl"
-      >
-        {member.name}
-      </motion.h4>
-
-      <motion.p
-        variants={fadeInVariants3}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true }}
-        custom={4}
-        className="text-black text-ss sm:text-sm font-semibold"
-      >
-        {member.department}
-      </motion.p>
-
-      <motion.p
-        variants={fadeInVariants3}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true }}
-        custom={5}
-        className="text-black text-ss sm:text-sm font-semibold mb-4"
-      >
-        {member.level}
-      </motion.p>
-
-      <motion.p
-        variants={fadeInVariants3}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true }}
-        custom={6}
-        className="font-semibold text-ss ss:text-sm sm:text-xs mb-2"
-      >
-        <Lottie
-          animationData={dev}
-          loop={false}
-          className="w-[17px] ss:w-[20px] -mb-1 inline-block"
-        />{" "}
-        {member.role}
-      </motion.p>
-const TeamCard = ({ member, index }: TeamCardProps) => (
-  <motion.div
-    variants={fadeInVariants3}
-    initial="initial"
-    whileInView="animate"
-    viewport={{ once: true }}
-    custom={index}
     className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900 overflow-hidden"
   >
     {/* Profile picture - already centered */}
@@ -279,6 +211,12 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
     </div>
   </motion.div>
 );
+
+
+      
+
+      
+      
 // =============================================
 // Main Component (Typed)
 // =============================================
