@@ -1,4 +1,4 @@
-import img1 from "../../assets/img/gallery/ict-building.jpg";
+import img1 from "../../assets/img/gallery/l.jpg";
 import img2 from "../../assets/img/gallery/front-gate2.jpg";
 import img3 from "../../assets/img/gallery/lecture-hall.jpg";
 import img4 from "../../assets/img/gallery/seet.jpeg";
