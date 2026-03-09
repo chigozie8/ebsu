@@ -229,7 +229,7 @@ export default function ProjectTeam() {
     <div className="min-h-screen bg-gray-50">
       <div className="box-width">
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
-          <div className="flex items-center justify-center flex-col py-7">
+          <div className="flex items-center justify-center flex-col py-9">
             <h2>
               <div className="bar-style " />
               Meet the Team
@@ -240,7 +240,7 @@ export default function ProjectTeam() {
             
           </div>
 
-          <div className="w-full flex items-center justify-center flex-wrap gap-6">
+          <div className="w-full flex items-center justify-center flex-wrap gap-10">
             {teamMembers.map((member, index) => (
               <TeamCard key={member.name} member={member} index={index} />
             ))}
