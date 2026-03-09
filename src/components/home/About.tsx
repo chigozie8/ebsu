@@ -39,8 +39,7 @@ export default function About() {
               custom={2}
               className="text-gray-900 font-medium text-ss ss:text-sm xlg:text-xs mb-4"
             >
-              Empowering students to achieve academic excellence through
-              learning resources and personalized support.
+              Empowering students toward outstanding academic success through rich educational resources and personalized ai assistance.
             </motion.p>
             <motion.div
               variants={fadeInVariants1}
