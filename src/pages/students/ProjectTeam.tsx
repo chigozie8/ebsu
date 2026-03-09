@@ -29,6 +29,8 @@ export default function ProjectTeam() {
               The Creative Mind Behind This Project
             </h3>
           </div>
+
+          
           <div className="w-full flex items-center justify-center">
             <motion.div
               variants={fadeInVariants3}
@@ -96,106 +98,91 @@ export default function ProjectTeam() {
                   whileInView="animate"
                   viewport={{
                     once: true,
-                  }}
-                  custom={6}
-                  className=" font-semibold text-ss ss:text-sm sm:text-xs mb-2"
-                >
-                  <Lottie
-                    animationData={dev}
-                    loop={false}
-                    className="w-[17px] ss:w-[20px] -mb-1 inline-block"
-                  />{" "}
-                  Software Engineer · Front-End Developer
-                </motion.p>
-                <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 pb-12 sm:pb-8">
-                  <Link to="mailto:mbahchris46@gmail.com">
-                    <motion.div
-                      variants={fadeInVariants3}
-                      initial="initial"
-                      whileInView="animate"
-                      viewport={{
-                        once: true,
-                      }}
-                      custom={8}
-                      className="flex gap-1 items-center"
-                    >
-                      <Lottie
-                        loop={false}
-                        animationData={mail}
-                        className="w-4 ss:w-5 sm:w-6"
-                      />
-                      <p className=" font-semibold text-xss ss:text-ss sm:text-sm">
-                        Email
-                      </p>
-                    </motion.div>
-                  </Link>
-                  <Link to="https://chrismbah.vercel.app">
-                    <motion.div
-                      variants={fadeInVariants3}
-                      initial="initial"
-                      whileInView="animate"
-                      viewport={{
-                        once: true,
-                      }}
-                      custom={9}
-                      className="flex gap-1 items-center"
-                    >
-                      <Lottie
-                        loop={false}
-                        animationData={link}
-                        className="w-4 ss:w-5 sm:w-6"
-                      />
-                      <p className=" font-semibold text-xss ss:text-ss sm:text-sm">
-                        Portfolio
-                      </p>
-                    </motion.div>
-                  </Link>
-                  <Link to="https://github.com/chrismbah">
-                    <motion.div
-                      variants={fadeInVariants3}
-                      initial="initial"
-                      whileInView="animate"
-                      viewport={{
-                        once: true,
-                      }}
-                      custom={10}
-                      className="flex gap-1 items-center"
-                    >
-                      <Lottie
-                        loop={false}
-                        animationData={git}
-                        className="w-4 ss:w-5 sm:w-6"
-                      />
-                      <p className=" font-semibold text-xss ss:text-ss sm:text-sm">
-                        Github
-                      </p>
-                    </motion.div>
-                  </Link>{" "}
-                  <Link to="https://linkedin.com/in/mbah-chris">
-                    <motion.div
-                      variants={fadeInVariants3}
-                      initial="initial"
-                      whileInView="animate"
-                      viewport={{
-                        once: true,
-                      }}
-                      custom={11}
-                      className="flex gap-1 items-center"
-                    >
-                      <Lottie
-                        loop={false}
-                        animationData={work}
-                        className="w-3 ss:w-4 sm:w-5"
-                      />
-                      <p className=" font-semibold text-xss ss:text-ss sm:text-sm">
-                        LinkedIn
-                      </p>
-                    </motion.div>
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          </div>
+<div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 place-items-center mt-6">
+
+  {/* CARD 1 */}
+  <motion.div
+    variants={fadeInVariants3}
+    initial="initial"
+    whileInView="animate"
+    viewport={{ once: true }}
+    className="w-[400px] sss:w-[450px] bg-white shadow-4 rounded-lg text-gray-900"
+  >
+    {/* existing card content */}
+  </motion.div>
+
+
+  {/* CARD 2 */}
+  <motion.div
+    variants={fadeInVariants3}
+    initial="initial"
+    whileInView="animate"
+    viewport={{ once: true }}
+    className="w-[400px] sss:w-[450px] bg-white shadow-4 rounded-lg text-gray-900"
+  >
+    <div className="rounded-t-lg h-32 w-full overflow-hidden bg-gray-100">
+      <img src={futo} alt="futo" className="w-full h-full object-cover" />
+    </div>
+
+    <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 relative -mt-12 border-4 border-white rounded-full overflow-hidden">
+      <img className="object-cover w-full" src={chris} alt="Team Member" />
+    </div>
+
+    <div className="text-center mt-2 px-4 pb-8">
+      <h4 className="font-bold text-xl">Team Member</h4>
+      <p className="text-sm font-semibold">Frontend Developer</p>
+    </div>
+  </motion.div>
+
+
+  {/* CARD 3 */}
+  <motion.div
+    variants={fadeInVariants3}
+    initial="initial"
+    whileInView="animate"
+    viewport={{ once: true }}
+    className="w-[400px] sss:w-[450px] bg-white shadow-4 rounded-lg text-gray-900"
+  >
+    <div className="rounded-t-lg h-32 w-full overflow-hidden bg-gray-100">
+      <img src={futo} alt="futo" className="w-full h-full object-cover" />
+    </div>
+
+    <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 relative -mt-12 border-4 border-white rounded-full overflow-hidden">
+      <img className="object-cover w-full" src={chris} alt="Team Member" />
+    </div>
+
+    <div className="text-center mt-2 px-4 pb-8">
+      <h4 className="font-bold text-xl">Team Member</h4>
+      <p className="text-sm font-semibold">Backend Developer</p>
+    </div>
+  </motion.div>
+
+
+  {/* CARD 4 */}
+  <motion.div
+    variants={fadeInVariants3}
+    initial="initial"
+    whileInView="animate"
+    viewport={{ once: true }}
+    className="w-[400px] sss:w-[450px] bg-white shadow-4 rounded-lg text-gray-900"
+  >
+    <div className="rounded-t-lg h-32 w-full overflow-hidden bg-gray-100">
+      <img src={futo} alt="futo" className="w-full h-full object-cover" />
+    </div>
+
+    <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 relative -mt-12 border-4 border-white rounded-full overflow-hidden">
+      <img className="object-cover w-full" src={chris} alt="Team Member" />
+    </div>
+
+    <div className="text-center mt-2 px-4 pb-8">
+      <h4 className="font-bold text-xl">Team Member</h4>
+      <p className="text-sm font-semibold">UI/UX Designer</p>
+    </div>
+  </motion.div>
+
+</div>
+
+          
         </div>
       </div>
       <Footer />
