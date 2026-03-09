@@ -25,25 +25,30 @@ export const useFetchBlogPosts = () => {
   const postsRef = collection(db, "blogPosts");
 
   const fetchBlogPosts = async () => {
+    console.log("[v0] fetchBlogPosts called");
     const postsQuery = query(postsRef);
     setBlogPostsLoading(true);
     try {
       onSnapshot(
         postsQuery,
         (querySnapshot) => {
+          console.log("[v0] Snapshot received, docs count:", querySnapshot.size);
           const list: IBlogPost[] = [];
           querySnapshot.forEach((doc) => {
+            console.log("[v0] Doc data:", doc.id, doc.data());
             list.push({ ...doc.data(), id: doc.id } as IBlogPost);
           });
           setBlogPosts(list);
           setBlogPostsLoading(false);
         },
         (error: any) => {
+          console.log("[v0] Snapshot error:", error);
           setBlogPostsLoading(false);
           setBlogPostsError(error);
         }
       );
     } catch (error) {
+      console.log("[v0] fetchBlogPosts catch error:", error);
       setBlogPostsLoading(false);
       setBlogPostsError(true);
     }
