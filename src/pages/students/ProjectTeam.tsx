@@ -88,26 +88,26 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
     whileInView="animate"
     viewport={{ once: true }}
     custom={index}
-    className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900 overflow-hidden"
+    className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900"
   >
-    {/* Profile picture - already centered */}
+  
+
     <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 relative -mt-12 sm:-mt-16 border-4 border-white rounded-full overflow-hidden">
       <img
-        className="object-cover object-center w-full h-full bg-gray-100"
+        className="object-cover object-center w-full bg-gray-100"
         src={member.image}
         alt={member.name}
       />
     </div>
 
-    {/* Main content - improved centering */}
-    <div className="text-center pt-4 pb-10 px-5 sm:px-8 md:px-10">
+    <div className="text-center mt-2 rounded-lg px-4">
       <motion.h4
         variants={fadeInVariants3}
         initial="initial"
         whileInView="animate"
         viewport={{ once: true }}
         custom={2}
-        className="font-bold text-lg ss:text-xl sm:text-2xl mb-1"
+        className="font-bold text-md ss:text-xl sm:text-2xl"
       >
         {member.name}
       </motion.h4>
@@ -118,7 +118,7 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
         whileInView="animate"
         viewport={{ once: true }}
         custom={4}
-        className="text-gray-700 text-sm sm:text-base font-medium"
+        className="text-black text-ss sm:text-sm font-semibold"
       >
         {member.department}
       </motion.p>
@@ -129,7 +129,7 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
         whileInView="animate"
         viewport={{ once: true }}
         custom={5}
-        className="text-gray-600 text-sm sm:text-base font-medium mb-4"
+        className="text-black text-ss sm:text-sm font-semibold mb-4"
       >
         {member.level}
       </motion.p>
@@ -140,18 +140,17 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
         whileInView="animate"
         viewport={{ once: true }}
         custom={6}
-        className="font-semibold text-sm sm:text-base mb-6 flex items-center justify-center gap-1.5"
+        className="font-semibold text-ss ss:text-sm sm:text-xs mb-2"
       >
         <Lottie
           animationData={dev}
           loop={false}
-          className="w-5 sm:w-6 -mb-0.5"
-        />
+          className="w-[17px] ss:w-[20px] -mb-1 inline-block"
+        />{" "}
         {member.role}
       </motion.p>
 
-      {/* Social links - centered with flex */}
-      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8">
+      <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 pb-12 sm:pb-8">
         <Link to={`mailto:${member.email}`}>
           <motion.div
             variants={fadeInVariants3}
@@ -159,10 +158,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={8}
-            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
+            className="flex gap-1 items-center"
           >
-            <Lottie loop={false} animationData={mail} className="w-5 sm:w-6" />
-            <span className="font-medium text-sm sm:text-base">Email</span>
+            <Lottie loop={false} animationData={mail} className="w-4 ss:w-5 sm:w-6" />
+            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Email</p>
           </motion.div>
         </Link>
 
@@ -173,10 +172,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={9}
-            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
+            className="flex gap-1 items-center"
           >
-            <Lottie loop={false} animationData={link} className="w-5 sm:w-6" />
-            <span className="font-medium text-sm sm:text-base">Portfolio</span>
+            <Lottie loop={false} animationData={link} className="w-4 ss:w-5 sm:w-6" />
+            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Portfolio</p>
           </motion.div>
         </Link>
 
@@ -187,10 +186,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={10}
-            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
+            className="flex gap-1 items-center"
           >
-            <Lottie loop={false} animationData={git} className="w-5 sm:w-6" />
-            <span className="font-medium text-sm sm:text-base">GitHub</span>
+            <Lottie loop={false} animationData={git} className="w-4 ss:w-5 sm:w-6" />
+            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Github</p>
           </motion.div>
         </Link>
 
@@ -201,16 +200,17 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={11}
-            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
+            className="flex gap-1 items-center"
           >
-            <Lottie loop={false} animationData={work} className="w-5 sm:w-6" />
-            <span className="font-medium text-sm sm:text-base">LinkedIn</span>
+            <Lottie loop={false} animationData={work} className="w-3 ss:w-4 sm:w-5" />
+            <p className="font-semibold text-xss ss:text-ss sm:text-sm">LinkedIn</p>
           </motion.div>
         </Link>
       </div>
     </div>
   </motion.div>
 );
+        
 
 
       
