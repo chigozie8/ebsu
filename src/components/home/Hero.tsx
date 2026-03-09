@@ -37,7 +37,7 @@ export default function Hero() {
               custom={3}
               className="mb-2 xl:text-4xl lg:text-3xl sm:text-2xl text-xl font-semibold text-gray-800"
             >
-              Federal University of Technology, Owerri
+              Ebonyi State University, Abakaliki
             </motion.h2>
             <motion.p
               variants={fadeInVariants3}
