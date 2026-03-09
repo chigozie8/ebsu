@@ -171,7 +171,7 @@ export default function StudentProfile() {
                     Department
                   </p>
                   <p className="text-ss sm:text-sm mmd:text-xs font-[500] text-gray-600">
-                    Polymer and Textile Engineering
+                    Medicine and Surgery 
                   </p>
                 </div>
               </div>{" "}
