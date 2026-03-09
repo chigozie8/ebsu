@@ -51,7 +51,7 @@ export const useFetchBlogPosts = () => {
           }
           setBlogPostsLoading(false);
         },
-        (error: any) => {
+        () => {
           // Use local fallback on error
           setBlogPosts(localBlogPosts);
           setBlogPostsLoading(false);
@@ -96,7 +96,7 @@ export const useFetchBlogPosts = () => {
           }
           setHomeBlogPostsLoading(false);
         },
-        (error: any) => {
+        () => {
           // Use local fallback on error
           const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
           setHomeBlogPosts(shuffled);
