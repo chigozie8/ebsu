@@ -74,7 +74,7 @@ const AppRoutes = () => {
           <Route path="/course-outlines/:level" element={<CoursesOutline />} />
           <Route path="/course-outlines/:level/:id" element={<CourseInfo />} />
           <Route
-            path={"/learning-resources" || "/dashboard/learning-resources"}
+            path="/learning-resources"
             element={<LearningResources />}
           />
           <Route

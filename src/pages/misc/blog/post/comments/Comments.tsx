@@ -67,6 +67,10 @@ export const Comments: FC<PostCommentsProp> = ({ postComments }) => {
                             deleteUserComment(commentID, commentUserID)
                           }
                           placeholder={""}
+                          onResize={() => {}}
+                          onResizeCapture={() => {}}
+                          onPointerEnterCapture={() => {}}
+                          onPointerLeaveCapture={() => {}}
                           className={` cursor-pointer shadow font-medium text-black font-dmSans p-2 text-[10px] sm:text-ss hover:bg-gray-100 rounded-lg`}
                         >
                           Delete

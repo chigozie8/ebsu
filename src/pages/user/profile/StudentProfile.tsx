@@ -63,6 +63,10 @@ export default function StudentProfile() {
                 <PopoverContent
                   onClick={() => setOpenDeleteProfileImageModal(true)}
                   placeholder={""}
+                  onResize={() => {}}
+                  onResizeCapture={() => {}}
+                  onPointerEnterCapture={() => {}}
+                  onPointerLeaveCapture={() => {}}
                   className={` cursor-pointer shadow font-dmSans font-medium p-2 text-[10px] bg-gray-50 sm:text-ss hover:bg-gray-100 rounded-lg`}
                 >
                   Delete Photo
