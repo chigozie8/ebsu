@@ -1,5 +1,5 @@
 import img1 from "../../assets/img/gallery/l.jpg";
-import img2 from "../../assets/img/gallery/oo.jpg";
+import img2 from "../../assets/img/gallery/oo.jpeg";
 import img3 from "../../assets/img/gallery/IMG-20260206-WA0049.jpg";
 import img4 from "../../assets/img/gallery/a.jpg";
 import img5 from "../../assets/img/gallery/j.jpg";
