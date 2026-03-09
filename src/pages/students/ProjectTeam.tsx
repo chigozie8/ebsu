@@ -57,7 +57,7 @@ const teamMembers: TeamMember[] = [
     name: "Blu",
     department: "Medicine and Surgery",
     level: "400 Level",
-    role: "Team Lead",
+    role: "Frontend Engineer",
     email: "ada.okonkwo@example.com",
     portfolio: "https://vercel.app",
     github: "https://github.com",
@@ -68,7 +68,7 @@ const teamMembers: TeamMember[] = [
     name: "Red",
     department: "Medicine and Surgery",
     level: "400 Level",
-    role: "Graphic designer",
+    role: "UI designer",
     email: "Redress6310.com@gmail.com",
     portfolio: "https://vercel.app",
     github: "https://github.com",
@@ -149,8 +149,77 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
         />{" "}
         {member.role}
       </motion.p>
+const TeamCard = ({ member, index }: TeamCardProps) => (
+  <motion.div
+    variants={fadeInVariants3}
+    initial="initial"
+    whileInView="animate"
+    viewport={{ once: true }}
+    custom={index}
+    className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900 overflow-hidden"
+  >
+    {/* Profile picture - already centered */}
+    <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 relative -mt-12 sm:-mt-16 border-4 border-white rounded-full overflow-hidden">
+      <img
+        className="object-cover object-center w-full h-full bg-gray-100"
+        src={member.image}
+        alt={member.name}
+      />
+    </div>
 
-      <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 pb-12 sm:pb-8">
+    {/* Main content - improved centering */}
+    <div className="text-center pt-4 pb-10 px-5 sm:px-8 md:px-10">
+      <motion.h4
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={2}
+        className="font-bold text-lg ss:text-xl sm:text-2xl mb-1"
+      >
+        {member.name}
+      </motion.h4>
+
+      <motion.p
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={4}
+        className="text-gray-700 text-sm sm:text-base font-medium"
+      >
+        {member.department}
+      </motion.p>
+
+      <motion.p
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={5}
+        className="text-gray-600 text-sm sm:text-base font-medium mb-4"
+      >
+        {member.level}
+      </motion.p>
+
+      <motion.p
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={6}
+        className="font-semibold text-sm sm:text-base mb-6 flex items-center justify-center gap-1.5"
+      >
+        <Lottie
+          animationData={dev}
+          loop={false}
+          className="w-5 sm:w-6 -mb-0.5"
+        />
+        {member.role}
+      </motion.p>
+
+      {/* Social links - centered with flex */}
+      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 md:gap-8">
         <Link to={`mailto:${member.email}`}>
           <motion.div
             variants={fadeInVariants3}
@@ -158,10 +227,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={8}
-            className="flex gap-1 items-center"
+            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
-            <Lottie loop={false} animationData={mail} className="w-4 ss:w-5 sm:w-6" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Email</p>
+            <Lottie loop={false} animationData={mail} className="w-5 sm:w-6" />
+            <span className="font-medium text-sm sm:text-base">Email</span>
           </motion.div>
         </Link>
 
@@ -172,10 +241,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={9}
-            className="flex gap-1 items-center"
+            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
-            <Lottie loop={false} animationData={link} className="w-4 ss:w-5 sm:w-6" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Portfolio</p>
+            <Lottie loop={false} animationData={link} className="w-5 sm:w-6" />
+            <span className="font-medium text-sm sm:text-base">Portfolio</span>
           </motion.div>
         </Link>
 
@@ -186,10 +255,10 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={10}
-            className="flex gap-1 items-center"
+            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
-            <Lottie loop={false} animationData={git} className="w-4 ss:w-5 sm:w-6" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Github</p>
+            <Lottie loop={false} animationData={git} className="w-5 sm:w-6" />
+            <span className="font-medium text-sm sm:text-base">GitHub</span>
           </motion.div>
         </Link>
 
@@ -200,17 +269,16 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
             whileInView="animate"
             viewport={{ once: true }}
             custom={11}
-            className="flex gap-1 items-center"
+            className="flex items-center gap-1.5 hover:text-blue-600 transition-colors"
           >
-            <Lottie loop={false} animationData={work} className="w-3 ss:w-4 sm:w-5" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">LinkedIn</p>
+            <Lottie loop={false} animationData={work} className="w-5 sm:w-6" />
+            <span className="font-medium text-sm sm:text-base">LinkedIn</span>
           </motion.div>
         </Link>
       </div>
     </div>
   </motion.div>
 );
-
 // =============================================
 // Main Component (Typed)
 // =============================================
