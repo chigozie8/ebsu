@@ -1,5 +1,5 @@
 import img1 from "../../assets/img/gallery/l.jpg";
-import img2 from "../../assets/img/gallery/front-gate2.jpg";
+import img2 from "../../assets/img/gallery/d.heif";
 import img3 from "../../assets/img/gallery/lecture-hall.jpg";
 import img4 from "../../assets/img/gallery/seet.jpeg";
 import img5 from "../../assets/img/gallery/senate-building.webp";
