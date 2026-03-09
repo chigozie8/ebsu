@@ -4,7 +4,7 @@ import img3 from "../../assets/img/gallery/lecture-hall.jpg";
 import img4 from "../../assets/img/gallery/seet.jpeg";
 import img5 from "../../assets/img/gallery/senate-building.webp";
 import img6 from "../../assets/img/gallery/workshop.jpg";
-import img7 from "../../assets/img/gallery/senate.jpg";
+//import img7 from "../../assets/img/gallery/senate.jpg";
 import img8 from "../../assets/img/gallery/statue.jpg";
 import img9 from "../../assets/img/gallery/aerial-view.jpeg";
 import img10 from "../../assets/img/gallery/building1.jpg";
