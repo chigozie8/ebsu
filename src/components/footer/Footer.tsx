@@ -5,7 +5,7 @@ import { FacebookIcon } from "../icons/socials/FacebookIcon";
 
 export default function Footer() {
   return (
-    <footer className="bg-black text-white">
+    <footer className="bg-green1 text-white">
       <div className="box-width p-4 py-6 lg:py-8 xsm:px-14">
         <div className="md:flex md:justify-between">
           <div className="mb-6 md:mb-0">
@@ -94,7 +94,7 @@ export default function Footer() {
               </a>
             </span>
             <span className="text-ss md:text-sm text-white sm:text-center">
-              Build and Managed by{" "}
+              Architected by{" "}
               <a
                 href="https://chrismbah.vercel.app/"
                 target="_"
