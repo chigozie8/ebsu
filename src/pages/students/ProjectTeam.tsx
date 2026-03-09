@@ -234,9 +234,7 @@ export default function ProjectTeam() {
               <div className="bar-style" />
               Meet the Team
             </h2>
-            <h3 className="text-gray-700 font-[500] text-ss ss:text-sm xlg:text-xs">
-              The Creative Minds Behind This Project
-            </h3>
+            
           </div>
 
           <div className="w-full flex items-center justify-center flex-wrap gap-6">
