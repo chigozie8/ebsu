@@ -90,9 +90,7 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
     custom={index}
     className="w-[400px] sss:w-[450px] mt-6 bg-white shadow-4 rounded-lg text-gray-900"
   >
-    <div className="rounded-t-lg h-32 w-full overflow-hidden bg-gray-100">
-      <img src={futo} alt="futo" className="w-full h-full object-cover" />
-    </div>
+  
 
     <div className="mx-auto w-28 h-28 sm:w-36 sm:h-36 md:w-36 md:h-36 relative -mt-12 sm:-mt-16 border-4 border-white rounded-full overflow-hidden">
       <img
