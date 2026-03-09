@@ -5,9 +5,9 @@ import git from "../../json/animation/git.json";
 import mail from "../../json/animation/mail.json";
 import dev from "../../json/animation/dev.json";
 
-import chris from "../../assets/img/team/img6.jpg";
-import member2 from "../../assets/img/team/img2.jpg";
-import member3 from "../../assets/img/team/img3.jpg";
+import chris from "../../assets/img/team/k.jpg";
+import member2 from "../../assets/img/team/b.jpg";
+import member3 from "../../assets/img/team/u.jpg";
 import member4 from "../../assets/img/team/img4.jpg";
 
 import { Link } from "react-router-dom";
@@ -43,15 +43,15 @@ interface TeamCardProps {
 // =============================================
 const teamMembers: TeamMember[] = [
   {
-    name: "Christian Endwell Mbah",
-    department: "Polymer and Textile Engineering Department",
-    level: "400 Level",
-    role: "Software Engineer · Front-End Developer",
-    email: "mbahchris46@gmail.com",
-    portfolio: "https://chrismbah.vercel.app",
-    github: "https://github.com/chrismbah",
-    linkedin: "https://linkedin.com/in/mbah-chris",
-    image: chris,
+    name: "Ken",
+    department: "Medicine and Surgery",
+    level: "600 Level",
+    role: "Software Engineer",
+    email: "kenronkwo@gmail.com",
+    portfolio: "https://codeblockportfolio.vercel.app",
+    github: "https://github.com/kenchigozie23",
+    linkedin: "https://linkedin.com/in/kenneth-okoronkwo",
+    image: k,
   },
   {
     name: "Ada Okonkwo",
