@@ -6,12 +6,12 @@ import mail from "../../json/animation/mail.json";
 import dev from "../../json/animation/dev.json";
 
 import chris from "../../assets/img/team/k.jpg";
-import member2 from "../../assets/img/team/b.jpg";
-import member3 from "../../assets/img/team/u.jpg";
+import member2 from "../../assets/img/team/bbb.jpg";
+import member3 from "../../assets/img/team/uuu.jpg";
 //import member4 from "../../assets/img/team/img4.jpg";
 
 import { Link } from "react-router-dom";
-import futo from "../../assets/img/gallery/front-gate2.jpg";
+import futo from "../../assets/img/gallery/ai.jpg";
 import Footer from "../../components/footer/Footer";
 
 import { motion } from "framer-motion";
