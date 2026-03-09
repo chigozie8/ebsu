@@ -207,6 +207,10 @@ export const DashboardNavbar = () => {
                   <PopoverContent
                     className="z-50 p-2"
                     placeholder={""}
+                    onResize={() => {}}
+                    onResizeCapture={() => {}}
+                    onPointerEnterCapture={() => {}}
+                    onPointerLeaveCapture={() => {}}
                     {...triggers}
                   >
                     <p className="text-xss sm:text-ss font-semibold text-gray-700">
