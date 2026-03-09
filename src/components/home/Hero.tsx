@@ -25,7 +25,7 @@ export default function Hero() {
               custom={1}
               className="text-green1 text-3xl sm:text-4xl mmd:text-5xl lg:text-4xl xl:text-5xl font-[700]"
             >
-              Polymer and Textile Engineering Department
+              Medicine and Surgery Department
             </motion.h1>
             <motion.h2
               variants={fadeInVariants3}
