@@ -53,7 +53,7 @@ export const GeneralNavbar = () => {
                   <img
                     src={logo}
                     className="mr-2 w-8 h-8 ss:w-10 ss:h-10 sm:w-12 sm:h-12"
-                    alt="PTE Logo"
+                    alt="Medsurg Logo"
                   />
                   <div className="mr-2 text-black w-[100%] sm:w-[70%] self-center whitespace-wrap text-xss ss:text-ss lg:text-sm font-[900]">
                     Medicine and Surgery <br /> Department, EBSU
@@ -240,7 +240,7 @@ export const GeneralNavbar = () => {
                         alt="PTE Logo"
                       />
                       <div className="mr-2 text-black w-[100%] sm:w-[70%] self-center whitespace-wrap text-xss ss:text-ss lg:text-sm font-[900]">
-                        Polymer and Textile <br /> Engineering, FUTO
+                        Medicine and Surgery <br /> Department, EBSU
                       </div>
                     </div>
                   </a>
