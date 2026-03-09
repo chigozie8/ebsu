@@ -9,7 +9,7 @@ import img8 from "../../assets/img/gallery/e.heif";
 import img9 from "../../assets/img/gallery/d.heif";
 import img10 from "../../assets/img/gallery/a.jpg";
 import img11 from "../../assets/img/gallery/b.jpg";
-import img12 from "../../assets/img/gallery/office.jpg";
+import img12 from "../../assets/img/gallery/HEALTH1.jpg";
 import Lottie from "lottie-react";
 import gallery from "../../json/animation/gallery.json";
 import { motion } from "framer-motion";
