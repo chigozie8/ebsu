@@ -81,8 +81,14 @@ export const useUploadProfileImage = () => {
 
         setImageURL(downloadURL);
         setImageFileID(fileId);
+
+        // Automatically save to Firestore so image persists
+        await updateDoc(doc(db, "userInfo", userID), {
+          profileImageURL: downloadURL,
+          profileImageID: fileId,
+        });
+
         notifyUser("success", "Image Uploaded");
-        console.log("Image Uploaded to ImageKit:", downloadURL);
       } catch (error: any) {
         console.error("ImageKit upload error:", error);
         notifyUser("error", "Failed to upload image. Please try again.");
@@ -110,39 +116,25 @@ export const useUploadProfileImage = () => {
   };
 
   const deleteUserProfileImage = async () => {
-    console.log("[v0] deleteUserProfileImage called");
-    console.log("[v0] userID:", userID);
-    console.log("[v0] studentDetails:", studentDetails);
-    
     if (userID && studentDetails) {
       try {
-        console.log("[v0] Starting delete process...");
         setDeletingProfileImage(true);
 
-        // Note: ImageKit delete requires server-side API call with private key
-        // We'll clear the reference in Firestore; for full deletion from ImageKit,
-        // you would need a separate server endpoint
-
         // Clear the profile image reference in Firestore
-        console.log("[v0] Updating Firestore document...");
         await updateDoc(doc(db, "userInfo", userID), {
           profileImageURL: "",
           profileImageID: "",
         });
 
-        console.log("[v0] Firestore update successful");
         setDeletingProfileImage(false);
         setOpenDeleteProfileImageModal(false);
         notifyUser("success", "Profile picture deleted");
       } catch (err) {
-        console.log("[v0] Error during delete:", err);
+        console.error("Error deleting profile image:", err);
         notifyUser("error", "Something went wrong. Please try again");
         setOpenDeleteProfileImageModal(false);
         setDeletingProfileImage(false);
       }
-    } else {
-      console.log("[v0] Bug!! userID or studentDetails is missing");
-      console.log("[v0] userID:", userID, "studentDetails:", studentDetails);
     }
   };
 
