@@ -3,6 +3,7 @@ import ErrorBoundary from "./pages/error/error-boundry/ErrorBoundary";
 import { CustomToaster } from "./components/toast/CustomToaster";
 import AppProvider from "./provider";
 import { AIChatbot } from "./components/chatbot/AIChatbot";
+import { WhatsAppButton } from "./components/contact/WhatsAppButton";
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
           <AppRoutes />
           <CustomToaster />
           <AIChatbot />
+          <WhatsAppButton />
         </AppProvider>
       </ErrorBoundary>
     </>
