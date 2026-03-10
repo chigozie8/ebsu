@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import Lottie from "lottie-react";
@@ -8,94 +7,18 @@ import { EmailIcon } from "../../../components/icons/socials/EmailIcon";
 import { GraduateCapIcon } from "../../../components/icons/general/GraduateCapIcon";
 import { ClockIcon } from "../../../components/icons/general/ClockIcon";
 import { RegisterIcon } from "../../../components/icons/general/RegisterIcon";
-import { TrashIcon } from "../../../components/icons/general/TrashIcon";
-import {
-  Popover,
-  PopoverHandler,
-  PopoverContent,
-} from "@material-tailwind/react";
 import { useModalContext } from "../../../context/Modal";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { BadNetworkIcon } from "../../../components/icons/general/BadNetworkIcon";
 import { EditProfileModal } from "../../../components/modal/EditProfileModal";
-import { DeleteProfileImage } from "../../../components/modal/DeleteProfileImage";
 
 export default function StudentProfile() {
   const { studentDetails, gettingStudentDetails, gettingStudentDetailsErr } =
     useGetUserInfo();
   const {
-    setOpenDeleteProfileImageModal,
     setOpenEditProfileModal,
     setOpenSignOutModal,
   } = useModalContext();
-
-  const renderProfileImage = () => {
-    if (studentDetails) {
-      if (studentDetails.profileImageURL && studentDetails.profileImageURL.length > 0) {
-        return (
-          <div>
-            <div
-              className="relative w-[120px] h-[120px] xss:w-[150px] xss:h-[150px] sss:w-[180px] bg-gray-100
-                sss:h-[180px] sm:h-[200px] sm:w-[200px] rounded-full border-[3px] border-green1 p-0.5"
-            >
-              <img
-                src={studentDetails.profileImageURL}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-              />
-
-              <Popover
-                placement="right"
-                animate={{
-                  mount: { scale: 1, y: 0 },
-                  unmount: { scale: 0, y: 25 },
-                }}
-              >
-                <PopoverHandler>
-                  <button
-                    className="z-4 absolute top-4 -right-1 xss:top-6 xss:right-0 sss:top-7 
-                    sss:right-1 sm:top-8 sm:right-1 bg-gray-50 hover:bg-gray-100 rounded-full 
-                    p-1 border border-gray-100"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </PopoverHandler>
-                <PopoverContent
-                  onClick={() => setOpenDeleteProfileImageModal(true)}
-                  placeholder={""}
-                  onResize={() => {}}
-                  onResizeCapture={() => {}}
-                  onPointerEnterCapture={() => {}}
-                  onPointerLeaveCapture={() => {}}
-                  className={` cursor-pointer shadow font-dmSans font-medium p-2 text-[10px] bg-gray-50 sm:text-ss hover:bg-gray-100 rounded-lg`}
-                >
-                  Delete Photo
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        );
-      } else {
-        return (
-          <Lottie
-            animationData={avatar}
-            loop={false}
-            className="w-[130px] xss:w-[150px]
-              sm:w-[180px] mmd:w-[280px]"
-          />
-        );
-      }
-    } else {
-      return (
-        <Lottie
-          animationData={avatar}
-          loop={false}
-          className="w-[150px] xss:w-[180px] sss:w-[200px]
-            sm:w-[230px]"
-        />
-      );
-    }
-  };
 
   return (
     <div className=" bg-gray-50 min-h-screen">
@@ -104,7 +27,11 @@ export default function StudentProfile() {
           <div className="px-3 sm:px-10 md:px-16 xsm:py-[110px] py-[85px]">
             <div className="w-full flex items-center justify-between flex-col xsm:flex-row">
               <div className="flex flex-col xss:flex-row items-center gap-3 w-full xss:basis-2/3 ">
-                {renderProfileImage()}
+                <Lottie
+                  animationData={avatar}
+                  loop={false}
+                  className="w-[130px] xss:w-[150px] sm:w-[180px] mmd:w-[200px]"
+                />
                 <div className="flex flex-col justify-center xss:justify-start xsm:w-full ">
                   <p className="text-xl ss:text-2xl xsm:text-3xl font-bold text-center xss:text-left break-all max-w-full">
                     {studentDetails?.firstName} {studentDetails?.lastName}
@@ -235,7 +162,6 @@ export default function StudentProfile() {
         )}
       </div>
       <EditProfileModal />
-      <DeleteProfileImage />
     </div>
   );
 }

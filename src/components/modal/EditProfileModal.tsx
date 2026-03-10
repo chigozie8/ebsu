@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import { useModalContext } from "../../context/Modal";
 import { CancelIcon } from "../icons/general/CancelIcon";
@@ -8,7 +7,6 @@ import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import Lottie from "lottie-react";
 import { Spinner } from "../../components/loaders/Spinner";
 import avatar from "../../json/animation/avatar1.json";
-import { useUploadProfileImage } from "../../hooks/user-profile/useUploadProfileImage";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { editProfileSchema } from "../../validation";
@@ -21,7 +19,7 @@ import { scaleInVariants1 } from "../../animation/variants";
 
 export const EditProfileModal = () => {
   const { openEditProfileModal, setOpenEditProfileModal } = useModalContext();
-  const { studentDetails, userID } = useGetUserInfo();
+  const { userID } = useGetUserInfo();
   const [editingProfile, setEditingProfile] = useState(false);
   useEffect(() => {
     if (openEditProfileModal) {
@@ -30,16 +28,6 @@ export const EditProfileModal = () => {
       document.body.style.overflow = "visible";
     }
   }, [openEditProfileModal]);
-
-  const {
-    imageFile,
-    imageURL,
-    uploadProfileImage,
-    handleFileChange,
-    updateUserProfileLink,
-    setImageURL,
-    setImageFile,
-  } = useUploadProfileImage();
 
   const {
     register,
@@ -55,21 +43,10 @@ export const EditProfileModal = () => {
       level: "",
     },
   });
-  useEffect(() => {
-    const defaults = {
-      firstName: studentDetails?.firstName,
-      lastName: studentDetails?.lastName,
-      level: studentDetails?.level,
-      regNo: studentDetails?.regNo,
-    };
-    reset(defaults);
-  }, [reset, openEditProfileModal]);
 
   const closeEditProfileModal = () => {
     setOpenEditProfileModal(false);
     reset();
-    setImageURL(null);
-    setImageFile(null);
   };
 
   const editProfile = async (data: IEditProfileForm) => {
@@ -85,11 +62,8 @@ export const EditProfileModal = () => {
           regNo,
           level,
         });
-        await updateUserProfileLink();
         setEditingProfile(false);
         setOpenEditProfileModal(false);
-        setImageURL(null);
-        setImageFile(null);
         reset();
         notifyUser("success", "User profile updated successfully...");
       } catch (err: any) {
@@ -99,45 +73,6 @@ export const EditProfileModal = () => {
       }
     } else {
       console.log("error");
-    }
-  };
-
-  const renderProfileImage = () => {
-    if (studentDetails) {
-      if (studentDetails.profileImageURL.length > 0 || imageURL) {
-        return (
-          <div>
-            <div
-              className="relative w-[80px] h-[80px] xss:w-[90px] xss:h-[90px] sss:w-[120px] bg-gray-100
-                sss:h-[120px] sm:h-[140px] sm:w-[140px] rounded-full"
-            >
-              <img
-                src={imageURL ? imageURL : studentDetails.profileImageURL}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-              />
-            </div>
-          </div>
-        );
-      } else {
-        return (
-          <Lottie
-            animationData={avatar}
-            loop={false}
-            className="w-[120px] xss:w-[150px] sss:w-[180px]
-              sm:w-[200px]"
-          />
-        );
-      }
-    } else {
-      return (
-        <Lottie
-          animationData={avatar}
-          loop={false}
-          className="w-[120px] xss:w-[150px] sss:w-[180px]
-            sm:w-[200px]"
-        />
-      );
     }
   };
   return (
@@ -166,43 +101,15 @@ export const EditProfileModal = () => {
           </div>
 
           <div>
-            <div className="flex flex-col sss:flex-row items-center gap-3 w-full mmd:w-fit py-4 px-3 ss:px-5 sss:px-7 ">
-              {renderProfileImage()}
-              <div className="flex items-center justify-between flex-col w-full ">
-                <div className="flex items-center flex-wrap gap-1 ss:gap-1 w-full  justify-center sss:justify-start">
-                  <div className="flex items-center justify-start">
-                    <div className="">
-                      <input
-                        type="file"
-                        id="profile-input"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e)}
-                        hidden
-                      />
-                      <label
-                        htmlFor="profile-input"
-                        className="block text-slate-500 p-1.5 xss:py-2 xss:px-4
-                          border border-gray-700 text-sss xss:text-xss sm:text-sm font-medium bg-gray-700
-                        text-white hover:bg-gray-700/80 transition hover:border-gray-700/80 cursor-pointer rounded-l-md xss:rounded-l-lg"
-                      >
-                        Choose Image
-                      </label>
-                    </div>
-                    <label className="text-sss xss:text-xss sm:text-sm text-slate-500 font-medium p-1.5 xss:py-2 xss:px-4 border border-gray-400 rounded-r-md xss:rounded-r-lg">
-                      {imageFile ? imageFile.name : "No file chosen"}
-                    </label>
-                  </div>
-                  <div className="">
-                    <button
-                      onClick={uploadProfileImage}
-                      className="min-w-fit  flex items-center justify-center rounded-md xss:rounded-lg bg-green1
-                       font-semibold text-white border-2 border-transparent hover:bg-green1/90 transition duration-200 ease-in-out p-1.5 xss:py-2 xss:px-4 text-sss xss:text-xss sm:text-sm"
-                    >
-                      <span>Upload</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-3 w-full py-4 px-3 ss:px-5 sss:px-7">
+              <Lottie
+                animationData={avatar}
+                loop={false}
+                className="w-[80px] xss:w-[100px] sm:w-[120px]"
+              />
+              <p className="text-sm sm:text-base font-semibold text-gray-700">
+                Update your profile information
+              </p>
             </div>
             <div className="px-3 ss:px-5 sss:px-7 mb-4 sm:mb-7">
               <form onSubmit={handleSubmit(editProfile)}>
