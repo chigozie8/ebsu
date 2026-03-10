@@ -16,7 +16,7 @@ export default function SignUp() {
   } = useForm<ISignUpForm>({ resolver: yupResolver(signUpSchema) });
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-white">
       <div className=" w-full min-h-screen flex items-center justify-center  sm:px-10 pt-24 pb-10">
         <div className=" bg-white rounded-lg shadow w-[95%] sm:min-w-[650px] sm:w-auto">
           <form

@@ -60,7 +60,7 @@ export default function LearningResources() {
   const currentLevels = section === "preclinical" ? preclinicalLevels : clinicalLevels;
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen w-full bg-white">
       <div className="box-width">
         <div className="py-20 sm:py-24">
           <div className="w-full flex items-center justify-center mb-6 flex-col px-3 ss:px-8 sm:px-14">

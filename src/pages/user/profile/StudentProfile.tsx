@@ -21,7 +21,7 @@ export default function StudentProfile() {
   } = useModalContext();
 
   return (
-    <div className=" bg-gray-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       <div className="box-width">
         {studentDetails ? (
           <div className="px-3 sm:px-10 md:px-16 xsm:py-[110px] py-[85px]">

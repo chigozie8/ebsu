@@ -178,7 +178,7 @@ export default function ResourcesPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
+    <div className="bg-white min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
       <div className="max-w-7xl mx-auto px-4">
         <motion.div
           variants={fadeInVariants5}

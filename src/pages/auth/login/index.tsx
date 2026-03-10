@@ -15,7 +15,7 @@ export default function Login() {
   } = useForm<ILoginForm>({ resolver: yupResolver(logInSchema) });
 
   return (
-    <section className="bg-gray-50">
+    <section className="bg-white">
       <div className="flex items-center justify-center px-4 sm:px-6 py-8 mx-auto h-screen lg:py-0">
         <div className="w-full bg-white rounded-lg shadow border border-gray-200 mt-16 max-w-md sm:max-w-lg xl:p-0">
           <div className=" space-y-4 md:space-y-6 p-3 ss:p-6 sm:p-8">

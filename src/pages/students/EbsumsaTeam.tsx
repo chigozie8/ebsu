@@ -173,7 +173,7 @@ export default function EbsumsaTeam() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="box-width">
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
           {/* Header */}

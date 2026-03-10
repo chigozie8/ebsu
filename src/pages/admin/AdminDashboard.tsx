@@ -663,7 +663,7 @@ export default function AdminDashboard() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center p-8 bg-white rounded-2xl shadow-lg">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -689,7 +689,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
+    <div className="bg-white min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
       <div className="max-w-7xl mx-auto px-4">
         <motion.div
           variants={fadeInVariants5}

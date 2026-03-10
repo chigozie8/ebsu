@@ -45,7 +45,7 @@ export default function LearningResourcesCourses() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="box-width2">
         <div className="page-section">
           <div className="w-full flex items-center justify-center mb-6 flex-col">

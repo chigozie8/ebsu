@@ -36,7 +36,7 @@ export default function CourseOutlines() {
     }
   }, [level, course, semester, courseInfo]);
   return (
-    <div className="min-h-screen w-full bg-gray-50">
+    <div className="min-h-screen w-full bg-white">
       <div className="box-width">
         <div className="px-3 ss:px-8 sm:px-14 sm:py-24 pt-20">
           <div className="w-full flex items-center justify-center mb-6 flex-col">
