@@ -133,7 +133,6 @@ export default function Gallery() {
   const [visibleCount, setVisibleCount] = useState(20); // For infinite scroll in modal
 
   const previewImages = allImages.slice(0, PREVIEW_COUNT);
-  const remainingCount = allImages.length - PREVIEW_COUNT;
 
   // Load more images when scrolling in grid view
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -219,22 +218,32 @@ export default function Gallery() {
                 </div>
 
                 {/* View All Button */}
-                {remainingCount > 0 && (
+                {allImages.length > PREVIEW_COUNT && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: 0.5 }}
-                    className="mt-6 flex justify-center"
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                    className="mt-8 flex justify-center"
                   >
                     <button
                       onClick={() => openModal(0, "grid")}
-                      className="group flex items-center gap-2 px-6 py-3 bg-green1 text-white rounded-full font-medium text-sm hover:bg-green5 transition-all shadow-lg hover:shadow-xl"
+                      className="group relative overflow-hidden bg-white border-2 border-green1 rounded-xl px-6 py-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-green1/20 hover:border-green2"
                     >
-                      <IoGrid className="text-lg" />
-                      View All Photos
-                      <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                        {allImages.length}
+                      {/* Background hover effect */}
+                      <span className="absolute inset-0 bg-gradient-to-r from-green1 to-green2 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                      
+                      {/* Button content */}
+                      <span className="relative flex items-center gap-3">
+                        <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green1 group-hover:bg-white/20 transition-colors duration-300">
+                          <IoImages className="text-xl text-white group-hover:text-white" />
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
+                          View All Photos
+                        </span>
+                        <span className="flex items-center justify-center ml-2 w-8 h-8 rounded-full bg-green1/10 group-hover:bg-white/20 transition-colors duration-300">
+                          <IoChevronForward className="text-green1 group-hover:text-white transition-colors duration-300" />
+                        </span>
                       </span>
                     </button>
                   </motion.div>
