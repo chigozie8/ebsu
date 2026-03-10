@@ -42,8 +42,8 @@ interface IDCardRegistration {
   createdAt: any;
 }
 
-// Admin email - you can change this to your admin email
-const ADMIN_EMAIL = "admin@ebsu.edu.ng";
+// Admin email - add your admin email here
+const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
