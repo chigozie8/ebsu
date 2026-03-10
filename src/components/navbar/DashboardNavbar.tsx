@@ -202,7 +202,17 @@ export const DashboardNavbar = () => {
                     <Dropdown
                       arrowIcon={false}
                       inline
-                      className="z-[9999] "
+                      className="z-[9999]"
+                      theme={{
+                        floating: {
+                          base: "z-10 w-fit divide-y divide-gray-100 rounded-lg shadow focus:outline-none",
+                          content: "py-1 text-sm text-gray-700",
+                          target: "w-fit",
+                          style: {
+                            auto: "border border-gray-200 bg-white text-gray-900",
+                          },
+                        },
+                      }}
                       label={
                         <>
                           {studentDetails &&
