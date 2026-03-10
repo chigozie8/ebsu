@@ -18,15 +18,21 @@ import { Spinner } from "../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
+import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
 
 interface Material {
   id: string;
   title: string;
   description: string;
-  category: string;
+  resourceType: "handouts" | "textbooks" | "pastquestions";
   level: string;
+  semester: "First" | "Second";
+  courseCode: string;
+  section: "preclinical" | "clinical";
   fileUrl: string;
   fileName: string;
+  filePath: string;
+  fileSize: number;
   uploadedBy: string;
   createdAt: any;
 }
@@ -110,10 +116,14 @@ export default function AdminDashboard() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "",
+    resourceType: "" as "" | "handouts" | "textbooks" | "pastquestions",
     level: "",
+    semester: "" as "" | "First" | "Second",
+    courseCode: "",
+    section: "preclinical" as "preclinical" | "clinical",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [availableMaterialCourses, setAvailableMaterialCourses] = useState<{courseCode: string; courseTitle: string}[]>([]);
 
   // Blog form state - matches the Blog page data structure
   const [blogFormData, setBlogFormData] = useState({
@@ -290,8 +300,10 @@ export default function AdminDashboard() {
 
     if (
       !formData.title ||
-      !formData.category ||
+      !formData.resourceType ||
       !formData.level ||
+      !formData.semester ||
+      !formData.courseCode ||
       !selectedFile
     ) {
       notifyUser("error", "Please fill in all required fields");
@@ -303,15 +315,36 @@ export default function AdminDashboard() {
     try {
       notifyUser("loading", "Uploading material...");
 
-      const fileUrl = await uploadFileToSupabase(selectedFile);
+      // Upload to Supabase Storage with the correct folder structure
+      // Path: levels/{level}/{course}/{resourcesType}/{filename}
+      const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${Date.now()}-${selectedFile.name}`;
+      
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
 
+      if (error) {
+        throw new Error(`Failed to upload file: ${error.message}`);
+      }
+
+      const fileUrl = getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
+
+      // Save metadata to Firestore
       await addDoc(collection(db, "learningMaterials"), {
         title: formData.title,
         description: formData.description,
-        category: formData.category,
+        resourceType: formData.resourceType,
         level: formData.level,
+        semester: formData.semester,
+        courseCode: formData.courseCode,
+        section: formData.section,
         fileUrl: fileUrl,
         fileName: selectedFile.name,
+        filePath: filePath,
+        fileSize: selectedFile.size,
         uploadedBy: studentDetails?.email || "Admin",
         createdAt: serverTimestamp(),
       });
@@ -321,10 +354,14 @@ export default function AdminDashboard() {
       setFormData({
         title: "",
         description: "",
-        category: "",
+        resourceType: "",
         level: "",
+        semester: "",
+        courseCode: "",
+        section: "preclinical",
       });
       setSelectedFile(null);
+      setAvailableMaterialCourses([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -338,10 +375,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteMaterial = async (materialId: string) => {
+  const handleDeleteMaterial = async (materialId: string, filePath?: string) => {
     if (!confirm("Are you sure you want to delete this material?")) return;
 
     try {
+      // Delete from Supabase storage if filePath exists
+      if (filePath) {
+        await supabase.storage
+          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+          .remove([filePath]);
+      }
+      
+      // Delete from Firestore
       await deleteDoc(doc(db, "learningMaterials", materialId));
       notifyUser("success", "Material deleted successfully");
       fetchMaterials();
@@ -973,25 +1018,56 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Section Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category <span className="text-red-500">*</span>
+                    Section <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  >
-                    <option value="">Select category</option>
-                    <option value="lecture-notes">Lecture Notes</option>
-                    <option value="past-questions">Past Questions</option>
-                    <option value="textbooks">Textbooks</option>
-                    <option value="practicals">Practicals</option>
-                    <option value="others">Others</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          section: "preclinical", 
+                          level: "", 
+                          courseCode: "",
+                          semester: "" 
+                        }));
+                        setAvailableMaterialCourses([]);
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        formData.section === "preclinical"
+                          ? "bg-green2 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Preclinical (100-300L)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          section: "clinical", 
+                          level: "", 
+                          courseCode: "",
+                          semester: "" 
+                        }));
+                        setAvailableMaterialCourses([]);
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                        formData.section === "clinical"
+                          ? "bg-green2 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      Clinical (400-600L)
+                    </button>
+                  </div>
                 </div>
 
+                {/* Level Selection */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Level <span className="text-red-500">*</span>
@@ -999,16 +1075,97 @@ export default function AdminDashboard() {
                   <select
                     name="level"
                     value={formData.level}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      const newLevel = e.target.value;
+                      setFormData(prev => ({ ...prev, level: newLevel, courseCode: "" }));
+                      if (newLevel && formData.semester) {
+                        const courses = getCoursesForLevelAndSemester(newLevel, formData.semester as "First" | "Second");
+                        setAvailableMaterialCourses(courses);
+                      }
+                    }}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
                   >
                     <option value="">Select Level</option>
-                    <option value="100">100 Level</option>
-                    <option value="200">200 Level</option>
-                    <option value="300">300 Level</option>
-                    <option value="400">400 Level</option>
-                    <option value="500">500 Level</option>
-                    <option value="600">600 Level</option>
+                    {formData.section === "preclinical" ? (
+                      <>
+                        <option value="100">100 Level (Year 1)</option>
+                        <option value="200">200 Level (Year 2)</option>
+                        <option value="300">300 Level (Year 3)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="400">400 Level (Year 4)</option>
+                        <option value="500">500 Level (Year 5)</option>
+                        <option value="600">600 Level (Year 6)</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                {/* Semester Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Semester <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="semester"
+                    value={formData.semester}
+                    onChange={(e) => {
+                      const newSemester = e.target.value as "First" | "Second";
+                      setFormData(prev => ({ ...prev, semester: newSemester, courseCode: "" }));
+                      if (formData.level && newSemester) {
+                        const courses = getCoursesForLevelAndSemester(formData.level, newSemester);
+                        setAvailableMaterialCourses(courses);
+                      }
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="">Select Semester</option>
+                    <option value="First">First Semester</option>
+                    <option value="Second">Second Semester</option>
+                  </select>
+                </div>
+
+                {/* Course Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="courseCode"
+                    value={formData.courseCode}
+                    onChange={handleInputChange}
+                    disabled={!formData.level || !formData.semester}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {!formData.level || !formData.semester 
+                        ? "Select level & semester first" 
+                        : "Select Course"}
+                    </option>
+                    {availableMaterialCourses.map((course) => (
+                      <option key={course.courseCode} value={course.courseCode}>
+                        {course.courseCode} - {course.courseTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Resource Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resource Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="resourceType"
+                    value={formData.resourceType}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="">Select Resource Type</option>
+                    <option value="handouts">Handouts / Lecture Notes</option>
+                    <option value="textbooks">Textbooks / PDFs</option>
+                    <option value="pastquestions">Past Questions</option>
                   </select>
                 </div>
 
@@ -1075,12 +1232,23 @@ export default function AdminDashboard() {
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                     >
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-gray-900 text-sm">
                           {material.title}
                         </h3>
-                        <p className="text-sm text-gray-500">
-                          {material.category} | Level {material.level}
-                        </p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded">
+                            {material.level}L
+                          </span>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+                            {material.semester || "N/A"}
+                          </span>
+                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
+                            {material.courseCode || material.resourceType || "N/A"}
+                          </span>
+                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded capitalize">
+                            {material.resourceType || "material"}
+                          </span>
+                        </div>
                         <p className="text-xs text-gray-400 mt-1">
                           {material.fileName}
                         </p>
@@ -1095,7 +1263,7 @@ export default function AdminDashboard() {
                           View
                         </a>
                         <button
-                          onClick={() => handleDeleteMaterial(material.id)}
+                          onClick={() => handleDeleteMaterial(material.id, material.filePath)}
                           className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
                         >
                           Delete
