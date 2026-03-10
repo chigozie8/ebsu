@@ -2,6 +2,20 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Declare puter as a global variable
+declare global {
+  interface Window {
+    puter: {
+      ai: {
+        chat: (
+          message: string | Array<{ role: string; content: string }>,
+          options?: { model?: string; stream?: boolean }
+        ) => Promise<any>;
+      };
+    };
+  }
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -10,14 +24,10 @@ interface Message {
 
 export const AIChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(() => {
-    return localStorage.getItem("openai_api_key") || "";
-  });
-  const [tempApiKey, setTempApiKey] = useState(apiKey);
+  const [streamingContent, setStreamingContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -26,21 +36,10 @@ export const AIChatbot = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  const saveApiKey = () => {
-    localStorage.setItem("openai_api_key", tempApiKey);
-    setApiKey(tempApiKey);
-    setIsSettingsOpen(false);
-  };
+  }, [messages, streamingContent]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
-    if (!apiKey) {
-      setIsSettingsOpen(true);
-      return;
-    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -49,55 +48,58 @@ export const AIChatbot = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput("");
     setIsLoading(true);
+    setStreamingContent("");
 
     try {
-      const response = await fetch(
-        "https://api.openai.com/v1/chat/completions",
+      // Build conversation history for context
+      const conversationHistory = [
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a helpful assistant for EBSU (Ebonyi State University) medical students. You help with academic questions, course information, and general guidance. Be friendly and concise.",
-              },
-              ...messages.map((m) => ({ role: m.role, content: m.content })),
-              { role: "user", content: input },
-            ],
-            max_tokens: 1000,
-          }),
-        }
-      );
+          role: "system",
+          content:
+            "You are a helpful assistant for EBSU (Ebonyi State University) medical students. You help with academic questions, course information, medical topics, and general guidance. Be friendly, knowledgeable, and concise. When answering medical questions, be accurate but remind students to always consult their professors and textbooks for exam-specific information.",
+        },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user", content: currentInput },
+      ];
 
-      if (!response.ok) {
-        throw new Error("Failed to get response");
+      // Use Puter.js AI chat with streaming
+      const response = await window.puter.ai.chat(conversationHistory, {
+        model: "gpt-4o-mini",
+        stream: true,
+      });
+
+      let fullContent = "";
+
+      // Handle streaming response
+      for await (const part of response) {
+        if (part?.text) {
+          fullContent += part.text;
+          setStreamingContent(fullContent);
+        }
       }
 
-      const data = await response.json();
+      // Add the complete assistant message
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.choices[0].message.content,
+        content: fullContent,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      setStreamingContent("");
     } catch (error: any) {
       console.error("Chat error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content:
-          "Sorry, I encountered an error. Please check your API key and try again.",
+          "Sorry, I encountered an error. Please try again in a moment.",
       };
       setMessages((prev) => [...prev, errorMessage]);
+      setStreamingContent("");
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +110,11 @@ export const AIChatbot = () => {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    setStreamingContent("");
   };
 
   return (
@@ -175,13 +182,13 @@ export const AIChatbot = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">EBSU AI Assistant</h3>
-                  <p className="text-xs text-white/80">Ask me anything</p>
+                  <p className="text-xs text-white/80">Powered by GPT</p>
                 </div>
               </div>
               <button
-                onClick={() => setIsSettingsOpen(true)}
+                onClick={clearChat}
                 className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                title="Settings"
+                title="Clear chat"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -194,71 +201,15 @@ export const AIChatbot = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
               </button>
             </div>
 
-            {/* Settings Panel */}
-            {isSettingsOpen && (
-              <div className="absolute inset-0 bg-white z-10 flex flex-col">
-                <div className="bg-green2 text-white p-4 flex items-center gap-3">
-                  <button
-                    onClick={() => setIsSettingsOpen(false)}
-                    className="p-1 hover:bg-white/10 rounded"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 19l-7-7 7-7"
-                      />
-                    </svg>
-                  </button>
-                  <h3 className="font-bold text-sm">API Settings</h3>
-                </div>
-                <div className="p-4 flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    OpenAI API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={tempApiKey}
-                    onChange={(e) => setTempApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    Your API key is stored locally and never sent to our
-                    servers.
-                  </p>
-                  <button
-                    onClick={saveApiKey}
-                    className="mt-4 w-full bg-green2 hover:bg-green1 text-white py-3 rounded-lg font-medium transition-colors text-sm"
-                  >
-                    Save API Key
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.length === 0 && (
+              {messages.length === 0 && !streamingContent && (
                 <div className="text-center text-gray-500 mt-16">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -274,9 +225,9 @@ export const AIChatbot = () => {
                       d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                     />
                   </svg>
-                  <p className="text-sm">Start a conversation!</p>
+                  <p className="text-sm font-medium">Start a conversation!</p>
                   <p className="text-xs mt-1">
-                    Ask me about courses, academics, or anything else.
+                    Ask me about courses, medical topics, or anything else.
                   </p>
                 </div>
               )}
@@ -286,7 +237,7 @@ export const AIChatbot = () => {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] p-3 rounded-2xl text-sm ${
+                    className={`max-w-[80%] p-3 rounded-2xl text-sm whitespace-pre-wrap ${
                       message.role === "user"
                         ? "bg-green2 text-white rounded-br-md"
                         : "bg-gray-100 text-gray-800 rounded-bl-md"
@@ -296,7 +247,17 @@ export const AIChatbot = () => {
                   </div>
                 </div>
               ))}
-              {isLoading && (
+              {/* Streaming response */}
+              {streamingContent && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] p-3 rounded-2xl rounded-bl-md bg-gray-100 text-gray-800 text-sm whitespace-pre-wrap">
+                    {streamingContent}
+                    <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
+                  </div>
+                </div>
+              )}
+              {/* Loading indicator */}
+              {isLoading && !streamingContent && (
                 <div className="flex justify-start">
                   <div className="bg-gray-100 p-3 rounded-2xl rounded-bl-md">
                     <div className="flex space-x-1">
@@ -324,10 +285,8 @@ export const AIChatbot = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={
-                    apiKey ? "Type a message..." : "Set API key first..."
-                  }
-                  disabled={!apiKey}
+                  placeholder="Type a message..."
+                  disabled={isLoading}
                   className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm disabled:bg-gray-100"
                 />
                 <button
