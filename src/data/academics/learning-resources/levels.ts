@@ -1,14 +1,7 @@
-type SectionType = "preclinical" | "clinical";
-
-interface LevelData {
-  level: string;
-  title: string;
-  desc: string;
-  section: SectionType;
-}
+import { LevelCard } from "../../../models/academics/learning-resources";
 
 // Preclinical levels (Year 1-3)
-export const preclinicalLevels: LevelData[] = [
+export const preclinicalLevels: LevelCard[] = [
   {
     level: "100",
     title: "100 Level (Year 1)",
@@ -30,7 +23,7 @@ export const preclinicalLevels: LevelData[] = [
 ];
 
 // Clinical levels (Year 4-6)
-export const clinicalLevels: LevelData[] = [
+export const clinicalLevels: LevelCard[] = [
   {
     level: "400",
     title: "400 Level (Year 4)",
@@ -52,5 +45,5 @@ export const clinicalLevels: LevelData[] = [
 ];
 
 // Combined for backward compatibility
-export const learningResourcesLevels: LevelData[] = [...preclinicalLevels, ...clinicalLevels];
+export const learningResourcesLevels: LevelCard[] = [...preclinicalLevels, ...clinicalLevels];
   
