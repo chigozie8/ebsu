@@ -114,14 +114,9 @@ export const useUploadProfileImage = () => {
       try {
         setDeletingProfileImage(true);
 
-        // Delete from ImageKit if we have a fileId
-        if (studentDetails.profileImageID) {
-          const authParams = await getImageKitAuthParams();
-
-          // Note: ImageKit delete requires server-side API call
-          // We'll clear the reference in Firestore; the image will remain in ImageKit
-          // For full deletion, you'd need a separate server endpoint
-        }
+        // Note: ImageKit delete requires server-side API call with private key
+        // We'll clear the reference in Firestore; for full deletion from ImageKit,
+        // you would need a separate server endpoint
 
         // Clear the profile image reference in Firestore
         await updateDoc(doc(db, "userInfo", userID), {
