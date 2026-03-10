@@ -272,7 +272,7 @@ export const GeneralNavbar = () => {
             ></div>
 
             <div
-              className={`dashboard-links px-2 py-4 sm:p-4 fixed top-0 left-0 w-[240px] sm:w-[270px] h-screen bg-white shadow z-[6] transition duration-300 ease-in-out transform ${
+              className={`dashboard-links pl-4 pr-2 py-4 sm:pl-6 sm:pr-4 fixed top-0 left-0 w-[240px] sm:w-[270px] h-screen bg-white shadow z-[6] transition duration-300 ease-in-out transform ${
                 isNavOpen ? "translate-x-0" : "-translate-x-full"
               }`}
             >
