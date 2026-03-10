@@ -239,13 +239,8 @@ export default function Gallery() {
                         <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green1 group-hover:bg-white/20 transition-colors duration-300">
                           <IoImages className="text-xl text-white group-hover:text-white" />
                         </span>
-                        <span className="flex flex-col items-start">
-                          <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
-                            View All Photos
-                          </span>
-                          <span className="text-xs text-gray-500 group-hover:text-white/80 transition-colors duration-300">
-                            {allImages.length} images in gallery
-                          </span>
+                        <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
+                          View All Photos
                         </span>
                         <span className="flex items-center justify-center ml-2 w-8 h-8 rounded-full bg-green1/10 group-hover:bg-white/20 transition-colors duration-300">
                           <IoChevronForward className="text-green1 group-hover:text-white transition-colors duration-300" />
