@@ -7,7 +7,7 @@ import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
-import { imagekitConfig, getImageKitAuthParams } from "../../../config/imagekit";
+import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
 
 export default function IDCardRegistration() {
   const { userID, studentDetails } = useGetUserInfo();
@@ -49,32 +49,25 @@ export default function IDCardRegistration() {
     }
   };
 
-  const uploadImageToImageKit = async (file: File): Promise<string> => {
-    const authParams = await getImageKitAuthParams();
+  const uploadImageToSupabase = async (file: File): Promise<string> => {
+    // Generate unique file path for Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userID}/id-card-${Date.now()}.${fileExt}`;
 
-    const formDataUpload = new FormData();
-    formDataUpload.append("file", file);
-    formDataUpload.append("publicKey", imagekitConfig.publicKey);
-    formDataUpload.append("signature", authParams.signature);
-    formDataUpload.append("expire", authParams.expire.toString());
-    formDataUpload.append("token", authParams.token);
-    formDataUpload.append("fileName", `id-card-${userID}-${Date.now()}`);
-    formDataUpload.append("folder", `/id-cards/${userID}`);
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKETS.ID_CARDS)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
 
-    const response = await fetch(
-      "https://upload.imagekit.io/api/v1/files/upload",
-      {
-        method: "POST",
-        body: formDataUpload,
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to upload image");
+    if (error) {
+      throw new Error(`Failed to upload image: ${error.message}`);
     }
 
-    const result = await response.json();
-    return result.url;
+    // Get the public URL
+    return getPublicUrl(STORAGE_BUCKETS.ID_CARDS, data.path);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,8 +93,8 @@ export default function IDCardRegistration() {
     try {
       notifyUser("loading", "Uploading your ID card registration...");
 
-      // Upload image to ImageKit
-      const imageUrl = await uploadImageToImageKit(imageFile);
+      // Upload image to Supabase Storage
+      const imageUrl = await uploadImageToSupabase(imageFile);
 
       // Save to Firestore
       await addDoc(collection(db, "idCardRegistrations"), {

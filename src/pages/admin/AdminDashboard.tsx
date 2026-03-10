@@ -16,7 +16,7 @@ import { notifyUser } from "../../helpers/notifyUser";
 import { Spinner } from "../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
-import { imagekitConfig, getImageKitAuthParams } from "../../config/imagekit";
+import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 
 interface Material {
   id: string;
@@ -128,32 +128,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const uploadFileToImageKit = async (file: File): Promise<string> => {
-    const authParams = await getImageKitAuthParams();
+  const uploadFileToSupabase = async (file: File): Promise<string> => {
+    // Generate unique file path for Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `materials/${Date.now()}-${file.name}`;
 
-    const formDataUpload = new FormData();
-    formDataUpload.append("file", file);
-    formDataUpload.append("publicKey", imagekitConfig.publicKey);
-    formDataUpload.append("signature", authParams.signature);
-    formDataUpload.append("expire", authParams.expire.toString());
-    formDataUpload.append("token", authParams.token);
-    formDataUpload.append("fileName", `material-${Date.now()}-${file.name}`);
-    formDataUpload.append("folder", `/learning-materials`);
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true,
+      });
 
-    const response = await fetch(
-      "https://upload.imagekit.io/api/v1/files/upload",
-      {
-        method: "POST",
-        body: formDataUpload,
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to upload file");
+    if (error) {
+      throw new Error(`Failed to upload file: ${error.message}`);
     }
 
-    const result = await response.json();
-    return result.url;
+    // Get the public URL
+    return getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
   };
 
   const handleUploadMaterial = async (e: React.FormEvent) => {
@@ -174,7 +167,7 @@ export default function AdminDashboard() {
     try {
       notifyUser("loading", "Uploading material...");
 
-      const fileUrl = await uploadFileToImageKit(selectedFile);
+      const fileUrl = await uploadFileToSupabase(selectedFile);
 
       await addDoc(collection(db, "learningMaterials"), {
         title: formData.title,

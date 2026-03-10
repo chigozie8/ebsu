@@ -7,7 +7,7 @@ import { db } from "../../config/firebase";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { updateDoc, doc } from "firebase/firestore";
 import { useModalContext } from "../../context/Modal";
-import { imagekitConfig, getImageKitAuthParams } from "../../config/imagekit";
+import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 
 export const useUploadProfileImage = () => {
   const { studentDetails, userID } = useGetUserInfo();
@@ -46,38 +46,25 @@ export const useUploadProfileImage = () => {
       try {
         notifyUser("loading", "Uploading Image");
 
-        // Get authentication parameters from our API
-        const authParams = await getImageKitAuthParams();
+        // Generate unique file path for Supabase Storage
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${userID}/${studentDetails?.email}-${Date.now()}.${fileExt}`;
 
-        // Create form data for ImageKit upload
-        const formData = new FormData();
-        formData.append("file", imageFile);
-        formData.append("publicKey", imagekitConfig.publicKey);
-        formData.append("signature", authParams.signature);
-        formData.append("expire", authParams.expire.toString());
-        formData.append("token", authParams.token);
-        formData.append(
-          "fileName",
-          `${studentDetails?.email}-${userID}-${Date.now()}`
-        );
-        formData.append("folder", `/profile-pictures/${userID}`);
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from(STORAGE_BUCKETS.PROFILE_PICTURES)
+          .upload(fileName, imageFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
 
-        // Upload to ImageKit
-        const uploadResponse = await fetch(
-          "https://upload.imagekit.io/api/v1/files/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload image to ImageKit");
+        if (error) {
+          throw new Error(`Failed to upload image: ${error.message}`);
         }
 
-        const uploadResult = await uploadResponse.json();
-        const downloadURL = uploadResult.url;
-        const fileId = uploadResult.fileId;
+        // Get the public URL
+        const downloadURL = getPublicUrl(STORAGE_BUCKETS.PROFILE_PICTURES, data.path);
+        const fileId = data.path;
 
         setImageURL(downloadURL);
         setImageFileID(fileId);
@@ -90,7 +77,7 @@ export const useUploadProfileImage = () => {
 
         notifyUser("success", "Image Uploaded");
       } catch (error: any) {
-        console.error("ImageKit upload error:", error);
+        console.error("Supabase upload error:", error);
         notifyUser("error", "Failed to upload image. Please try again.");
         setUploadError(error);
       }
