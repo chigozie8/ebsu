@@ -1,40 +1,44 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { CourseOptions } from "./CourseOptions";
-import { ICourseInfo } from "../../../../../models/academics/course-outline/courseInfo";
-import { courseInfo100 } from "../../../../../data/academics/course-outlines/levels/100/info/courseInfo100";
-import { courseInfo200 } from "../../../../../data/academics/course-outlines/levels/200/info/courseInfo200";
-import { courseInfo300 } from "../../../../../data/academics/course-outlines/levels/300/info/courseInfo300";
-import { courseInfo400 } from "../../../../../data/academics/course-outlines/levels/400/info/courseInfo400";
-import { courseInfo500 } from "../../../../../data/academics/course-outlines/levels/500/info/courseInfo500";
+import { useFetchCourseOutlines, ICourseDetail, ICourse } from "../../../../../hooks/useFetchCourseOutlines";
 import { OutlineIcon } from "../../../../../components/icons/dashboard/Outline";
 import reading from "../../../../../assets/svg/illustrations/reading.svg";
-export default function CourseOutlines() {
-  const [semester, setSemester] = useState<string | null>();
-  const [level, setLevel] = useState<string | null>();
-  const [course, setCourse] = useState<string | null>();
-  const [courseInfo, setCourseInfo] = useState<ICourseInfo | null>();
+import { Spinner } from "flowbite-react";
 
+export default function CourseOutlines() {
+  const [semester, setSemester] = useState<string | null>(null);
+  const [level, setLevel] = useState<string | null>(null);
+  const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
+
+  const {
+    courses,
+    coursesLoading,
+    coursesError,
+    fetchCoursesByLevel,
+    courseDetail,
+    courseDetailLoading,
+    fetchCourseDetail,
+  } = useFetchCourseOutlines();
+
+  // Fetch courses when level changes
   useEffect(() => {
-    if (semester && course) {
-      if (level === "100") {
-        setCourseInfo(courseInfo100[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "200") {
-        setCourseInfo(courseInfo200[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "300") {
-        setCourseInfo(courseInfo300[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "400") {
-        setCourseInfo(courseInfo400[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "500") {
-        setCourseInfo(courseInfo500[semester][course]);
-        console.log(courseInfo);
-      }
+    if (level) {
+      fetchCoursesByLevel(level);
     }
-  }, [level, course, semester, courseInfo]);
+  }, [level]);
+
+  // Fetch course detail when course is selected
+  useEffect(() => {
+    if (selectedCourseCode) {
+      fetchCourseDetail(selectedCourseCode);
+    }
+  }, [selectedCourseCode]);
+
+  // Filter courses by semester
+  const filteredCourses = courses?.filter(
+    (course) => course.semester === semester
+  ) || [];
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <div className="box-width">
@@ -42,7 +46,6 @@ export default function CourseOutlines() {
           <div className="w-full flex items-center justify-center mb-6 flex-col">
             <div className="mb-4">
               <h1 className="text-md sm:text-xll md:text-2xl font-semibold uppercase text-gray-900 text-center">
-                {" "}
                 Course outlines
               </h1>
               <p className="section-p text-center">
@@ -54,9 +57,10 @@ export default function CourseOutlines() {
                 <select
                   onChange={(e) => {
                     setLevel(e.target.value);
+                    setSelectedCourseCode(null);
                   }}
-                  id="underline_select"
-                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 "
+                  id="level_select"
+                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2"
                 >
                   <option selected disabled>
                     Select Level
@@ -67,65 +71,87 @@ export default function CourseOutlines() {
                   <option value="400">400L</option>
                   <option value="500">500L</option>
                 </select>
-              </div>{" "}
+              </div>
               <div>
                 <select
                   onChange={(e) => {
                     setSemester(e.target.value);
+                    setSelectedCourseCode(null);
                   }}
-                  id="underline_select"
-                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 "
+                  id="semester_select"
+                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2"
                 >
-                  <option selected value={"Select Semester"} disabled>
+                  <option selected disabled>
                     Select Semester
                   </option>
                   <option value="First">First Semester</option>
                   <option value="Second">Second Semester</option>
                 </select>
-              </div>{" "}
+              </div>
               <div>
                 <select
-                  id="underline_select"
-                  onChange={(e) => setCourse(e.target.value)}
-                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 "
+                  id="course_select"
+                  onChange={(e) => setSelectedCourseCode(e.target.value)}
+                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2"
                 >
-                  <option selected disabled defaultChecked>
+                  <option selected disabled>
                     Select Course
                   </option>
-                  {level && semester && (
-                    <CourseOptions semester={semester} level={level} />
+                  {coursesLoading ? (
+                    <option disabled>Loading...</option>
+                  ) : coursesError ? (
+                    <option disabled>Error loading courses</option>
+                  ) : (
+                    filteredCourses.map((course: ICourse) => (
+                      <option key={course.id} value={course.courseCode}>
+                        {course.courseCode}
+                      </option>
+                    ))
                   )}
                 </select>
               </div>
             </div>
-            {courseInfo ? (
+
+            {courseDetailLoading && selectedCourseCode ? (
+              <div className="flex items-center justify-center py-10">
+                <Spinner size="lg" />
+              </div>
+            ) : courseDetail ? (
               <div className="course-info rounded-lg bg-white shadow p-3 sm:p-6 max-w-2xl relative">
                 <div className="relative">
                   <OutlineIcon className="fill-green1 w-4 h-4 xss:w-6 xss:h-6 absolute top-0 right-0" />
                   <div className="mb-4">
-                    <h4 className="font-semibold text-gray-800 text-xs sm:text-base md:text-md ">
-                      {courseInfo.courseTitle}
+                    <h4 className="font-semibold text-gray-800 text-xs sm:text-base md:text-md">
+                      {courseDetail.courseTitle}
                     </h4>
-                    <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs ">
+                    <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs">
                       Course Code:{" "}
                       <span className="font-semibold">
-                        {courseInfo.courseCode}
+                        {courseDetail.courseCode}
                       </span>
                     </p>
-                    <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs ">
+                    <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs">
                       Credit Unit:{" "}
                       <span className="font-semibold">
-                        {courseInfo.creditUnit}
+                        {courseDetail.creditUnit}
                       </span>
                     </p>
+                    {courseDetail.preRequisite && (
+                      <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs">
+                        Pre-requisite:{" "}
+                        <span className="font-semibold">
+                          {courseDetail.preRequisite}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
-                  {courseInfo.info.map(({ heading, content }) => (
-                    <div className="mb-4">
+                  {courseDetail.info?.map(({ heading, content }, index) => (
+                    <div className="mb-4" key={index}>
                       <p className="font-semibold text-gray-800 text-sm sm:text-xs md:text-xs">
                         {heading}
                       </p>
-                      <p className=" text-gray-700 font-medium text-ss md:text-sm">
+                      <p className="text-gray-700 font-medium text-ss md:text-sm">
                         {content}
                       </p>
                     </div>
@@ -137,7 +163,7 @@ export default function CourseOutlines() {
                 <img
                   src={reading}
                   alt={"Choose a level, semester and course code"}
-                  className=" w-[70%] xss:w-[200px] sm:w-[230px]"
+                  className="w-[70%] xss:w-[200px] sm:w-[230px]"
                 />
                 <p className="text-sm ss:text-xs text-gray-700 font-medium text-center">
                   Select a level, semester and course respectively.

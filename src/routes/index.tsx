@@ -4,6 +4,7 @@ import NotFound from "../pages/error/404/NotFound";
 import LogoSpinner from "../components/loaders/FullLogoSpinner";
 import { Navbar } from "../components/navbar/Navbar";
 import ProtectedRoute from "./ProtectedRoute";
+import AdminProtectedRoute from "./AdminProtectedRoute";
 
 
 const AppRoutes = () => {
@@ -59,6 +60,15 @@ const AppRoutes = () => {
       import(
         "../pages/user/dashboard/components/learning-resources/LearningResources"
       )
+  );
+
+  // Admin pages
+  const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+  const AdminCourses = lazy(
+    () => import("../pages/admin/courses/AdminCourses")
+  );
+  const AdminCourseDetails = lazy(
+    () => import("../pages/admin/courses/AdminCourseDetails")
   );
 
   return (
@@ -140,6 +150,31 @@ const AppRoutes = () => {
               <ProtectedRoute>
                 <Dashboard />{" "}
               </ProtectedRoute>
+            }
+          />
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/courses"
+            element={
+              <AdminProtectedRoute>
+                <AdminCourses />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/courses/:courseCode/details"
+            element={
+              <AdminProtectedRoute>
+                <AdminCourseDetails />
+              </AdminProtectedRoute>
             }
           />
           <Route path="*" element={<NotFound />} />
