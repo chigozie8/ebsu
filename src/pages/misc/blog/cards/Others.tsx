@@ -25,7 +25,7 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                 >
                   <div className="flex items-start flex-col justify-between p-4 leading-normal w-full md:w-2/3 md:h-full">
                     <div>
-                      <h5 className="mb-2 text-base md:text-ss lg:text-xs font-bold tracking-tight text-gray-900 dark:text-white">
+                      <h5 className="mb-2 text-base md:text-ss lg:text-xs font-bold tracking-tight text-gray-900">
                         {title}
                       </h5>
                       <p className="mb-3 font-normal text-gray-900 text-sm md:text-ss xmd:text-ss xl:text-sm">

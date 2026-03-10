@@ -36,10 +36,10 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                       />
                       <div className="p-5 h-2/5 w-full flex flex-col justify-between">
                         <div>
-                          <h5 className="mb-2 text-base md:text-lg lg:text-xl xlg:text-xll font-bold tracking-tight text-gray-900 dark:text-white">
+                          <h5 className="mb-2 text-base md:text-lg lg:text-xl xlg:text-xll font-bold tracking-tight text-gray-900">
                             {title}
                           </h5>
-                          <p className="mb-3 font-normal text-sm xl:text-xs text-gray-900 dark:text-gray-400">
+                          <p className="mb-3 font-normal text-sm xl:text-xs text-gray-700">
                             {contents && contents[0] && typeof contents[0].content === "string" &&
                               contents[0].content
                                 .split(" ")

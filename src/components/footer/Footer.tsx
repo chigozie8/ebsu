@@ -84,12 +84,12 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <hr className="my-6 border-gray-200 sm:mx-auto dark:border-gray-700 lg:my-8" />
+        <hr className="my-6 border-gray-200 sm:mx-auto lg:my-8" />
         <div className="sm:flex sm:items-center sm:justify-between">
           <div className="flex flex-col justify-start items-start">
-            <span className="text-xss ss:text-ss md:text-sm text-white sm:text-center dark:text-gray-400">
+            <span className="text-xss ss:text-ss md:text-sm text-white sm:text-center">
               © 2026{" "}
-              <a href="/" className="hover:underline">
+              <a href="/" className="hover:underline text-white">
                 EBSUMSA-EBSU.
               </a>
             </span>
@@ -98,7 +98,7 @@ export default function Footer() {
               <a
                 href="https://chrismbah.vercel.app/"
                 target="_"
-                className="hover:underline"
+                className="hover:underline text-white"
               >
                 Ken.
               </a>{" "}
@@ -109,20 +109,20 @@ export default function Footer() {
           <div className="flex mt-4 sm:justify-center sm:mt-0">
             <a
               href="https://www.facebook.com/F.U.T.O.Nigeria/"
-              className="text-white hover:text-gray-900 dark:hover:text-white"
+              className="text-white hover:text-white/80"
             >
               <FacebookIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 fill-white" />
             </a>
 
             <a
               href="/"
-              className="text-white hover:text-gray-900 dark:hover:text-white ms-2"
+              className="text-white hover:text-white/80 ms-2"
             >
               <XIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
             </a>
             <a
               href="https://futo.edu.ng/"
-              className="text-white hover:text-gray-900 dark:hover:text-white ms-2"
+              className="text-white hover:text-white/80 ms-2"
             >
               <WebIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
             </a>
