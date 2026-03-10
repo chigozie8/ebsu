@@ -1096,7 +1096,7 @@ export default function AdminDashboard() {
             Admin Dashboard
           </h1>
           <p className="text-gray-600">
-            Manage learning materials, ID cards, blog posts, and courses
+            Manage learning materials, ID cards, blog posts, courses, and course outlines
           </p>
         </motion.div>
 
