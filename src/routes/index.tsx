@@ -70,6 +70,9 @@ const AppRoutes = () => {
   const AdminCourseDetails = lazy(
     () => import("../pages/admin/courses/AdminCourseDetails")
   );
+  const AdminCourseOutlineEditor = lazy(
+    () => import("../pages/admin/courses/AdminCourseOutlineEditor")
+  );
 
   return (
     <>
@@ -174,6 +177,14 @@ const AppRoutes = () => {
             element={
               <AdminProtectedRoute>
                 <AdminCourseDetails />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/course-outlines"
+            element={
+              <AdminProtectedRoute>
+                <AdminCourseOutlineEditor />
               </AdminProtectedRoute>
             }
           />
