@@ -5,7 +5,7 @@ export const customDropdownTheme: CustomFlowbiteTheme["dropdown"] = {
   floating: {
     item: {
       container: "",
-      base: "flex items-center justify-start px-4 py-2 ss:px-4 ss:text-sm text-ss text-gray-700 cursor-pointer w-full hover:bg-gray-100 focus:bg-gray-100  focus:outline-none  ",
+      base: "flex items-center justify-start px-4 py-2 ss:px-4 ss:text-sm text-ss text-gray-700 cursor-pointer w-full hover:bg-gray-100 focus:bg-gray-100  focus:outline-none bg-white ",
       icon: "mr-2 h-4 w-4",
     },
   },
