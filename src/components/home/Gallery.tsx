@@ -133,7 +133,6 @@ export default function Gallery() {
   const [visibleCount, setVisibleCount] = useState(20); // For infinite scroll in modal
 
   const previewImages = allImages.slice(0, PREVIEW_COUNT);
-  const remainingCount = allImages.length - PREVIEW_COUNT;
 
   // Load more images when scrolling in grid view
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
