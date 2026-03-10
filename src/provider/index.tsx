@@ -4,18 +4,21 @@ import GPAContextProvider from "../context/GPA";
 import ModalContextProvider from "../context/Modal";
 import CourseOutlineContextProvider from "../context/CourseOutline";
 import LearningResourcesContextProvider from "../context/LearningResources";
+import { ThemeProvider } from "../context/Theme";
 
 const AppProvider: FC<AppProviderProps> = ({ children }) => {
   return (
-    <ModalContextProvider>
-      <LearningResourcesContextProvider>
-        <GPAContextProvider>
-          <CourseOutlineContextProvider>
-            {children}
-          </CourseOutlineContextProvider>
-        </GPAContextProvider>
-      </LearningResourcesContextProvider>
-    </ModalContextProvider>
+    <ThemeProvider>
+      <ModalContextProvider>
+        <LearningResourcesContextProvider>
+          <GPAContextProvider>
+            <CourseOutlineContextProvider>
+              {children}
+            </CourseOutlineContextProvider>
+          </GPAContextProvider>
+        </LearningResourcesContextProvider>
+      </ModalContextProvider>
+    </ThemeProvider>
   );
 };
 

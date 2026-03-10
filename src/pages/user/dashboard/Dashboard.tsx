@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
 import { useNotifications } from "../../../hooks/notifications/useNotifications";
+import { ContactAdmin } from "../../../components/contact/ContactAdmin";
 
 // Activity types with icons and colors
 interface Activity {
@@ -571,6 +572,20 @@ export default function Dashboard() {
                       </div>
                     </motion.div>
                   </div>
+                  
+                  {/* Contact Admin Section */}
+                  <motion.div
+                    variants={fadeInVariants5}
+                    initial="initial"
+                    whileInView="animate"
+                    viewport={{
+                      once: true,
+                    }}
+                    custom={15}
+                    className="mt-4"
+                  >
+                    <ContactAdmin />
+                  </motion.div>
                 </div>
               </div>
             </div>

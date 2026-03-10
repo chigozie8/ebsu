@@ -19,6 +19,7 @@ import { NotificationDropdown } from "../notifications/NotificationDropdown";
 import { fadeInVariants4 } from "../../animation/variants";
 import { motion } from "framer-motion";
 import { useLoadImage } from "../../hooks/user-profile/useLoadImage";
+import { ThemeToggle } from "../theme/ThemeToggle";
 
 export const DashboardNavbar = () => {
   const { studentDetails, user, loading } = useGetUserInfo();
@@ -171,7 +172,18 @@ export const DashboardNavbar = () => {
                 </NavLink>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <motion.div
+                variants={fadeInVariants4}
+                initial="initial"
+                whileInView="animate"
+                viewport={{
+                  once: true,
+                }}
+                custom={2}
+              >
+                <ThemeToggle className="w-8 h-8 sm:w-9 sm:h-9" />
+              </motion.div>
               <motion.div
                 variants={fadeInVariants4}
                 initial="initial"
