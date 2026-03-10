@@ -1,18 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {  useState } from "react";
+import { useState } from "react";
 import { notifyUser } from "../../helpers/notifyUser";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { db, storage } from "../../config/firebase";
+import { db } from "../../config/firebase";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { updateDoc, doc } from "firebase/firestore";
 import { useModalContext } from "../../context/Modal";
+import { imagekitConfig, getImageKitAuthParams } from "../../config/imagekit";
 
 export const useUploadProfileImage = () => {
   const { studentDetails, userID } = useGetUserInfo();
@@ -50,22 +45,52 @@ export const useUploadProfileImage = () => {
     if (userID) {
       try {
         notifyUser("loading", "Uploading Image");
-        const userImageRef = ref(
-          storage,
-          `profile-pictures/${studentDetails?.email}-${userID}/${imageFile.name}`
+
+        // Get authentication parameters from our API
+        const authParams = await getImageKitAuthParams();
+
+        // Create form data for ImageKit upload
+        const formData = new FormData();
+        formData.append("file", imageFile);
+        formData.append("publicKey", imagekitConfig.publicKey);
+        formData.append("signature", authParams.signature);
+        formData.append("expire", authParams.expire.toString());
+        formData.append("token", authParams.token);
+        formData.append(
+          "fileName",
+          `${studentDetails?.email}-${userID}-${Date.now()}`
         );
-        setImageFileID(imageFile.name);
-        await uploadBytes(userImageRef, imageFile);
-        const downloadURL = await getDownloadURL(userImageRef);
+        formData.append("folder", `/profile-pictures/${userID}`);
+
+        // Upload to ImageKit
+        const uploadResponse = await fetch(
+          "https://upload.imagekit.io/api/v1/files/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload image to ImageKit");
+        }
+
+        const uploadResult = await uploadResponse.json();
+        const downloadURL = uploadResult.url;
+        const fileId = uploadResult.fileId;
+
         setImageURL(downloadURL);
+        setImageFileID(fileId);
         notifyUser("success", "Image Uploaded");
-        console.log("Image Uploaded");
+        console.log("Image Uploaded to ImageKit:", downloadURL);
       } catch (error: any) {
+        console.error("ImageKit upload error:", error);
         notifyUser("error", "Failed to upload image. Please try again.");
         setUploadError(error);
       }
     }
   };
+
   const updateUserProfileLink = async () => {
     if (userID && imageURL && imageURL.length > 1) {
       try {
@@ -83,19 +108,27 @@ export const useUploadProfileImage = () => {
       }
     }
   };
+
   const deleteUserProfileImage = async () => {
     if (userID && studentDetails) {
-      const userImageRef = ref(
-        storage,
-        `profile-pictures/${studentDetails.email}-${userID}/${studentDetails.profileImageID}`
-      );
       try {
         setDeletingProfileImage(true);
-        await deleteObject(userImageRef);
+
+        // Delete from ImageKit if we have a fileId
+        if (studentDetails.profileImageID) {
+          const authParams = await getImageKitAuthParams();
+
+          // Note: ImageKit delete requires server-side API call
+          // We'll clear the reference in Firestore; the image will remain in ImageKit
+          // For full deletion, you'd need a separate server endpoint
+        }
+
+        // Clear the profile image reference in Firestore
         await updateDoc(doc(db, "userInfo", userID), {
           profileImageURL: "",
           profileImageID: "",
         });
+
         setDeletingProfileImage(false);
         setOpenDeleteProfileImageModal(false);
         notifyUser("success", "Profile picture deleted");
@@ -103,6 +136,7 @@ export const useUploadProfileImage = () => {
         console.log(err);
         notifyUser("error", "Something went wrong. Please try again");
         setOpenDeleteProfileImageModal(false);
+        setDeletingProfileImage(false);
       }
     } else {
       console.log("Bug!!");
