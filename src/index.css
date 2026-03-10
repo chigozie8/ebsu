@@ -37,7 +37,21 @@ h3{
     @apply xl:max-w-[1280px] w-full mx-auto
 }
 .auth-btn{
- @apply bg-green1 hover:bg-green2 text-white font-semibold ss:text-base ss:px-4 ss:py-2 text-sm px-3 py-1 rounded-md 
+  background-color: var(--color-green1, #16a34a);
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+}
+.auth-btn:hover{
+  background-color: var(--color-green2, #15803d);
+}
+@media (min-width: 375px) {
+  .auth-btn {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
 }
 
 .page-section{
@@ -78,7 +92,17 @@ h3{
     @apply h-[2px] w-[90px] bg-green1
 }
 .gpa-btn{
-    @apply text-sm px-3 py-[7px] xss:py-2.5  text-white font-semibold w-full rounded-lg
+    font-size: 0.875rem;
+    padding: 7px 0.75rem;
+    color: white;
+    font-weight: 600;
+    width: 100%;
+    border-radius: 0.5rem;
+}
+@media (min-width: 320px) {
+  .gpa-btn {
+    padding: 0.625rem 0.75rem;
+  }
 }
 .heading-p{
     @apply text-gray-800 text-center text-sm xsm:text-xs font-[500]
