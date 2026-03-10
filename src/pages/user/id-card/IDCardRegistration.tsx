@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
-import { db } from "../../../config/firebase";
+import { db, storage } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
-import { imagekitConfig, getImageKitAuthParams } from "../../../config/imagekit";
 
 export default function IDCardRegistration() {
   const { userID, studentDetails } = useGetUserInfo();
@@ -49,32 +49,12 @@ export default function IDCardRegistration() {
     }
   };
 
-  const uploadImageToImageKit = async (file: File): Promise<string> => {
-    const authParams = await getImageKitAuthParams();
-
-    const formDataUpload = new FormData();
-    formDataUpload.append("file", file);
-    formDataUpload.append("publicKey", imagekitConfig.publicKey);
-    formDataUpload.append("signature", authParams.signature);
-    formDataUpload.append("expire", authParams.expire.toString());
-    formDataUpload.append("token", authParams.token);
-    formDataUpload.append("fileName", `id-card-${userID}-${Date.now()}`);
-    formDataUpload.append("folder", `/id-cards/${userID}`);
-
-    const response = await fetch(
-      "https://upload.imagekit.io/api/v1/files/upload",
-      {
-        method: "POST",
-        body: formDataUpload,
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to upload image");
-    }
-
-    const result = await response.json();
-    return result.url;
+  const uploadImageToFirebase = async (file: File): Promise<string> => {
+    const fileName = `id-cards/${userID}/${Date.now()}-${file.name}`;
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,8 +80,8 @@ export default function IDCardRegistration() {
     try {
       notifyUser("loading", "Uploading your ID card registration...");
 
-      // Upload image to ImageKit
-      const imageUrl = await uploadImageToImageKit(imageFile);
+      // Upload image to Firebase Storage
+      const imageUrl = await uploadImageToFirebase(imageFile);
 
       // Save to Firestore
       await addDoc(collection(db, "idCardRegistrations"), {

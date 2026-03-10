@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
-import { db } from "../../config/firebase";
+import { db, storage } from "../../config/firebase";
 import {
   collection,
   addDoc,
@@ -12,11 +12,11 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { notifyUser } from "../../helpers/notifyUser";
 import { Spinner } from "../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
-import { imagekitConfig, getImageKitAuthParams } from "../../config/imagekit";
 
 interface Material {
   id: string;
@@ -38,6 +38,8 @@ interface IDCardRegistration {
   level: string;
   photoUrl: string;
   email: string;
+  phoneNumber?: string;
+  classSet?: string;
   status: string;
   createdAt: any;
 }
@@ -128,32 +130,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const uploadFileToImageKit = async (file: File): Promise<string> => {
-    const authParams = await getImageKitAuthParams();
-
-    const formDataUpload = new FormData();
-    formDataUpload.append("file", file);
-    formDataUpload.append("publicKey", imagekitConfig.publicKey);
-    formDataUpload.append("signature", authParams.signature);
-    formDataUpload.append("expire", authParams.expire.toString());
-    formDataUpload.append("token", authParams.token);
-    formDataUpload.append("fileName", `material-${Date.now()}-${file.name}`);
-    formDataUpload.append("folder", `/learning-materials`);
-
-    const response = await fetch(
-      "https://upload.imagekit.io/api/v1/files/upload",
-      {
-        method: "POST",
-        body: formDataUpload,
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to upload file");
-    }
-
-    const result = await response.json();
-    return result.url;
+  const uploadFileToFirebase = async (file: File): Promise<string> => {
+    const fileName = `learning-materials/${Date.now()}-${file.name}`;
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
   };
 
   const handleUploadMaterial = async (e: React.FormEvent) => {
@@ -174,7 +156,7 @@ export default function AdminDashboard() {
     try {
       notifyUser("loading", "Uploading material...");
 
-      const fileUrl = await uploadFileToImageKit(selectedFile);
+      const fileUrl = await uploadFileToFirebase(selectedFile);
 
       await addDoc(collection(db, "learningMaterials"), {
         title: formData.title,
@@ -278,7 +260,9 @@ export default function AdminDashboard() {
                 <p><strong>Name:</strong> ${card.firstName} ${card.surname}</p>
                 <p><strong>Date of Birth:</strong> ${card.dateOfBirth}</p>
                 <p><strong>Level:</strong> ${card.level}</p>
+                <p><strong>Class:</strong> ${card.classSet || "N/A"}</p>
                 <p><strong>Email:</strong> ${card.email}</p>
+                <p><strong>Phone:</strong> ${card.phoneNumber || "N/A"}</p>
               </div>
               <div class="footer">
                 <p>This card is property of EBSU. If found, please return.</p>
@@ -616,6 +600,12 @@ export default function AdminDashboard() {
                         Level
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Class
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Phone
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
                         Email
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
@@ -641,6 +631,8 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-4">{card.dateOfBirth}</td>
                         <td className="py-3 px-4">{card.level}</td>
+                        <td className="py-3 px-4">{card.classSet || "N/A"}</td>
+                        <td className="py-3 px-4">{card.phoneNumber || "N/A"}</td>
                         <td className="py-3 px-4">{card.email}</td>
                         <td className="py-3 px-4">
                           <button
