@@ -17,17 +17,17 @@ export default function Login() {
   return (
     <section className="bg-gray-50">
       <div className="flex items-center justify-center px-4 sm:px-6 py-8 mx-auto h-screen lg:py-0">
-        <div className="w-full bg-white rounded-lg shadow dark:border mt-16 max-w-md sm:max-w-lg xl:p-0 ">
+        <div className="w-full bg-white rounded-lg shadow border border-gray-200 mt-16 max-w-md sm:max-w-lg xl:p-0">
           <div className=" space-y-4 md:space-y-6 p-3 ss:p-6 sm:p-8">
             <div className="flex items-center justify-center flex-col">
-              <a className="flex items-center mb-3 text-xl font-semibold text-gray-900 dark:text-white">
+              <a className="flex items-center mb-3 text-xl font-semibold text-gray-900">
                 <img
                   className="w-16 h-16 sm:w-20 sm:h-20"
                   src={logo}
                   alt="logo"
                 />
               </a>
-              <h1 className="text-base sm:text-md font-bold leading-tight tracking-tight text-gray-900 md:text-[21px] dark:text-white">
+              <h1 className="text-base sm:text-md font-bold leading-tight tracking-tight text-gray-900 md:text-[21px]">
                 Login to your account
               </h1>
             </div>
@@ -39,9 +39,9 @@ export default function Login() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block mb-2 text-ss ss:text-sm sm:text-xs font-bold text-gray-900 dark:text-white"
+                  className="block mb-2 text-ss ss:text-sm sm:text-xs font-bold text-gray-900"
                 >
-                  Your Email
+                  Email
                 </label>
                 <input
                   type="email"
@@ -57,7 +57,7 @@ export default function Login() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block mb-2 text-ss ss:text-sm sm:text-xs font-bold text-gray-900 dark:text-white"
+                  className="block mb-2 text-ss ss:text-sm sm:text-xs font-bold text-gray-900"
                 >
                   Password
                 </label>

@@ -223,7 +223,7 @@ export const EditProfileModal = () => {
                     <input
                       type="text"
                       id=""
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5 "
+                      className="bg-transparent border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5"
                       placeholder="eg. Chris"
                       {...register("firstName")}
                     />
@@ -243,7 +243,7 @@ export const EditProfileModal = () => {
                     <input
                       type="text"
                       id=""
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5 "
+                      className="bg-transparent border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5"
                       placeholder="eg. Mbah"
                       {...register("lastName")}
                     />
@@ -266,7 +266,7 @@ export const EditProfileModal = () => {
                       type="number"
                       id=""
                       placeholder="eg. 20191129201"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      className="bg-transparent border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5"
                       {...register("regNo")}
                     />
                   </div>
@@ -279,7 +279,7 @@ export const EditProfileModal = () => {
                     </label>
                     <select
                       id="underline_select"
-                      className="bg-gray-50 border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      className="bg-transparent border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5"
                       {...register("level")}
                     >
                       <option selected disabled>

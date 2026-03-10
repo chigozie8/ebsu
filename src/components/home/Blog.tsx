@@ -110,7 +110,7 @@ export default function Blog() {
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <h5 className="mb-2 text-xs md:text-ss lg:text-xs font-bold tracking-tight text-gray-900 dark:text-white">
+                            <h5 className="mb-2 text-xs md:text-ss lg:text-xs font-bold tracking-tight text-gray-900">
                               {title}
                             </h5>
                             <p className="mb-1 font-normal text-gray-900 text-ss ss:text-sm md:text-ss xmd:text-ss xl:text-sm">
