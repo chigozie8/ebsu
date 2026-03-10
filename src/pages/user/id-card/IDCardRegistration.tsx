@@ -19,8 +19,11 @@ export default function IDCardRegistration() {
   const [formData, setFormData] = useState({
     firstName: studentDetails?.firstName || "",
     surname: studentDetails?.lastName || "",
+    email: studentDetails?.email || "",
+    phoneNumber: "",
     dateOfBirth: "",
     level: studentDetails?.level || "",
+    classSet: "",
   });
 
   const handleInputChange = (
@@ -77,7 +80,7 @@ export default function IDCardRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.firstName || !formData.surname || !formData.dateOfBirth || !formData.level) {
+    if (!formData.firstName || !formData.surname || !formData.email || !formData.phoneNumber || !formData.dateOfBirth || !formData.level || !formData.classSet) {
       notifyUser("error", "Please fill in all required fields");
       return;
     }
@@ -103,15 +106,40 @@ export default function IDCardRegistration() {
       // Save to Firestore
       await addDoc(collection(db, "idCardRegistrations"), {
         userId: userID,
-        email: studentDetails?.email || "",
+        email: formData.email,
         firstName: formData.firstName,
         surname: formData.surname,
+        phoneNumber: formData.phoneNumber,
         dateOfBirth: formData.dateOfBirth,
         level: formData.level,
+        classSet: formData.classSet,
         photoUrl: imageUrl,
         status: "pending",
         createdAt: serverTimestamp(),
       });
+
+      // Send email notification via Resend
+      try {
+        await fetch("/api/send-id-registration", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName,
+            surname: formData.surname,
+            email: formData.email,
+            phoneNumber: formData.phoneNumber,
+            dateOfBirth: formData.dateOfBirth,
+            level: formData.level,
+            classSet: formData.classSet,
+            photoUrl: imageUrl,
+          }),
+        });
+      } catch (emailError) {
+        console.error("Email notification failed:", emailError);
+        // Don't fail the whole submission if email fails
+      }
 
       notifyUser("success", "ID Card registration submitted successfully!");
 
@@ -119,8 +147,11 @@ export default function IDCardRegistration() {
       setFormData({
         firstName: "",
         surname: "",
+        email: "",
+        phoneNumber: "",
         dateOfBirth: "",
         level: "",
+        classSet: "",
       });
       setImageFile(null);
       setImagePreview(null);
@@ -229,6 +260,36 @@ export default function IDCardRegistration() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter email address"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  placeholder="Enter phone number"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Date of Birth <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -259,6 +320,21 @@ export default function IDCardRegistration() {
                   <option value="600L">600 Level</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Class <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="classSet"
+                value={formData.classSet}
+                onChange={handleInputChange}
+                placeholder="018, 019, 020"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">Enter your class set (e.g., 018, 019, 020)</p>
             </div>
 
             <button
