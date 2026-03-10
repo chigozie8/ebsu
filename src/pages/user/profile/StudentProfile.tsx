@@ -27,11 +27,21 @@ export default function StudentProfile() {
           <div className="px-3 sm:px-10 md:px-16 xsm:py-[110px] py-[85px]">
             <div className="w-full flex items-center justify-between flex-col xsm:flex-row">
               <div className="flex flex-col xss:flex-row items-center gap-3 w-full xss:basis-2/3 ">
-                <Lottie
-                  animationData={avatar}
-                  loop={false}
-                  className="w-[130px] xss:w-[150px] sm:w-[180px] mmd:w-[200px]"
-                />
+                {studentDetails?.profileImageURL ? (
+                  <div className="w-[130px] h-[130px] xss:w-[150px] xss:h-[150px] sm:w-[180px] sm:h-[180px] mmd:w-[200px] mmd:h-[200px] rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                    <img 
+                      src={studentDetails.profileImageURL} 
+                      alt={`${studentDetails.firstName}'s profile`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <Lottie
+                    animationData={avatar}
+                    loop={false}
+                    className="w-[130px] xss:w-[150px] sm:w-[180px] mmd:w-[200px]"
+                  />
+                )}
                 <div className="flex flex-col justify-center xss:justify-start xsm:w-full ">
                   <p className="text-xl ss:text-2xl xsm:text-3xl font-bold text-center xss:text-left break-all max-w-full">
                     {studentDetails?.firstName} {studentDetails?.lastName}
