@@ -1,79 +1,36 @@
 import { useState, useCallback, useEffect } from "react";
-import img1 from "../../assets/img/gallery/l.jpg";
-import img2 from "../../assets/img/gallery/oo.jpeg";
-import img3 from "../../assets/img/gallery/IMG-20260206-WA0049.jpg";
-import img4 from "../../assets/img/gallery/a.jpg";
-import img5 from "../../assets/img/gallery/j.jpg";
-import img6 from "../../assets/img/gallery/k.jpg";
-import img7 from "../../assets/img/gallery/b.jpg";
-import img8 from "../../assets/img/gallery/ee.jpg";
-import img9 from "../../assets/img/gallery/dd.jpg";
-import img10 from "../../assets/img/gallery/cc.jpg";
-import img11 from "../../assets/img/gallery/bb.jpg";
-import img12 from "../../assets/img/gallery/aa.jpg";
-import img13 from "../../assets/img/gallery/c.jpg";
-import img14 from "../../assets/img/gallery/g.jpg";
-import img15 from "../../assets/img/gallery/h.jpg";
-import img16 from "../../assets/img/gallery/i.jpg";
-import img17 from "../../assets/img/gallery/front-gate.jpeg";
-import img18 from "../../assets/img/gallery/front-gate2.jpg";
-import img19 from "../../assets/img/gallery/senate-building.webp";
-import img20 from "../../assets/img/gallery/senate.jpg";
-import img21 from "../../assets/img/gallery/senate2.jpg";
-import img22 from "../../assets/img/gallery/statue.jpg";
-import img23 from "../../assets/img/gallery/ict-building.jpg";
-import img24 from "../../assets/img/gallery/lecture-hall.jpg";
-import img25 from "../../assets/img/gallery/office.jpg";
-import img26 from "../../assets/img/gallery/workshop.jpg";
-import img27 from "../../assets/img/gallery/aerial-view.jpeg";
-import img28 from "../../assets/img/gallery/building1.jpg";
-import img29 from "../../assets/img/gallery/ebsu.jpeg";
-import img30 from "../../assets/img/gallery/seet.jpeg";
-import img31 from "../../assets/img/gallery/fetha.jpg";
-import img32 from "../../assets/img/gallery/HEALTH1.jpg";
-import img33 from "../../assets/img/gallery/ai.jpg";
 import Lottie from "lottie-react";
 import gallery from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { IoClose, IoChevronBack, IoChevronForward, IoGrid } from "react-icons/io5";
+import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages } from "react-icons/io5";
 
-// All gallery images - add as many as you want here
-const allImages = [
-  { src: img1, alt: "Campus View 1" },
-  { src: img2, alt: "Campus View 2" },
-  { src: img3, alt: "Campus View 3" },
-  { src: img4, alt: "Campus View 4" },
-  { src: img5, alt: "Campus View 5" },
-  { src: img6, alt: "Campus View 6" },
-  { src: img7, alt: "Campus View 7" },
-  { src: img8, alt: "Campus View 8" },
-  { src: img9, alt: "Campus View 9" },
-  { src: img10, alt: "Campus View 10" },
-  { src: img11, alt: "Campus View 11" },
-  { src: img12, alt: "Campus View 12" },
-  { src: img13, alt: "Campus View 13" },
-  { src: img14, alt: "Campus View 14" },
-  { src: img15, alt: "Campus View 15" },
-  { src: img16, alt: "Campus View 16" },
-  { src: img17, alt: "Front Gate" },
-  { src: img18, alt: "Front Gate 2" },
-  { src: img19, alt: "Senate Building" },
-  { src: img20, alt: "Senate" },
-  { src: img21, alt: "Senate 2" },
-  { src: img22, alt: "Statue" },
-  { src: img23, alt: "ICT Building" },
-  { src: img24, alt: "Lecture Hall" },
-  { src: img25, alt: "Office" },
-  { src: img26, alt: "Workshop" },
-  { src: img27, alt: "Aerial View" },
-  { src: img28, alt: "Building" },
-  { src: img29, alt: "EBSU" },
-  { src: img30, alt: "SEET" },
-  { src: img31, alt: "FETHA" },
-  { src: img32, alt: "Health" },
-  { src: img33, alt: "AI" },
-];
+// Dynamically import all images from the gallery folder
+// This allows unlimited images - just add new images to the folder!
+const imageModules = import.meta.glob("../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+// Filter out unsupported formats and create image array
+const allImages = Object.entries(imageModules)
+  .filter(([path]) => {
+    // Skip .heif files as they're not widely supported in browsers
+    const ext = path.split(".").pop()?.toLowerCase();
+    return ext !== "heif";
+  })
+  .map(([path, src]) => {
+    // Extract filename without extension for alt text
+    const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
+    // Convert filename to readable alt text (e.g., "front-gate" -> "Front Gate")
+    const alt = filename
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .replace(/IMG.*WA/i, "Campus")
+      .replace(/\d+/g, "")
+      .trim() || "Campus View";
+    return { src: src as string, alt };
+  });
 
 const PREVIEW_COUNT = 8; // Number of images to show on home page
 
@@ -119,30 +76,85 @@ const gridItemVariants = {
     opacity: 1,
     scale: 1,
     transition: {
-      delay: index * 0.03,
+      delay: Math.min(index * 0.02, 0.5), // Cap delay to prevent long waits
       duration: 0.3,
     },
   }),
 };
+
+// Image component with loading state
+function GalleryImage({
+  src,
+  alt,
+  onClick,
+  className = "",
+  loading = "lazy",
+}: {
+  src: string;
+  alt: string;
+  onClick?: () => void;
+  className?: string;
+  loading?: "lazy" | "eager";
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
+        <IoImages className="text-gray-400 text-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {!isLoaded && (
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg ${className}`} />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        onClick={onClick}
+        loading={loading}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setHasError(true)}
+        className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+      />
+    </div>
+  );
+}
 
 export default function Gallery() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
+  const [visibleCount, setVisibleCount] = useState(20); // For infinite scroll in modal
 
   const previewImages = allImages.slice(0, PREVIEW_COUNT);
   const remainingCount = allImages.length - PREVIEW_COUNT;
+
+  // Load more images when scrolling in grid view
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const bottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
+    if (bottom && visibleCount < allImages.length) {
+      setVisibleCount((prev) => Math.min(prev + 20, allImages.length));
+    }
+  }, [visibleCount]);
 
   const openModal = (index: number, mode: "lightbox" | "grid" = "grid") => {
     setSelectedImageIndex(index);
     setViewMode(mode);
     setIsModalOpen(true);
+    setVisibleCount(20); // Reset visible count
     document.body.style.overflow = "hidden";
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setVisibleCount(20);
     document.body.style.overflow = "unset";
   };
 
@@ -181,22 +193,28 @@ export default function Gallery() {
           <div className="flex justify-between items-center flex-col-reverse md:flex-row gap-6">
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
-                <div className="columns-1 gap-2 xxss:columns-2 sm:gap-4 md:columns-3 lg:columns-4 [&>img:not(:first-child)]:mt-4 sm:[&>img:not(:first-child)]:mt-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                   {previewImages.map((image, index) => (
-                    <motion.img
+                    <motion.div
                       key={index}
                       variants={fadeInVariants1}
                       initial="initial"
                       whileInView="animate"
                       viewport={{ once: true }}
                       custom={index + 1}
-                      className="rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity min-h-[90px]"
-                      src={image.src}
-                      alt={image.alt}
-                      onClick={() => openModal(index, "lightbox")}
+                      className="relative group overflow-hidden rounded-xl aspect-square"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                    />
+                    >
+                      <GalleryImage
+                        src={image.src}
+                        alt={image.alt}
+                        onClick={() => openModal(index, "lightbox")}
+                        loading="eager"
+                        className="w-full h-full object-cover cursor-pointer rounded-xl"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 rounded-xl cursor-pointer" onClick={() => openModal(index, "lightbox")} />
+                    </motion.div>
                   ))}
                 </div>
 
@@ -292,34 +310,55 @@ export default function Gallery() {
 
             {/* Modal Content */}
             {viewMode === "grid" ? (
-              /* Grid View */
-              <div className="flex-1 overflow-y-auto p-4">
+              /* Grid View with Infinite Scroll */
+              <div className="flex-1 overflow-y-auto p-4" onScroll={handleScroll}>
                 <div className="max-w-7xl mx-auto">
-                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3">
-                    {allImages.map((image, index) => (
+                  {/* Image count indicator */}
+                  <div className="text-white/60 text-sm mb-4 text-center">
+                    Showing {Math.min(visibleCount, allImages.length)} of {allImages.length} photos
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {allImages.slice(0, visibleCount).map((image, index) => (
                       <motion.div
                         key={index}
                         variants={gridItemVariants}
                         initial="hidden"
                         animate="visible"
-                        custom={index}
-                        className="mb-3 break-inside-avoid"
+                        custom={index % 20} // Reset delay for each batch
+                        className="relative group aspect-square overflow-hidden rounded-lg"
                       >
-                        <motion.img
+                        <GalleryImage
                           src={image.src}
                           alt={image.alt}
-                          className="w-full rounded-lg cursor-pointer"
                           onClick={() => {
                             setSelectedImageIndex(index);
                             setViewMode("lightbox");
                           }}
-                          whileHover={{ scale: 1.03, opacity: 0.9 }}
-                          whileTap={{ scale: 0.98 }}
-                          loading="lazy"
+                          className="w-full h-full object-cover cursor-pointer"
                         />
+                        <div 
+                          className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 cursor-pointer flex items-center justify-center"
+                          onClick={() => {
+                            setSelectedImageIndex(index);
+                            setViewMode("lightbox");
+                          }}
+                        >
+                          <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
+                            View
+                          </span>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
+                  {/* Load more indicator */}
+                  {visibleCount < allImages.length && (
+                    <div className="text-center py-6">
+                      <div className="inline-flex items-center gap-2 text-white/60 text-sm">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
+                        Scroll for more...
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -328,51 +367,83 @@ export default function Gallery() {
                 {/* Navigation Buttons */}
                 <button
                   onClick={() => navigateImage(-1)}
-                  className="absolute left-4 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+                  className="absolute left-2 sm:left-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
                   aria-label="Previous image"
                 >
-                  <IoChevronBack className="text-2xl" />
+                  <IoChevronBack className="text-xl sm:text-2xl" />
                 </button>
 
                 <button
                   onClick={() => navigateImage(1)}
-                  className="absolute right-4 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+                  className="absolute right-2 sm:right-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
                   aria-label="Next image"
                 >
-                  <IoChevronForward className="text-2xl" />
+                  <IoChevronForward className="text-xl sm:text-2xl" />
                 </button>
 
                 {/* Image */}
-                <div className="w-full h-full flex items-center justify-center p-4 overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
                   <AnimatePresence initial={false} custom={direction} mode="wait">
                     <motion.img
                       key={selectedImageIndex}
-                      src={allImages[selectedImageIndex].src}
-                      alt={allImages[selectedImageIndex].alt}
+                      src={allImages[selectedImageIndex]?.src}
+                      alt={allImages[selectedImageIndex]?.alt || "Gallery image"}
                       variants={imageVariants}
                       custom={direction}
                       initial="enter"
                       animate="center"
                       exit="exit"
                       transition={{ duration: 0.3 }}
-                      className="max-w-full max-h-[calc(100vh-180px)] object-contain rounded-lg"
+                      className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
                     />
                   </AnimatePresence>
                 </div>
 
-                {/* Image Counter */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-2 rounded-full text-white text-sm">
-                  {selectedImageIndex + 1} / {allImages.length}
+                {/* Image Info & Counter */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
+                    {selectedImageIndex + 1} / {allImages.length}
+                  </div>
+                  <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/80 text-xs max-w-[200px] truncate">
+                    {allImages[selectedImageIndex]?.alt}
+                  </div>
                 </div>
 
                 {/* Back to Grid Button */}
                 <button
                   onClick={() => setViewMode("grid")}
-                  className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-sm transition-colors"
+                  className="absolute top-4 left-4 flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-xs sm:text-sm transition-colors backdrop-blur-sm"
                 >
                   <IoGrid />
-                  View All
+                  <span className="hidden sm:inline">View All</span>
                 </button>
+
+                {/* Thumbnail strip for quick navigation */}
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 hidden md:flex gap-1 bg-black/40 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto">
+                  {allImages.slice(Math.max(0, selectedImageIndex - 4), Math.min(allImages.length, selectedImageIndex + 5)).map((image, i) => {
+                    const actualIndex = Math.max(0, selectedImageIndex - 4) + i;
+                    return (
+                      <button
+                        key={actualIndex}
+                        onClick={() => {
+                          setDirection(actualIndex > selectedImageIndex ? 1 : -1);
+                          setSelectedImageIndex(actualIndex);
+                        }}
+                        className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all ${
+                          actualIndex === selectedImageIndex
+                            ? "ring-2 ring-white scale-110"
+                            : "opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </motion.div>
