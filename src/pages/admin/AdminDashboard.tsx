@@ -46,21 +46,22 @@ interface IDCardRegistration {
   createdAt: any;
 }
 
+interface ContentBlock {
+  type: "p" | "p-bold" | "h1" | "h2" | "img" | "list";
+  content: string;
+}
+
 interface BlogPost {
   id: string;
+  no: number;
   title: string;
-  content: string;
-  excerpt: string;
   author: string;
-  authorImage?: string;
-  featuredImage?: string;
-  category: string;
-  tags: string[];
-  status: "draft" | "published";
-  readTime: number;
-  publishedAt: any;
+  date: string;
+  sampleImg: string;
+  postType: "top" | "featured" | "others";
+  contents: ContentBlock[];
   createdAt: any;
-  updatedAt: any;
+  updatedAt?: any;
 }
 
 interface CourseEntry {
@@ -101,15 +102,13 @@ export default function AdminDashboard() {
   // Blog form state
   const [blogFormData, setBlogFormData] = useState({
     title: "",
-    content: "",
-    excerpt: "",
     author: "",
-    category: "general",
-    tags: "",
-    status: "draft" as "draft" | "published",
+    postType: "others" as "top" | "featured" | "others",
+    contentBlocks: [{ type: "p" as const, content: "" }] as ContentBlock[],
   });
   const [blogImage, setBlogImage] = useState<File | null>(null);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+  const [nextPostNo, setNextPostNo] = useState(1);
 
   // Course form state
   const [courseFormData, setCourseFormData] = useState({
