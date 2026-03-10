@@ -56,12 +56,16 @@ interface BlogPost {
   no: number;
   title: string;
   author: string;
+  authorImage?: string;
   date: string;
   sampleImg: string;
   postType: "top" | "featured" | "others";
+  category?: string;
   contents: ContentBlock[];
   createdAt: any;
   updatedAt?: any;
+  likes?: number;
+  likedBy?: string[];
 }
 
 interface CourseEntry {
@@ -105,12 +109,16 @@ export default function AdminDashboard() {
     title: "",
     author: "",
     postType: "others" as "top" | "featured" | "others",
+    category: "",
   });
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
     { type: "p", content: "" }
   ]);
   const [blogImage, setBlogImage] = useState<File | null>(null);
   const [blogImagePreview, setBlogImagePreview] = useState<string>("");
+  const [authorImage, setAuthorImage] = useState<File | null>(null);
+  const [authorImagePreview, setAuthorImagePreview] = useState<string>("");
+  const authorImageRef = useRef<HTMLInputElement>(null);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
 
   // Course form state
@@ -328,6 +336,18 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAuthorImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAuthorImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAuthorImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Content block management
   const addContentBlock = (type: ContentBlock["type"]) => {
     setContentBlocks([...contentBlocks, { type, content: "" }]);
@@ -407,6 +427,11 @@ export default function AdminDashboard() {
         sampleImgUrl = await uploadFileToSupabase(blogImage, STORAGE_BUCKETS.LEARNING_RESOURCES);
       }
 
+      let authorImgUrl = "";
+      if (authorImage) {
+        authorImgUrl = await uploadFileToSupabase(authorImage, STORAGE_BUCKETS.LEARNING_RESOURCES);
+      }
+
       // Filter out empty content blocks
       const filteredContents = contentBlocks.filter(block => block.content.trim() !== "");
 
@@ -423,11 +448,13 @@ export default function AdminDashboard() {
 
       // Determine the image URL
       let finalSampleImgUrl = sampleImgUrl;
+      let finalAuthorImgUrl = authorImgUrl;
       if (!finalSampleImgUrl && editingBlogId) {
         // Keep existing image if no new one provided
         const existingPost = blogPosts.find(p => p.id === editingBlogId);
         if (existingPost) {
           finalSampleImgUrl = existingPost.sampleImg;
+          finalAuthorImgUrl = existingPost.authorImage || "";
         }
       }
       
@@ -440,11 +467,15 @@ export default function AdminDashboard() {
         no: nextNo,
         title: blogFormData.title,
         author: blogFormData.author,
+        authorImage: finalAuthorImgUrl,
         date: formattedDate,
         postType: blogFormData.postType,
+        category: blogFormData.category,
         contents: filteredContents,
         sampleImg: finalSampleImgUrl,
         updatedAt: serverTimestamp(),
+        likes: 0,
+        likedBy: [],
       };
 
       if (editingBlogId) {
@@ -484,13 +515,19 @@ export default function AdminDashboard() {
       title: "",
       author: "",
       postType: "others",
+      category: "",
     });
     setContentBlocks([{ type: "p", content: "" }]);
     setBlogImage(null);
     setBlogImagePreview("");
+    setAuthorImage(null);
+    setAuthorImagePreview("");
     setEditingBlogId(null);
     if (blogImageRef.current) {
       blogImageRef.current.value = "";
+    }
+    if (authorImageRef.current) {
+      authorImageRef.current.value = "";
     }
   };
 
@@ -499,9 +536,11 @@ export default function AdminDashboard() {
       title: post.title,
       author: post.author,
       postType: post.postType,
+      category: post.category || "",
     });
     setContentBlocks(post.contents && post.contents.length > 0 ? post.contents : [{ type: "p", content: "" }]);
     setBlogImagePreview(post.sampleImg || "");
+    setAuthorImagePreview(post.authorImage || "");
     setEditingBlogId(post.id);
     setActiveTab("blog");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1054,6 +1093,52 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Author Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Author Image
+                  </label>
+                  <input
+                    ref={authorImageRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAuthorImageChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
+                  />
+                  {authorImagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={authorImagePreview}
+                        alt="Author Preview"
+                        className="w-16 h-16 object-cover rounded-full"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    name="category"
+                    value={blogFormData.category}
+                    onChange={handleBlogInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Education">Education</option>
+                    <option value="Health">Health</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                    <option value="News">News</option>
+                    <option value="Research">Research</option>
+                    <option value="Campus Life">Campus Life</option>
+                    <option value="Career">Career</option>
+                  </select>
+                </div>
+
                 {/* Post Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1346,7 +1431,7 @@ export default function AdminDashboard() {
                           Delete
                         </button>
                         <a
-                          href={`/blog/${post.no}`}
+                          href={`/blog/posts/${encodeURIComponent(post.title)}/${post.no}/${post.postType}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
