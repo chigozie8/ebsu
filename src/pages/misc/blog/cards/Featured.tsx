@@ -13,10 +13,10 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
             .filter((post) => post.postType === "featured")
             .map(
               (
-                { title, sampleImg, contents, date, author, id, postType },
+                { title, sampleImg, contents, date, author, no, postType },
                 i
               ) => (
-                <Link to={`/blog/posts/${title}/${id}/${postType}`} key={i}>
+                <Link to={`/blog/posts/${encodeURIComponent(title)}/${no}/${postType}`} key={i}>
                   <motion.div
                     variants={fadeInVariants7}
                     initial="initial"
@@ -38,7 +38,7 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                           {title}
                         </h5>
                         <p className="mb-3 font-normal hidden md:block text-ss xl:text-xs text-gray-700 dark:text-gray-400">
-                          {typeof contents[0].content === "string" &&
+                          {contents && contents[0] && typeof contents[0].content === "string" &&
                             contents[0].content
                               .split(" ")
                               .slice(0, 25)
@@ -46,7 +46,7 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                           ...
                         </p>{" "}
                         <p className="mb-3 font-normal block md:hidden text-sss ss:text-xss xl:text-xs text-gray-900 dark:text-gray-400">
-                          {typeof contents[0].content === "string" &&
+                          {contents && contents[0] && typeof contents[0].content === "string" &&
                             contents[0].content
                               .split(" ")
                               .slice(0, 20)

@@ -24,11 +24,11 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
               .filter((post) => post.postType === "top")
               .map(
                 (
-                  { title, sampleImg, contents, date, author, postType, id },
+                  { title, sampleImg, contents, date, author, postType, no },
                   i
                 ) => (
                   <div key={i} className="h-full hover:bg-gray-100">
-                    <Link to={`/blog/posts/${title}/${id}/${postType}`}>
+                    <Link to={`/blog/posts/${encodeURIComponent(title)}/${no}/${postType}`}>
                       <img
                         className="object-cover rounded-t-lg h-3/5 w-full"
                         src={sampleImg}
@@ -40,7 +40,7 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                             {title}
                           </h5>
                           <p className="mb-3 font-normal text-sm xl:text-xs text-gray-900 dark:text-gray-400">
-                            {typeof contents[0].content === "string" &&
+                            {contents && contents[0] && typeof contents[0].content === "string" &&
                               contents[0].content
                                 .split(" ")
                                 .slice(0, 20)

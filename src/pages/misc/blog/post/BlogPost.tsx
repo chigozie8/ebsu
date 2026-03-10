@@ -75,7 +75,7 @@ export default function BlogPost() {
                       className="w-full mb-3 rounded-lg"
                     />
                   </div>
-                  <PostContent contents={blogPost.contents} />
+                  {blogPost.contents && <PostContent contents={blogPost.contents} />}
                 </div>
               )}
             </div>

@@ -46,21 +46,22 @@ interface IDCardRegistration {
   createdAt: any;
 }
 
+interface ContentBlock {
+  type: "p" | "p-bold" | "h1" | "h2" | "img" | "list";
+  content: string;
+}
+
 interface BlogPost {
   id: string;
+  no: number;
   title: string;
-  content: string;
-  excerpt: string;
   author: string;
-  authorImage?: string;
-  featuredImage?: string;
-  category: string;
-  tags: string[];
-  status: "draft" | "published";
-  readTime: number;
-  publishedAt: any;
+  date: string;
+  sampleImg: string;
+  postType: "top" | "featured" | "others";
+  contents: ContentBlock[];
   createdAt: any;
-  updatedAt: any;
+  updatedAt?: any;
 }
 
 interface CourseEntry {
@@ -89,6 +90,7 @@ export default function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const blogImageRef = useRef<HTMLInputElement>(null);
+  const contentImageRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -98,17 +100,17 @@ export default function AdminDashboard() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Blog form state
+  // Blog form state - matches the Blog page data structure
   const [blogFormData, setBlogFormData] = useState({
     title: "",
-    content: "",
-    excerpt: "",
     author: "",
-    category: "general",
-    tags: "",
-    status: "draft" as "draft" | "published",
+    postType: "others" as "top" | "featured" | "others",
   });
+  const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([
+    { type: "p", content: "" }
+  ]);
   const [blogImage, setBlogImage] = useState<File | null>(null);
+  const [blogImagePreview, setBlogImagePreview] = useState<string>("");
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
 
   // Course form state
@@ -317,20 +319,81 @@ export default function AdminDashboard() {
     const file = e.target.files?.[0];
     if (file) {
       setBlogImage(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBlogImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const calculateReadTime = (content: string): number => {
-    const wordsPerMinute = 200;
-    const wordCount = content.split(/\s+/).length;
-    return Math.ceil(wordCount / wordsPerMinute);
+  // Content block management
+  const addContentBlock = (type: ContentBlock["type"]) => {
+    setContentBlocks([...contentBlocks, { type, content: "" }]);
+  };
+
+  const updateContentBlock = (index: number, content: string) => {
+    const updated = [...contentBlocks];
+    updated[index].content = content;
+    setContentBlocks(updated);
+  };
+
+  const updateContentBlockType = (index: number, type: ContentBlock["type"]) => {
+    const updated = [...contentBlocks];
+    updated[index].type = type;
+    setContentBlocks(updated);
+  };
+
+  const removeContentBlock = (index: number) => {
+    if (contentBlocks.length === 1) {
+      notifyUser("error", "You need at least one content block");
+      return;
+    }
+    setContentBlocks(contentBlocks.filter((_, i) => i !== index));
+  };
+
+  const moveContentBlock = (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= contentBlocks.length) return;
+    
+    const updated = [...contentBlocks];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    setContentBlocks(updated);
+  };
+
+  const handleContentImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      notifyUser("loading", "Uploading image...");
+      const imageUrl = await uploadFileToSupabase(file, STORAGE_BUCKETS.LEARNING_RESOURCES);
+      updateContentBlock(index, imageUrl);
+      notifyUser("success", "Image uploaded!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      notifyUser("error", "Failed to upload image");
+    }
   };
 
   const handleSubmitBlogPost = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!blogFormData.title || !blogFormData.content || !blogFormData.author) {
-      notifyUser("error", "Please fill in title, content, and author");
+    if (!blogFormData.title || !blogFormData.author) {
+      notifyUser("error", "Please fill in title and author");
+      return;
+    }
+
+    // Validate content blocks
+    const hasContent = contentBlocks.some(block => block.content.trim() !== "");
+    if (!hasContent) {
+      notifyUser("error", "Please add at least one content block with content");
+      return;
+    }
+
+    if (!blogImage && !editingBlogId) {
+      notifyUser("error", "Please add a featured image for the blog post");
       return;
     }
 
@@ -339,26 +402,49 @@ export default function AdminDashboard() {
     try {
       notifyUser("loading", editingBlogId ? "Updating post..." : "Creating post...");
 
-      let featuredImageUrl = "";
+      let sampleImgUrl = "";
       if (blogImage) {
-        featuredImageUrl = await uploadFileToSupabase(blogImage, STORAGE_BUCKETS.LEARNING_RESOURCES);
+        sampleImgUrl = await uploadFileToSupabase(blogImage, STORAGE_BUCKETS.LEARNING_RESOURCES);
       }
 
-      const readTime = calculateReadTime(blogFormData.content);
-      const tags = blogFormData.tags.split(",").map((t) => t.trim()).filter(Boolean);
+      // Filter out empty content blocks
+      const filteredContents = contentBlocks.filter(block => block.content.trim() !== "");
 
-      const postData = {
+      // Get the next post number (find the highest existing no and add 1)
+      const existingNos = blogPosts.map(p => p.no || 0);
+      const maxNo = existingNos.length > 0 ? Math.max(...existingNos) : 0;
+      const nextNo = editingBlogId 
+        ? blogPosts.find(p => p.id === editingBlogId)?.no || maxNo + 1
+        : maxNo + 1;
+
+      // Format date
+      const today = new Date();
+      const formattedDate = `${today.getDate()}${getOrdinalSuffix(today.getDate())} ${today.toLocaleString('default', { month: 'long' })}, ${today.getFullYear()}`;
+
+      // Determine the image URL
+      let finalSampleImgUrl = sampleImgUrl;
+      if (!finalSampleImgUrl && editingBlogId) {
+        // Keep existing image if no new one provided
+        const existingPost = blogPosts.find(p => p.id === editingBlogId);
+        if (existingPost) {
+          finalSampleImgUrl = existingPost.sampleImg;
+        }
+      }
+      
+      // Use a default placeholder if no image
+      if (!finalSampleImgUrl) {
+        finalSampleImgUrl = "/images/blog/default-blog-image.jpg";
+      }
+
+      const postData: Omit<BlogPost, "id" | "createdAt"> & { updatedAt?: any; createdAt?: any } = {
+        no: nextNo,
         title: blogFormData.title,
-        content: blogFormData.content,
-        excerpt: blogFormData.excerpt || blogFormData.content.substring(0, 150) + "...",
         author: blogFormData.author,
-        category: blogFormData.category,
-        tags: tags,
-        status: blogFormData.status,
-        readTime: readTime,
-        ...(featuredImageUrl && { featuredImage: featuredImageUrl }),
+        date: formattedDate,
+        postType: blogFormData.postType,
+        contents: filteredContents,
+        sampleImg: finalSampleImgUrl,
         updatedAt: serverTimestamp(),
-        ...(blogFormData.status === "published" && !editingBlogId && { publishedAt: serverTimestamp() }),
       };
 
       if (editingBlogId) {
@@ -373,21 +459,7 @@ export default function AdminDashboard() {
       }
 
       // Reset form
-      setBlogFormData({
-        title: "",
-        content: "",
-        excerpt: "",
-        author: "",
-        category: "general",
-        tags: "",
-        status: "draft",
-      });
-      setBlogImage(null);
-      setEditingBlogId(null);
-      if (blogImageRef.current) {
-        blogImageRef.current.value = "";
-      }
-
+      resetBlogForm();
       fetchBlogPosts();
     } catch (error: any) {
       console.error("Error saving blog post:", error);
@@ -397,16 +469,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const getOrdinalSuffix = (day: number): string => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  const resetBlogForm = () => {
+    setBlogFormData({
+      title: "",
+      author: "",
+      postType: "others",
+    });
+    setContentBlocks([{ type: "p", content: "" }]);
+    setBlogImage(null);
+    setBlogImagePreview("");
+    setEditingBlogId(null);
+    if (blogImageRef.current) {
+      blogImageRef.current.value = "";
+    }
+  };
+
   const handleEditBlog = (post: BlogPost) => {
     setBlogFormData({
       title: post.title,
-      content: post.content,
-      excerpt: post.excerpt,
       author: post.author,
-      category: post.category,
-      tags: post.tags.join(", "),
-      status: post.status,
+      postType: post.postType,
     });
+    setContentBlocks(post.contents && post.contents.length > 0 ? post.contents : [{ type: "p", content: "" }]);
+    setBlogImagePreview(post.sampleImg || "");
     setEditingBlogId(post.id);
     setActiveTab("blog");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -681,7 +776,7 @@ export default function AdminDashboard() {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    placeholder="e.g., Anatomy Lecture Notes"
+                    placeholder="Material title"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
                   />
                 </div>
@@ -710,11 +805,11 @@ export default function AdminDashboard() {
                     onChange={handleInputChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
                   >
-                    <option value="">Select Category</option>
-                    <option value="books">Books</option>
-                    <option value="handouts">Handouts</option>
-                    <option value="pastQuestions">Past Questions</option>
-                    <option value="notes">Lecture Notes</option>
+                    <option value="">Select category</option>
+                    <option value="lecture-notes">Lecture Notes</option>
+                    <option value="past-questions">Past Questions</option>
+                    <option value="textbooks">Textbooks</option>
+                    <option value="practicals">Practicals</option>
                     <option value="others">Others</option>
                   </select>
                 </div>
@@ -730,13 +825,12 @@ export default function AdminDashboard() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
                   >
                     <option value="">Select Level</option>
-                    <option value="all">All Levels</option>
-                    <option value="100L">100 Level</option>
-                    <option value="200L">200 Level</option>
-                    <option value="300L">300 Level</option>
-                    <option value="400L">400 Level</option>
-                    <option value="500L">500 Level</option>
-                    <option value="600L">600 Level</option>
+                    <option value="100">100 Level</option>
+                    <option value="200">200 Level</option>
+                    <option value="300">300 Level</option>
+                    <option value="400">400 Level</option>
+                    <option value="500">500 Level</option>
+                    <option value="600">600 Level</option>
                   </select>
                 </div>
 
@@ -747,8 +841,8 @@ export default function AdminDashboard() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.png,.jpeg"
                     onChange={handleFileChange}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
                     className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
                   />
                   {selectedFile && (
@@ -788,7 +882,7 @@ export default function AdminDashboard() {
                 Uploaded Materials ({materials.length})
               </h2>
               {isLoading ? (
-                <div className="flex items-center justify-center py-10">
+                <div className="flex justify-center py-10">
                   <Spinner className="w-8 h-8" />
                 </div>
               ) : materials.length === 0 ? (
@@ -803,11 +897,13 @@ export default function AdminDashboard() {
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                     >
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm">
+                        <h3 className="font-medium text-gray-900">
                           {material.title}
                         </h3>
-                        <p className="text-xs text-gray-500">
-                          {material.category} | {material.level} |{" "}
+                        <p className="text-sm text-gray-500">
+                          {material.category} | Level {material.level}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
                           {material.fileName}
                         </p>
                       </div>
@@ -816,49 +912,15 @@ export default function AdminDashboard() {
                           href={material.fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="View"
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                            />
-                          </svg>
+                          View
                         </a>
                         <button
                           onClick={() => handleDeleteMaterial(material.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
+                          className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -889,65 +951,50 @@ export default function AdminDashboard() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Photo
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Name
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Reg. No.
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        DOB
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Level
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Class
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Phone
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Email
-                      </th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-700">
-                        Actions
-                      </th>
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="text-left p-3 font-medium">Photo</th>
+                      <th className="text-left p-3 font-medium">Name</th>
+                      <th className="text-left p-3 font-medium">Reg. No.</th>
+                      <th className="text-left p-3 font-medium">Level</th>
+                      <th className="text-left p-3 font-medium">Class</th>
+                      <th className="text-left p-3 font-medium">Status</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y">
                     {idCards.map((card) => (
-                      <tr
-                        key={card.id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="py-3 px-4">
+                      <tr key={card.id} className="hover:bg-gray-50">
+                        <td className="p-3">
                           <img
                             src={card.photoUrl}
                             alt={card.firstName}
-                            className="w-10 h-12 object-cover rounded"
+                            className="w-12 h-12 rounded-lg object-cover"
                           />
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="p-3 font-medium">
                           {card.firstName} {card.surname}
                         </td>
-                        <td className="py-3 px-4 text-xs font-medium text-green2">
-                          {card.registrationNumber || "N/A"}
+                        <td className="p-3">{card.registrationNumber || "N/A"}</td>
+                        <td className="p-3">{card.level}</td>
+                        <td className="p-3">{card.classSet || "N/A"}</td>
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              card.status === "approved"
+                                ? "bg-green-100 text-green-800"
+                                : card.status === "rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {card.status || "pending"}
+                          </span>
                         </td>
-                        <td className="py-3 px-4">{card.dateOfBirth}</td>
-                        <td className="py-3 px-4">{card.level}</td>
-                        <td className="py-3 px-4">{card.classSet || "N/A"}</td>
-                        <td className="py-3 px-4">{card.phoneNumber || "N/A"}</td>
-                        <td className="py-3 px-4">{card.email}</td>
-                        <td className="py-3 px-4">
+                        <td className="p-3">
                           <button
                             onClick={() => printIDCard(card)}
-                            className="px-3 py-1 bg-green2 text-white rounded-lg text-xs hover:bg-green1 transition-colors"
+                            className="px-3 py-1 bg-green2 text-white rounded-lg text-xs font-medium hover:bg-green1 transition-colors"
                           >
                             Print ID
                           </button>
@@ -963,7 +1010,7 @@ export default function AdminDashboard() {
 
         {/* Blog Tab */}
         {activeTab === "blog" && (
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-2 gap-6">
             {/* Blog Form */}
             <motion.div
               variants={fadeInVariants5}
@@ -971,12 +1018,13 @@ export default function AdminDashboard() {
               whileInView="animate"
               viewport={{ once: true }}
               custom={3}
-              className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
+              className="bg-white rounded-2xl shadow-lg p-6"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-4">
                 {editingBlogId ? "Edit Blog Post" : "Create Blog Post"}
               </h2>
               <form onSubmit={handleSubmitBlogPost} className="space-y-4">
+                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Title <span className="text-red-500">*</span>
@@ -991,6 +1039,7 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Author */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Author <span className="text-red-500">*</span>
@@ -1005,90 +1054,30 @@ export default function AdminDashboard() {
                   />
                 </div>
 
+                {/* Post Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Excerpt
+                    Post Type
                   </label>
-                  <textarea
-                    name="excerpt"
-                    value={blogFormData.excerpt}
+                  <select
+                    name="postType"
+                    value={blogFormData.postType}
                     onChange={handleBlogInputChange}
-                    placeholder="Short summary (auto-generated if empty)"
-                    rows={2}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Content <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    name="content"
-                    value={blogFormData.content}
-                    onChange={handleBlogInputChange}
-                    placeholder="Write your blog content here..."
-                    rows={8}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
-                  />
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="top">Top (Featured on top)</option>
+                    <option value="featured">Featured</option>
+                    <option value="others">Others</option>
+                  </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Estimated read time: {calculateReadTime(blogFormData.content)} min
+                    Top posts appear prominently at the top of the blog page
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category
-                    </label>
-                    <select
-                      name="category"
-                      value={blogFormData.category}
-                      onChange={handleBlogInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                    >
-                      <option value="general">General</option>
-                      <option value="academic">Academic</option>
-                      <option value="health">Health</option>
-                      <option value="technology">Technology</option>
-                      <option value="campus">Campus Life</option>
-                      <option value="career">Career</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={blogFormData.status}
-                      onChange={handleBlogInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                    </select>
-                  </div>
-                </div>
-
+                {/* Featured Image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tags (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    name="tags"
-                    value={blogFormData.tags}
-                    onChange={handleBlogInputChange}
-                    placeholder="e.g., health, tips, MBBS"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Featured Image
+                    Featured Image <span className="text-red-500">*</span>
                   </label>
                   <input
                     ref={blogImageRef}
@@ -1097,14 +1086,165 @@ export default function AdminDashboard() {
                     onChange={handleBlogImageChange}
                     className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
                   />
-                  {blogImage && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {blogImage.name}
-                    </p>
+                  {blogImagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={blogImagePreview}
+                        alt="Preview"
+                        className="w-full h-40 object-cover rounded-lg"
+                      />
+                    </div>
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                {/* Content Blocks Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Content Blocks <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addContentBlock("p")}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded font-medium"
+                      >
+                        + Paragraph
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addContentBlock("h2")}
+                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded font-medium"
+                      >
+                        + Heading
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addContentBlock("list")}
+                        className="px-2 py-1 text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 rounded font-medium"
+                      >
+                        + List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addContentBlock("img")}
+                        className="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium"
+                      >
+                        + Image
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content Blocks */}
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {contentBlocks.map((block, index) => (
+                      <div
+                        key={index}
+                        className="p-3 border border-gray-200 rounded-lg bg-gray-50"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <select
+                            value={block.type}
+                            onChange={(e) => updateContentBlockType(index, e.target.value as ContentBlock["type"])}
+                            className="text-xs p-1 border rounded"
+                          >
+                            <option value="p">Paragraph</option>
+                            <option value="p-bold">Bold Paragraph</option>
+                            <option value="h1">Heading 1</option>
+                            <option value="h2">Heading 2</option>
+                            <option value="list">List (comma-separated)</option>
+                            <option value="img">Image</option>
+                          </select>
+                          <div className="flex-1" />
+                          <button
+                            type="button"
+                            onClick={() => moveContentBlock(index, "up")}
+                            disabled={index === 0}
+                            className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveContentBlock(index, "down")}
+                            disabled={index === contentBlocks.length - 1}
+                            className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeContentBlock(index)}
+                            className="p-1 text-red-500 hover:text-red-700"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {block.type === "img" ? (
+                          <div>
+                            <input
+                              ref={contentImageRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleContentImageUpload(index, e)}
+                              className="w-full p-2 border border-gray-300 rounded text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-green2 file:text-white"
+                            />
+                            {block.content && (
+                              <img
+                                src={block.content}
+                                alt="Content"
+                                className="mt-2 w-full h-24 object-cover rounded"
+                              />
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">Or paste image URL:</p>
+                            <input
+                              type="text"
+                              value={block.content}
+                              onChange={(e) => updateContentBlock(index, e.target.value)}
+                              placeholder="https://example.com/image.jpg"
+                              className="w-full p-2 border border-gray-300 rounded text-xs mt-1"
+                            />
+                          </div>
+                        ) : block.type === "list" ? (
+                          <div>
+                            <textarea
+                              value={block.content}
+                              onChange={(e) => updateContentBlock(index, e.target.value)}
+                              placeholder="Enter list items separated by commas: Item 1, Item 2, Item 3"
+                              rows={3}
+                              className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Separate items with commas
+                            </p>
+                          </div>
+                        ) : (
+                          <textarea
+                            value={block.content}
+                            onChange={(e) => updateContentBlock(index, e.target.value)}
+                            placeholder={
+                              block.type === "h1" || block.type === "h2"
+                                ? "Enter heading text..."
+                                : "Enter paragraph text..."
+                            }
+                            rows={block.type === "h1" || block.type === "h2" ? 1 : 3}
+                            className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-2 pt-4">
                   <button
                     type="submit"
                     disabled={isUploading}
@@ -1124,18 +1264,7 @@ export default function AdminDashboard() {
                   {editingBlogId && (
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingBlogId(null);
-                        setBlogFormData({
-                          title: "",
-                          content: "",
-                          excerpt: "",
-                          author: "",
-                          category: "general",
-                          tags: "",
-                          status: "draft",
-                        });
-                      }}
+                      onClick={resetBlogForm}
                       className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
                     >
                       Cancel
@@ -1152,7 +1281,7 @@ export default function AdminDashboard() {
               whileInView="animate"
               viewport={{ once: true }}
               custom={5}
-              className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
+              className="bg-white rounded-2xl shadow-lg p-6"
             >
               <h2 className="text-lg font-bold text-gray-900 mb-4">
                 Blog Posts ({blogPosts.length})
@@ -1160,61 +1289,50 @@ export default function AdminDashboard() {
               {blogPosts.length === 0 ? (
                 <div className="text-center py-10 text-gray-500">
                   <p>No blog posts yet.</p>
+                  <p className="text-sm mt-2">Create your first blog post using the form.</p>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                <div className="space-y-4 max-h-[700px] overflow-y-auto">
                   {blogPosts.map((post) => (
                     <div
                       key={post.id}
                       className="p-4 bg-gray-50 rounded-lg"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                post.status === "published"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {post.status}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {post.readTime} min read
-                            </span>
-                          </div>
-                          <h3 className="font-medium text-gray-900">
-                            {post.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 mt-1">
-                            By {post.author} | {post.category}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                            {post.excerpt}
-                          </p>
-                          {post.tags && post.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {post.tags.slice(0, 3).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-xs"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        {post.featuredImage && (
+                      <div className="flex gap-4">
+                        {post.sampleImg && (
                           <img
-                            src={post.featuredImage}
+                            src={post.sampleImg}
                             alt={post.title}
-                            className="w-20 h-20 object-cover rounded-lg ml-4"
+                            className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
                           />
                         )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              post.postType === "top"
+                                ? "bg-green-100 text-green-800"
+                                : post.postType === "featured"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}>
+                              {post.postType}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              #{post.no}
+                            </span>
+                          </div>
+                          <h3 className="font-medium text-gray-900 truncate">
+                            {post.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            By {post.author} | {post.date}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {post.contents?.length || 0} content blocks
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                         <button
                           onClick={() => handleEditBlog(post)}
                           className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
@@ -1227,6 +1345,14 @@ export default function AdminDashboard() {
                         >
                           Delete
                         </button>
+                        <a
+                          href={`/blog/${post.no}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors"
+                        >
+                          View
+                        </a>
                       </div>
                     </div>
                   ))}
@@ -1398,29 +1524,15 @@ export default function AdminDashboard() {
                         </h3>
                         {course.tip && (
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            {course.tip}
+                            Tip: {course.tip}
                           </p>
                         )}
                       </div>
                       <button
                         onClick={() => handleDeleteCourse(course.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors ml-4"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                        Delete
                       </button>
                     </div>
                   ))}
