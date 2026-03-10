@@ -2,8 +2,6 @@
 import { useState } from "react";
 import {
   collection,
-  getDoc,
-  doc,
   query,
   onSnapshot,
 } from "firebase/firestore";
@@ -39,16 +37,24 @@ export const useFetchBlogPosts = () => {
       onSnapshot(
         postsQuery,
         (querySnapshot) => {
-          const list: IBlogPost[] = [];
-          querySnapshot.forEach((doc) => {
-            list.push({ ...doc.data(), id: doc.id } as IBlogPost);
+          const firebasePosts: IBlogPost[] = [];
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Ensure the post has valid contents array
+            if (data.contents && Array.isArray(data.contents)) {
+              firebasePosts.push({ ...data, id: docSnap.id } as IBlogPost);
+            }
           });
-          // Use local fallback if Firebase returns empty
-          if (list.length === 0) {
-            setBlogPosts(localBlogPosts);
-          } else {
-            setBlogPosts(list);
-          }
+          
+          // Merge Firebase posts with local posts, avoiding duplicates
+          // Firebase posts take priority (newer content from admin)
+          const firebasePostNos = new Set(firebasePosts.map(p => p.no));
+          const localPostsFiltered = localBlogPosts.filter(p => !firebasePostNos.has(p.no));
+          
+          // Combine and sort by date/no (newest first)
+          const allPosts = [...firebasePosts, ...localPostsFiltered].sort((a, b) => b.no - a.no);
+          
+          setBlogPosts(allPosts);
           setBlogPostsLoading(false);
         },
         () => {
@@ -82,18 +88,21 @@ export const useFetchBlogPosts = () => {
       onSnapshot(
         postsQuery,
         (querySnapshot) => {
-          const list: IBlogPost[] = [];
-          querySnapshot.forEach((doc) => {
-            list.push({ ...doc.data(), id: doc.id } as IBlogPost);
+          const firebasePosts: IBlogPost[] = [];
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.contents && Array.isArray(data.contents)) {
+              firebasePosts.push({ ...data, id: docSnap.id } as IBlogPost);
+            }
           });
-          // Use local fallback if Firebase returns empty
-          if (list.length === 0) {
-            const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
-            setHomeBlogPosts(shuffled);
-          } else {
-            const shuffled = list.sort(() => 0.5 - Math.random());
-            setHomeBlogPosts(shuffled);
-          }
+          
+          // Merge Firebase posts with local posts
+          const firebasePostNos = new Set(firebasePosts.map(p => p.no));
+          const localPostsFiltered = localBlogPosts.filter(p => !firebasePostNos.has(p.no));
+          const allPosts = [...firebasePosts, ...localPostsFiltered];
+          
+          const shuffled = allPosts.sort(() => 0.5 - Math.random());
+          setHomeBlogPosts(shuffled);
           setHomeBlogPostsLoading(false);
         },
         () => {
@@ -112,12 +121,13 @@ export const useFetchBlogPosts = () => {
       setHomeBlogPostsError(false);
     }
   };
-  const fetchBlogPost = async (id: string) => {
+  const fetchBlogPost = async (postNo: string) => {
     setBlogPostLoading(true);
+    const postNumber = parseInt(postNo, 10);
     
     // If Firebase is not configured, use local data
     if (!isFirebaseConfigured) {
-      const localPost = localBlogPosts.find(p => p.id === id);
+      const localPost = localBlogPosts.find(p => p.no === postNumber || p.id === postNo);
       if (localPost) {
         setBlogPost(localPost as unknown as TBlogPost);
       } else {
@@ -127,26 +137,51 @@ export const useFetchBlogPosts = () => {
       return;
     }
 
-    const postRef = doc(db, "blogPosts", id);
+    // First try to find from Firebase by post number
+    const postsRef = collection(db, "blogPosts");
+    const postsQuery = query(postsRef);
     try {
-      const postSnap = await getDoc(postRef);
-      if (postSnap.exists()) {
-        const postData = postSnap.data() as TBlogPost;
-        setBlogPost(postData);
-        setBlogPostLoading(false);
-      } else {
-        // Try to find in local fallback data
-        const localPost = localBlogPosts.find(p => p.id === id);
-        if (localPost) {
-          setBlogPost(localPost as unknown as TBlogPost);
-        } else {
-          setBlogPost(null);
+      const unsubscribe = onSnapshot(
+        postsQuery,
+        (querySnapshot) => {
+          let foundPost: TBlogPost | null = null;
+          querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data() as TBlogPost;
+            if (data.no === postNumber) {
+              foundPost = { ...data, id: docSnap.id } as unknown as TBlogPost;
+            }
+          });
+          
+          if (foundPost) {
+            setBlogPost(foundPost);
+            setBlogPostLoading(false);
+          } else {
+            // Try to find in local fallback data
+            const localPost = localBlogPosts.find(p => p.no === postNumber || p.id === postNo);
+            if (localPost) {
+              setBlogPost(localPost as unknown as TBlogPost);
+            } else {
+              setBlogPost(null);
+            }
+            setBlogPostLoading(false);
+          }
+          unsubscribe();
+        },
+        () => {
+          // Try to find in local fallback data on error
+          const localPost = localBlogPosts.find(p => p.no === postNumber || p.id === postNo);
+          if (localPost) {
+            setBlogPost(localPost as unknown as TBlogPost);
+            setBlogPostLoading(false);
+          } else {
+            setBlogPostLoading(false);
+            setBlogPostError(true);
+          }
         }
-        setBlogPostLoading(false);
-      }
+      );
     } catch (error) {
       // Try to find in local fallback data on error
-      const localPost = localBlogPosts.find(p => p.id === id);
+      const localPost = localBlogPosts.find(p => p.no === postNumber || p.id === postNo);
       if (localPost) {
         setBlogPost(localPost as unknown as TBlogPost);
         setBlogPostLoading(false);
