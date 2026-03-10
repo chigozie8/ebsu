@@ -231,7 +231,7 @@ const StatsSection = () => {
       custom={1}
       className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
     >
-      {stats.map((stat, index) => (
+      {stats.map((stat) => (
         <div key={stat.label} className="bg-white rounded-xl p-4 text-center shadow-md">
           <p className="text-2xl sm:text-3xl font-bold text-green2">{stat.value}</p>
           <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
