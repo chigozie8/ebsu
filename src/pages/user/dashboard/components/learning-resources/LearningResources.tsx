@@ -5,7 +5,7 @@ import { Spinner } from "../../../../../components/loaders/Spinner";
 import fileSearch from "../../../../../assets/svg/illustrations/fileSearch.svg";
 import checkResources from "../../../../../assets/svg/illustrations/search-files.svg";
 import { FileCard } from "./FileCard";
-import { getCoursesForLevelAndSemester, isPreclinical, MBBSCourse } from "../../../../../data/academics/learning-resources/mbbsCourses";
+import { getCoursesForLevelAndSemester, MBBSCourse } from "../../../../../data/academics/learning-resources/mbbsCourses";
 
 export default function LearningResources() {
   const [section, setSection] = useState<"preclinical" | "clinical">("preclinical");
