@@ -39,6 +39,9 @@ interface IDCardRegistration {
   photoUrl: string;
   email: string;
   status: string;
+  registrationNumber: string;
+  classSet: string;
+  phoneNumber: string;
   createdAt: any;
 }
 
@@ -268,9 +271,10 @@ export default function AdminDashboard() {
               <img src="${card.photoUrl}" class="photo" alt="Student Photo" />
               <div class="info">
                 <p><strong>Name:</strong> ${card.firstName} ${card.surname}</p>
+                <p><strong>Reg. No.:</strong> ${card.registrationNumber || "N/A"}</p>
                 <p><strong>Date of Birth:</strong> ${card.dateOfBirth}</p>
                 <p><strong>Level:</strong> ${card.level}</p>
-                <p><strong>Email:</strong> ${card.email}</p>
+                <p><strong>Class:</strong> ${card.classSet || "N/A"}</p>
               </div>
               <div class="footer">
                 <p>This card is property of EBSU. If found, please return.</p>
@@ -602,10 +606,19 @@ export default function AdminDashboard() {
                         Name
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Reg. No.
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
                         DOB
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
                         Level
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Class
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">
+                        Phone
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-gray-700">
                         Email
@@ -631,8 +644,13 @@ export default function AdminDashboard() {
                         <td className="py-3 px-4">
                           {card.firstName} {card.surname}
                         </td>
+                        <td className="py-3 px-4 text-xs font-medium text-green2">
+                          {card.registrationNumber || "N/A"}
+                        </td>
                         <td className="py-3 px-4">{card.dateOfBirth}</td>
                         <td className="py-3 px-4">{card.level}</td>
+                        <td className="py-3 px-4">{card.classSet || "N/A"}</td>
+                        <td className="py-3 px-4">{card.phoneNumber || "N/A"}</td>
                         <td className="py-3 px-4">{card.email}</td>
                         <td className="py-3 px-4">
                           <button

@@ -6,6 +6,7 @@ export interface LevelCard {
   level: string;
   title: string;
   desc: string;
+  section?: "preclinical" | "clinical";
 }
 export interface CourseCard {
   id: string;

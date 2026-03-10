@@ -8,7 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { firstName, surname, email, phoneNumber, dateOfBirth, level, classSet, photoUrl } = req.body;
+    const { firstName, surname, email, phoneNumber, dateOfBirth, level, classSet, registrationNumber, photoUrl } = req.body;
 
     // Send email notification via Resend
     const response = await fetch("https://api.resend.com/emails", {
@@ -55,6 +55,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               <tr>
                 <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">Level:</td>
                 <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">${level}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">Registration Number:</td>
+                <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; color: #6b7280;">${registrationNumber}</td>
               </tr>
               <tr>
                 <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #374151;">Class:</td>
