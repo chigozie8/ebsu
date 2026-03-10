@@ -49,6 +49,15 @@ export default function BlogPost() {
 
   const readTime = useMemo(() => calculateReadTime(blogPost?.contents), [blogPost?.contents]);
 
+  // Get unique categories from all blog posts
+  const categories = useMemo(() => {
+    if (!blogPosts) return [];
+    const cats = blogPosts
+      .map((post) => (post as { category?: string }).category)
+      .filter((cat): cat is string => Boolean(cat));
+    return [...new Set(cats)];
+  }, [blogPosts]);
+
   useEffect(() => {
     if (postID && postType) {
       try {
@@ -215,21 +224,23 @@ export default function BlogPost() {
                   )}
               </div>
               {/* Categories Section */}
-              <div className="mb-4 bg-white shadow rounded-lg p-4">
-                <h2 className="text-base sm:text-md md:text-lg font-semibold mb-3 text-green1">
-                  Categories
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {['Education', 'Health', 'Technology', 'Lifestyle', 'News', 'Research', 'Campus Life', 'Career'].map((category) => (
-                    <span 
-                      key={category}
-                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full hover:bg-green2/10 hover:text-green2 cursor-pointer transition-colors"
-                    >
-                      {category}
-                    </span>
-                  ))}
+              {categories.length > 0 && (
+                <div className="mb-4 bg-white shadow rounded-lg p-4">
+                  <h2 className="text-base sm:text-md md:text-lg font-semibold mb-3 text-green1">
+                    Categories
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <span 
+                        key={category}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full hover:bg-green2/10 hover:text-green2 cursor-pointer transition-colors"
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <CommentSection />
             </div>
           </div>

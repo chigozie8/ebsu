@@ -9,6 +9,7 @@ import {
   PopoverContent,
 } from "@material-tailwind/react";
 import { useBlogComments } from "../../hooks/useBlogComments";
+import { useCommentLikes } from "../../hooks/useCommentLikes";
 import Lottie from "lottie-react";
 import profile from "../../../../../json/animation/avatar1.json";
 import { PaperPlaneIcon } from "../../../../../components/icons/general/PaperPlaneIcon";
@@ -23,6 +24,7 @@ export const Comments: FC<PostCommentsProp> = ({ postComments }) => {
     setReplyingTo, 
     addReplyComment 
   } = useBlogComments();
+  const { toggleCommentLike, isCommentLiked, likingCommentId } = useCommentLikes();
 
   // Filter top-level comments (no parentCommentID)
   const topLevelComments = postComments.filter(c => !c.parentCommentID);
@@ -42,10 +44,14 @@ export const Comments: FC<PostCommentsProp> = ({ postComments }) => {
       commentUserID,
       commentID,
       profileImageURL,
+      likes = 0,
+      likedBy = [],
     }: IPostComment,
     isReply = false
   ) => {
     const replies = getReplies(commentID);
+    const liked = isCommentLiked(likedBy);
+    const isLiking = likingCommentId === commentID;
     
     return (
       <div key={commentID} className={`${isReply ? 'ml-6 sm:ml-10' : ''}`}>
@@ -110,15 +116,34 @@ export const Comments: FC<PostCommentsProp> = ({ postComments }) => {
                 {comment}
               </p>
             </div>
-            {/* Reply button */}
-            {!isReply && (
+            {/* Like and Reply buttons */}
+            <div className="flex items-center gap-3 mt-1">
               <button
-                onClick={() => setReplyingTo(replyingTo === commentID ? null : commentID)}
-                className="text-xss sm:text-xs text-green2 hover:text-green1 font-medium mt-1 self-start"
+                onClick={() => toggleCommentLike(commentID, likes, likedBy)}
+                disabled={isLiking}
+                className={`flex items-center gap-1 text-xss sm:text-xs font-medium transition-colors ${
+                  liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                }`}
               >
-                {replyingTo === commentID ? 'Cancel' : 'Reply'}
+                <svg 
+                  className={`w-3.5 h-3.5 ${liked ? 'fill-red-500' : 'fill-none stroke-current'}`} 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={liked ? 0 : 2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>{likes > 0 ? likes : ''}</span>
               </button>
-            )}
+              {!isReply && (
+                <button
+                  onClick={() => setReplyingTo(replyingTo === commentID ? null : commentID)}
+                  className="text-xss sm:text-xs text-green2 hover:text-green1 font-medium"
+                >
+                  {replyingTo === commentID ? 'Cancel' : 'Reply'}
+                </button>
+              )}
+            </div>
             {/* Reply input */}
             {replyingTo === commentID && (
               <div className="flex items-center gap-2 mt-2">
