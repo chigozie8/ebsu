@@ -508,7 +508,8 @@ export const GeneralNavbar = () => {
                   <Dropdown
                     arrowIcon={false}
                     inline
-                    className="z-[999] "
+                    className="z-[999]"
+                    theme={customDropdownTheme}
                     label={
                       <>
                         {studentDetails &&
