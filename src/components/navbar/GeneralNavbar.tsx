@@ -18,7 +18,6 @@ import { useState, useEffect } from "react";
 import { BurgerIcon } from "../icons/nav/BurgerIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants4 } from "../../animation/variants";
-import { ThemeToggle } from "../theme/ThemeToggle";
 
 export const GeneralNavbar = () => {
   const { studentDetails, user, loading } = useGetUserInfo();
@@ -490,32 +489,20 @@ export const GeneralNavbar = () => {
                 </NavLink>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <motion.div
-                variants={fadeInVariants4}
-                initial="initial"
-                whileInView="animate"
-                viewport={{
-                  once: true,
-                }}
-                custom={10}
-              >
-                <ThemeToggle className="w-8 h-8 sm:w-9 sm:h-9" />
-              </motion.div>
-              <motion.div
-                variants={fadeInVariants4}
-                initial="initial"
-                whileInView="animate"
-                viewport={{
-                  once: true,
-                }}
-                custom={11}
-              >
-                {loading ? (
-                  <Skeleton
-                    circle={true}
-                    className="h-[34px] w-[34px] md:h-[36px] md:w-[36px]"
-                  />
+            <motion.div
+              variants={fadeInVariants4}
+              initial="initial"
+              whileInView="animate"
+              viewport={{
+                once: true,
+              }}
+              custom={11}
+            >
+              {loading ? (
+                <Skeleton
+                  circle={true}
+                  className="h-[34px] w-[34px] md:h-[36px] md:w-[36px]"
+                />
               ) : user ? (
                 studentDetails ? (
                   <Dropdown
@@ -608,7 +595,6 @@ export const GeneralNavbar = () => {
                 </Link>
               )}
             </motion.div>
-            </div>
           </div>
         </div>
       </nav>
