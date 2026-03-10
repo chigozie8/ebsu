@@ -85,81 +85,112 @@ export const preclinicalCourses: LevelCourses = {
   },
 };
 
-// Clinical Courses (400L - 600L / Year 4-6)
-export const clinicalCourses: LevelCourses = {
-  "400": {
-    First: [
-      { courseCode: "PAT 401", courseTitle: "General Pathology I" },
-      { courseCode: "PAT 403", courseTitle: "Systemic Pathology I" },
-      { courseCode: "PHA 401", courseTitle: "General Pharmacology I" },
-      { courseCode: "PHA 403", courseTitle: "Autonomic Pharmacology" },
-      { courseCode: "MIC 401", courseTitle: "General Microbiology" },
-      { courseCode: "MIC 403", courseTitle: "Medical Bacteriology I" },
-      { courseCode: "CHE 401", courseTitle: "Chemical Pathology I" },
-      { courseCode: "HAE 401", courseTitle: "Haematology I" },
-    ],
-    Second: [
-      { courseCode: "PAT 402", courseTitle: "General Pathology II" },
-      { courseCode: "PAT 404", courseTitle: "Systemic Pathology II" },
-      { courseCode: "PHA 402", courseTitle: "General Pharmacology II" },
-      { courseCode: "PHA 404", courseTitle: "Cardiovascular Pharmacology" },
-      { courseCode: "MIC 402", courseTitle: "Medical Bacteriology II" },
-      { courseCode: "MIC 404", courseTitle: "Medical Virology" },
-      { courseCode: "CHE 402", courseTitle: "Chemical Pathology II" },
-      { courseCode: "HAE 402", courseTitle: "Haematology II" },
-      { courseCode: "PAR 401", courseTitle: "Medical Parasitology" },
-    ],
-  },
-  "500": {
-    First: [
-      { courseCode: "MED 501", courseTitle: "Internal Medicine I (General Medicine)" },
-      { courseCode: "MED 503", courseTitle: "Cardiology" },
-      { courseCode: "MED 505", courseTitle: "Pulmonology" },
-      { courseCode: "SUR 501", courseTitle: "General Surgery I" },
-      { courseCode: "SUR 503", courseTitle: "Surgical Techniques" },
-      { courseCode: "PED 501", courseTitle: "Paediatrics I (General Paediatrics)" },
-      { courseCode: "O&G 501", courseTitle: "Obstetrics I" },
-      { courseCode: "PSY 501", courseTitle: "Psychiatry I" },
-      { courseCode: "COM 501", courseTitle: "Community Medicine I (Epidemiology)" },
-    ],
-    Second: [
-      { courseCode: "MED 502", courseTitle: "Internal Medicine II (Gastroenterology)" },
-      { courseCode: "MED 504", courseTitle: "Nephrology" },
-      { courseCode: "MED 506", courseTitle: "Neurology" },
-      { courseCode: "SUR 502", courseTitle: "General Surgery II" },
-      { courseCode: "SUR 504", courseTitle: "Orthopaedic Surgery" },
-      { courseCode: "PED 502", courseTitle: "Paediatrics II (Neonatology)" },
-      { courseCode: "O&G 502", courseTitle: "Gynaecology I" },
-      { courseCode: "PSY 502", courseTitle: "Psychiatry II" },
-      { courseCode: "COM 502", courseTitle: "Community Medicine II (Public Health)" },
-    ],
-  },
-  "600": {
-    First: [
-      { courseCode: "MED 601", courseTitle: "Internal Medicine III (Endocrinology)" },
-      { courseCode: "MED 603", courseTitle: "Haematology/Oncology" },
-      { courseCode: "MED 605", courseTitle: "Infectious Diseases" },
-      { courseCode: "SUR 601", courseTitle: "Cardiothoracic Surgery" },
-      { courseCode: "SUR 603", courseTitle: "Neurosurgery" },
-      { courseCode: "SUR 605", courseTitle: "Urology" },
-      { courseCode: "PED 601", courseTitle: "Paediatrics III (Emergencies)" },
-      { courseCode: "O&G 601", courseTitle: "Obstetrics II (High Risk Pregnancy)" },
-      { courseCode: "OPH 601", courseTitle: "Ophthalmology" },
-      { courseCode: "ENT 601", courseTitle: "Otorhinolaryngology (ENT)" },
-    ],
-    Second: [
-      { courseCode: "MED 602", courseTitle: "Internal Medicine IV (Dermatology)" },
-      { courseCode: "MED 604", courseTitle: "Geriatric Medicine" },
-      { courseCode: "SUR 602", courseTitle: "Plastic & Reconstructive Surgery" },
-      { courseCode: "SUR 604", courseTitle: "Paediatric Surgery" },
-      { courseCode: "PED 602", courseTitle: "Paediatrics IV (Adolescent Health)" },
-      { courseCode: "O&G 602", courseTitle: "Gynaecology II (Gynaecologic Oncology)" },
-      { courseCode: "ANA 601", courseTitle: "Anaesthesiology" },
-      { courseCode: "RAD 601", courseTitle: "Radiology & Imaging" },
-      { courseCode: "COM 601", courseTitle: "Community Medicine III (Health Management)" },
-      { courseCode: "FOR 601", courseTitle: "Forensic Medicine & Toxicology" },
-    ],
-  },
+// Clinical Courses (400L - 600L / Year 4-6) - No semesters, year-long rotations
+export interface ClinicalLevelCourses {
+  [level: string]: MBBSCourse[];
+}
+
+export const clinicalCourses: ClinicalLevelCourses = {
+  "400": [
+    // Pathology
+    { courseCode: "PAT 401", courseTitle: "General Pathology" },
+    { courseCode: "PAT 402", courseTitle: "Systemic Pathology I" },
+    { courseCode: "PAT 403", courseTitle: "Systemic Pathology II" },
+    { courseCode: "PAT 404", courseTitle: "Clinical Pathology" },
+    { courseCode: "PAT 405", courseTitle: "Histopathology" },
+    // Pharmacology
+    { courseCode: "PHA 401", courseTitle: "General Pharmacology" },
+    { courseCode: "PHA 402", courseTitle: "Autonomic Pharmacology" },
+    { courseCode: "PHA 403", courseTitle: "Cardiovascular Pharmacology" },
+    { courseCode: "PHA 404", courseTitle: "CNS Pharmacology" },
+    { courseCode: "PHA 405", courseTitle: "Chemotherapy & Antibiotics" },
+    { courseCode: "PHA 406", courseTitle: "Endocrine Pharmacology" },
+    // Microbiology
+    { courseCode: "MIC 401", courseTitle: "General Microbiology" },
+    { courseCode: "MIC 402", courseTitle: "Medical Bacteriology" },
+    { courseCode: "MIC 403", courseTitle: "Medical Virology" },
+    { courseCode: "MIC 404", courseTitle: "Medical Mycology" },
+    { courseCode: "MIC 405", courseTitle: "Medical Parasitology" },
+    { courseCode: "MIC 406", courseTitle: "Immunology" },
+    // Chemical Pathology & Haematology
+    { courseCode: "CHE 401", courseTitle: "Chemical Pathology I" },
+    { courseCode: "CHE 402", courseTitle: "Chemical Pathology II" },
+    { courseCode: "HAE 401", courseTitle: "Haematology I" },
+    { courseCode: "HAE 402", courseTitle: "Haematology II" },
+    { courseCode: "HAE 403", courseTitle: "Blood Transfusion Science" },
+  ],
+  "500": [
+    // Internal Medicine
+    { courseCode: "MED 501", courseTitle: "Internal Medicine I - General Medicine" },
+    { courseCode: "MED 502", courseTitle: "Internal Medicine II - Cardiology" },
+    { courseCode: "MED 503", courseTitle: "Internal Medicine III - Pulmonology" },
+    { courseCode: "MED 504", courseTitle: "Internal Medicine IV - Gastroenterology" },
+    { courseCode: "MED 505", courseTitle: "Internal Medicine V - Nephrology" },
+    { courseCode: "MED 506", courseTitle: "Internal Medicine VI - Neurology" },
+    { courseCode: "MED 507", courseTitle: "Internal Medicine VII - Endocrinology" },
+    { courseCode: "MED 508", courseTitle: "Internal Medicine VIII - Rheumatology" },
+    // Surgery
+    { courseCode: "SUR 501", courseTitle: "General Surgery I" },
+    { courseCode: "SUR 502", courseTitle: "General Surgery II" },
+    { courseCode: "SUR 503", courseTitle: "Surgical Techniques" },
+    { courseCode: "SUR 504", courseTitle: "Orthopaedic Surgery" },
+    { courseCode: "SUR 505", courseTitle: "Trauma & Emergency Surgery" },
+    // Paediatrics
+    { courseCode: "PED 501", courseTitle: "General Paediatrics" },
+    { courseCode: "PED 502", courseTitle: "Neonatology" },
+    { courseCode: "PED 503", courseTitle: "Paediatric Emergencies" },
+    { courseCode: "PED 504", courseTitle: "Paediatric Nutrition" },
+    // Obstetrics & Gynaecology
+    { courseCode: "O&G 501", courseTitle: "Obstetrics I - Normal Pregnancy" },
+    { courseCode: "O&G 502", courseTitle: "Obstetrics II - High Risk Pregnancy" },
+    { courseCode: "O&G 503", courseTitle: "Gynaecology I" },
+    { courseCode: "O&G 504", courseTitle: "Gynaecology II" },
+    // Psychiatry
+    { courseCode: "PSY 501", courseTitle: "General Psychiatry" },
+    { courseCode: "PSY 502", courseTitle: "Clinical Psychiatry" },
+    { courseCode: "PSY 503", courseTitle: "Child & Adolescent Psychiatry" },
+    // Community Medicine
+    { courseCode: "COM 501", courseTitle: "Epidemiology" },
+    { courseCode: "COM 502", courseTitle: "Public Health" },
+    { courseCode: "COM 503", courseTitle: "Biostatistics" },
+  ],
+  "600": [
+    // Advanced Internal Medicine
+    { courseCode: "MED 601", courseTitle: "Internal Medicine - Haematology/Oncology" },
+    { courseCode: "MED 602", courseTitle: "Internal Medicine - Infectious Diseases" },
+    { courseCode: "MED 603", courseTitle: "Internal Medicine - Dermatology" },
+    { courseCode: "MED 604", courseTitle: "Internal Medicine - Geriatric Medicine" },
+    { courseCode: "MED 605", courseTitle: "Internal Medicine - Clinical Toxicology" },
+    { courseCode: "MED 606", courseTitle: "Internal Medicine - Intensive Care" },
+    // Surgical Specialties
+    { courseCode: "SUR 601", courseTitle: "Cardiothoracic Surgery" },
+    { courseCode: "SUR 602", courseTitle: "Neurosurgery" },
+    { courseCode: "SUR 603", courseTitle: "Urology" },
+    { courseCode: "SUR 604", courseTitle: "Plastic & Reconstructive Surgery" },
+    { courseCode: "SUR 605", courseTitle: "Paediatric Surgery" },
+    { courseCode: "SUR 606", courseTitle: "Vascular Surgery" },
+    { courseCode: "SUR 607", courseTitle: "Surgical Oncology" },
+    // Other Specialties
+    { courseCode: "OPH 601", courseTitle: "Ophthalmology" },
+    { courseCode: "ENT 601", courseTitle: "Otorhinolaryngology (ENT)" },
+    { courseCode: "ANA 601", courseTitle: "Anaesthesiology" },
+    { courseCode: "RAD 601", courseTitle: "Radiology & Medical Imaging" },
+    { courseCode: "RAD 602", courseTitle: "Nuclear Medicine" },
+    { courseCode: "FOR 601", courseTitle: "Forensic Medicine & Toxicology" },
+    { courseCode: "FOR 602", courseTitle: "Medical Ethics & Jurisprudence" },
+    // Final Year Courses
+    { courseCode: "PED 601", courseTitle: "Advanced Paediatrics" },
+    { courseCode: "O&G 601", courseTitle: "Advanced Obstetrics" },
+    { courseCode: "O&G 602", courseTitle: "Gynaecologic Oncology" },
+    { courseCode: "COM 601", courseTitle: "Health Systems Management" },
+    { courseCode: "COM 602", courseTitle: "Primary Health Care" },
+    { courseCode: "COM 603", courseTitle: "Research Methodology" },
+    // Clinical Clerkships
+    { courseCode: "CLK 601", courseTitle: "Medicine Clerkship" },
+    { courseCode: "CLK 602", courseTitle: "Surgery Clerkship" },
+    { courseCode: "CLK 603", courseTitle: "Paediatrics Clerkship" },
+    { courseCode: "CLK 604", courseTitle: "O&G Clerkship" },
+  ],
 };
 
 // Combined structure for easy access
@@ -169,14 +200,22 @@ export const mbbsCourses = {
 };
 
 // Helper function to get all courses for a specific level and semester
-export function getCoursesForLevelAndSemester(level: string, semester: "First" | "Second"): MBBSCourse[] {
+// For clinical years (400-600), semester is ignored as they have year-long rotations
+export function getCoursesForLevelAndSemester(level: string, semester?: "First" | "Second"): MBBSCourse[] {
   const numLevel = parseInt(level);
   
   if (numLevel <= 300) {
-    return preclinicalCourses[level]?.[semester] || [];
+    // Preclinical: has semesters
+    return preclinicalCourses[level]?.[semester || "First"] || [];
   } else {
-    return clinicalCourses[level]?.[semester] || [];
+    // Clinical: no semesters, return all courses for the year
+    return clinicalCourses[level] || [];
   }
+}
+
+// Helper function to get all courses for a clinical level (no semester needed)
+export function getClinicalCourses(level: string): MBBSCourse[] {
+  return clinicalCourses[level] || [];
 }
 
 // Helper to determine if a level is preclinical or clinical
@@ -188,4 +227,9 @@ export function isPreclinical(level: string): boolean {
 // Get section name based on level
 export function getSectionName(level: string): string {
   return isPreclinical(level) ? "Preclinical" : "Clinical";
+}
+
+// Check if level has semesters (only preclinical has semesters)
+export function hasSemesters(level: string): boolean {
+  return isPreclinical(level);
 }

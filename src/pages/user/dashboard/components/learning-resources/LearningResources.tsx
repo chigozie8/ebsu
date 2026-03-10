@@ -5,7 +5,7 @@ import { Spinner } from "../../../../../components/loaders/Spinner";
 import fileSearch from "../../../../../assets/svg/illustrations/fileSearch.svg";
 import checkResources from "../../../../../assets/svg/illustrations/search-files.svg";
 import { FileCard } from "./FileCard";
-import { getCoursesForLevelAndSemester, MBBSCourse } from "../../../../../data/academics/learning-resources/mbbsCourses";
+import { getCoursesForLevelAndSemester, MBBSCourse, isPreclinical, getClinicalCourses } from "../../../../../data/academics/learning-resources/mbbsCourses";
 
 export default function LearningResources() {
   const [section, setSection] = useState<"preclinical" | "clinical">("preclinical");
@@ -20,10 +20,21 @@ export default function LearningResources() {
 
   // Update available courses when level and semester change
   useEffect(() => {
-    if (level && semester) {
-      const courses = getCoursesForLevelAndSemester(level, semester as "First" | "Second");
-      setAvailableCourses(courses);
-      setCourse(null); // Reset course selection
+    if (level) {
+      const levelIsPreclinical = isPreclinical(level);
+      if (levelIsPreclinical && semester) {
+        // Preclinical: requires semester selection
+        const courses = getCoursesForLevelAndSemester(level, semester as "First" | "Second");
+        setAvailableCourses(courses);
+        setCourse(null);
+      } else if (!levelIsPreclinical) {
+        // Clinical: no semesters, get all courses for the year
+        const courses = getClinicalCourses(level);
+        setAvailableCourses(courses);
+        setCourse(null);
+      } else {
+        setAvailableCourses([]);
+      }
     } else {
       setAvailableCourses([]);
     }
@@ -120,30 +131,32 @@ export default function LearningResources() {
                 </select>
               </div>
 
-              {/* Semester Select */}
-              <div>
-                <select
-                  onChange={(e) => {
-                    setSemester(e.target.value);
-                    setCourse(null);
-                  }}
-                  value={semester || ""}
-                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2"
-                >
-                  <option value="" disabled>
-                    Select Semester
-                  </option>
-                  <option value="First">First Semester</option>
-                  <option value="Second">Second Semester</option>
-                </select>
-              </div>
+              {/* Semester Select - Only for Preclinical */}
+              {section === "preclinical" && (
+                <div>
+                  <select
+                    onChange={(e) => {
+                      setSemester(e.target.value);
+                      setCourse(null);
+                    }}
+                    value={semester || ""}
+                    className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2"
+                  >
+                    <option value="" disabled>
+                      Select Semester
+                    </option>
+                    <option value="First">First Semester</option>
+                    <option value="Second">Second Semester</option>
+                  </select>
+                </div>
+              )}
 
               {/* Course Select */}
               <div>
                 <select
                   onChange={(e) => setCourse(e.target.value)}
                   value={course || ""}
-                  disabled={!level || !semester}
+                  disabled={section === "preclinical" ? (!level || !semester) : !level}
                   className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="" disabled>
@@ -193,13 +206,13 @@ export default function LearningResources() {
             </div>
 
             {/* Current Selection Info */}
-            {(level || semester || course) && (
+            {(level || course) && (
               <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
                   <span className="font-medium text-gray-700">Selected: </span>
                   {section === "preclinical" ? "Preclinical" : "Clinical"}
                   {level && ` / ${level}L`}
-                  {semester && ` / ${semester} Semester`}
+                  {section === "preclinical" && semester && ` / ${semester} Semester`}
                   {course && ` / ${course}`}
                 </p>
               </div>
