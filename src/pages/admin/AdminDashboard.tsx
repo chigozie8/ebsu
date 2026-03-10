@@ -78,18 +78,29 @@ interface CourseEntry {
   createdAt: any;
 }
 
+interface LevelEntry {
+  id: string;
+  level: string;
+  title: string;
+  desc: string;
+  section: "preclinical" | "clinical";
+  order: number;
+  createdAt: any;
+}
+
 // Admin email - add your admin email here
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels">(
     "materials"
   );
   const [materials, setMaterials] = useState<Material[]>([]);
   const [idCards, setIdCards] = useState<IDCardRegistration[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [courses, setCourses] = useState<CourseEntry[]>([]);
+  const [levels, setLevels] = useState<LevelEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,6 +141,15 @@ export default function AdminDashboard() {
     tip: "",
   });
 
+  // Level form state
+  const [levelFormData, setLevelFormData] = useState({
+    level: "",
+    title: "",
+    desc: "",
+    section: "preclinical" as "preclinical" | "clinical",
+  });
+  const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
+
   // Check if user is admin
   const isAdmin =
     studentDetails?.email === ADMIN_EMAIL ||
@@ -141,6 +161,7 @@ export default function AdminDashboard() {
       fetchIDCards();
       fetchBlogPosts();
       fetchCourses();
+      fetchLevels();
     }
   }, [isAdmin]);
 
@@ -211,6 +232,23 @@ export default function AdminDashboard() {
       setCourses(coursesData);
     } catch (error) {
       console.error("Error fetching courses:", error);
+    }
+  };
+
+  const fetchLevels = async () => {
+    try {
+      const q = query(
+        collection(db, "learningResourceLevels"),
+        orderBy("order", "asc")
+      );
+      const snapshot = await getDocs(q);
+      const levelsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as LevelEntry[];
+      setLevels(levelsData);
+    } catch (error) {
+      console.error("Error fetching levels:", error);
     }
   };
 
@@ -623,6 +661,97 @@ export default function AdminDashboard() {
     }
   };
 
+  // Level functions
+  const handleLevelInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setLevelFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitLevel = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!levelFormData.level || !levelFormData.title || !levelFormData.desc) {
+      notifyUser("error", "Please fill in all required fields");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      notifyUser("loading", editingLevelId ? "Updating level..." : "Adding level...");
+
+      // Determine the order based on level number
+      const levelNum = parseInt(levelFormData.level);
+      const order = levelNum / 100;
+
+      const levelData = {
+        level: levelFormData.level,
+        title: levelFormData.title,
+        desc: levelFormData.desc,
+        section: levelFormData.section,
+        order,
+      };
+
+      if (editingLevelId) {
+        await updateDoc(doc(db, "learningResourceLevels", editingLevelId), levelData);
+        notifyUser("success", "Level updated successfully!");
+      } else {
+        await addDoc(collection(db, "learningResourceLevels"), {
+          ...levelData,
+          createdAt: serverTimestamp(),
+        });
+        notifyUser("success", "Level added successfully!");
+      }
+
+      resetLevelForm();
+      fetchLevels();
+    } catch (error: any) {
+      console.error("Error saving level:", error);
+      notifyUser("error", "Failed to save level. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const resetLevelForm = () => {
+    setLevelFormData({
+      level: "",
+      title: "",
+      desc: "",
+      section: "preclinical",
+    });
+    setEditingLevelId(null);
+  };
+
+  const handleEditLevel = (level: LevelEntry) => {
+    setLevelFormData({
+      level: level.level,
+      title: level.title,
+      desc: level.desc,
+      section: level.section,
+    });
+    setEditingLevelId(level.id);
+    setActiveTab("levels");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteLevel = async (levelId: string) => {
+    if (!confirm("Are you sure you want to delete this level?")) return;
+
+    try {
+      await deleteDoc(doc(db, "learningResourceLevels", levelId));
+      notifyUser("success", "Level deleted successfully");
+      fetchLevels();
+    } catch (error) {
+      console.error("Error deleting level:", error);
+      notifyUser("error", "Failed to delete level");
+    }
+  };
+
   const printIDCard = (card: IDCardRegistration) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
@@ -787,6 +916,16 @@ export default function AdminDashboard() {
             }`}
           >
             Courses
+          </button>
+          <button
+            onClick={() => setActiveTab("levels")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "levels"
+                ? "bg-green2 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Learning Resources
           </button>
         </div>
 
@@ -1621,6 +1760,257 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {/* Learning Resources Levels Tab */}
+        {activeTab === "levels" && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Level Form */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={3}
+              className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                {editingLevelId ? "Edit Level" : "Add New Level"}
+              </h2>
+              <form onSubmit={handleSubmitLevel} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Level <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="level"
+                    value={levelFormData.level}
+                    onChange={handleLevelInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="">Select Level</option>
+                    <option value="100">100 Level</option>
+                    <option value="200">200 Level</option>
+                    <option value="300">300 Level</option>
+                    <option value="400">400 Level</option>
+                    <option value="500">500 Level</option>
+                    <option value="600">600 Level</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={levelFormData.title}
+                    onChange={handleLevelInputChange}
+                    placeholder="e.g., 100 Level (Year 1)"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="desc"
+                    value={levelFormData.desc}
+                    onChange={handleLevelInputChange}
+                    placeholder="Description of what students learn at this level..."
+                    rows={4}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Section <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="section"
+                    value={levelFormData.section}
+                    onChange={handleLevelInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="preclinical">Preclinical (Year 1-3)</option>
+                    <option value="clinical">Clinical (Year 4-6)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Preclinical: 100-300 Level | Clinical: 400-600 Level
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="flex-1 bg-green2 hover:bg-green1 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                        <span>{editingLevelId ? "Updating..." : "Adding..."}</span>
+                      </>
+                    ) : (
+                      editingLevelId ? "Update Level" : "Add Level"
+                    )}
+                  </button>
+                  {editingLevelId && (
+                    <button
+                      type="button"
+                      onClick={resetLevelForm}
+                      className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </motion.div>
+
+            {/* Levels List */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={5}
+              className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Learning Resource Levels ({levels.length})
+              </h2>
+              
+              {/* Info Box */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Note:</strong> Add levels here to customize the Learning Resources page. 
+                  These will override the default static levels defined in the code.
+                </p>
+              </div>
+
+              {levels.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No custom levels added yet.</p>
+                  <p className="text-sm mt-2">
+                    Default levels (100-600) are currently being used from the static configuration.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Preclinical Levels */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+                      Preclinical (Year 1-3)
+                    </h3>
+                    <div className="space-y-2">
+                      {levels
+                        .filter((l) => l.section === "preclinical")
+                        .sort((a, b) => a.order - b.order)
+                        .map((level) => (
+                          <div
+                            key={level.id}
+                            className="flex items-start justify-between p-4 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-green2 text-sm">
+                                  {level.level}L
+                                </span>
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                  Preclinical
+                                </span>
+                              </div>
+                              <h3 className="font-medium text-gray-900 text-sm">
+                                {level.title}
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {level.desc}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => handleEditLevel(level)}
+                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLevel(level.id)}
+                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      {levels.filter((l) => l.section === "preclinical").length === 0 && (
+                        <p className="text-sm text-gray-400 py-2">No preclinical levels added</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Clinical Levels */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                      Clinical (Year 4-6)
+                    </h3>
+                    <div className="space-y-2">
+                      {levels
+                        .filter((l) => l.section === "clinical")
+                        .sort((a, b) => a.order - b.order)
+                        .map((level) => (
+                          <div
+                            key={level.id}
+                            className="flex items-start justify-between p-4 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-green2 text-sm">
+                                  {level.level}L
+                                </span>
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+                                  Clinical
+                                </span>
+                              </div>
+                              <h3 className="font-medium text-gray-900 text-sm">
+                                {level.title}
+                              </h3>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {level.desc}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => handleEditLevel(level)}
+                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLevel(level.id)}
+                                className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      {levels.filter((l) => l.section === "clinical").length === 0 && (
+                        <p className="text-sm text-gray-400 py-2">No clinical levels added</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </motion.div>
