@@ -1,40 +1,119 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { CourseOptions } from "./CourseOptions";
 import { ICourseInfo } from "../../../../../models/academics/course-outline/courseInfo";
+import { OutlineIcon } from "../../../../../components/icons/dashboard/Outline";
+import reading from "../../../../../assets/svg/illustrations/reading.svg";
+import { db } from "../../../../../config/firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { Spinner } from "../../../../../components/loaders/Spinner";
+
+// Fallback to static data if no data in Firestore
 import { courseInfo100 } from "../../../../../data/academics/course-outlines/levels/100/info/courseInfo100";
 import { courseInfo200 } from "../../../../../data/academics/course-outlines/levels/200/info/courseInfo200";
 import { courseInfo300 } from "../../../../../data/academics/course-outlines/levels/300/info/courseInfo300";
 import { courseInfo400 } from "../../../../../data/academics/course-outlines/levels/400/info/courseInfo400";
 import { courseInfo500 } from "../../../../../data/academics/course-outlines/levels/500/info/courseInfo500";
-import { OutlineIcon } from "../../../../../components/icons/dashboard/Outline";
-import reading from "../../../../../assets/svg/illustrations/reading.svg";
-export default function CourseOutlines() {
-  const [semester, setSemester] = useState<string | null>();
-  const [level, setLevel] = useState<string | null>();
-  const [course, setCourse] = useState<string | null>();
-  const [courseInfo, setCourseInfo] = useState<ICourseInfo | null>();
 
+interface CourseOutlineEntry {
+  id: string;
+  courseCode: string;
+  courseTitle: string;
+  creditUnit: number;
+  creditUnits: string;
+  preRequisite: string | null;
+  level: string;
+  semester: "First" | "Second";
+  info: { heading: string; content: string }[];
+}
+
+export default function CourseOutlines() {
+  const [semester, setSemester] = useState<string | null>(null);
+  const [level, setLevel] = useState<string | null>(null);
+  const [course, setCourse] = useState<string | null>(null);
+  const [courseInfo, setCourseInfo] = useState<ICourseInfo | null>(null);
+  const [availableCourses, setAvailableCourses] = useState<CourseOutlineEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [allOutlines, setAllOutlines] = useState<CourseOutlineEntry[]>([]);
+
+  // Fetch all course outlines from Firestore on mount
   useEffect(() => {
-    if (semester && course) {
-      if (level === "100") {
-        setCourseInfo(courseInfo100[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "200") {
-        setCourseInfo(courseInfo200[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "300") {
-        setCourseInfo(courseInfo300[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "400") {
-        setCourseInfo(courseInfo400[semester][course]);
-        console.log(courseInfo);
-      } else if (level === "500") {
-        setCourseInfo(courseInfo500[semester][course]);
-        console.log(courseInfo);
+    const fetchAllOutlines = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "courseOutlines"));
+        const outlines = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as CourseOutlineEntry[];
+        setAllOutlines(outlines);
+      } catch (error) {
+        console.error("Error fetching course outlines:", error);
       }
+    };
+    fetchAllOutlines();
+  }, []);
+
+  // Update available courses when level and semester change
+  useEffect(() => {
+    if (level && semester) {
+      setCourse(null);
+      setCourseInfo(null);
+      
+      // Filter courses from Firestore data
+      const filteredCourses = allOutlines.filter(
+        (o) => o.level === level && o.semester === semester
+      );
+      setAvailableCourses(filteredCourses);
+    } else {
+      setAvailableCourses([]);
     }
-  }, [level, course, semester, courseInfo]);
+  }, [level, semester, allOutlines]);
+
+  // Fetch course info when course is selected
+  useEffect(() => {
+    if (!semester || !course || !level) {
+      setCourseInfo(null);
+      return;
+    }
+
+    setIsLoading(true);
+
+    // First try to find in Firestore data
+    const firestoreOutline = allOutlines.find(
+      (o) => o.level === level && o.semester === semester && o.courseCode === course
+    );
+
+    if (firestoreOutline) {
+      setCourseInfo({
+        courseCode: firestoreOutline.courseCode,
+        courseTitle: firestoreOutline.courseTitle,
+        creditUnit: firestoreOutline.creditUnit,
+        creditUnits: firestoreOutline.creditUnits,
+        preRequisite: firestoreOutline.preRequisite,
+        info: firestoreOutline.info,
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Fallback to static data
+    try {
+      const staticData: any = {
+        "100": courseInfo100,
+        "200": courseInfo200,
+        "300": courseInfo300,
+        "400": courseInfo400,
+        "500": courseInfo500,
+      };
+
+      if (staticData[level]?.[semester]?.[course]) {
+        setCourseInfo(staticData[level][semester][course]);
+      }
+    } catch (error) {
+      console.error("Error loading static course info:", error);
+    }
+    
+    setIsLoading(false);
+  }, [level, course, semester, allOutlines]);
   return (
     <div className="min-h-screen w-full bg-white">
       <div className="box-width">
@@ -87,19 +166,28 @@ export default function CourseOutlines() {
                 <select
                   id="underline_select"
                   onChange={(e) => setCourse(e.target.value)}
-                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 "
+                  value={course || ""}
+                  disabled={!level || !semester}
+                  className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option selected disabled defaultChecked>
-                    Select Course
+                  <option value="" disabled>
+                    {!level || !semester ? "Select level & semester first" : availableCourses.length === 0 ? "No courses available" : "Select Course"}
                   </option>
-                  {level && semester && (
-                    <CourseOptions semester={semester} level={level} />
-                  )}
+                  {availableCourses.map((c) => (
+                    <option key={c.id} value={c.courseCode}>
+                      {c.courseCode} - {c.courseTitle}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
-            {courseInfo ? (
-              <div className="course-info rounded-lg bg-white shadow p-3 sm:p-6 max-w-2xl relative">
+            {isLoading ? (
+              <div className="w-full mt-10 flex items-center justify-center flex-col gap-3">
+                <Spinner className="w-8 h-8 text-gray-200 animate-spin fill-green1" />
+                <p className="text-sm text-gray-600">Loading course information...</p>
+              </div>
+            ) : courseInfo ? (
+              <div className="course-info rounded-lg bg-white shadow p-3 sm:p-6 max-w-2xl relative animate-fadeIn">
                 <div className="relative">
                   <OutlineIcon className="fill-green1 w-4 h-4 xss:w-6 xss:h-6 absolute top-0 right-0" />
                   <div className="mb-4">
@@ -118,13 +206,31 @@ export default function CourseOutlines() {
                         {courseInfo.creditUnit}
                       </span>
                     </p>
+                    {courseInfo.creditUnits && (
+                      <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs ">
+                        Credit Units:{" "}
+                        <span className="font-semibold">
+                          {courseInfo.creditUnits}
+                        </span>
+                      </p>
+                    )}
+                    {courseInfo.preRequisite && (
+                      <p className="text-gray-800 font-medium text-sm sm:text-xs md:text-xs ">
+                        Pre-Requisite:{" "}
+                        <span className="font-semibold">
+                          {courseInfo.preRequisite}
+                        </span>
+                      </p>
+                    )}
                   </div>
 
-                  {courseInfo.info.map(({ heading, content }) => (
-                    <div className="mb-4">
-                      <p className="font-semibold text-gray-800 text-sm sm:text-xs md:text-xs">
-                        {heading}
-                      </p>
+                  {courseInfo.info.map(({ heading, content }, index) => (
+                    <div className="mb-4" key={index}>
+                      {heading && (
+                        <p className="font-semibold text-gray-800 text-sm sm:text-xs md:text-xs">
+                          {heading}
+                        </p>
+                      )}
                       <p className=" text-gray-700 font-medium text-ss md:text-sm">
                         {content}
                       </p>
@@ -140,7 +246,9 @@ export default function CourseOutlines() {
                   className=" w-[70%] xss:w-[200px] sm:w-[230px]"
                 />
                 <p className="text-sm ss:text-xs text-gray-700 font-medium text-center">
-                  Select a level, semester and course respectively.
+                  {level && semester && availableCourses.length === 0 
+                    ? "No course outlines available for this selection yet."
+                    : "Select a level, semester and course respectively."}
                 </p>
               </div>
             )}
