@@ -94,12 +94,31 @@ interface LevelEntry {
   createdAt: any;
 }
 
+interface CourseOutlineContent {
+  heading: string;
+  content: string;
+}
+
+interface CourseOutlineEntry {
+  id: string;
+  courseCode: string;
+  courseTitle: string;
+  creditUnit: number;
+  creditUnits: string;
+  preRequisite: string | null;
+  level: string;
+  semester: "First" | "Second";
+  info: CourseOutlineContent[];
+  createdAt: any;
+  updatedAt?: any;
+}
+
 // Admin email - add your admin email here
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels" | "outlines">(
     "materials"
   );
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -107,6 +126,7 @@ export default function AdminDashboard() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [courses, setCourses] = useState<CourseEntry[]>([]);
   const [levels, setLevels] = useState<LevelEntry[]>([]);
+  const [courseOutlines, setCourseOutlines] = useState<CourseOutlineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -160,6 +180,21 @@ export default function AdminDashboard() {
   });
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
 
+  // Course Outline form state
+  const [outlineFormData, setOutlineFormData] = useState({
+    courseCode: "",
+    courseTitle: "",
+    creditUnit: 0,
+    creditUnits: "",
+    preRequisite: "",
+    level: "",
+    semester: "" as "" | "First" | "Second",
+  });
+  const [outlineInfoBlocks, setOutlineInfoBlocks] = useState<CourseOutlineContent[]>([
+    { heading: "", content: "" }
+  ]);
+  const [editingOutlineId, setEditingOutlineId] = useState<string | null>(null);
+
   // Check if user is admin
   const isAdmin =
     studentDetails?.email === ADMIN_EMAIL ||
@@ -172,6 +207,7 @@ export default function AdminDashboard() {
       fetchBlogPosts();
       fetchCourses();
       fetchLevels();
+      fetchCourseOutlines();
     }
   }, [isAdmin]);
 
@@ -259,6 +295,23 @@ export default function AdminDashboard() {
       setLevels(levelsData);
     } catch (error) {
       console.error("Error fetching levels:", error);
+    }
+  };
+
+  const fetchCourseOutlines = async () => {
+    try {
+      const q = query(
+        collection(db, "courseOutlines"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const outlinesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as CourseOutlineEntry[];
+      setCourseOutlines(outlinesData);
+    } catch (error) {
+      console.error("Error fetching course outlines:", error);
     }
   };
 
@@ -797,6 +850,133 @@ export default function AdminDashboard() {
     }
   };
 
+  // Course Outline functions
+  const handleOutlineInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setOutlineFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const addOutlineInfoBlock = () => {
+    setOutlineInfoBlocks([...outlineInfoBlocks, { heading: "", content: "" }]);
+  };
+
+  const updateOutlineInfoBlock = (index: number, field: "heading" | "content", value: string) => {
+    const updated = [...outlineInfoBlocks];
+    updated[index][field] = value;
+    setOutlineInfoBlocks(updated);
+  };
+
+  const removeOutlineInfoBlock = (index: number) => {
+    if (outlineInfoBlocks.length === 1) {
+      notifyUser("error", "You need at least one content block");
+      return;
+    }
+    setOutlineInfoBlocks(outlineInfoBlocks.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitOutline = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!outlineFormData.courseCode || !outlineFormData.courseTitle || !outlineFormData.level || !outlineFormData.semester) {
+      notifyUser("error", "Please fill in all required fields (Course Code, Title, Level, Semester)");
+      return;
+    }
+
+    // Validate at least one content block
+    const hasContent = outlineInfoBlocks.some(block => block.content.trim() !== "");
+    if (!hasContent) {
+      notifyUser("error", "Please add at least one content section");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      notifyUser("loading", editingOutlineId ? "Updating course outline..." : "Adding course outline...");
+
+      // Filter out empty content blocks
+      const filteredInfo = outlineInfoBlocks.filter(block => block.content.trim() !== "");
+
+      const outlineData = {
+        courseCode: outlineFormData.courseCode.toUpperCase(),
+        courseTitle: outlineFormData.courseTitle,
+        creditUnit: Number(outlineFormData.creditUnit) || 0,
+        creditUnits: outlineFormData.creditUnits,
+        preRequisite: outlineFormData.preRequisite || null,
+        level: outlineFormData.level,
+        semester: outlineFormData.semester,
+        info: filteredInfo,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingOutlineId) {
+        await updateDoc(doc(db, "courseOutlines", editingOutlineId), outlineData);
+        notifyUser("success", "Course outline updated successfully!");
+      } else {
+        await addDoc(collection(db, "courseOutlines"), {
+          ...outlineData,
+          createdAt: serverTimestamp(),
+        });
+        notifyUser("success", "Course outline added successfully!");
+      }
+
+      resetOutlineForm();
+      fetchCourseOutlines();
+    } catch (error: any) {
+      console.error("Error saving course outline:", error);
+      notifyUser("error", "Failed to save course outline. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const resetOutlineForm = () => {
+    setOutlineFormData({
+      courseCode: "",
+      courseTitle: "",
+      creditUnit: 0,
+      creditUnits: "",
+      preRequisite: "",
+      level: "",
+      semester: "",
+    });
+    setOutlineInfoBlocks([{ heading: "", content: "" }]);
+    setEditingOutlineId(null);
+  };
+
+  const handleEditOutline = (outline: CourseOutlineEntry) => {
+    setOutlineFormData({
+      courseCode: outline.courseCode,
+      courseTitle: outline.courseTitle,
+      creditUnit: outline.creditUnit,
+      creditUnits: outline.creditUnits,
+      preRequisite: outline.preRequisite || "",
+      level: outline.level,
+      semester: outline.semester,
+    });
+    setOutlineInfoBlocks(outline.info && outline.info.length > 0 ? outline.info : [{ heading: "", content: "" }]);
+    setEditingOutlineId(outline.id);
+    setActiveTab("outlines");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteOutline = async (outlineId: string) => {
+    if (!confirm("Are you sure you want to delete this course outline?")) return;
+
+    try {
+      await deleteDoc(doc(db, "courseOutlines", outlineId));
+      notifyUser("success", "Course outline deleted successfully");
+      fetchCourseOutlines();
+    } catch (error) {
+      console.error("Error deleting course outline:", error);
+      notifyUser("error", "Failed to delete course outline");
+    }
+  };
+
   const printIDCard = (card: IDCardRegistration) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
@@ -971,6 +1151,16 @@ export default function AdminDashboard() {
             }`}
           >
             Learning Resources
+          </button>
+          <button
+            onClick={() => setActiveTab("outlines")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "outlines"
+                ? "bg-green2 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Course Outlines
           </button>
         </div>
 
@@ -2179,6 +2369,315 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {/* Course Outlines Tab */}
+        {activeTab === "outlines" && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Outline Form */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={3}
+              className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                {editingOutlineId ? "Edit Course Outline" : "Add New Course Outline"}
+              </h2>
+              <form onSubmit={handleSubmitOutline} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Course Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="courseCode"
+                      value={outlineFormData.courseCode}
+                      onChange={handleOutlineInputChange}
+                      placeholder="e.g., PHY101"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Credit Unit
+                    </label>
+                    <input
+                      type="number"
+                      name="creditUnit"
+                      value={outlineFormData.creditUnit || ""}
+                      onChange={handleOutlineInputChange}
+                      placeholder="e.g., 4"
+                      min="0"
+                      max="10"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="courseTitle"
+                    value={outlineFormData.courseTitle}
+                    onChange={handleOutlineInputChange}
+                    placeholder="e.g., GENERAL PHYSICS I"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Credit Units Format
+                  </label>
+                  <input
+                    type="text"
+                    name="creditUnits"
+                    value={outlineFormData.creditUnits}
+                    onChange={handleOutlineInputChange}
+                    placeholder="e.g., (2, 1, 1)"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Level <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="level"
+                      value={outlineFormData.level}
+                      onChange={handleOutlineInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value="100">100L</option>
+                      <option value="200">200L</option>
+                      <option value="300">300L</option>
+                      <option value="400">400L</option>
+                      <option value="500">500L</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Semester <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="semester"
+                      value={outlineFormData.semester}
+                      onChange={handleOutlineInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value="First">First</option>
+                      <option value="Second">Second</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pre-Requisite
+                  </label>
+                  <input
+                    type="text"
+                    name="preRequisite"
+                    value={outlineFormData.preRequisite}
+                    onChange={handleOutlineInputChange}
+                    placeholder="e.g., Credit O'Level Physics"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                {/* Content Blocks */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Course Content <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addOutlineInfoBlock}
+                      className="text-xs text-green2 hover:text-green1 font-medium"
+                    >
+                      + Add Section
+                    </button>
+                  </div>
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {outlineInfoBlocks.map((block, index) => (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-500">Section {index + 1}</span>
+                          {outlineInfoBlocks.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeOutlineInfoBlock(index)}
+                              className="text-xs text-red-500 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={block.heading}
+                          onChange={(e) => updateOutlineInfoBlock(index, "heading", e.target.value)}
+                          placeholder="Section heading (optional)"
+                          className="w-full p-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-xs"
+                        />
+                        <textarea
+                          value={block.content}
+                          onChange={(e) => updateOutlineInfoBlock(index, "content", e.target.value)}
+                          placeholder="Course content description..."
+                          rows={3}
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-xs resize-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="flex-1 bg-green2 hover:bg-green1 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                        <span>{editingOutlineId ? "Updating..." : "Adding..."}</span>
+                      </>
+                    ) : (
+                      editingOutlineId ? "Update Outline" : "Add Outline"
+                    )}
+                  </button>
+                  {editingOutlineId && (
+                    <button
+                      type="button"
+                      onClick={resetOutlineForm}
+                      className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </motion.div>
+
+            {/* Outlines List */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={5}
+              className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  Course Outlines ({courseOutlines.length})
+                </h2>
+              </div>
+
+              {/* Info Box */}
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700">
+                  <strong>Note:</strong> Course outlines added here will be visible to students on the Course Outlines page.
+                  Students can filter by level, semester, and course code.
+                </p>
+              </div>
+
+              {courseOutlines.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p>No course outlines added yet.</p>
+                  <p className="text-sm mt-2">
+                    Add course outlines to help students access course information.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
+                  {/* Group by Level */}
+                  {["100", "200", "300", "400", "500"].map((level) => {
+                    const levelOutlines = courseOutlines.filter(o => o.level === level);
+                    if (levelOutlines.length === 0) return null;
+                    
+                    return (
+                      <div key={level} className="mb-4">
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 sticky top-0 bg-white py-1">
+                          <span className="w-3 h-3 bg-green2 rounded-full"></span>
+                          {level} Level ({levelOutlines.length} courses)
+                        </h3>
+                        <div className="space-y-2">
+                          {levelOutlines.map((outline) => (
+                            <div
+                              key={outline.id}
+                              className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="font-bold text-green2 text-sm">
+                                    {outline.courseCode}
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-gray-200 rounded text-xs">
+                                    {outline.level}L
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-xs ${
+                                    outline.semester === "First" 
+                                      ? "bg-blue-100 text-blue-700" 
+                                      : "bg-purple-100 text-purple-700"
+                                  }`}>
+                                    {outline.semester} Semester
+                                  </span>
+                                  {outline.creditUnit > 0 && (
+                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">
+                                      {outline.creditUnit} Units
+                                    </span>
+                                  )}
+                                </div>
+                                <h3 className="font-medium text-gray-900 text-sm">
+                                  {outline.courseTitle}
+                                </h3>
+                                {outline.info && outline.info.length > 0 && (
+                                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                    {outline.info[0].content}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 ml-4 flex-shrink-0">
+                                <button
+                                  onClick={() => handleEditOutline(outline)}
+                                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteOutline(outline.id)}
+                                  className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
