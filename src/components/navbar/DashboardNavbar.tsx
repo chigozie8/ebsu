@@ -15,12 +15,7 @@ import { ProfileIcon } from "../icons/nav/ProfileIcon";
 import { useEffect, useState } from "react";
 import { BurgerIcon } from "../icons/nav/BurgerIcon";
 import { NavLink } from "react-router-dom";
-import { BellIcon } from "../icons/nav/BellIcon";
-import {
-  Popover,
-  PopoverHandler,
-  PopoverContent,
-} from "@material-tailwind/react";
+import { NotificationDropdown } from "../notifications/NotificationDropdown";
 import { fadeInVariants4 } from "../../animation/variants";
 import { motion } from "framer-motion";
 import { useLoadImage } from "../../hooks/user-profile/useLoadImage";
@@ -32,7 +27,6 @@ export const DashboardNavbar = () => {
   const email = studentDetails?.email;
 
   const { setOpenSignOutModal } = useModalContext();
-  const [openPopover, setOpenPopover] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const { isImageLoading, setIsImageLoading, LoadingPlaceholder } = useLoadImage()
   useEffect(() => {
@@ -44,10 +38,7 @@ export const DashboardNavbar = () => {
   }, [isNavOpen]);
 
   const toggleMenu = () => setIsNavOpen(!isNavOpen);
-  const triggers = {
-    onMouseLeave: () => setOpenPopover(false),
-    onMouseEnter: () => setOpenPopover(true),
-  };
+
   return (
     <>
       <nav className="dashboard w-full fixed top-0 left-0 px-2 py-4 xsm:p-4 bg-white shadow-sm z-10">
@@ -181,44 +172,17 @@ export const DashboardNavbar = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Popover
-                placement="right"
-                animate={{
-                  mount: { scale: 1, y: 0 },
-                  unmount: { scale: 0, y: 25 },
+              <motion.div
+                variants={fadeInVariants4}
+                initial="initial"
+                whileInView="animate"
+                viewport={{
+                  once: true,
                 }}
-                open={openPopover}
-                handler={setOpenPopover}
+                custom={3}
               >
-                <PopoverHandler {...triggers}>
-                  <motion.button
-                    variants={fadeInVariants4}
-                    initial="initial"
-                    whileInView="animate"
-                    viewport={{
-                      once: true,
-                    }}
-                    custom={3}
-                  >
-                    <BellIcon className="w-6 h-6 mt-1 fill-green1" />
-                  </motion.button>
-                </PopoverHandler>
-                {user && (
-                  <PopoverContent
-                    className="z-50 p-2"
-                    placeholder={""}
-                    onResize={() => {}}
-                    onResizeCapture={() => {}}
-                    onPointerEnterCapture={() => {}}
-                    onPointerLeaveCapture={() => {}}
-                    {...triggers}
-                  >
-                    <p className="text-xss sm:text-ss font-semibold text-gray-700">
-                      You have 0 new notifications
-                    </p>
-                  </PopoverContent>
-                )}
-              </Popover>
+                <NotificationDropdown />
+              </motion.div>
               <motion.div
                 variants={fadeInVariants4}
                 initial="initial"

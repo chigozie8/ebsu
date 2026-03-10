@@ -31,7 +31,7 @@ export default function StudentProfile() {
 
   const renderProfileImage = () => {
     if (studentDetails) {
-      if (studentDetails.profileImageURL.length > 1) {
+      if (studentDetails.profileImageURL && studentDetails.profileImageURL.length > 0) {
         return (
           <div>
             <div

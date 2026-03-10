@@ -285,6 +285,7 @@ export const EditProfileModal = () => {
                       <option value="300L">300L</option>
                       <option value="400L">400L</option>
                       <option value="500L">500L</option>
+                      <option value="600L">600L (Medicine)</option>
                       <option value="Visitor">Visitor</option>
                     </select>
                     {errors.level && (
