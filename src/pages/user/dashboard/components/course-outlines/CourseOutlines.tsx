@@ -35,6 +35,31 @@ export default function CourseOutlines() {
   const [isLoading, setIsLoading] = useState(false);
   const [allOutlines, setAllOutlines] = useState<CourseOutlineEntry[]>([]);
 
+  // Helper function to get static course codes for a level and semester
+  const getStaticCourses = (lvl: string, sem: string): CourseOutlineEntry[] => {
+    const staticData: any = {
+      "100": courseInfo100,
+      "200": courseInfo200,
+      "300": courseInfo300,
+      "400": courseInfo400,
+      "500": courseInfo500,
+    };
+
+    if (!staticData[lvl]?.[sem]) return [];
+
+    return Object.entries(staticData[lvl][sem]).map(([code, data]: [string, any]) => ({
+      id: `static-${lvl}-${sem}-${code}`,
+      courseCode: code,
+      courseTitle: data.courseTitle || code,
+      creditUnit: data.creditUnit || 0,
+      creditUnits: data.creditUnits || "",
+      preRequisite: data.preRequisite || null,
+      level: lvl,
+      semester: sem as "First" | "Second",
+      info: data.info || [],
+    }));
+  };
+
   // Fetch all course outlines from Firestore on mount
   useEffect(() => {
     const fetchAllOutlines = async () => {
@@ -58,11 +83,22 @@ export default function CourseOutlines() {
       setCourse(null);
       setCourseInfo(null);
       
-      // Filter courses from Firestore data
-      const filteredCourses = allOutlines.filter(
+      // Get courses from Firestore
+      const firestoreCourses = allOutlines.filter(
         (o) => o.level === level && o.semester === semester
       );
-      setAvailableCourses(filteredCourses);
+      
+      // Get static courses
+      const staticCourses = getStaticCourses(level, semester);
+      
+      // Merge both, Firestore takes priority (dedupe by courseCode)
+      const firestoreCodes = new Set(firestoreCourses.map(c => c.courseCode));
+      const mergedCourses = [
+        ...firestoreCourses,
+        ...staticCourses.filter(c => !firestoreCodes.has(c.courseCode))
+      ];
+      
+      setAvailableCourses(mergedCourses);
     } else {
       setAvailableCourses([]);
     }

@@ -445,6 +445,32 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </button>
+                      {/* Admin Panel Link - Only visible to admin */}
+                      {studentDetails?.email === "patronkwo@gmail.com" && (
+                        <NavLink to="/admin">
+                          <motion.div
+                            variants={fadeInVariants5}
+                            initial="initial"
+                            whileInView="animate"
+                            viewport={{
+                              once: true,
+                            }}
+                            custom={17}
+                            className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-6 flex-col items-center justify-center"
+                          >
+                            <svg
+                              className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                              fill="#dc2626"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
+                            </svg>
+                            <p className="uppercase text-[#dc2626] text-xs lg:text-base font-semibold text-center">
+                              Admin Panel
+                            </p>
+                          </motion.div>
+                        </NavLink>
+                      )}
                     </div>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2 mmd:gap-4">
