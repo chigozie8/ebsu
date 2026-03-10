@@ -19,7 +19,7 @@ export const useCommentLikes = () => {
 
   const toggleCommentLike = async (
     commentID: string,
-    currentLikes: number,
+    _currentLikes: number,
     likedBy: string[]
   ) => {
     if (!userID) {
