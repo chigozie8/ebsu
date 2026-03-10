@@ -6,6 +6,8 @@ import reading from "../../../../../assets/svg/illustrations/reading.svg";
 import { db } from "../../../../../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { Spinner } from "../../../../../components/loaders/Spinner";
+import { useGetUserInfo } from "../../../../../hooks/auth/useGetUserInfo";
+import { Link } from "react-router-dom";
 
 // Fallback to static data if no data in Firestore
 import { courseInfo100 } from "../../../../../data/academics/course-outlines/levels/100/info/courseInfo100";
@@ -27,6 +29,7 @@ interface CourseOutlineEntry {
 }
 
 export default function CourseOutlines() {
+  const { studentDetails } = useGetUserInfo();
   const [semester, setSemester] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
   const [course, setCourse] = useState<string | null>(null);
@@ -34,6 +37,9 @@ export default function CourseOutlines() {
   const [availableCourses, setAvailableCourses] = useState<CourseOutlineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [allOutlines, setAllOutlines] = useState<CourseOutlineEntry[]>([]);
+  
+  // Check if user is admin
+  const isAdmin = studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin");
 
   // Helper function to get static course codes for a level and semester
   const getStaticCourses = (lvl: string, sem: string): CourseOutlineEntry[] => {
@@ -163,6 +169,20 @@ export default function CourseOutlines() {
               <p className="section-p text-center">
                 Select your level, semester and course code
               </p>
+              {/* Admin Quick Link */}
+              {isAdmin && (
+                <div className="mt-3 flex justify-center">
+                  <Link
+                    to="/admin"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium rounded-lg transition-colors border border-red-200"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
+                    </svg>
+                    Manage Course Outlines
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="flex gap-1 ss:gap-5 mb-4">
               <div>
