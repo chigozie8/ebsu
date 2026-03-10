@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { db } from "../../config/firebase";
 import {
@@ -117,9 +118,21 @@ interface CourseOutlineEntry {
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
+  const [searchParams] = useSearchParams();
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
+  
+  // Get initial tab from URL params or default to "materials"
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines" => {
+    const tabParam = searchParams.get("tab");
+    const validTabs = ["materials", "idcards", "blog", "courses", "levels", "outlines"];
+    if (tabParam && validTabs.includes(tabParam)) {
+      return tabParam as "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines";
+    }
+    return "materials";
+  };
+  
   const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels" | "outlines">(
-    "materials"
+    getInitialTab()
   );
   const [materials, setMaterials] = useState<Material[]>([]);
   const [idCards, setIdCards] = useState<IDCardRegistration[]>([]);
