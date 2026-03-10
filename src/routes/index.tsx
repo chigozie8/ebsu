@@ -69,6 +69,9 @@ const AppRoutes = () => {
   const ResourcesPage = lazy(
     () => import("../pages/user/resources/ResourcesPage")
   );
+  const ProjectsPage = lazy(
+    () => import("../pages/user/projects/ProjectsPage")
+  );
 
   return (
     <>
@@ -104,6 +107,7 @@ const AppRoutes = () => {
             path="/students/class-representatives"
             element={<ClassReps />}
           />
+          <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/about/about-us" element={<AboutUs />} />
           <Route
             path="/about/philosophy-and-objectives"

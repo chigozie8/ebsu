@@ -212,6 +212,22 @@ export const GeneralNavbar = () => {
                     Blog
                   </motion.p>
                 </NavLink>
+                <NavLink
+                  to={"/projects"}
+                  className=" text-sm md:text-xs hover:text-green1 font-semibold text-gray-700 px-2 pt-1 md:pt-[3px]"
+                >
+                  <motion.p
+                    variants={fadeInVariants4}
+                    initial="initial"
+                    whileInView="animate"
+                    viewport={{
+                      once: true,
+                    }}
+                    custom={11}
+                  >
+                    Projects
+                  </motion.p>
+                </NavLink>
               </div>
             </div>
             <div
