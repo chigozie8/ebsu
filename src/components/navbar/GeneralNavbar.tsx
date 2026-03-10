@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { BurgerIcon } from "../icons/nav/BurgerIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants4 } from "../../animation/variants";
+
 export const GeneralNavbar = () => {
   const { studentDetails, user, loading } = useGetUserInfo();
   const firstName = studentDetails?.firstName;
@@ -162,6 +163,50 @@ export const GeneralNavbar = () => {
                     </Dropdown.Item>
                   </NavLink>
                 </Dropdown>
+                
+                {/* EBSUMSA Dropdown */}
+                <Dropdown
+                  arrowIcon={false}
+                  inline
+                  label={
+                    <motion.p
+                      variants={fadeInVariants4}
+                      initial="initial"
+                      whileInView="animate"
+                      viewport={{
+                        once: true,
+                      }}
+                      custom={6}
+                      className="pt-1 md:pt-0.5 text-sm md:text-xs hover:text-green1 ml-0 font-semibold text-gray-700 px-2"
+                    >
+                      EBSUMSA
+                    </motion.p>
+                  }
+                  theme={customDropdownTheme}
+                >
+                  <NavLink to={"/ebsumsa/team"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Executive Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink to={"/ebsumsa/sports"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Sports Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink to={"/ebsumsa/press"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Press Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                </Dropdown>
+
                 <Dropdown
                   arrowIcon={false}
                   inline
@@ -192,6 +237,13 @@ export const GeneralNavbar = () => {
                     <Dropdown.Item className="group">
                       <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
                         Project Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink to={"/projects"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Projects Showcase
                       </p>
                     </Dropdown.Item>
                   </NavLink>
@@ -251,7 +303,7 @@ export const GeneralNavbar = () => {
                   Links
                 </p>
               </div>
-              <div className="w-full flex flex-col justify-start gap-2 text-ss xss:text-sm sm:text-xs font-bold text-gray-700">
+              <div className="w-full flex flex-col justify-start gap-2 text-ss xss:text-sm sm:text-xs font-bold text-gray-700 max-h-[calc(100vh-150px)] overflow-y-auto">
                 <NavLink
                   onClick={() => setIsNavOpen(false)}
                   to={"/"}
@@ -343,6 +395,49 @@ export const GeneralNavbar = () => {
                   </NavLink>
                 </Dropdown>
 
+                {/* Mobile EBSUMSA Dropdown */}
+                <Dropdown
+                  arrowIcon={false}
+                  inline
+                  label={
+                    <p className="w-full p-3 hover:text-green1 hover:bg-gray-100 rounded-md transition text-left">
+                      EBSUMSA
+                    </p>
+                  }
+                  theme={customDropdownTheme}
+                >
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/team"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Executive Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/sports"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Sports Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/press"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Press Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                </Dropdown>
+
                 <Dropdown
                   arrowIcon={false}
                   inline
@@ -370,6 +465,16 @@ export const GeneralNavbar = () => {
                     <Dropdown.Item>
                       <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1 ">
                         Project Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/projects"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1 ">
+                        Projects Showcase
                       </p>
                     </Dropdown.Item>
                   </NavLink>
@@ -415,7 +520,6 @@ export const GeneralNavbar = () => {
                             <img
                               src={studentDetails.profileImageURL}
                               alt="Profile"
-                              // loading="lazy"
                               onLoad={() => console.log("Loaded")}
                               className="w-full h-full rounded-full object-cover"
                             />
@@ -470,8 +574,8 @@ export const GeneralNavbar = () => {
                       className="group transition duration-200 ease-in-out"
                     >
                       <div className="flex items-center justify-start gap-1">
-                        <SignOutIcon className=" w-5 group-hover:scale-110 transition duration-200 ease-in-out " />{" "}
-                        <span className="text-ss sm:text-sm font-medium text-gray-700 group-hover:font-bold">
+                        <SignOutIcon className="w-5 group-hover:scale-110 transition duration-200 ease-in-out " />{" "}
+                        <span className="text-ss sm:text-sm font-medium text-gray-700 group-hover:font-bold group-hover:text-red-500">
                           Sign Out
                         </span>
                       </div>
@@ -485,7 +589,7 @@ export const GeneralNavbar = () => {
                 )
               ) : (
                 <Link to={"/login"}>
-                  <button className="rounded-lg bg-green1 hover:bg-green1/95 transition duration-200 ease-in-out py-2 px-2.5 sm:px-3.5 font-semibold text-white text-sm sm:text-xs">
+                  <button className="bg-green2 hover:bg-green1 text-white text-xss ss:text-ss md:text-xs font-semibold px-3 py-2 md:px-4 md:py-2 rounded-lg transition duration-200 ease-in-out">
                     Login
                   </button>
                 </Link>

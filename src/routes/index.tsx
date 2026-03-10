@@ -37,6 +37,13 @@ const AppRoutes = () => {
   const BlogPost = lazy(() => import("../pages/misc/blog/post/BlogPost"));
   const ProjectTeam = lazy(() => import("../pages/students/ProjectTeam"));
   const ClassReps = lazy(() => import("../pages/students/ClassReps"));
+  
+  // New EBSUMSA pages
+  const EbsumsaTeam = lazy(() => import("../pages/students/EbsumsaTeam"));
+  const SportsTeam = lazy(() => import("../pages/students/SportsTeam"));
+  const PressTeam = lazy(() => import("../pages/students/PressTeam"));
+  const ProjectsShowcase = lazy(() => import("../pages/projects/ProjectsShowcase"));
+  
   const AboutUs = lazy(() => import("../pages/about/AboutUs"));
   const PhilosophyAndObjectives = lazy(() => import("../pages/about/P&A"));
   const Admission = lazy(() => import("../pages/about/Admission"));
@@ -104,6 +111,13 @@ const AppRoutes = () => {
             path="/students/class-representatives"
             element={<ClassReps />}
           />
+          
+          {/* New EBSUMSA routes */}
+          <Route path="/ebsumsa/team" element={<EbsumsaTeam />} />
+          <Route path="/ebsumsa/sports" element={<SportsTeam />} />
+          <Route path="/ebsumsa/press" element={<PressTeam />} />
+          <Route path="/projects" element={<ProjectsShowcase />} />
+          
           <Route path="/about/about-us" element={<AboutUs />} />
           <Route
             path="/about/philosophy-and-objectives"

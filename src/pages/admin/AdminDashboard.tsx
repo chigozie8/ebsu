@@ -11,6 +11,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { notifyUser } from "../../helpers/notifyUser";
 import { Spinner } from "../../components/loaders/Spinner";
@@ -45,19 +46,49 @@ interface IDCardRegistration {
   createdAt: any;
 }
 
+interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  authorImage?: string;
+  featuredImage?: string;
+  category: string;
+  tags: string[];
+  status: "draft" | "published";
+  readTime: number;
+  publishedAt: any;
+  createdAt: any;
+  updatedAt: any;
+}
+
+interface CourseEntry {
+  id: string;
+  courseCode: string;
+  courseTitle: string;
+  level: string;
+  semester?: string;
+  tip: string;
+  createdAt: any;
+}
+
 // Admin email - add your admin email here
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses">(
     "materials"
   );
   const [materials, setMaterials] = useState<Material[]>([]);
   const [idCards, setIdCards] = useState<IDCardRegistration[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [courses, setCourses] = useState<CourseEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const blogImageRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -66,6 +97,28 @@ export default function AdminDashboard() {
     level: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Blog form state
+  const [blogFormData, setBlogFormData] = useState({
+    title: "",
+    content: "",
+    excerpt: "",
+    author: "",
+    category: "general",
+    tags: "",
+    status: "draft" as "draft" | "published",
+  });
+  const [blogImage, setBlogImage] = useState<File | null>(null);
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+
+  // Course form state
+  const [courseFormData, setCourseFormData] = useState({
+    courseCode: "",
+    courseTitle: "",
+    level: "",
+    semester: "",
+    tip: "",
+  });
 
   // Check if user is admin
   const isAdmin =
@@ -76,6 +129,8 @@ export default function AdminDashboard() {
     if (isAdmin) {
       fetchMaterials();
       fetchIDCards();
+      fetchBlogPosts();
+      fetchCourses();
     }
   }, [isAdmin]);
 
@@ -115,6 +170,40 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchBlogPosts = async () => {
+    try {
+      const q = query(
+        collection(db, "blogPosts"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const postsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as BlogPost[];
+      setBlogPosts(postsData);
+    } catch (error) {
+      console.error("Error fetching blog posts:", error);
+    }
+  };
+
+  const fetchCourses = async () => {
+    try {
+      const q = query(
+        collection(db, "courses"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const coursesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as CourseEntry[];
+      setCourses(coursesData);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -131,13 +220,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const uploadFileToSupabase = async (file: File): Promise<string> => {
-    // Generate unique file path for Supabase Storage
-    const fileName = `materials/${Date.now()}-${file.name}`;
+  const uploadFileToSupabase = async (file: File, bucket: string = STORAGE_BUCKETS.LEARNING_RESOURCES): Promise<string> => {
+    const fileName = `${bucket}/${Date.now()}-${file.name}`;
 
-    // Upload to Supabase Storage
     const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+      .from(bucket)
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: true,
@@ -147,8 +234,7 @@ export default function AdminDashboard() {
       throw new Error(`Failed to upload file: ${error.message}`);
     }
 
-    // Get the public URL
-    return getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
+    return getPublicUrl(bucket, data.path);
   };
 
   const handleUploadMaterial = async (e: React.FormEvent) => {
@@ -184,7 +270,6 @@ export default function AdminDashboard() {
 
       notifyUser("success", "Material uploaded successfully!");
 
-      // Reset form
       setFormData({
         title: "",
         description: "",
@@ -196,7 +281,6 @@ export default function AdminDashboard() {
         fileInputRef.current.value = "";
       }
 
-      // Refresh materials list
       fetchMaterials();
     } catch (error: any) {
       console.error("Error uploading material:", error);
@@ -216,6 +300,192 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error("Error deleting material:", error);
       notifyUser("error", "Failed to delete material");
+    }
+  };
+
+  // Blog functions
+  const handleBlogInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setBlogFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlogImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBlogImage(file);
+    }
+  };
+
+  const calculateReadTime = (content: string): number => {
+    const wordsPerMinute = 200;
+    const wordCount = content.split(/\s+/).length;
+    return Math.ceil(wordCount / wordsPerMinute);
+  };
+
+  const handleSubmitBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!blogFormData.title || !blogFormData.content || !blogFormData.author) {
+      notifyUser("error", "Please fill in title, content, and author");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      notifyUser("loading", editingBlogId ? "Updating post..." : "Creating post...");
+
+      let featuredImageUrl = "";
+      if (blogImage) {
+        featuredImageUrl = await uploadFileToSupabase(blogImage, STORAGE_BUCKETS.LEARNING_RESOURCES);
+      }
+
+      const readTime = calculateReadTime(blogFormData.content);
+      const tags = blogFormData.tags.split(",").map((t) => t.trim()).filter(Boolean);
+
+      const postData = {
+        title: blogFormData.title,
+        content: blogFormData.content,
+        excerpt: blogFormData.excerpt || blogFormData.content.substring(0, 150) + "...",
+        author: blogFormData.author,
+        category: blogFormData.category,
+        tags: tags,
+        status: blogFormData.status,
+        readTime: readTime,
+        ...(featuredImageUrl && { featuredImage: featuredImageUrl }),
+        updatedAt: serverTimestamp(),
+        ...(blogFormData.status === "published" && !editingBlogId && { publishedAt: serverTimestamp() }),
+      };
+
+      if (editingBlogId) {
+        await updateDoc(doc(db, "blogPosts", editingBlogId), postData);
+        notifyUser("success", "Blog post updated successfully!");
+      } else {
+        await addDoc(collection(db, "blogPosts"), {
+          ...postData,
+          createdAt: serverTimestamp(),
+        });
+        notifyUser("success", "Blog post created successfully!");
+      }
+
+      // Reset form
+      setBlogFormData({
+        title: "",
+        content: "",
+        excerpt: "",
+        author: "",
+        category: "general",
+        tags: "",
+        status: "draft",
+      });
+      setBlogImage(null);
+      setEditingBlogId(null);
+      if (blogImageRef.current) {
+        blogImageRef.current.value = "";
+      }
+
+      fetchBlogPosts();
+    } catch (error: any) {
+      console.error("Error saving blog post:", error);
+      notifyUser("error", "Failed to save blog post. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleEditBlog = (post: BlogPost) => {
+    setBlogFormData({
+      title: post.title,
+      content: post.content,
+      excerpt: post.excerpt,
+      author: post.author,
+      category: post.category,
+      tags: post.tags.join(", "),
+      status: post.status,
+    });
+    setEditingBlogId(post.id);
+    setActiveTab("blog");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteBlog = async (postId: string) => {
+    if (!confirm("Are you sure you want to delete this blog post?")) return;
+
+    try {
+      await deleteDoc(doc(db, "blogPosts", postId));
+      notifyUser("success", "Blog post deleted successfully");
+      fetchBlogPosts();
+    } catch (error) {
+      console.error("Error deleting blog post:", error);
+      notifyUser("error", "Failed to delete blog post");
+    }
+  };
+
+  // Course functions
+  const handleCourseInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setCourseFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmitCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!courseFormData.courseCode || !courseFormData.courseTitle || !courseFormData.level) {
+      notifyUser("error", "Please fill in course code, title, and level");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      notifyUser("loading", "Adding course...");
+
+      await addDoc(collection(db, "courses"), {
+        courseCode: courseFormData.courseCode,
+        courseTitle: courseFormData.courseTitle,
+        level: courseFormData.level,
+        semester: courseFormData.semester,
+        tip: courseFormData.tip,
+        createdAt: serverTimestamp(),
+      });
+
+      notifyUser("success", "Course added successfully!");
+
+      setCourseFormData({
+        courseCode: "",
+        courseTitle: "",
+        level: "",
+        semester: "",
+        tip: "",
+      });
+
+      fetchCourses();
+    } catch (error: any) {
+      console.error("Error adding course:", error);
+      notifyUser("error", "Failed to add course. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!confirm("Are you sure you want to delete this course?")) return;
+
+    try {
+      await deleteDoc(doc(db, "courses", courseId));
+      notifyUser("success", "Course deleted successfully");
+      fetchCourses();
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      notifyUser("error", "Failed to delete course");
     }
   };
 
@@ -338,12 +608,12 @@ export default function AdminDashboard() {
             Admin Dashboard
           </h1>
           <p className="text-gray-600">
-            Manage learning materials and ID card registrations
+            Manage learning materials, ID cards, blog posts, and courses
           </p>
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <button
             onClick={() => setActiveTab("materials")}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
@@ -364,8 +634,29 @@ export default function AdminDashboard() {
           >
             ID Card Registrations
           </button>
+          <button
+            onClick={() => setActiveTab("blog")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "blog"
+                ? "bg-green2 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Blog Posts
+          </button>
+          <button
+            onClick={() => setActiveTab("courses")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "courses"
+                ? "bg-green2 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Courses
+          </button>
         </div>
 
+        {/* Materials Tab */}
         {activeTab === "materials" && (
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Upload Form */}
@@ -578,6 +869,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ID Cards Tab */}
         {activeTab === "idcards" && (
           <motion.div
             variants={fadeInVariants5}
@@ -667,6 +959,475 @@ export default function AdminDashboard() {
               </div>
             )}
           </motion.div>
+        )}
+
+        {/* Blog Tab */}
+        {activeTab === "blog" && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Blog Form */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={3}
+              className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                {editingBlogId ? "Edit Blog Post" : "Create Blog Post"}
+              </h2>
+              <form onSubmit={handleSubmitBlogPost} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={blogFormData.title}
+                    onChange={handleBlogInputChange}
+                    placeholder="Blog post title"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Author <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="author"
+                    value={blogFormData.author}
+                    onChange={handleBlogInputChange}
+                    placeholder="Author name"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Excerpt
+                  </label>
+                  <textarea
+                    name="excerpt"
+                    value={blogFormData.excerpt}
+                    onChange={handleBlogInputChange}
+                    placeholder="Short summary (auto-generated if empty)"
+                    rows={2}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Content <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    name="content"
+                    value={blogFormData.content}
+                    onChange={handleBlogInputChange}
+                    placeholder="Write your blog content here..."
+                    rows={8}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Estimated read time: {calculateReadTime(blogFormData.content)} min
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category
+                    </label>
+                    <select
+                      name="category"
+                      value={blogFormData.category}
+                      onChange={handleBlogInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="general">General</option>
+                      <option value="academic">Academic</option>
+                      <option value="health">Health</option>
+                      <option value="technology">Technology</option>
+                      <option value="campus">Campus Life</option>
+                      <option value="career">Career</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      name="status"
+                      value={blogFormData.status}
+                      onChange={handleBlogInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags (comma separated)
+                  </label>
+                  <input
+                    type="text"
+                    name="tags"
+                    value={blogFormData.tags}
+                    onChange={handleBlogInputChange}
+                    placeholder="e.g., health, tips, MBBS"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Featured Image
+                  </label>
+                  <input
+                    ref={blogImageRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBlogImageChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
+                  />
+                  {blogImage && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected: {blogImage.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="flex-1 bg-green2 hover:bg-green1 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                        <span>Saving...</span>
+                      </>
+                    ) : editingBlogId ? (
+                      "Update Post"
+                    ) : (
+                      "Create Post"
+                    )}
+                  </button>
+                  {editingBlogId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingBlogId(null);
+                        setBlogFormData({
+                          title: "",
+                          content: "",
+                          excerpt: "",
+                          author: "",
+                          category: "general",
+                          tags: "",
+                          status: "draft",
+                        });
+                      }}
+                      className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </motion.div>
+
+            {/* Blog Posts List */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={5}
+              className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Blog Posts ({blogPosts.length})
+              </h2>
+              {blogPosts.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No blog posts yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  {blogPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                post.status === "published"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {post.status}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {post.readTime} min read
+                            </span>
+                          </div>
+                          <h3 className="font-medium text-gray-900">
+                            {post.title}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            By {post.author} | {post.category}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                            {post.excerpt}
+                          </p>
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {post.tags.slice(0, 3).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-xs"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {post.featuredImage && (
+                          <img
+                            src={post.featuredImage}
+                            alt={post.title}
+                            className="w-20 h-20 object-cover rounded-lg ml-4"
+                          />
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                        <button
+                          onClick={() => handleEditBlog(post)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBlog(post.id)}
+                          className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {/* Courses Tab */}
+        {activeTab === "courses" && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Course Form */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={3}
+              className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Add New Course
+              </h2>
+              <form onSubmit={handleSubmitCourse} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="courseCode"
+                    value={courseFormData.courseCode}
+                    onChange={handleCourseInputChange}
+                    placeholder="e.g., ANA 201"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Course Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="courseTitle"
+                    value={courseFormData.courseTitle}
+                    onChange={handleCourseInputChange}
+                    placeholder="e.g., Gross Anatomy of Upper Limb"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Level <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="level"
+                    value={courseFormData.level}
+                    onChange={handleCourseInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                  >
+                    <option value="">Select Level</option>
+                    <option value="100">100 Level</option>
+                    <option value="200">200 Level</option>
+                    <option value="300">300 Level</option>
+                    <option value="400">400 Level (Clinical)</option>
+                    <option value="500">500 Level (Clinical)</option>
+                    <option value="600">600 Level (Clinical)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Semester (Preclinical only)
+                  </label>
+                  <select
+                    name="semester"
+                    value={courseFormData.semester}
+                    onChange={handleCourseInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                    disabled={["400", "500", "600"].includes(courseFormData.level)}
+                  >
+                    <option value="">Select Semester</option>
+                    <option value="First">First Semester</option>
+                    <option value="Second">Second Semester</option>
+                  </select>
+                  {["400", "500", "600"].includes(courseFormData.level) && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Clinical years don't have semester divisions
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Study Tip
+                  </label>
+                  <textarea
+                    name="tip"
+                    value={courseFormData.tip}
+                    onChange={handleCourseInputChange}
+                    placeholder="Helpful tips for students..."
+                    rows={3}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploading}
+                  className="w-full bg-green2 hover:bg-green1 disabled:bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    "Add Course"
+                  )}
+                </button>
+              </form>
+            </motion.div>
+
+            {/* Courses List */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={5}
+              className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Added Courses ({courses.length})
+              </h2>
+              {courses.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No courses added yet.</p>
+                  <p className="text-sm mt-2">
+                    Note: Static courses are defined in the codebase. Use this to add additional courses.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {courses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-green2 text-sm">
+                            {course.courseCode}
+                          </span>
+                          <span className="px-2 py-0.5 bg-gray-200 rounded text-xs">
+                            {course.level}L
+                          </span>
+                          {course.semester && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                              {course.semester}
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-medium text-gray-900 text-sm">
+                          {course.courseTitle}
+                        </h3>
+                        {course.tip && (
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                            {course.tip}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteCourse(course.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
         )}
       </div>
     </div>
