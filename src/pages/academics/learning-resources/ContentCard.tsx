@@ -1,7 +1,6 @@
 import { FC, useState } from "react";
 import { convertBytes } from "../../../helpers/convertBytes";
-import { storage } from "../../../config/firebase";
-import { ref, getDownloadURL } from "firebase/storage";
+import { supabase, STORAGE_BUCKETS } from "../../../config/supabase";
 import { Content } from "../../../models/academics/learning-resources";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -12,8 +11,6 @@ import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 
 export const ContentCard: FC<Content> = ({ name, size, path }) => {
   const [fileLoading, setFileLoading] = useState(false);
-  const storageRef = ref(storage);
-  const learningResourcesRef = ref(storageRef, path);
   const dataSize = convertBytes(size);
   const { user } = useGetUserInfo();
 
@@ -25,21 +22,30 @@ export const ContentCard: FC<Content> = ({ name, size, path }) => {
     try {
       setFileLoading(true);
       notifyUser("loading", "Please wait...");
-      const url = await getDownloadURL(learningResourcesRef);
-      const response = await fetch(url);
-      const blob = await response.blob();
+      
+      // Download file from Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+        .download(path);
+
+      if (error) {
+        throw error;
+      }
+
+      // Create download link
       const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(blob);
+      link.href = window.URL.createObjectURL(data);
       link.download = name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      console.log(blob);
+      window.URL.revokeObjectURL(link.href);
+      
       setFileLoading(false);
       notifyUser("success", "File Downloading...");
     } catch (error) {
       setFileLoading(false);
-      notifyUser("error", "Something went wrong. Pease try again");
+      notifyUser("error", "Something went wrong. Please try again");
     }
   };
 

@@ -38,4 +38,5 @@ export interface FileMetadata {
   name: string;
   path: string;
   size: number;
+  url?: string;
 }

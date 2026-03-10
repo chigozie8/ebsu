@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { storage } from "../../../config/firebase";
-import { ref, listAll, getMetadata } from "firebase/storage";
+import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
 import { useParams } from "react-router-dom";
 import { useLearningResourcesContext } from "../../../context/LearningResources";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -16,33 +15,42 @@ export default function Content() {
   const { level, id } = useParams();
   const { resourcesType } = useLearningResourcesContext();
 
-  const storageRef = ref(storage);
-  const learningResourcesRef = ref(
-    storageRef,
-    `learning-resources/levels/${level}/${id}/${resourcesType}`
-  );
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
   const fetchFiles = async () => {
+    const folderPath = `levels/${level}/${id}/${resourcesType}`;
+    
     try {
       setError(false);
       setLoading(true);
-      const res = await listAll(learningResourcesRef);
-      const fileList = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const metadata = await getMetadata(itemRef);
-          return {
-            name: metadata.name,
-            path: metadata.fullPath,
-            size: metadata.size,
-          };
-        })
-      );
+      
+      // List files from Supabase Storage
+      const { data, error: listError } = await supabase.storage
+        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+        .list(folderPath, {
+          limit: 100,
+          sortBy: { column: 'name', order: 'asc' },
+        });
+
+      if (listError) {
+        throw listError;
+      }
+
+      // Map files to FileMetadata format
+      const fileList: FileMetadata[] = (data || [])
+        .filter(item => item.name && !item.name.startsWith('.')) // Filter out hidden files
+        .map((item) => ({
+          name: item.name,
+          path: `${folderPath}/${item.name}`,
+          size: item.metadata?.size || 0,
+          url: getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, `${folderPath}/${item.name}`),
+        }));
+
       setFiles(fileList);
       setLoading(false);
-      console.log(files);
+      console.log(fileList);
     } catch (error) {
       setError(true);
       setLoading(false);
