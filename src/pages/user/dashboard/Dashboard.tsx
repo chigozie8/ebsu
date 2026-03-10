@@ -182,7 +182,7 @@ export default function Dashboard() {
   return (
     <>
       {studentDetails ? (
-        <div className="bg-white min-h-screen overflow-x-hidden">
+        <div className="bg-white min-h-screen overflow-x-auto">
           <div className="max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 lg:pr-12">
             <div className="pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-0">
               <div className="grid lg:grid-cols-7 overflow-hidden gap-4">
