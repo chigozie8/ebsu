@@ -421,6 +421,21 @@ export default function AdminDashboard() {
       const today = new Date();
       const formattedDate = `${today.getDate()}${getOrdinalSuffix(today.getDate())} ${today.toLocaleString('default', { month: 'long' })}, ${today.getFullYear()}`;
 
+      // Determine the image URL
+      let finalSampleImgUrl = sampleImgUrl;
+      if (!finalSampleImgUrl && editingBlogId) {
+        // Keep existing image if no new one provided
+        const existingPost = blogPosts.find(p => p.id === editingBlogId);
+        if (existingPost) {
+          finalSampleImgUrl = existingPost.sampleImg;
+        }
+      }
+      
+      // Use a default placeholder if no image
+      if (!finalSampleImgUrl) {
+        finalSampleImgUrl = "/images/blog/default-blog-image.jpg";
+      }
+
       const postData: Omit<BlogPost, "id" | "createdAt"> & { updatedAt?: any; createdAt?: any } = {
         no: nextNo,
         title: blogFormData.title,
@@ -428,18 +443,11 @@ export default function AdminDashboard() {
         date: formattedDate,
         postType: blogFormData.postType,
         contents: filteredContents,
-        ...(sampleImgUrl && { sampleImg: sampleImgUrl }),
+        sampleImg: finalSampleImgUrl,
         updatedAt: serverTimestamp(),
       };
 
       if (editingBlogId) {
-        // Keep existing image if no new one provided
-        if (!sampleImgUrl) {
-          const existingPost = blogPosts.find(p => p.id === editingBlogId);
-          if (existingPost) {
-            postData.sampleImg = existingPost.sampleImg;
-          }
-        }
         await updateDoc(doc(db, "blogPosts", editingBlogId), postData);
         notifyUser("success", "Blog post updated successfully!");
       } else {
