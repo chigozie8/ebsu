@@ -46,7 +46,7 @@ export default function Login() {
                 <input
                   type="email"
                   id="email"
-                  className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss ss:text-sm sm:text-xs rounded-lg focus:ring-green1 focus:border-green1 block w-full p-2.5 "
+                  className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss ss:text-sm sm:text-xs rounded-lg focus:ring-green1 focus:border-green1 block w-full p-2.5"
                   placeholder="eg. name@gmail.com"
                   {...register("email")}
                 />
@@ -65,7 +65,7 @@ export default function Login() {
                   type="password"
                   id="password"
                   placeholder="••••••••"
-                  className="bg-gray-50 border font-medium border-gray-300 text-gray-700 sm text-ss ss:text-sm sm:text-xs rounded-lg focus:ring-green1 focus:border-green1 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  className="bg-transparent border font-medium border-gray-300 text-gray-700 text-ss ss:text-sm sm:text-xs rounded-lg focus:ring-green1 focus:border-green1 block w-full p-2.5"
                   {...register("password")}
                 />
                 {errors.password && (

@@ -87,9 +87,9 @@ export default function Footer() {
         <hr className="my-6 border-gray-200 sm:mx-auto dark:border-gray-700 lg:my-8" />
         <div className="sm:flex sm:items-center sm:justify-between">
           <div className="flex flex-col justify-start items-start">
-            <span className="text-xss ss:text-ss md:text-sm text-white sm:text-center dark:text-gray-400">
+            <span className="text-xss ss:text-ss md:text-sm text-white sm:text-center">
               © 2026{" "}
-              <a href="/" className="hover:underline">
+              <a href="/" className="hover:underline text-white">
                 EBSUMSA-EBSU.
               </a>
             </span>
@@ -98,7 +98,7 @@ export default function Footer() {
               <a
                 href="https://chrismbah.vercel.app/"
                 target="_"
-                className="hover:underline"
+                className="hover:underline text-white"
               >
                 Ken.
               </a>{" "}

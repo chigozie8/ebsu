@@ -43,7 +43,7 @@ export default function SignUp() {
                   <input
                     type="text"
                     id="firstName"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     placeholder="eg. Ken"
                     {...register("firstName")}
                   />
@@ -63,7 +63,7 @@ export default function SignUp() {
                   <input
                     type="text"
                     id="lastName"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     placeholder="eg. Chigozie"
                     {...register("lastName")}
                   />
@@ -85,7 +85,7 @@ export default function SignUp() {
                   <input
                     type="number"
                     id="regNo"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     placeholder="eg. 91141"
                     {...register("regNo")}
                   />
@@ -102,7 +102,7 @@ export default function SignUp() {
                   </label>
                   <select
                     id="level"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     {...register("level")}
                   >
                     <option selected hidden value={""}>
@@ -132,7 +132,7 @@ export default function SignUp() {
                 <input
                   type="email"
                   id="email"
-                  className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                  className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                   placeholder="eg. name@gmail.com"
                   {...register("email")}
                 />
@@ -151,7 +151,7 @@ export default function SignUp() {
                   <input
                     type="password"
                     id="password"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     placeholder="••••••••"
                     {...register("password")}
                   />
@@ -171,7 +171,7 @@ export default function SignUp() {
                   <input
                     type="password"
                     id="confirmPassword"
-                    className="bg-gray-50 font-medium text-gray-700 border border-gray-300  text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2 "
+                    className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
                     placeholder="••••••••"
                     {...register("confirmPassword")}
                   />
