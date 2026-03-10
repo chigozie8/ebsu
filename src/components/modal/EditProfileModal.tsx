@@ -25,7 +25,6 @@ export const EditProfileModal = () => {
   const [editingProfile, setEditingProfile] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -47,7 +46,6 @@ export const EditProfileModal = () => {
     if (!imageFile || !userID) return null;
     
     try {
-      setUploadingImage(true);
       const fileExt = imageFile.name.split('.').pop() || 'jpg';
       const fileName = `${userID}/profile-${Date.now()}.${fileExt}`;
 
@@ -62,12 +60,9 @@ export const EditProfileModal = () => {
         throw new Error(`Failed to upload image: ${error.message}`);
       }
 
-      const publicUrl = getPublicUrl(STORAGE_BUCKETS.PROFILE_PICTURES, data.path);
-      setUploadingImage(false);
-      return publicUrl;
+      return getPublicUrl(STORAGE_BUCKETS.PROFILE_PICTURES, data.path);
     } catch (error: any) {
       console.error("Supabase upload error:", error);
-      setUploadingImage(false);
       throw error;
     }
   };
