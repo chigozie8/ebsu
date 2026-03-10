@@ -10,7 +10,6 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Footer from "../../../../components/footer/Footer";
 import CommentSection from "./comments/CommentSection";
-import { WriteIcon } from "../../../../components/icons/general/WriteIcon";
 import { useBlogComments } from "../hooks/useBlogComments";
 import { useBlogLikes } from "../hooks/useBlogLikes";
 import PostSkeleton from "./skeleton/PostSkeleton";
