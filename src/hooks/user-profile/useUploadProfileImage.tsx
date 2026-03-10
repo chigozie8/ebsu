@@ -110,8 +110,13 @@ export const useUploadProfileImage = () => {
   };
 
   const deleteUserProfileImage = async () => {
+    console.log("[v0] deleteUserProfileImage called");
+    console.log("[v0] userID:", userID);
+    console.log("[v0] studentDetails:", studentDetails);
+    
     if (userID && studentDetails) {
       try {
+        console.log("[v0] Starting delete process...");
         setDeletingProfileImage(true);
 
         // Note: ImageKit delete requires server-side API call with private key
@@ -119,22 +124,25 @@ export const useUploadProfileImage = () => {
         // you would need a separate server endpoint
 
         // Clear the profile image reference in Firestore
+        console.log("[v0] Updating Firestore document...");
         await updateDoc(doc(db, "userInfo", userID), {
           profileImageURL: "",
           profileImageID: "",
         });
 
+        console.log("[v0] Firestore update successful");
         setDeletingProfileImage(false);
         setOpenDeleteProfileImageModal(false);
         notifyUser("success", "Profile picture deleted");
       } catch (err) {
-        console.log(err);
+        console.log("[v0] Error during delete:", err);
         notifyUser("error", "Something went wrong. Please try again");
         setOpenDeleteProfileImageModal(false);
         setDeletingProfileImage(false);
       }
     } else {
-      console.log("Bug!!");
+      console.log("[v0] Bug!! userID or studentDetails is missing");
+      console.log("[v0] userID:", userID, "studentDetails:", studentDetails);
     }
   };
 
