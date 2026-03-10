@@ -37,7 +37,21 @@ h3{
     @apply xl:max-w-[1280px] w-full mx-auto
 }
 .auth-btn{
- @apply bg-green1 hover:bg-green2 text-white font-semibold ss:text-base ss:px-4 ss:py-2 text-sm px-3 py-1 rounded-md 
+  background-color: var(--color-green1, #16a34a);
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+}
+.auth-btn:hover{
+  background-color: var(--color-green2, #15803d);
+}
+@media (min-width: 375px) {
+  .auth-btn {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
 }
 
 .page-section{
@@ -66,7 +80,15 @@ h3{
     @apply flex items-center justify-between flex-col-reverse mmd:flex-row gap-6 mmd:gap-12
 }
 .form-error-message{
-    @apply text-xss ss:text-ss text-red-600 text-left w-full
+    font-size: 10px;
+    color: #dc2626;
+    text-align: left;
+    width: 100%;
+}
+@media (min-width: 375px) {
+  .form-error-message {
+    font-size: 12px;
+  }
 }
 .notification-message{
     @apply text-ss ss:text-sm font-medium text-gray-900
@@ -78,7 +100,17 @@ h3{
     @apply h-[2px] w-[90px] bg-green1
 }
 .gpa-btn{
-    @apply text-sm px-3 py-[7px] xss:py-2.5  text-white font-semibold w-full rounded-lg
+    font-size: 0.875rem;
+    padding: 7px 0.75rem;
+    color: white;
+    font-weight: 600;
+    width: 100%;
+    border-radius: 0.5rem;
+}
+@media (min-width: 320px) {
+  .gpa-btn {
+    padding: 0.625rem 0.75rem;
+  }
 }
 .heading-p{
     @apply text-gray-800 text-center text-sm xsm:text-xs font-[500]
@@ -87,7 +119,14 @@ h3{
     @apply text-green1 bg-gray-100 rounded-md
 }
 .active{
-    @apply text-green1 bg-gray-100 xsm:bg-transparent
+    color: #00875a;
+    background-color: #f3f4f6;
+    border-radius: 0.375rem;
+}
+@media (min-width: 750px) {
+  .active {
+    background-color: transparent;
+  }
 }
 
 input::-webkit-outer-spin-button,
@@ -107,55 +146,73 @@ input[type=number] {
 }
 
 .dark body {
-  @apply bg-gray-900 text-gray-100;
+  background-color: #111827;
+  color: #f3f4f6;
 }
 
 /* Dark mode transitions */
 html {
-  @apply transition-colors duration-300;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* Dark mode specific overrides */
+/* Dark mode specific overrides using CSS custom properties */
 .dark .bg-white {
-  @apply bg-gray-800;
+  background-color: #1f2937 !important;
 }
 
 .dark .bg-gray-50 {
-  @apply bg-gray-900;
+  background-color: #111827 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #1f2937 !important;
 }
 
 .dark .text-gray-900 {
-  @apply text-gray-100;
+  color: #f3f4f6 !important;
 }
 
 .dark .text-gray-800 {
-  @apply text-gray-200;
+  color: #e5e7eb !important;
 }
 
 .dark .text-gray-700 {
-  @apply text-gray-300;
+  color: #d1d5db !important;
 }
 
 .dark .text-gray-600 {
-  @apply text-gray-400;
+  color: #9ca3af !important;
 }
 
 .dark .border-gray-200 {
-  @apply border-gray-700;
+  border-color: #374151 !important;
 }
 
 .dark .border-gray-300 {
-  @apply border-gray-600;
+  border-color: #4b5563 !important;
 }
 
 .dark .shadow {
-  @apply shadow-gray-900/50;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
 }
 
 .dark nav {
-  @apply bg-gray-800;
+  background-color: #1f2937 !important;
 }
 
 .dark .home-gray-bg {
-  @apply bg-gray-900;
+  background-color: #111827 !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #374151 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+.dark .card,
+.dark .rounded-lg {
+  background-color: #1f2937;
 }
