@@ -182,10 +182,10 @@ export default function Dashboard() {
   return (
     <>
       {studentDetails ? (
-        <div className="bg-white min-h-screen">
-          <div className="max-w-[1720px] w-full mx-auto">
+        <div className="bg-white min-h-screen overflow-x-hidden">
+          <div className="max-w-[1720px] w-full mx-auto px-0">
             <div className="pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-0">
-              <div className="grid lg:grid-cols-7">
+              <div className="grid lg:grid-cols-7 overflow-hidden">
                 <div className="w-full lg:col-span-2 px-4 grid sm:grid-cols-2 lg:grid-rows-2 lg:grid-cols-none gap-4 mb-4 lg:mb-0">
                   <motion.div
                     variants={fadeInVariants5}
