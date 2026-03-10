@@ -80,6 +80,7 @@ export default function AdminDashboard() {
 
   const fetchMaterials = async () => {
     try {
+      console.log("[v0] Fetching materials...");
       const q = query(
         collection(db, "learningMaterials"),
         orderBy("createdAt", "desc")
@@ -89,9 +90,11 @@ export default function AdminDashboard() {
         id: doc.id,
         ...doc.data(),
       })) as Material[];
+      console.log("[v0] Fetched materials:", materialsData.length);
       setMaterials(materialsData);
-    } catch (error) {
-      console.error("Error fetching materials:", error);
+    } catch (error: any) {
+      console.error("[v0] Error fetching materials:", error);
+      notifyUser("error", `Failed to fetch materials: ${error.message || "Unknown error"}`);
     } finally {
       setIsLoading(false);
     }
@@ -99,6 +102,7 @@ export default function AdminDashboard() {
 
   const fetchIDCards = async () => {
     try {
+      console.log("[v0] Fetching ID cards...");
       const q = query(
         collection(db, "idCardRegistrations"),
         orderBy("createdAt", "desc")
@@ -108,9 +112,11 @@ export default function AdminDashboard() {
         id: doc.id,
         ...doc.data(),
       })) as IDCardRegistration[];
+      console.log("[v0] Fetched ID cards:", idCardsData.length);
       setIdCards(idCardsData);
-    } catch (error) {
-      console.error("Error fetching ID cards:", error);
+    } catch (error: any) {
+      console.error("[v0] Error fetching ID cards:", error);
+      notifyUser("error", `Failed to fetch ID cards: ${error.message || "Unknown error"}`);
     }
   };
 
@@ -155,19 +161,38 @@ export default function AdminDashboard() {
 
     try {
       notifyUser("loading", "Uploading material...");
+      console.log("[v0] Starting upload for:", selectedFile.name);
 
-      const fileUrl = await uploadFileToFirebase(selectedFile);
+      let fileUrl = "";
+      
+      try {
+        fileUrl = await uploadFileToFirebase(selectedFile);
+        console.log("[v0] File uploaded, URL:", fileUrl);
+      } catch (uploadError: any) {
+        console.error("[v0] Firebase Storage upload error:", uploadError);
+        notifyUser("error", `Storage error: ${uploadError.message || "Failed to upload file to storage"}`);
+        setIsUploading(false);
+        return;
+      }
 
-      await addDoc(collection(db, "learningMaterials"), {
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        level: formData.level,
-        fileUrl: fileUrl,
-        fileName: selectedFile.name,
-        uploadedBy: studentDetails?.email || "Admin",
-        createdAt: serverTimestamp(),
-      });
+      try {
+        await addDoc(collection(db, "learningMaterials"), {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          level: formData.level,
+          fileUrl: fileUrl,
+          fileName: selectedFile.name,
+          uploadedBy: studentDetails?.email || "Admin",
+          createdAt: serverTimestamp(),
+        });
+        console.log("[v0] Document added to Firestore");
+      } catch (firestoreError: any) {
+        console.error("[v0] Firestore error:", firestoreError);
+        notifyUser("error", `Database error: ${firestoreError.message || "Failed to save to database"}`);
+        setIsUploading(false);
+        return;
+      }
 
       notifyUser("success", "Material uploaded successfully!");
 
@@ -186,8 +211,8 @@ export default function AdminDashboard() {
       // Refresh materials list
       fetchMaterials();
     } catch (error: any) {
-      console.error("Error uploading material:", error);
-      notifyUser("error", "Failed to upload material. Please try again.");
+      console.error("[v0] Error uploading material:", error);
+      notifyUser("error", `Error: ${error.message || "Failed to upload material. Please try again."}`);
     } finally {
       setIsUploading(false);
     }

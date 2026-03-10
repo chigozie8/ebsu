@@ -79,28 +79,46 @@ export default function IDCardRegistration() {
 
     try {
       notifyUser("loading", "Uploading your ID card registration...");
+      console.log("[v0] Starting ID card registration for:", formData.firstName);
 
       // Upload image to Firebase Storage
-      const imageUrl = await uploadImageToFirebase(imageFile);
+      let imageUrl = "";
+      try {
+        imageUrl = await uploadImageToFirebase(imageFile);
+        console.log("[v0] Image uploaded:", imageUrl);
+      } catch (uploadError: any) {
+        console.error("[v0] Image upload error:", uploadError);
+        notifyUser("error", `Image upload failed: ${uploadError.message || "Unknown error"}`);
+        setIsSubmitting(false);
+        return;
+      }
 
       // Save to Firestore
-      await addDoc(collection(db, "idCardRegistrations"), {
-        userId: userID,
-        email: formData.email,
-        firstName: formData.firstName,
-        surname: formData.surname,
-        phoneNumber: formData.phoneNumber,
-        dateOfBirth: formData.dateOfBirth,
-        level: formData.level,
-        classSet: formData.classSet,
-        photoUrl: imageUrl,
-        status: "pending",
-        createdAt: serverTimestamp(),
-      });
+      try {
+        await addDoc(collection(db, "idCardRegistrations"), {
+          userId: userID,
+          email: formData.email,
+          firstName: formData.firstName,
+          surname: formData.surname,
+          phoneNumber: formData.phoneNumber,
+          dateOfBirth: formData.dateOfBirth,
+          level: formData.level,
+          classSet: formData.classSet,
+          photoUrl: imageUrl,
+          status: "pending",
+          createdAt: serverTimestamp(),
+        });
+        console.log("[v0] ID card saved to Firestore");
+      } catch (firestoreError: any) {
+        console.error("[v0] Firestore error:", firestoreError);
+        notifyUser("error", `Database error: ${firestoreError.message || "Unknown error"}`);
+        setIsSubmitting(false);
+        return;
+      }
 
       // Send email notification via Resend
       try {
-        await fetch("/api/send-id-registration", {
+        const emailResponse = await fetch("/api/send-id-registration", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -116,8 +134,9 @@ export default function IDCardRegistration() {
             photoUrl: imageUrl,
           }),
         });
+        console.log("[v0] Email notification response:", emailResponse.status);
       } catch (emailError) {
-        console.error("Email notification failed:", emailError);
+        console.error("[v0] Email notification failed:", emailError);
         // Don't fail the whole submission if email fails
       }
 
@@ -136,8 +155,8 @@ export default function IDCardRegistration() {
       setImageFile(null);
       setImagePreview(null);
     } catch (error: any) {
-      console.error("Error submitting registration:", error);
-      notifyUser("error", "Failed to submit registration. Please try again.");
+      console.error("[v0] Error submitting registration:", error);
+      notifyUser("error", `Failed to submit: ${error.message || "Please try again."}`);
     } finally {
       setIsSubmitting(false);
     }
