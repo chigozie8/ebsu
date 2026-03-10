@@ -49,6 +49,7 @@ export default function CourseOutlines() {
       "300": courseInfo300,
       "400": courseInfo400,
       "500": courseInfo500,
+      "600": {}, // Clinical years may not have static outlines
     };
 
     if (!staticData[lvl]?.[sem]) return [];
@@ -145,6 +146,7 @@ export default function CourseOutlines() {
         "300": courseInfo300,
         "400": courseInfo400,
         "500": courseInfo500,
+        "600": {}, // Clinical years may not have static outlines
       };
 
       if (staticData[level]?.[semester]?.[course]) {
@@ -200,8 +202,9 @@ export default function CourseOutlines() {
                   <option value="100">100L</option>
                   <option value="200">200L</option>
                   <option value="300">300L</option>
-                  <option value="400">400L</option>
-                  <option value="500">500L</option>
+                  <option value="400">400L (Clinical)</option>
+                  <option value="500">500L (Clinical)</option>
+                  <option value="600">600L (Clinical)</option>
                 </select>
               </div>{" "}
               <div>
