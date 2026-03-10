@@ -81,8 +81,14 @@ export const useUploadProfileImage = () => {
 
         setImageURL(downloadURL);
         setImageFileID(fileId);
+
+        // Automatically save to Firestore so image persists
+        await updateDoc(doc(db, "userInfo", userID), {
+          profileImageURL: downloadURL,
+          profileImageID: fileId,
+        });
+
         notifyUser("success", "Image Uploaded");
-        console.log("Image Uploaded to ImageKit:", downloadURL);
       } catch (error: any) {
         console.error("ImageKit upload error:", error);
         notifyUser("error", "Failed to upload image. Please try again.");
@@ -114,15 +120,6 @@ export const useUploadProfileImage = () => {
       try {
         setDeletingProfileImage(true);
 
-        // Delete from ImageKit if we have a fileId
-        if (studentDetails.profileImageID) {
-          const authParams = await getImageKitAuthParams();
-
-          // Note: ImageKit delete requires server-side API call
-          // We'll clear the reference in Firestore; the image will remain in ImageKit
-          // For full deletion, you'd need a separate server endpoint
-        }
-
         // Clear the profile image reference in Firestore
         await updateDoc(doc(db, "userInfo", userID), {
           profileImageURL: "",
@@ -133,13 +130,11 @@ export const useUploadProfileImage = () => {
         setOpenDeleteProfileImageModal(false);
         notifyUser("success", "Profile picture deleted");
       } catch (err) {
-        console.log(err);
+        console.error("Error deleting profile image:", err);
         notifyUser("error", "Something went wrong. Please try again");
         setOpenDeleteProfileImageModal(false);
         setDeletingProfileImage(false);
       }
-    } else {
-      console.log("Bug!!");
     }
   };
 
