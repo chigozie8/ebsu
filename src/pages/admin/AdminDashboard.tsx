@@ -130,7 +130,6 @@ export default function AdminDashboard() {
 
   const uploadFileToSupabase = async (file: File): Promise<string> => {
     // Generate unique file path for Supabase Storage
-    const fileExt = file.name.split('.').pop();
     const fileName = `materials/${Date.now()}-${file.name}`;
 
     // Upload to Supabase Storage
