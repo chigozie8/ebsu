@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { db } from "../../config/firebase";
 import {
@@ -117,10 +118,25 @@ interface CourseOutlineEntry {
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
+  const [searchParams] = useSearchParams();
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
+  
+  // Get initial tab from URL params or default to "materials"
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines" => {
+    const tabParam = searchParams.get("tab");
+    const validTabs = ["materials", "idcards", "blog", "courses", "levels", "outlines"];
+    if (tabParam && validTabs.includes(tabParam)) {
+      return tabParam as "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines";
+    }
+    return "materials";
+  };
+  
   const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels" | "outlines">(
-    "materials"
+    getInitialTab()
   );
+  
+  console.log("[v0] AdminDashboard loaded with activeTab:", activeTab, "- Course Outlines tab should be visible");
+  
   const [materials, setMaterials] = useState<Material[]>([]);
   const [idCards, setIdCards] = useState<IDCardRegistration[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
@@ -1157,8 +1173,8 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab("outlines")}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
               activeTab === "outlines"
-                ? "bg-green2 text-white"
-                : "bg-white text-gray-600 hover:bg-gray-100 border border-green2"
+                ? "bg-green1 text-white shadow-md"
+                : "bg-green-50 text-green1 hover:bg-green-100 border-2 border-green1"
             }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
