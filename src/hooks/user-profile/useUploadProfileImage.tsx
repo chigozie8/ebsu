@@ -30,7 +30,9 @@ export const useUploadProfileImage = () => {
     if (selectedFile && selectedFile.type.startsWith("image/")) {
       setImageFile(selectedFile);
       setUploadProgress(0);
-      console.log(imageFile);
+      // Create local preview URL immediately when file is selected
+      const localPreviewURL = URL.createObjectURL(selectedFile);
+      setImageURL(localPreviewURL);
     } else {
       notifyUser(
         "error",

@@ -25,7 +25,11 @@ export const learningResourcesLevels = [
       level: "500",
       title: "500 Level",
       desc: "Prepared lecturers handouts, textbooks, and study materials for students taking 500 level courses"
-
+    },
+    {
+      level: "600",
+      title: "600 Level",
+      desc: "Prepared lecturers handouts, textbooks, and study materials for students taking 600 level courses (Medicine & Surgery)"
     },
   ];
   
