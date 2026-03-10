@@ -60,6 +60,15 @@ const AppRoutes = () => {
         "../pages/user/dashboard/components/learning-resources/LearningResources"
       )
   );
+  const IDCardRegistration = lazy(
+    () => import("../pages/user/id-card/IDCardRegistration")
+  );
+  const AdminDashboard = lazy(
+    () => import("../pages/admin/AdminDashboard")
+  );
+  const ResourcesPage = lazy(
+    () => import("../pages/user/resources/ResourcesPage")
+  );
 
   return (
     <>
@@ -139,6 +148,30 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />{" "}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/id-card"
+            element={
+              <ProtectedRoute>
+                <IDCardRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/resources"
+            element={
+              <ProtectedRoute>
+                <ResourcesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

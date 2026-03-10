@@ -13,6 +13,9 @@ import notif from "../../../assets/svg/illustrations/notifications.svg";
 import { CalculatorIcon } from "../../../components/icons/dashboard/CalculatorIcon";
 import { BooksIcon } from "../../../components/icons/dashboard/BooksIcon";
 import { FilesIcon } from "../../../components/icons/dashboard/FilesIcon";
+import { ChatIcon } from "../../../components/icons/dashboard/ChatIcon";
+import { IDCardIcon } from "../../../components/icons/dashboard/IDCardIcon";
+import { ResourcesIcon } from "../../../components/icons/dashboard/ResourcesIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
@@ -225,6 +228,77 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <NavLink to="/u/id-card">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={11}
+                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-6 flex-col items-center justify-center"
+                        >
+                          <IDCardIcon
+                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            color="#b45309"
+                          />
+                          <p className="uppercase text-[#b45309] text-xs lg:text-base font-semibold text-center">
+                            ID Card Registration
+                          </p>
+                        </motion.div>
+                      </NavLink>
+                      <NavLink to="/u/resources">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={13}
+                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-6 flex-col items-center justify-center"
+                        >
+                          <ResourcesIcon
+                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            color="#7c3aed"
+                          />
+                          <p className="uppercase text-[#7c3aed] text-xs lg:text-base font-semibold text-center">
+                            Study Materials
+                          </p>
+                        </motion.div>
+                      </NavLink>
+                      <button
+                        onClick={() => {
+                          const chatButton = document.querySelector(
+                            '[class*="fixed bottom-6 right-6"]'
+                          ) as HTMLButtonElement;
+                          if (chatButton) chatButton.click();
+                        }}
+                      >
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={15}
+                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-6 flex-col items-center justify-center"
+                        >
+                          <ChatIcon
+                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            color="#047857"
+                          />
+                          <p className="uppercase text-[#047857] text-xs lg:text-base font-semibold text-center">
+                            AI Assistant
+                          </p>
+                        </motion.div>
+                      </button>
                     </div>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-2 mmd:gap-4">
