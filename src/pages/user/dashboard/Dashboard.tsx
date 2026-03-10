@@ -182,7 +182,7 @@ export default function Dashboard() {
   return (
     <>
       {studentDetails ? (
-        <div className="bg-gray-50 min-h-screen">
+        <div className="bg-white min-h-screen">
           <div className="max-w-[1720px] w-full mx-auto">
             <div className="pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-0">
               <div className="grid lg:grid-cols-7">

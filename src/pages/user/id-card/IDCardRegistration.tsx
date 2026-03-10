@@ -162,7 +162,7 @@ export default function IDCardRegistration() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
+    <div className="bg-white min-h-screen pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-10">
       <div className="max-w-3xl mx-auto px-4">
         <motion.div
           variants={fadeInVariants5}
@@ -184,7 +184,7 @@ export default function IDCardRegistration() {
             <div className="flex flex-col items-center mb-6">
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="w-32 h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-green2 transition-colors overflow-hidden bg-gray-50"
+                className="w-32 h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-green2 transition-colors overflow-hidden bg-white"
               >
                 {imagePreview ? (
                   <img

@@ -6,7 +6,7 @@ import { fadeInVariants1 } from "../../../animation/variants";
 
 export default function LearningResources() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="box-width ">
         <div className="page-section">
           <div className="w-full flex items-center justify-center mb-6 flex-col">

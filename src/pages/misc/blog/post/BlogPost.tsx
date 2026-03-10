@@ -41,7 +41,7 @@ export default function BlogPost() {
   }, [postID]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="box-width2">
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
           <div className="sticky grid md:grid-cols-5 gap-4">
