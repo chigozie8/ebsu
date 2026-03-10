@@ -1,12 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { db } from "../../../config/firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
-import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
-
 interface Material {
   id: string;
   title: string;
@@ -20,7 +18,6 @@ interface Material {
 }
 
 export default function ResourcesPage() {
-  const { studentDetails } = useGetUserInfo();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);

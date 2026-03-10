@@ -13,7 +13,7 @@ import { scaleInVariants1 } from "../../animation/variants";
 export const DeleteProfileImage = () => {
   const { openDeleteProfileImageModal, setOpenDeleteProfileImageModal } =
     useModalContext();
-  const { userID, studentDetails } = useGetUserInfo();
+  const { userID } = useGetUserInfo();
   const [deletingProfileImage, setDeletingProfileImage] = useState(false);
 
   const deleteUserProfileImage = async () => {
