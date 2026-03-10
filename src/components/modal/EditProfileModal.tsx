@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useModalContext } from "../../context/Modal";
 import { CancelIcon } from "../icons/general/CancelIcon";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
@@ -16,11 +16,61 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { motion } from "framer-motion";
 import { scaleInVariants1 } from "../../animation/variants";
+import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
+import { CameraIcon } from "../icons/general/CameraIcon";
 
 export const EditProfileModal = () => {
   const { openEditProfileModal, setOpenEditProfileModal } = useModalContext();
-  const { userID } = useGetUserInfo();
+  const { userID, studentDetails } = useGetUserInfo();
   const [editingProfile, setEditingProfile] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files && e.target.files[0];
+    if (selectedFile && selectedFile.type.startsWith("image/")) {
+      setImageFile(selectedFile);
+      // Create local preview URL
+      const localPreviewURL = URL.createObjectURL(selectedFile);
+      setImagePreview(localPreviewURL);
+    } else {
+      notifyUser("error", "Please choose a valid image file (PNG, JPG or WEBP).");
+      e.target.value = "";
+    }
+  };
+
+  // Upload image to Supabase Storage
+  const uploadProfileImage = async (): Promise<string | null> => {
+    if (!imageFile || !userID) return null;
+    
+    try {
+      setUploadingImage(true);
+      const fileExt = imageFile.name.split('.').pop() || 'jpg';
+      const fileName = `${userID}/profile-${Date.now()}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKETS.PROFILE_PICTURES)
+        .upload(fileName, imageFile, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Failed to upload image: ${error.message}`);
+      }
+
+      const publicUrl = getPublicUrl(STORAGE_BUCKETS.PROFILE_PICTURES, data.path);
+      setUploadingImage(false);
+      return publicUrl;
+    } catch (error: any) {
+      console.error("Supabase upload error:", error);
+      setUploadingImage(false);
+      throw error;
+    }
+  };
   useEffect(() => {
     if (openEditProfileModal) {
       document.body.style.overflow = "hidden";
@@ -47,6 +97,8 @@ export const EditProfileModal = () => {
   const closeEditProfileModal = () => {
     setOpenEditProfileModal(false);
     reset();
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const editProfile = async (data: IEditProfileForm) => {
@@ -56,16 +108,30 @@ export const EditProfileModal = () => {
     if (userID) {
       try {
         const userInfoRef = doc(db, "userInfo", userID);
-        await updateDoc(userInfoRef, {
+        
+        // Prepare update data
+        const updateData: any = {
           firstName,
           lastName,
           regNo,
           level,
-        });
+        };
+
+        // Upload profile image if one was selected
+        if (imageFile) {
+          const imageUrl = await uploadProfileImage();
+          if (imageUrl) {
+            updateData.profileImageURL = imageUrl;
+          }
+        }
+
+        await updateDoc(userInfoRef, updateData);
         setEditingProfile(false);
         setOpenEditProfileModal(false);
         reset();
-        notifyUser("success", "User profile updated successfully...");
+        setImageFile(null);
+        setImagePreview(null);
+        notifyUser("success", "User profile updated successfully!");
       } catch (err: any) {
         console.log(err);
         setEditingProfile(false);
@@ -102,14 +168,52 @@ export const EditProfileModal = () => {
 
           <div>
             <div className="flex items-center gap-3 w-full py-4 px-3 ss:px-5 sss:px-7">
-              <Lottie
-                animationData={avatar}
-                loop={false}
-                className="w-[80px] xss:w-[100px] sm:w-[120px]"
-              />
-              <p className="text-sm sm:text-base font-semibold text-gray-700">
-                Update your profile information
-              </p>
+              {/* Profile Image Upload Section */}
+              <div className="relative">
+                <div className="w-[80px] h-[80px] xss:w-[100px] xss:h-[100px] sm:w-[120px] sm:h-[120px] rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                  {imagePreview ? (
+                    <img 
+                      src={imagePreview} 
+                      alt="Profile preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : studentDetails?.profileImageURL ? (
+                    <img 
+                      src={studentDetails.profileImageURL} 
+                      alt="Current profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Lottie
+                      animationData={avatar}
+                      loop={false}
+                      className="w-full h-full"
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 bg-green1 rounded-full p-1.5 sm:p-2 hover:bg-green-600 transition-colors shadow-md"
+                >
+                  <CameraIcon className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex flex-col">
+                <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  Update your profile
+                </p>
+                <p className="text-xss ss:text-xs text-gray-500">
+                  Click the camera icon to change photo
+                </p>
+              </div>
             </div>
             <div className="px-3 ss:px-5 sss:px-7 mb-4 sm:mb-7">
               <form onSubmit={handleSubmit(editProfile)}>
