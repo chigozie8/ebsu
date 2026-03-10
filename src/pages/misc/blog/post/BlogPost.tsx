@@ -11,7 +11,6 @@ import "react-loading-skeleton/dist/skeleton.css";
 import Footer from "../../../../components/footer/Footer";
 import CommentSection from "./comments/CommentSection";
 import { useBlogComments } from "../hooks/useBlogComments";
-import { useBlogLikes } from "../hooks/useBlogLikes";
 import PostSkeleton from "./skeleton/PostSkeleton";
 import Lottie from "lottie-react";
 import profileAnim from "../../../../json/animation/avatar1.json";
@@ -45,7 +44,6 @@ export default function BlogPost() {
   } = useFetchBlogPosts();
   const { postID, postType } = useParams();
   const { getPostComments } = useBlogComments();
-  const { likes, isLiked, likesLoading, toggleLike } = useBlogLikes();
 
   const readTime = useMemo(() => calculateReadTime(blogPost?.contents), [blogPost?.contents]);
 
@@ -139,32 +137,6 @@ export default function BlogPost() {
                   </div>
                   
                   {blogPost.contents && <PostContent contents={blogPost.contents} />}
-                  
-                  {/* Like button */}
-                  <div className="flex items-center gap-4 mt-6 pt-4 border-t border-gray-100">
-                    <button
-                      onClick={toggleLike}
-                      disabled={likesLoading}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-                        isLiked 
-                          ? 'bg-red-50 text-red-500 hover:bg-red-100' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      <svg 
-                        className={`w-5 h-5 ${isLiked ? 'fill-red-500' : 'fill-none stroke-current'}`} 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor" 
-                        strokeWidth={isLiked ? 0 : 2}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span className="text-sm font-medium">{likes || 0}</span>
-                    </button>
-                    <span className="text-sm text-gray-500">
-                      {isLiked ? 'You liked this post' : 'Like this post'}
-                    </span>
-                  </div>
                 </div>
               )}
             </div>
