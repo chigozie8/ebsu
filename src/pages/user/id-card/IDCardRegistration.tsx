@@ -24,6 +24,7 @@ export default function IDCardRegistration() {
     dateOfBirth: "",
     level: studentDetails?.level || "",
     classSet: "",
+    registrationNumber: studentDetails?.regNo || "",
   });
 
   const handleInputChange = (
@@ -74,7 +75,7 @@ export default function IDCardRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.firstName || !formData.surname || !formData.email || !formData.phoneNumber || !formData.dateOfBirth || !formData.level || !formData.classSet) {
+    if (!formData.firstName || !formData.surname || !formData.email || !formData.phoneNumber || !formData.dateOfBirth || !formData.level || !formData.classSet || !formData.registrationNumber) {
       notifyUser("error", "Please fill in all required fields");
       return;
     }
@@ -107,6 +108,7 @@ export default function IDCardRegistration() {
         dateOfBirth: formData.dateOfBirth,
         level: formData.level,
         classSet: formData.classSet,
+        registrationNumber: formData.registrationNumber,
         photoUrl: imageUrl,
         status: "pending",
         createdAt: serverTimestamp(),
@@ -127,6 +129,7 @@ export default function IDCardRegistration() {
             dateOfBirth: formData.dateOfBirth,
             level: formData.level,
             classSet: formData.classSet,
+            registrationNumber: formData.registrationNumber,
             photoUrl: imageUrl,
           }),
         });
@@ -146,6 +149,7 @@ export default function IDCardRegistration() {
         dateOfBirth: "",
         level: "",
         classSet: "",
+        registrationNumber: "",
       });
       setImageFile(null);
       setImagePreview(null);
@@ -316,19 +320,36 @@ export default function IDCardRegistration() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Class <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="classSet"
-                value={formData.classSet}
-                onChange={handleInputChange}
-                placeholder="018, 019, 020"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">Enter your class set (e.g., 018, 019, 020)</p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Registration Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="registrationNumber"
+                  value={formData.registrationNumber}
+                  onChange={handleInputChange}
+                  placeholder="Ebsu/2019/99999"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter your registration number</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="classSet"
+                  value={formData.classSet}
+                  onChange={handleInputChange}
+                  placeholder="018, 019, 020"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter your class set (e.g., 018, 019, 020)</p>
+              </div>
             </div>
 
             <button
