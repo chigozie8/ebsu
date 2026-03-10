@@ -54,6 +54,13 @@ export default function IDCardRegistration() {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userID}/id-card-${Date.now()}.${fileExt}`;
 
+    console.log("[v0] Uploading to Supabase Storage:", {
+      bucket: STORAGE_BUCKETS.ID_CARDS,
+      fileName,
+      fileType: file.type,
+      fileSize: file.size,
+    });
+
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKETS.ID_CARDS)
@@ -63,11 +70,17 @@ export default function IDCardRegistration() {
       });
 
     if (error) {
+      console.error("[v0] Supabase upload error:", error);
       throw new Error(`Failed to upload image: ${error.message}`);
     }
 
+    console.log("[v0] Upload successful, data:", data);
+
     // Get the public URL
-    return getPublicUrl(STORAGE_BUCKETS.ID_CARDS, data.path);
+    const publicUrl = getPublicUrl(STORAGE_BUCKETS.ID_CARDS, data.path);
+    console.log("[v0] Public URL:", publicUrl);
+    
+    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +105,10 @@ export default function IDCardRegistration() {
 
     try {
       notifyUser("loading", "Uploading your ID card registration...");
+
+      console.log("[v0] Starting ID card registration submission");
+      console.log("[v0] User ID:", userID);
+      console.log("[v0] Image file:", imageFile?.name, imageFile?.type, imageFile?.size);
 
       // Upload image to Supabase Storage
       const imageUrl = await uploadImageToSupabase(imageFile);
