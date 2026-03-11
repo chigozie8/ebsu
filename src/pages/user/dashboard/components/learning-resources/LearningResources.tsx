@@ -5,7 +5,22 @@ import { Spinner } from "../../../../../components/loaders/Spinner";
 import fileSearch from "../../../../../assets/svg/illustrations/fileSearch.svg";
 import checkResources from "../../../../../assets/svg/illustrations/search-files.svg";
 import { FileCard } from "./FileCard";
-import { getCoursesForLevelAndSemester, MBBSCourse } from "../../../../../data/academics/learning-resources/mbbsCourses";
+import { db, isFirebaseConfigured } from "../../../../../config/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+
+interface AdminMaterial {
+  id: string;
+  courseCode: string;
+  courseTitle?: string;
+  level: string;
+  semester: string;
+  resourceType: string;
+}
+
+interface CourseData {
+  courseCode: string;
+  courseTitle: string;
+}
 
 export default function LearningResources() {
   const [section, setSection] = useState<"preclinical" | "clinical">("preclinical");
@@ -13,20 +28,55 @@ export default function LearningResources() {
   const [level, setLevel] = useState<string | null>(null);
   const [course, setCourse] = useState<string | null>(null);
   const [resourcesType, setResourcesType] = useState<string | null>(null);
-  const [availableCourses, setAvailableCourses] = useState<MBBSCourse[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<CourseData[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   const { getLearningResources, files, gettingResources, error } =
     useLearningResources();
 
-  // Update available courses when level and semester change
+  // Fetch available courses from Firestore when level and semester change
   useEffect(() => {
-    if (level && semester) {
-      const courses = getCoursesForLevelAndSemester(level, semester as "First" | "Second");
-      setAvailableCourses(courses);
-      setCourse(null); // Reset course selection
-    } else {
-      setAvailableCourses([]);
-    }
+    const fetchCourses = async () => {
+      if (!level || !semester || !isFirebaseConfigured) {
+        setAvailableCourses([]);
+        return;
+      }
+
+      setLoadingCourses(true);
+      try {
+        const q = query(
+          collection(db, "learningMaterials"),
+          where("level", "==", level),
+          where("semester", "==", semester)
+        );
+        const snapshot = await getDocs(q);
+        const materials = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as AdminMaterial[];
+
+        // Extract unique courses
+        const uniqueCourses = new Map<string, CourseData>();
+        materials.forEach(material => {
+          if (!uniqueCourses.has(material.courseCode)) {
+            uniqueCourses.set(material.courseCode, {
+              courseCode: material.courseCode,
+              courseTitle: material.courseTitle || material.courseCode,
+            });
+          }
+        });
+
+        setAvailableCourses(Array.from(uniqueCourses.values()));
+        setCourse(null); // Reset course selection
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+        setAvailableCourses([]);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    fetchCourses();
   }, [level, semester]);
 
   // Update level when section changes
@@ -143,11 +193,11 @@ export default function LearningResources() {
                 <select
                   onChange={(e) => setCourse(e.target.value)}
                   value={course || ""}
-                  disabled={!level || !semester}
+                  disabled={!level || !semester || loadingCourses}
                   className="bg-white cursor-pointer border-none shadow text-gray-900 text-xss xss:text-ss ss:text-sm font-medium rounded-lg border border-transparent focus:ring-green1 focus:border-gray-500 block w-full p-1.5 sm:p-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="" disabled>
-                    Select Course
+                    {loadingCourses ? "Loading..." : availableCourses.length === 0 && level && semester ? "No courses available" : "Select Course"}
                   </option>
                   {availableCourses.map((courseItem) => (
                     <option key={courseItem.courseCode} value={courseItem.courseCode}>
