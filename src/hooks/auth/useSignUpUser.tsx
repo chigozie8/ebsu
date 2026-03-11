@@ -48,7 +48,7 @@ export default function useSignUpUser() {
       navigate("/");
       notifyUser(
         "success",
-        "Sign in successful. Welcome to Polymer and Textile Engineering Department."
+        "Sign up successful. Welcome to the Medicine and Surgery Portal."
       );
     } catch (error: any) {
       if (error.code === "auth/email-already-in-use") {
