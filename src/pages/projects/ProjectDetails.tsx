@@ -149,7 +149,7 @@ export default function ProjectDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className={`bg-gradient-to-r ${category.bgGradient} text-white`}>
+      <div className="bg-white border-b border-gray-200">
         <div className="box-width">
           <div className="px-3 py-16 sm:px-10 lg:px-12 sm:py-20">
             <motion.div
@@ -160,7 +160,7 @@ export default function ProjectDetails() {
             >
               <button
                 onClick={() => navigate("/projects")}
-                className="flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:text-green2 mb-6 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -186,11 +186,11 @@ export default function ProjectDetails() {
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-balance">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 text-balance text-gray-900">
                 {project.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-4 text-white/80">
+              <div className="flex flex-wrap items-center gap-4 text-gray-600">
                 <span className="flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
