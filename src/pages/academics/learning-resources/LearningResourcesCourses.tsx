@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { courses, clinicalCourses, isClinicalLevel } from "../../../data/academics/learning-resources/courses";
 import { useParams } from "react-router-dom";
 import { CoursesCard } from "./CoursesCard";
 import Footer from "../../../components/footer/Footer";
@@ -18,13 +17,20 @@ interface AdminMaterial {
   resourceType: string;
 }
 
+interface CourseData {
+  courseCode: string;
+  courseTitle: string;
+  id: string;
+  semester?: string;
+}
+
 export default function LearningResourcesCourses() {
   const { level } = useParams();
-  const isClinical = level ? isClinicalLevel(level) : false;
-  const [adminCourses, setAdminCourses] = useState<{courseCode: string; courseTitle: string; id: string}[]>([]);
+  const isClinical = level ? parseInt(level) >= 400 : false;
+  const [courses, setCourses] = useState<CourseData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch admin-uploaded materials to discover available courses
+  // Fetch admin-uploaded materials to discover available courses (only admin-created)
   useEffect(() => {
     const fetchAdminMaterials = async () => {
       if (!isFirebaseConfigured || !level) {
@@ -44,18 +50,19 @@ export default function LearningResourcesCourses() {
         })) as AdminMaterial[];
 
         // Extract unique courses from admin materials
-        const uniqueCourses = new Map<string, {courseCode: string; courseTitle: string; id: string}>();
+        const uniqueCourses = new Map<string, CourseData>();
         materials.forEach(material => {
           if (!uniqueCourses.has(material.courseCode)) {
             uniqueCourses.set(material.courseCode, {
               courseCode: material.courseCode,
               courseTitle: material.courseTitle || material.courseCode,
               id: material.courseCode.replace(/\s+/g, ""),
+              semester: material.semester,
             });
           }
         });
 
-        setAdminCourses(Array.from(uniqueCourses.values()));
+        setCourses(Array.from(uniqueCourses.values()));
       } catch (error) {
         console.error("Error fetching admin materials:", error);
       } finally {
@@ -66,27 +73,13 @@ export default function LearningResourcesCourses() {
     fetchAdminMaterials();
   }, [level]);
 
-  // Get appropriate courses based on level type
-  const getClinicalCourses = () => {
-    if (level && clinicalCourses[level]) {
-      return clinicalCourses[level].courseInfo;
-    }
-    return [];
+  // Filter courses by semester (only for preclinical)
+  const getCoursesForSemester = (semester: string) => {
+    return courses.filter(c => c.semester === semester);
   };
 
-  const getPreclinicalCourses = (semester: "First" | "Second") => {
-    if (level && courses[level] && courses[level][semester]) {
-      return courses[level][semester].courseInfo;
-    }
-    return [];
-  };
-
-  // Merge static courses with admin-uploaded courses
-  const getMergedCourses = (staticCourses: any[]) => {
-    const staticCodes = new Set(staticCourses.map(c => c.courseCode));
-    const additionalCourses = adminCourses.filter(c => !staticCodes.has(c.courseCode));
-    return [...staticCourses, ...additionalCourses];
-  };
+  // Get all courses (for clinical years which don't have semesters)
+  const getAllCourses = () => courses;
 
   const getLevelDescription = () => {
     if (!level) return "";
@@ -136,32 +129,29 @@ export default function LearningResourcesCourses() {
               <h4 className="text-base font-bold mb-4 sm:text-md">
                 All Clinical Courses <div className="bar-style" />
               </h4>
-              {(() => {
-                const mergedClinicalCourses = getMergedCourses(getClinicalCourses());
-                return mergedClinicalCourses.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    <p>No courses available for this level yet.</p>
-                    <p className="text-sm mt-2">Check back later or contact admin.</p>
-                  </div>
-                ) : (
-                  <div className="mb-16 grid items-center grid-cols-2 xss:grid-cols-3 sss:grid-cols-4 mmd:grid-cols-5 gap-4">
-                    {mergedClinicalCourses.map((info, i) => (
-                      <motion.div
-                        key={info.id || info.courseCode}
-                        variants={fadeInVariants1}
-                        initial="initial"
-                        whileInView="animate"
-                        viewport={{
-                          once: true,
-                        }}
-                        custom={i}
-                      >
-                        <CoursesCard {...info} />
-                      </motion.div>
-                    ))}
-                  </div>
-                );
-              })()}
+              {getAllCourses().length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No courses available for this level yet.</p>
+                  <p className="text-sm mt-2">Check back later or contact admin.</p>
+                </div>
+              ) : (
+                <div className="mb-16 grid items-center grid-cols-2 xss:grid-cols-3 sss:grid-cols-4 mmd:grid-cols-5 gap-4">
+                  {getAllCourses().map((info, i) => (
+                    <motion.div
+                      key={info.id || info.courseCode}
+                      variants={fadeInVariants1}
+                      initial="initial"
+                      whileInView="animate"
+                      viewport={{
+                        once: true,
+                      }}
+                      custom={i}
+                    >
+                      <CoursesCard {...info} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             // Preclinical years (100-300) - With semester division
@@ -169,15 +159,36 @@ export default function LearningResourcesCourses() {
               <h4 className="text-base font-bold mb-2 sm:text-md">
                 First Semester <div className="bar-style" />
               </h4>
-              {(() => {
-                const mergedFirstSemester = getMergedCourses(getPreclinicalCourses("First"));
-                return mergedFirstSemester.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 mb-8">
-                    <p>No first semester courses available yet.</p>
-                  </div>
-                ) : (
+              {getCoursesForSemester("First").length === 0 ? (
+                <div className="text-center py-8 text-gray-500 mb-8">
+                  <p>No first semester courses available yet.</p>
+                </div>
+              ) : (
+                <div className="mb-16 grid items-center grid-cols-2 xss:grid-cols-3 sss:grid-cols-4 mmd:grid-cols-5 gap-4">
+                  {getCoursesForSemester("First").map((info, i) => (
+                    <motion.div
+                      key={info.id || info.courseCode}
+                      variants={fadeInVariants1}
+                      initial="initial"
+                      whileInView="animate"
+                      viewport={{
+                        once: true,
+                      }}
+                      custom={i}
+                    >
+                      <CoursesCard {...info} />
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {getCoursesForSemester("Second").length > 0 && (
+                <>
+                  <h4 className="text-base font-bold mb-2 sm:text-md">
+                    Second Semester <div className="bar-style" />
+                  </h4>
                   <div className="mb-16 grid items-center grid-cols-2 xss:grid-cols-3 sss:grid-cols-4 mmd:grid-cols-5 gap-4">
-                    {mergedFirstSemester.map((info, i) => (
+                    {getCoursesForSemester("Second").map((info, i) => (
                       <motion.div
                         key={info.id || info.courseCode}
                         variants={fadeInVariants1}
@@ -192,35 +203,8 @@ export default function LearningResourcesCourses() {
                       </motion.div>
                     ))}
                   </div>
-                );
-              })()}
-
-              {(() => {
-                const mergedSecondSemester = getMergedCourses(getPreclinicalCourses("Second"));
-                return mergedSecondSemester.length > 0 && (
-                  <>
-                    <h4 className="text-base font-bold mb-2 sm:text-md">
-                      Second Semester <div className="bar-style" />
-                    </h4>
-                    <div className="mb-16 grid items-center grid-cols-2 xss:grid-cols-3 sss:grid-cols-4 mmd:grid-cols-5 gap-4">
-                      {mergedSecondSemester.map((info, i) => (
-                        <motion.div
-                          key={info.id || info.courseCode}
-                          variants={fadeInVariants1}
-                          initial="initial"
-                          whileInView="animate"
-                          viewport={{
-                            once: true,
-                          }}
-                          custom={i}
-                        >
-                          <CoursesCard {...info} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
+                </>
+              )}
             </>
           )}
         </div>
