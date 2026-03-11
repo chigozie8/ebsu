@@ -10,6 +10,11 @@ import { Spinner } from "../../components/loaders/Spinner";
 // =============================================
 // TypeScript Interfaces
 // =============================================
+interface Collaborator {
+  name: string;
+  image?: string;
+}
+
 interface Project {
   id: string;
   no?: number;
@@ -18,7 +23,7 @@ interface Project {
   category: "voluntary" | "who" | "personal" | "research" | "community";
   date: string;
   endDate?: string;
-  collaborators?: string[];
+  collaborators?: Collaborator[] | string[];
   image?: string;
   link?: string;
   tags: string[];
@@ -134,16 +139,19 @@ const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => {
         </span>
       </div>
 
-      {project.collaborators && project.collaborators.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-xs text-gray-500">
-            <span className="font-medium">Collaborators:</span>{" "}
-            {project.collaborators.slice(0, 2).join(", ")}
-            {project.collaborators.length > 2 &&
-              ` +${project.collaborators.length - 2} more`}
-          </p>
-        </div>
-      )}
+{project.collaborators && project.collaborators.length > 0 && (
+  <div className="mt-3 pt-3 border-t border-gray-100">
+  <p className="text-xs text-gray-500">
+  <span className="font-medium">Collaborators:</span>{" "}
+  {project.collaborators.slice(0, 2).map((c, i) => {
+    const name = typeof c === "string" ? c : c.name;
+    return i === 0 ? name : `, ${name}`;
+  })}
+  {project.collaborators.length > 2 &&
+  ` +${project.collaborators.length - 2} more`}
+  </p>
+  </div>
+  )}
 </div>
   </motion.div>
   );

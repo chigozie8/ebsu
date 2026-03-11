@@ -7,6 +7,12 @@ import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import { Spinner } from "../../components/loaders/Spinner";
+import { notifyUser } from "../../helpers/notifyUser";
+
+interface Collaborator {
+  name: string;
+  image?: string;
+}
 
 interface Project {
   id: string;
@@ -16,7 +22,7 @@ interface Project {
   category: "voluntary" | "who" | "personal" | "research" | "community";
   date: string;
   endDate?: string;
-  collaborators: string[];
+  collaborators: Collaborator[];
   image?: string;
   link?: string;
   tags: string[];
@@ -273,14 +279,28 @@ export default function ProjectDetails() {
                 <div className="bg-white rounded-2xl shadow-md p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Collaborators</h3>
                   <ul className="space-y-3">
-                    {project.collaborators.map((collab, index) => (
-                      <li key={index} className="flex items-center gap-3 text-gray-700">
-                        <div className="w-8 h-8 bg-green2/10 rounded-full flex items-center justify-center text-green2 font-semibold text-sm">
-                          {collab.charAt(0)}
-                        </div>
-                        <span className="text-sm">{collab}</span>
-                      </li>
-                    ))}
+                    {project.collaborators.map((collab, index) => {
+                      // Support both old string format and new object format
+                      const name = typeof collab === "string" ? collab : collab.name;
+                      const image = typeof collab === "string" ? undefined : collab.image;
+                      
+                      return (
+                        <li key={index} className="flex items-center gap-3 text-gray-700">
+                          {image ? (
+                            <img 
+                              src={image} 
+                              alt={name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-green2/10 rounded-full flex items-center justify-center text-green2 font-semibold text-sm">
+                              {name.charAt(0)}
+                            </div>
+                          )}
+                          <span className="text-sm font-medium">{name}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
@@ -331,7 +351,7 @@ export default function ProjectDetails() {
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(window.location.href);
-                      alert("Link copied to clipboard!");
+                      notifyUser("success", "Link copied to clipboard!");
                     }}
                     className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                   >
