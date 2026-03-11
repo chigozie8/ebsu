@@ -15,6 +15,11 @@ import PostSkeleton from "./skeleton/PostSkeleton";
 import Lottie from "lottie-react";
 import profileAnim from "../../../../json/animation/avatar1.json";
 import { IoArrowBack, IoShareSocial, IoLogoWhatsapp, IoLogoTwitter, IoLink, IoCheckmark } from "react-icons/io5";
+import { BlogSEO } from "../components/BlogSEO";
+import { ReadingProgress } from "../components/ReadingProgress";
+import { Breadcrumbs } from "../components/Breadcrumbs";
+import { PostNavigation } from "../components/PostNavigation";
+import { LikeButton } from "../components/LikeButton";
 
 // Helper function to calculate read time
 const calculateReadTime = (contents: { type: string; content: string | unknown[] }[] | undefined): number => {
@@ -112,16 +117,21 @@ export default function BlogPost() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Reading Progress Indicator */}
+      <ReadingProgress />
+      
+      {/* SEO Meta Tags */}
+      {blogPost && <BlogSEO post={blogPost} readTime={readTime} />}
+      
       <div className="box-width2">
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
-          {/* Back to Blog Button */}
-          <Link
-            to="/blog"
-            className="inline-flex items-center gap-2 mb-4 text-sm font-medium text-gray-600 hover:text-green2 transition-colors group"
-          >
-            <IoArrowBack className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Blog
-          </Link>
+          {/* Breadcrumbs */}
+          {blogPost && (
+            <Breadcrumbs 
+              category={(blogPost as { category?: string })?.category}
+              title={blogPost.title}
+            />
+          )}
 
           <div className="sticky grid md:grid-cols-5 gap-4">
             <div className="md:col-span-3">
@@ -237,6 +247,19 @@ export default function BlogPost() {
                   </div>
                   
                   {blogPost.contents && <PostContent contents={blogPost.contents} />}
+                  
+                  {/* Like and Share Actions */}
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                    <LikeButton />
+                  </div>
+                  
+                  {/* Previous/Next Post Navigation */}
+                  {blogPosts && blogPosts.length > 1 && (
+                    <PostNavigation 
+                      currentPostNo={blogPost.no} 
+                      allPosts={blogPosts} 
+                    />
+                  )}
                 </div>
               )}
             </div>

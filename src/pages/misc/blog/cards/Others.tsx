@@ -3,6 +3,7 @@ import { BlogPostProp } from "../../../../models/misc/blog/blogPosts";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInVariants7 } from "../../../../animation/variants";
+import { EngagementStats } from "../components/EngagementStats";
 
 export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
   return (
@@ -11,7 +12,7 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
         blogPosts
           .filter((post) => post.postType === "others")
           .map(
-            ({ title, sampleImg, contents, date, postType, author, no }, i) => (
+            ({ title, sampleImg, contents, date, postType, author, no, likes }, i) => (
               <Link to={`/blog/posts/${encodeURIComponent(title)}/${no}/${postType}`} key={i}>
                 <motion.div
                   variants={fadeInVariants7}
@@ -35,9 +36,12 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                       </p>
                     </div>
 
-                    <p className="font-medium text-gray-700 text-ss lg:text-[10px] flex items-end">
-                      {author} on {date}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-700 text-ss lg:text-[10px]">
+                        {author} on {date}
+                      </p>
+                      <EngagementStats likes={likes} />
+                    </div>
                   </div>
                   <img
                     className="object-cover h-full w-full transition-all duration-300 ease-in-out transform group-hover:scale-105  overflow-hidden rounded-t-lg md:h-full md:rounded-none md:rounded-r-lg md:w-1/3"

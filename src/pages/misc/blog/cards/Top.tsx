@@ -5,6 +5,7 @@ import { BlogPostProp } from "../../../../models/misc/blog/blogPosts";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInVariants7 } from "../../../../animation/variants";
+import { EngagementStats } from "../components/EngagementStats";
 
 export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
   return (
@@ -24,7 +25,7 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
               .filter((post) => post.postType === "top")
               .map(
                 (
-                  { title, sampleImg, contents, date, author, postType, no },
+                  { title, sampleImg, contents, date, author, postType, no, likes },
                   i
                 ) => (
                   <div key={i} className="h-full hover:bg-gray-100">
@@ -48,9 +49,12 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                             ...
                           </p>{" "}
                         </div>
-                        <p className="font-medium text-gray-700 text-ss lg:text-xs flex items-end">
-                          {author} on {date}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-gray-700 text-ss lg:text-xs">
+                            {author} on {date}
+                          </p>
+                          <EngagementStats likes={likes} />
+                        </div>
                       </div>
                     </Link>
                   </div>
