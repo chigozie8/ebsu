@@ -7,9 +7,9 @@ import { db, isFirebaseConfigured } from "../../../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { LevelCard } from "../../../models/academics/learning-resources";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { notifyUser } from "../../../helpers/notifyUser";
-import { LockKeyhole, BookOpen, X } from "lucide-react";
+import { LockKeyhole, BookOpen, X, Loader2 } from "lucide-react";
 
 interface AdminMaterial {
   id: string;
@@ -23,7 +23,20 @@ export default function LearningResources() {
   const [clinicalLevels, setClinicalLevels] = useState<LevelCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { user, loading: authLoading } = useGetUserInfo();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to the academic library
+  useEffect(() => {
+    if (!authLoading && user) {
+      setIsRedirecting(true);
+      const timer = setTimeout(() => {
+        navigate("/u/learning-resources");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, authLoading, navigate]);
 
   // Show login modal and toast when user is not authenticated
   useEffect(() => {
@@ -95,7 +108,51 @@ export default function LearningResources() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white relative">
+      {/* Redirecting Overlay for Authenticated Users */}
+      <AnimatePresence>
+        {isRedirecting && user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="flex flex-col items-center text-center px-6"
+            >
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-green1/10 rounded-full flex items-center justify-center">
+                  <BookOpen className="w-10 h-10 text-green1" />
+                </div>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="absolute inset-0"
+                >
+                  <Loader2 className="w-20 h-20 text-green1/30" />
+                </motion.div>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                Please wait...
+              </h3>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Taking you to the Academic Library now
+              </p>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+                className="h-1 bg-green1 rounded-full mt-6 max-w-[200px]"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Login Required Modal */}
       <AnimatePresence>
         {showLoginModal && !user && (
