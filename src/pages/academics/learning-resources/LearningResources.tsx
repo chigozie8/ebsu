@@ -4,13 +4,8 @@ import { LevelsCard } from "./LevelsCard";
 import { motion } from "framer-motion";
 import { fadeInVariants1 } from "../../../animation/variants";
 import { db, isFirebaseConfigured } from "../../../config/firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { LevelCard } from "../../../models/academics/learning-resources";
-
-interface LevelEntry extends LevelCard {
-  id: string;
-  order: number;
-}
 
 interface AdminMaterial {
   id: string;
