@@ -152,7 +152,7 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
         {member.role}
         {member.role2 && (
           <>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-600 mx-2 align-middle"></span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-600 mx-3 align-middle"></span>
             {member.role2}
           </>
         )}
