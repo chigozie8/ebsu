@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import Footer from "../../../components/footer/Footer";
 import { LevelsCard } from "./LevelsCard";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants1 } from "../../../animation/variants";
 import { db, isFirebaseConfigured } from "../../../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { LevelCard } from "../../../models/academics/learning-resources";
+import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import { Link } from "react-router-dom";
+import { notifyUser } from "../../../helpers/notifyUser";
+import { LockKeyhole, BookOpen, X } from "lucide-react";
 
 interface AdminMaterial {
   id: string;
@@ -18,6 +22,16 @@ export default function LearningResources() {
   const [preclinicalLevels, setPreclinicalLevels] = useState<LevelCard[]>([]);
   const [clinicalLevels, setClinicalLevels] = useState<LevelCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { user, loading: authLoading } = useGetUserInfo();
+
+  // Show login modal and toast when user is not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowLoginModal(true);
+      notifyUser("info", "Please login to access learning resources");
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     const fetchLevelsFromMaterials = async () => {
@@ -82,6 +96,89 @@ export default function LearningResources() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Login Required Modal */}
+      <AnimatePresence>
+        {showLoginModal && !user && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8"
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+
+              {/* Icon */}
+              <div className="flex justify-center mb-5">
+                <div className="relative">
+                  <div className="w-20 h-20 bg-green1/10 rounded-full flex items-center justify-center">
+                    <BookOpen className="w-10 h-10 text-green1" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center border-2 border-white">
+                    <LockKeyhole className="w-4 h-4 text-orange-600" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                  Login Required
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  Access textbooks, handouts, past questions, and study materials by signing into your account.
+                </p>
+              </div>
+
+              {/* Benefits list */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <p className="text-xs text-gray-500 uppercase font-semibold mb-3">What you get access to:</p>
+                <ul className="space-y-2">
+                  {["Lecture handouts & notes", "Recommended textbooks", "Past questions & answers", "Study tips & guides"].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                      <div className="w-1.5 h-1.5 bg-green1 rounded-full"></div>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-3">
+                <Link
+                  to="/login?redirect=/learning-resources"
+                  className="w-full py-3 px-4 bg-green1 hover:bg-green2 text-white font-semibold rounded-xl transition-colors text-center"
+                >
+                  Login to Continue
+                </Link>
+                <Link
+                  to="/signup?redirect=/learning-resources"
+                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-xl transition-colors text-center"
+                >
+                  Create Free Account
+                </Link>
+              </div>
+
+              <p className="text-center text-xs text-gray-500 mt-4">
+                Join thousands of medical students already using our resources
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="box-width ">
         <div className="page-section">
           <div className="w-full flex items-center justify-center mb-6 flex-col">
