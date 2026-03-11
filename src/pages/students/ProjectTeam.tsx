@@ -46,7 +46,7 @@ const teamMembers: TeamMember[] = [
     name: "Ken",
     department: "Medicine and Surgery",
     level: "600 Level",
-    role: "Software Engineer Team Lead",
+    role: "Senior Software Engineer",
     email: "kenronkwo@gmail.com",
     portfolio: "", // commented out
     github: "https://github.com/kenchigozie23",
