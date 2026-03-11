@@ -4,9 +4,16 @@ import gallery from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages, IoPlay, IoVideocam } from "react-icons/io5";
+import heic2any from "heic2any";
 
-// Dynamically import all images from the gallery folder
+// Dynamically import all standard images from the gallery folder
 const imageModules = import.meta.glob("../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+// Dynamically import HEIC/HEIF images (iPhone format) - these need conversion
+const heicModules = import.meta.glob("../../assets/img/gallery/*.{heic,HEIC,heif,HEIF}", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
@@ -20,26 +27,36 @@ const videoModules = import.meta.glob("../../assets/img/gallery/*.{mp4,webm,mov,
 interface MediaItem {
   src: string;
   alt: string;
-  type: "image" | "video";
+  type: "image" | "video" | "heic";
+  originalSrc?: string; // For HEIC files, store original for conversion
 }
 
-// Filter out unsupported formats and create image array
-const imageItems: MediaItem[] = Object.entries(imageModules)
-  .filter(([path]) => {
-    // Skip .heif files as they're not widely supported in browsers
-    const ext = path.split(".").pop()?.toLowerCase();
-    return ext !== "heif";
-  })
-  .map(([path, src]) => {
-    const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
-    const alt = filename
-      .replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/IMG.*WA/i, "Campus")
-      .replace(/\d+/g, "")
-      .trim() || "Campus View";
-    return { src: src as string, alt, type: "image" as const };
-  });
+// Create standard image array
+const standardImageItems: MediaItem[] = Object.entries(imageModules).map(([path, src]) => {
+  const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
+  const alt = filename
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/IMG.*WA/i, "Campus")
+    .replace(/\d+/g, "")
+    .trim() || "Campus View";
+  return { src: src as string, alt, type: "image" as const };
+});
+
+// Create HEIC image array (needs client-side conversion)
+const heicImageItems: MediaItem[] = Object.entries(heicModules).map(([path, src]) => {
+  const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
+  const alt = filename
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/IMG.*WA/i, "Campus")
+    .replace(/\d+/g, "")
+    .trim() || "Campus View";
+  return { src: src as string, alt, type: "heic" as const, originalSrc: src as string };
+});
+
+// Combine all image items
+const imageItems: MediaItem[] = [...standardImageItems, ...heicImageItems];
 
 // Create video array
 const videoItems: MediaItem[] = Object.entries(videoModules).map(([path, src]) => {
@@ -144,6 +161,94 @@ function GalleryImage({
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+      />
+    </div>
+  );
+}
+
+// HEIC Image component with client-side conversion
+function GalleryHeicImage({
+  src,
+  alt,
+  onClick,
+  className = "",
+}: {
+  src: string;
+  alt: string;
+  onClick?: () => void;
+  className?: string;
+}) {
+  const [convertedSrc, setConvertedSrc] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    const convertHeic = async () => {
+      try {
+        // Fetch the HEIC file
+        const response = await fetch(src);
+        const blob = await response.blob();
+        
+        // Convert to JPEG using heic2any
+        const convertedBlob = await heic2any({
+          blob,
+          toType: "image/jpeg",
+          quality: 0.85,
+        });
+        
+        if (!isMounted) return;
+        
+        // Handle both single blob and array of blobs
+        const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        const url = URL.createObjectURL(finalBlob);
+        setConvertedSrc(url);
+        setIsConverting(false);
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to convert HEIC image:", error);
+        setHasError(true);
+        setIsConverting(false);
+      }
+    };
+    
+    convertHeic();
+    
+    return () => {
+      isMounted = false;
+      // Clean up object URL when component unmounts
+      if (convertedSrc) {
+        URL.revokeObjectURL(convertedSrc);
+      }
+    };
+  }, [src]);
+
+  if (hasError) {
+    return (
+      <div className={`bg-gray-200 flex flex-col items-center justify-center gap-2 ${className}`} onClick={onClick}>
+        <IoImages className="text-gray-400 text-2xl" />
+        <span className="text-gray-500 text-xs">iPhone image</span>
+      </div>
+    );
+  }
+
+  if (isConverting) {
+    return (
+      <div className={`bg-gray-100 flex flex-col items-center justify-center gap-2 ${className}`}>
+        <div className="w-6 h-6 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
+        <span className="text-gray-500 text-xs">Converting...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <img
+        src={convertedSrc || ""}
+        alt={alt}
+        onClick={onClick}
+        className={`${className} cursor-pointer`}
       />
     </div>
   );
@@ -282,6 +387,13 @@ export default function Gallery() {
                     >
                       {media.type === "video" ? (
                         <GalleryVideoThumbnail
+                          src={media.src}
+                          alt={media.alt}
+                          onClick={() => openModal(index, "lightbox")}
+                          className="w-full h-full object-cover cursor-pointer rounded-xl"
+                        />
+                      ) : media.type === "heic" ? (
+                        <GalleryHeicImage
                           src={media.src}
                           alt={media.alt}
                           onClick={() => openModal(index, "lightbox")}
@@ -430,6 +542,16 @@ export default function Gallery() {
                             }}
                             className="w-full h-full object-cover cursor-pointer"
                           />
+                        ) : media.type === "heic" ? (
+                          <GalleryHeicImage
+                            src={media.src}
+                            alt={media.alt}
+                            onClick={() => {
+                              setSelectedMediaIndex(index);
+                              setViewMode("lightbox");
+                            }}
+                            className="w-full h-full object-cover cursor-pointer"
+                          />
                         ) : (
                           <>
                             <GalleryImage
@@ -488,7 +610,7 @@ export default function Gallery() {
                   <IoChevronForward className="text-xl sm:text-2xl" />
                 </button>
 
-                {/* Media (Image or Video) */}
+                {/* Media (Image, Video, or HEIC) */}
                 <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
                   <AnimatePresence initial={false} custom={direction} mode="wait">
                     {allMedia[selectedMediaIndex]?.type === "video" ? (
@@ -505,6 +627,23 @@ export default function Gallery() {
                         autoPlay
                         className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
                       />
+                    ) : allMedia[selectedMediaIndex]?.type === "heic" ? (
+                      <motion.div
+                        key={selectedMediaIndex}
+                        variants={imageVariants}
+                        custom={direction}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.3 }}
+                        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)]"
+                      >
+                        <GalleryHeicImage
+                          src={allMedia[selectedMediaIndex]?.src}
+                          alt={allMedia[selectedMediaIndex]?.alt || "Gallery image"}
+                          className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+                        />
+                      </motion.div>
                     ) : (
                       <motion.img
                         key={selectedMediaIndex}
@@ -572,6 +711,12 @@ export default function Gallery() {
                               <IoPlay className="text-white text-xs" />
                             </div>
                           </>
+                        ) : media.type === "heic" ? (
+                          <GalleryHeicImage
+                            src={media.src}
+                            alt={media.alt}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <img
                             src={media.src}
