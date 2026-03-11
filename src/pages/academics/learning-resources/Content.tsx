@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { useLearningResourcesContext } from "../../../context/LearningResources";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { ContentCard } from "./ContentCard";
@@ -33,6 +33,10 @@ export default function Content() {
   const { level, id } = useParams();
   const { resourcesType } = useLearningResourcesContext();
   const { user } = useGetUserInfo();
+  const location = useLocation();
+  
+  // Current page URL to redirect back after login
+  const currentPath = location.pathname;
 
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(false);
@@ -206,14 +210,14 @@ export default function Content() {
               </p>
               <div className="flex flex-col gap-3">
                 <Link 
-                  to="/login" 
-                  className="w-full py-3 px-4 bg-green1 hover:bg-green2 text-white font-semibold rounded-lg transition-colors"
+                  to={`/login?redirect=${encodeURIComponent(currentPath)}`}
+                  className="w-full py-3 px-4 bg-green1 hover:bg-green2 text-white font-semibold rounded-lg transition-colors text-center"
                 >
                   Login to Continue
                 </Link>
                 <Link 
-                  to="/signup" 
-                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors"
+                  to={`/signup?redirect=${encodeURIComponent(currentPath)}`}
+                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors text-center"
                 >
                   Create Account
                 </Link>
