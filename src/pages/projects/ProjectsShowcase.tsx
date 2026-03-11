@@ -44,14 +44,20 @@ const categoryConfig = {
 // =============================================
 // Project Card Component
 // =============================================
-const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => (
+const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => {
+  const handleClick = () => {
+    console.log("[v0] Clicking project card, ID:", project.id, "Title:", project.title);
+    onClick();
+  };
+  
+  return (
   <motion.div
     variants={fadeInVariants3}
     initial="initial"
     whileInView="animate"
     viewport={{ once: true }}
     custom={index}
-    onClick={onClick}
+    onClick={handleClick}
     className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
       project.featured ? "border-l-4 border-green2" : ""
     } hover:-translate-y-1`}
@@ -138,10 +144,11 @@ const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => (
           </p>
         </div>
       )}
-    </div>
+</div>
   </motion.div>
-);
-
+  );
+};
+  
 // =============================================
 // Countdown Timer Component
 // =============================================
@@ -232,23 +239,33 @@ export default function ProjectsShowcase() {
   useEffect(() => {
     const fetchProjects = async () => {
       if (!isFirebaseConfigured) {
+        console.log("[v0] Firebase not configured");
         setLoading(false);
         return;
       }
 
       try {
-        const q = query(
-          collection(db, "projects"),
-          orderBy("createdAt", "desc")
-        );
-        const snapshot = await getDocs(q);
+        console.log("[v0] Fetching all projects from Firestore...");
+        // Simple query without ordering to avoid index requirements
+        const snapshot = await getDocs(collection(db, "projects"));
+        console.log("[v0] Found projects:", snapshot.docs.length);
+        
         const projectsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         })) as Project[];
+        
+        // Sort client-side instead
+        projectsData.sort((a, b) => {
+          const dateA = a.date || "";
+          const dateB = b.date || "";
+          return dateB.localeCompare(dateA);
+        });
+        
         setProjects(projectsData);
+        console.log("[v0] Projects loaded:", projectsData.map(p => ({ id: p.id, title: p.title })));
       } catch (error) {
-        console.error("Error fetching projects:", error);
+        console.error("[v0] Error fetching projects:", error);
       } finally {
         setLoading(false);
       }

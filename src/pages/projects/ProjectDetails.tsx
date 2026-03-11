@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { db } from "../../config/firebase";
+import { db, isFirebaseConfigured } from "../../config/firebase";
 import { doc, getDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
@@ -42,36 +42,70 @@ export default function ProjectDetails() {
 
   useEffect(() => {
     const fetchProject = async () => {
-      if (!projectId) return;
+      if (!projectId) {
+        console.log("[v0] No projectId provided");
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      if (!isFirebaseConfigured) {
+        console.log("[v0] Firebase not configured");
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      console.log("[v0] Fetching project with ID:", projectId);
 
       try {
         setLoading(true);
         setError(false);
 
+        // First try to get project by document ID
         const docRef = doc(db, "projects", projectId);
         const docSnap = await getDoc(docRef);
+        console.log("[v0] Document exists:", docSnap.exists());
 
         if (docSnap.exists()) {
           const projectData = { id: docSnap.id, ...docSnap.data() } as Project;
+          console.log("[v0] Project data loaded:", projectData.title);
           setProject(projectData);
 
           // Fetch related projects (same category, excluding current)
-          const relatedQuery = query(
-            collection(db, "projects"),
-            where("category", "==", projectData.category),
-            orderBy("createdAt", "desc"),
-            limit(4)
-          );
-          const relatedSnap = await getDocs(relatedQuery);
-          const related = relatedSnap.docs
-            .map((doc) => ({ id: doc.id, ...doc.data() } as Project))
-            .filter((p) => p.id !== projectId);
-          setRelatedProjects(related.slice(0, 3));
+          try {
+            const relatedQuery = query(
+              collection(db, "projects"),
+              where("category", "==", projectData.category),
+              limit(4)
+            );
+            const relatedSnap = await getDocs(relatedQuery);
+            const related = relatedSnap.docs
+              .map((d) => ({ id: d.id, ...d.data() } as Project))
+              .filter((p) => p.id !== projectId);
+            setRelatedProjects(related.slice(0, 3));
+          } catch (relatedErr) {
+            console.log("[v0] Error fetching related projects:", relatedErr);
+            // Don't fail the whole page if related projects fail
+          }
         } else {
-          setError(true);
+          console.log("[v0] Document does not exist, trying to find by ID field");
+          // If not found by document ID, try to find by querying all projects
+          const allProjectsSnap = await getDocs(collection(db, "projects"));
+          console.log("[v0] Total projects in collection:", allProjectsSnap.docs.length);
+          
+          const foundProject = allProjectsSnap.docs.find(d => d.id === projectId);
+          if (foundProject) {
+            const projectData = { id: foundProject.id, ...foundProject.data() } as Project;
+            console.log("[v0] Found project via collection query:", projectData.title);
+            setProject(projectData);
+          } else {
+            console.log("[v0] Project not found in collection");
+            setError(true);
+          }
         }
       } catch (err) {
-        console.error("Error fetching project:", err);
+        console.error("[v0] Error fetching project:", err);
         setError(true);
       } finally {
         setLoading(false);
