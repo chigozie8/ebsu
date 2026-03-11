@@ -257,7 +257,7 @@ function GalleryHeicImage({
 // Video thumbnail component
 function GalleryVideoThumbnail({
   src,
-  alt,
+  alt: _alt,
   onClick,
   className = "",
 }: {
