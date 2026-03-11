@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useGetUserInfo } from "../../../../hooks/auth/useGetUserInfo";
 import { useParams } from "react-router-dom";
 import {
@@ -18,14 +18,16 @@ import { notifyUser } from "../../../../helpers/notifyUser";
 import { useNavigate } from "react-router-dom";
 
 export const useBlogLikes = () => {
-  const { postID } = useParams(); // This is actually the post number (no)
+  const { postID } = useParams();
   const navigate = useNavigate();
-  const [likes, setLikes] = useState<number>(0);
   const [likedBy, setLikedBy] = useState<string[]>([]);
-  const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likesLoading, setLikesLoading] = useState<boolean>(false);
   const [docId, setDocId] = useState<string | null>(null);
   const { userID } = useGetUserInfo();
+
+  // Derive likes count and isLiked from likedBy array (single source of truth)
+  const likes = likedBy.length;
+  const isLiked = userID ? likedBy.includes(userID) : false;
 
   // Find the actual document ID by post number and listen to likes in real-time
   useEffect(() => {
@@ -43,23 +45,22 @@ export const useBlogLikes = () => {
           const actualDocId = docSnap.id;
           setDocId(actualDocId);
 
-          // Now subscribe to real-time updates using the actual doc ID
+          // Subscribe to real-time updates using the actual doc ID
           const postRef = doc(db, "blogPosts", actualDocId);
           const unsubscribe = onSnapshot(postRef, (docSnapshot) => {
             if (docSnapshot.exists()) {
               const data = docSnapshot.data();
-              setLikes(data.likes || 0);
+              // Only update likedBy array - likes count is derived
               setLikedBy(data.likedBy || []);
-              setIsLiked(userID ? (data.likedBy || []).includes(userID) : false);
             }
           }, (error) => {
-            console.log("Error listening to likes:", error);
+            console.error("Error listening to likes:", error);
           });
 
           return unsubscribe;
         }
       } catch (error) {
-        console.log("Error finding post:", error);
+        console.error("Error finding post:", error);
       }
     };
 
@@ -71,9 +72,9 @@ export const useBlogLikes = () => {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [postID, userID]);
+  }, [postID]);
 
-  const toggleLike = async () => {
+  const toggleLike = useCallback(async () => {
     if (!userID) {
       navigate("/login");
       notifyUser("info", "Please login to like this post");
@@ -85,35 +86,39 @@ export const useBlogLikes = () => {
       return;
     }
 
+    // Prevent double-clicking while loading
+    if (likesLoading) return;
+
     setLikesLoading(true);
 
     try {
       const postRef = doc(db, "blogPosts", docId);
+      const currentlyLiked = likedBy.includes(userID);
 
-      if (isLiked) {
-        // Unlike the post
+      if (currentlyLiked) {
+        // Unlike: Remove user from likedBy array
+        // Calculate new likes count from array
+        const newLikedBy = likedBy.filter(id => id !== userID);
         await updateDoc(postRef, {
-          likes: likes - 1,
+          likes: newLikedBy.length,
           likedBy: arrayRemove(userID),
         });
-        setIsLiked(false);
-        setLikes((prev) => prev - 1);
       } else {
-        // Like the post
+        // Like: Add user to likedBy array (arrayUnion prevents duplicates)
+        const newLikedBy = [...likedBy, userID];
         await updateDoc(postRef, {
-          likes: likes + 1,
+          likes: newLikedBy.length,
           likedBy: arrayUnion(userID),
         });
-        setIsLiked(true);
-        setLikes((prev) => prev + 1);
       }
+      // Real-time listener will update the UI automatically
     } catch (err) {
       console.error("Error toggling like:", err);
       notifyUser("error", "Couldn't update like. Please try again.");
     } finally {
       setLikesLoading(false);
     }
-  };
+  }, [userID, docId, likedBy, likesLoading, navigate]);
 
   return {
     likes,
