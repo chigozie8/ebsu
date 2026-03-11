@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => {
       'process.env': processEnv
     },
     plugins: [react()],
+    assetsInclude: ['**/*.heic', '**/*.HEIC', '**/*.heif', '**/*.HEIF'],
   }
 })
 
