@@ -327,16 +327,22 @@ export default function AdminDashboard() {
   
   const fetchProjects = async () => {
     try {
-      const q = query(
-        collection(db, "projects"),
-        orderBy("createdAt", "desc")
-      );
-      const snapshot = await getDocs(q);
+      // Simple query without ordering to avoid Firestore index requirements
+      const snapshot = await getDocs(collection(db, "projects"));
       const projectsData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as ProjectEntry[];
+      
+      // Sort client-side by createdAt
+      projectsData.sort((a, b) => {
+        const dateA = a.createdAt?.toMillis?.() || 0;
+        const dateB = b.createdAt?.toMillis?.() || 0;
+        return dateB - dateA;
+      });
+      
       setProjects(projectsData);
+      console.log("[v0] Admin loaded projects:", projectsData.length);
     } catch (error) {
       console.error("Error fetching projects:", error);
     }
