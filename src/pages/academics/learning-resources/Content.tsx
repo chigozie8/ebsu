@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useLearningResourcesContext } from "../../../context/LearningResources";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { ContentCard } from "./ContentCard";
@@ -12,6 +12,8 @@ import { motion } from "framer-motion";
 import { fadeInVariants1 } from "../../../animation/variants";
 import { db, isFirebaseConfigured } from "../../../config/firebase";
 import { collection, getDocs, query, where, and } from "firebase/firestore";
+import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import { LockIcon } from "../../../components/icons/general/LockIcon";
 
 interface AdminMaterial {
   id: string;
@@ -30,6 +32,7 @@ interface AdminMaterial {
 export default function Content() {
   const { level, id } = useParams();
   const { resourcesType } = useLearningResourcesContext();
+  const { user } = useGetUserInfo();
 
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(false);
@@ -162,10 +165,73 @@ export default function Content() {
       );
     }
   } else if (files.length > 0) {
+    // If user is not logged in, show login prompt with blurred content preview
+    if (!user) {
+      return (
+        <div className="relative">
+          {/* Blurred content preview */}
+          <div className="grid items-center xss:grid-cols-2 sm:grid-cols-3 gap-4 blur-sm pointer-events-none select-none">
+            {files.slice(0, 6).map((info, i) => (
+              <motion.div
+                key={i}
+                variants={fadeInVariants1}
+                initial="initial"
+                whileInView="animate"
+                viewport={{
+                  once: true,
+                }}
+                custom={i}
+              >
+                <ContentCard {...info} />
+              </motion.div>
+            ))}
+          </div>
+          
+          {/* Login prompt overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-sm mx-4 text-center border border-gray-100"
+            >
+              <div className="w-16 h-16 bg-green1/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LockIcon className="w-8 h-8 text-green1" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+                Login Required
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Please login to access {resourcesType === "textbooks" ? "textbooks" : resourcesType === "pastquestions" ? "past questions" : "handouts"} and download study materials.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link 
+                  to="/login" 
+                  className="w-full py-3 px-4 bg-green1 hover:bg-green2 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Login to Continue
+                </Link>
+                <Link 
+                  to="/signup" 
+                  className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors"
+                >
+                  Create Account
+                </Link>
+              </div>
+              <p className="text-xs text-gray-500 mt-4">
+                {files.length} {resourcesType === "textbooks" ? "textbook" : resourcesType === "pastquestions" ? "past question" : "handout"}{files.length !== 1 ? "s" : ""} available
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="grid items-center xss:grid-cols-2 sm:grid-cols-3 gap-4">
         {files.map((info, i) => (
           <motion.div
+            key={i}
             variants={fadeInVariants1}
             initial="initial"
             whileInView="animate"
@@ -174,7 +240,7 @@ export default function Content() {
             }}
             custom={i}
           >
-            <ContentCard key={i} {...info} />
+            <ContentCard {...info} />
           </motion.div>
         ))}
       </div>
