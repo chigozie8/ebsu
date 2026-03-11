@@ -5,6 +5,7 @@ export interface BlogPost {
   title: string;
   postType: "top" | "featured" | "others";
   category?: string;
+  tags?: string[];
   sampleImg: string;
   contents: ContentBlock[];
   likes?: number;
@@ -17,6 +18,7 @@ export interface TBlogPost {
   title: string;
   postType: "top" | "featured" | "others";
   category?: string;
+  tags?: string[];
   sampleImg: string;
   contents: ContentBlock[];
   date: string;
@@ -41,6 +43,7 @@ export interface ContentBlockProp{
     sampleImg: string;
     postType: string;
     category?: string;
+    tags?: string[];
     contents: ContentBlock[];
     likes?: number;
     likedBy?: string[];

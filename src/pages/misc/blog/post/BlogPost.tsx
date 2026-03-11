@@ -20,6 +20,8 @@ import { ReadingProgress } from "../components/ReadingProgress";
 import { Breadcrumbs } from "../components/Breadcrumbs";
 import { PostNavigation } from "../components/PostNavigation";
 import { LikeButton } from "../components/LikeButton";
+import { TableOfContents } from "../components/TableOfContents";
+import { Tags } from "../components/Tags";
 
 // Helper function to calculate read time
 const calculateReadTime = (contents: { type: string; content: string | unknown[] }[] | undefined): number => {
@@ -238,6 +240,13 @@ export default function BlogPost() {
                     </div>
                   </div>
                   
+                  {/* Tags */}
+                  {(blogPost as { tags?: string[] })?.tags && (blogPost as { tags?: string[] }).tags!.length > 0 && (
+                    <div className="mb-3">
+                      <Tags tags={(blogPost as { tags?: string[] }).tags} size="sm" />
+                    </div>
+                  )}
+                  
                   <div className="w-full flex items-center justify-center">
                     <img
                       src={blogPost?.sampleImg}
@@ -264,6 +273,13 @@ export default function BlogPost() {
               )}
             </div>
             <div className=" md:col-span-2 flex flex-col-reverse md:flex-col">
+              {/* Table of Contents - Only shows for posts with 3+ headings */}
+              {blogPost?.contents && (
+                <div className="mb-4 hidden md:block">
+                  <TableOfContents contents={blogPost.contents} minHeadings={3} />
+                </div>
+              )}
+              
               <div className="mb-4 bg-white shadow rounded-lg p-4">
                 <h2 className="text-base sm:text-md md:text-lg font-semibold mb-2 text-green1">
                   Related Posts

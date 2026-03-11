@@ -8,8 +8,9 @@ import Footer from "../../../components/footer/Footer";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { BadNetworkIcon } from "../../../components/icons/general/BadNetworkIcon";
 import { Link } from "react-router-dom";
-import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter } from "react-icons/io5";
+import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter, IoPricetagOutline } from "react-icons/io5";
 import { EngagementStats } from "./components/EngagementStats";
+import { Tags } from "./components/Tags";
 
 const POSTS_PER_PAGE = 6;
 
@@ -19,6 +20,7 @@ export default function Blog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -35,7 +37,19 @@ export default function Blog() {
     return Array.from(cats).sort();
   }, [blogPosts]);
 
-  // Filter posts based on search query and category
+  // Get unique tags from all posts
+  const allTags = useMemo(() => {
+    if (!blogPosts) return [];
+    const tags = new Set<string>();
+    blogPosts.forEach((post) => {
+      if ((post as { tags?: string[] }).tags) {
+        (post as { tags?: string[] }).tags!.forEach((tag) => tags.add(tag));
+      }
+    });
+    return Array.from(tags).sort();
+  }, [blogPosts]);
+
+  // Filter posts based on search query, category, and tag
   const filteredPosts = useMemo(() => {
     if (!blogPosts) return null;
     let filtered = [...blogPosts];
@@ -43,6 +57,13 @@ export default function Blog() {
     // Apply category filter
     if (selectedCategory) {
       filtered = filtered.filter((post) => post.category === selectedCategory);
+    }
+
+    // Apply tag filter
+    if (selectedTag) {
+      filtered = filtered.filter((post) => 
+        (post as { tags?: string[] }).tags?.includes(selectedTag)
+      );
     }
     
     // Apply search filter
@@ -52,12 +73,13 @@ export default function Blog() {
         (post) =>
           post.title.toLowerCase().includes(query) ||
           post.author.toLowerCase().includes(query) ||
-          post.category?.toLowerCase().includes(query)
+          post.category?.toLowerCase().includes(query) ||
+          (post as { tags?: string[] }).tags?.some(tag => tag.toLowerCase().includes(query))
       );
     }
     
     return filtered;
-  }, [blogPosts, searchQuery, selectedCategory]);
+  }, [blogPosts, searchQuery, selectedCategory, selectedTag]);
 
   // Pagination calculations
   const totalPages = useMemo(() => {
@@ -74,7 +96,7 @@ export default function Blog() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedTag]);
 
   const clearSearch = () => {
     setSearchQuery("");
@@ -85,10 +107,11 @@ export default function Blog() {
     setSearchQuery("");
     setIsSearching(false);
     setSelectedCategory(null);
+    setSelectedTag(null);
     setCurrentPage(1);
   };
 
-  const isFiltering = isSearching || selectedCategory !== null;
+  const isFiltering = isSearching || selectedCategory !== null || selectedTag !== null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -154,12 +177,54 @@ export default function Blog() {
               </div>
             )}
 
+            {/* Tag Filter Pills */}
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <IoPricetagOutline className="w-4 h-4" />
+                  Tags:
+                </span>
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                    selectedTag === null
+                      ? "bg-green2 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  All
+                </button>
+                {allTags.slice(0, 8).map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(tag)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                      selectedTag === tag
+                        ? "bg-green2 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+                {allTags.length > 8 && (
+                  <span className="text-xs text-gray-400">+{allTags.length - 8} more</span>
+                )}
+              </div>
+            )}
+
             {/* Active Filters Indicator */}
             {isFiltering && (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-500">
                   {filteredPosts?.length || 0} result{filteredPosts?.length !== 1 ? 's' : ''} found
                 </span>
+                {selectedTag && (
+                  <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded-full flex items-center gap-1">
+                    <IoPricetagOutline className="w-3 h-3" />
+                    {selectedTag}
+                  </span>
+                )}
                 <button
                   onClick={clearFilters}
                   className="text-green1 hover:underline font-medium"
@@ -195,9 +260,14 @@ export default function Blog() {
                           </div>
                           <div className="p-4 flex-1 flex flex-col">
                             {post.category && (
-                              <span className="inline-block self-start mb-2 px-2 py-0.5 bg-green2/10 text-green2 text-xs font-medium rounded-full">
+                              <span className="inline-block self-start mb-1 px-2 py-0.5 bg-green2/10 text-green2 text-xs font-medium rounded-full">
                                 {post.category}
                               </span>
+                            )}
+                            {(post as { tags?: string[] }).tags && (post as { tags?: string[] }).tags!.length > 0 && (
+                              <div className="mb-1">
+                                <Tags tags={(post as { tags?: string[] }).tags} size="sm" maxVisible={2} linkable={false} />
+                              </div>
                             )}
                             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 group-hover:text-green2 transition-colors flex-1">
                               {post.title}
