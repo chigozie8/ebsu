@@ -9,6 +9,7 @@ import { Spinner } from "../../../components/loaders/Spinner";
 import { BadNetworkIcon } from "../../../components/icons/general/BadNetworkIcon";
 import { Link } from "react-router-dom";
 import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter } from "react-icons/io5";
+import { EngagementStats } from "./components/EngagementStats";
 
 const POSTS_PER_PAGE = 6;
 
@@ -201,9 +202,12 @@ export default function Blog() {
                             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 group-hover:text-green2 transition-colors flex-1">
                               {post.title}
                             </h3>
-                            <p className="text-xs text-gray-500 mt-2">
-                              {post.author} &middot; {post.date}
-                            </p>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-xs text-gray-500">
+                                {post.author} &middot; {post.date}
+                              </p>
+                              <EngagementStats likes={post.likes} />
+                            </div>
                           </div>
                         </div>
                       </Link>

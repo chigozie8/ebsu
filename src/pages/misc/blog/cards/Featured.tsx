@@ -3,6 +3,7 @@ import { BlogPostProp } from "../../../../models/misc/blog/blogPosts";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInVariants7 } from "../../../../animation/variants";
+import { EngagementStats } from "../components/EngagementStats";
 
 export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
   return (
@@ -13,7 +14,7 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
             .filter((post) => post.postType === "featured")
             .map(
               (
-                { title, sampleImg, contents, date, author, no, postType },
+                { title, sampleImg, contents, date, author, no, postType, likes },
                 i
               ) => (
                 <Link to={`/blog/posts/${encodeURIComponent(title)}/${no}/${postType}`} key={i}>
@@ -54,9 +55,12 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                           ...
                         </p>{" "}
                       </div>
-                      <p className="font-medium text-gray-700 text-sss sm:text-xss lg:text-sm flex items-end">
-                        {author} on {date}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-gray-700 text-sss sm:text-xss lg:text-sm">
+                          {author} on {date}
+                        </p>
+                        <EngagementStats likes={likes} />
+                      </div>
                     </div>
                   </motion.div>
                 </Link>
