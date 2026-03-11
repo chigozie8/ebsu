@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
 import { useCourseOutlineContext } from "../../../context/CourseOutline";
-import { courseOutline100 } from "../../../data/academics/course-outlines/levels/100/courseOutline100";
-import { courseOutline200 } from "../../../data/academics/course-outlines/levels/200/courseOutline200";
-import { courseOutline300 } from "../../../data/academics/course-outlines/levels/300/courseOutline300";
-import { courseOutline400 } from "../../../data/academics/course-outlines/levels/400/courseOutline400";
-import { courseOutline500 } from "../../../data/academics/course-outlines/levels/500/courseOutline500";
 import { CourseOutlineCard } from "./CoursesOutlineCard";
 import { useParams } from "react-router-dom";
 import Footer from "../../../components/footer/Footer";
@@ -24,6 +19,7 @@ interface CourseOutlineEntry {
   level: string;
   semester: "First" | "Second";
   info: { heading: string; content: string }[];
+  option?: string;
 }
 
 export default function CoursesOutline() {
@@ -51,45 +47,20 @@ export default function CoursesOutline() {
     fetchOutlines();
   }, []);
 
-  // Get static data for the level
-  const getStaticOutlines = () => {
-    const staticData: Record<string, any> = {
-      "100": courseOutline100,
-      "200": courseOutline200,
-      "300": courseOutline300,
-      "400": courseOutline400,
-      "500": courseOutline500,
-      "600": { First: { courseInfo: [] }, Second: { courseInfo: [] } },
-    };
-    return staticData[level || ""]?.[semester]?.courseInfo || [];
-  };
-
-  // Get Firestore outlines for the current level and semester
-  const getFirestoreOutlinesForLevel = () => {
+  // Get Firestore outlines for the current level and semester (only show admin-created outlines)
+  const getOutlinesForLevel = () => {
     return firestoreOutlines
       .filter((o) => o.level === level && o.semester === semester)
       .map((o) => ({
+        id: o.id,
         courseCode: o.courseCode,
         courseTitle: o.courseTitle,
         creditUnit: o.creditUnit,
+        option: o.option || "MANDATORY",
       }));
   };
 
-  // Merge static and Firestore outlines
-  const getMergedOutlines = () => {
-    const staticOutlines = getStaticOutlines();
-    const dbOutlines = getFirestoreOutlinesForLevel();
-    
-    // Create a map of static outlines by courseCode
-    const staticCodes = new Set(staticOutlines.map((o: any) => o.courseCode));
-    
-    // Add Firestore outlines that aren't in static data
-    const additionalOutlines = dbOutlines.filter(o => !staticCodes.has(o.courseCode));
-    
-    return [...staticOutlines, ...additionalOutlines];
-  };
-
-  const mergedOutlines = getMergedOutlines();
+  const outlines = getOutlinesForLevel();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,7 +98,7 @@ export default function CoursesOutline() {
             <div className="flex items-center justify-center py-20">
               <Spinner className="w-8 h-8 text-gray-200 animate-spin fill-green1" />
             </div>
-          ) : mergedOutlines.length === 0 ? (
+          ) : outlines.length === 0 ? (
             <div className="text-center py-20 text-gray-500">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -139,7 +110,7 @@ export default function CoursesOutline() {
             </div>
           ) : (
             <div className="grid items-center ss:px-8 sm:px-0 sm:grid-cols-2 mmd:grid-cols-3 gap-6 max-w-[1100px] mx-auto">
-              {mergedOutlines.map((info: any, index: number) => (
+              {outlines.map((info, index) => (
                 <motion.div
                   key={info.courseCode || index}
                   variants={fadeInVariants1}

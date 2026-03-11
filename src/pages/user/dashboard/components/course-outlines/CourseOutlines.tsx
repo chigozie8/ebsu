@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { ICourseInfo } from "../../../../../models/academics/course-outline/courseInfo";
 import { OutlineIcon } from "../../../../../components/icons/dashboard/Outline";
 import reading from "../../../../../assets/svg/illustrations/reading.svg";
 import { db } from "../../../../../config/firebase";
@@ -8,13 +7,6 @@ import { collection, getDocs } from "firebase/firestore";
 import { Spinner } from "../../../../../components/loaders/Spinner";
 import { useGetUserInfo } from "../../../../../hooks/auth/useGetUserInfo";
 import { Link } from "react-router-dom";
-
-// Fallback to static data if no data in Firestore
-import { courseInfo100 } from "../../../../../data/academics/course-outlines/levels/100/info/courseInfo100";
-import { courseInfo200 } from "../../../../../data/academics/course-outlines/levels/200/info/courseInfo200";
-import { courseInfo300 } from "../../../../../data/academics/course-outlines/levels/300/info/courseInfo300";
-import { courseInfo400 } from "../../../../../data/academics/course-outlines/levels/400/info/courseInfo400";
-import { courseInfo500 } from "../../../../../data/academics/course-outlines/levels/500/info/courseInfo500";
 
 interface CourseOutlineEntry {
   id: string;
@@ -28,44 +20,27 @@ interface CourseOutlineEntry {
   info: { heading: string; content: string }[];
 }
 
+interface CourseInfoDisplay {
+  courseCode: string;
+  courseTitle: string;
+  creditUnit: number;
+  creditUnits: string;
+  preRequisite: string | null;
+  info: { heading: string; content: string }[];
+}
+
 export default function CourseOutlines() {
   const { studentDetails } = useGetUserInfo();
   const [semester, setSemester] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
   const [course, setCourse] = useState<string | null>(null);
-  const [courseInfo, setCourseInfo] = useState<ICourseInfo | null>(null);
+  const [courseInfo, setCourseInfo] = useState<CourseInfoDisplay | null>(null);
   const [availableCourses, setAvailableCourses] = useState<CourseOutlineEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [allOutlines, setAllOutlines] = useState<CourseOutlineEntry[]>([]);
   
   // Check if user is admin
   const isAdmin = studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin");
-
-  // Helper function to get static course codes for a level and semester
-  const getStaticCourses = (lvl: string, sem: string): CourseOutlineEntry[] => {
-    const staticData: any = {
-      "100": courseInfo100,
-      "200": courseInfo200,
-      "300": courseInfo300,
-      "400": courseInfo400,
-      "500": courseInfo500,
-      "600": {}, // Clinical years may not have static outlines
-    };
-
-    if (!staticData[lvl]?.[sem]) return [];
-
-    return Object.entries(staticData[lvl][sem]).map(([code, data]: [string, any]) => ({
-      id: `static-${lvl}-${sem}-${code}`,
-      courseCode: code,
-      courseTitle: data.courseTitle || code,
-      creditUnit: data.creditUnit || 0,
-      creditUnits: data.creditUnits || "",
-      preRequisite: data.preRequisite || null,
-      level: lvl,
-      semester: sem as "First" | "Second",
-      info: data.info || [],
-    }));
-  };
 
   // Fetch all course outlines from Firestore on mount
   useEffect(() => {
@@ -84,28 +59,18 @@ export default function CourseOutlines() {
     fetchAllOutlines();
   }, []);
 
-  // Update available courses when level and semester change
+  // Update available courses when level and semester change (only Firestore data)
   useEffect(() => {
     if (level && semester) {
       setCourse(null);
       setCourseInfo(null);
       
-      // Get courses from Firestore
+      // Get courses from Firestore only (admin-created outlines)
       const firestoreCourses = allOutlines.filter(
         (o) => o.level === level && o.semester === semester
       );
       
-      // Get static courses
-      const staticCourses = getStaticCourses(level, semester);
-      
-      // Merge both, Firestore takes priority (dedupe by courseCode)
-      const firestoreCodes = new Set(firestoreCourses.map(c => c.courseCode));
-      const mergedCourses = [
-        ...firestoreCourses,
-        ...staticCourses.filter(c => !firestoreCodes.has(c.courseCode))
-      ];
-      
-      setAvailableCourses(mergedCourses);
+      setAvailableCourses(firestoreCourses);
     } else {
       setAvailableCourses([]);
     }
@@ -120,7 +85,7 @@ export default function CourseOutlines() {
 
     setIsLoading(true);
 
-    // First try to find in Firestore data
+    // Find in Firestore data only
     const firestoreOutline = allOutlines.find(
       (o) => o.level === level && o.semester === semester && o.courseCode === course
     );
@@ -134,26 +99,8 @@ export default function CourseOutlines() {
         preRequisite: firestoreOutline.preRequisite,
         info: firestoreOutline.info,
       });
-      setIsLoading(false);
-      return;
-    }
-
-    // Fallback to static data
-    try {
-      const staticData: any = {
-        "100": courseInfo100,
-        "200": courseInfo200,
-        "300": courseInfo300,
-        "400": courseInfo400,
-        "500": courseInfo500,
-        "600": {}, // Clinical years may not have static outlines
-      };
-
-      if (staticData[level]?.[semester]?.[course]) {
-        setCourseInfo(staticData[level][semester][course]);
-      }
-    } catch (error) {
-      console.error("Error loading static course info:", error);
+    } else {
+      setCourseInfo(null);
     }
     
     setIsLoading(false);
