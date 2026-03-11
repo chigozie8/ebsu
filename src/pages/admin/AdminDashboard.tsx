@@ -185,6 +185,13 @@ export default function AdminDashboard() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [availableMaterialCourses, setAvailableMaterialCourses] = useState<{courseCode: string; courseTitle: string}[]>([]);
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
+  
+  // Material filters
+  const [materialSearchQuery, setMaterialSearchQuery] = useState("");
+  const [materialLevelFilter, setMaterialLevelFilter] = useState("");
+  const [materialSemesterFilter, setMaterialSemesterFilter] = useState("");
+  const [materialTypeFilter, setMaterialTypeFilter] = useState("");
 
   // Blog form state - matches the Blog page data structure
   const [blogFormData, setBlogFormData] = useState({
@@ -521,21 +528,7 @@ export default function AdminDashboard() {
 
       notifyUser("success", "Material uploaded successfully!");
 
-      setFormData({
-        title: "",
-        description: "",
-        resourceType: "",
-        level: "",
-        semester: "",
-        courseCode: "",
-        section: "preclinical",
-      });
-      setSelectedFile(null);
-      setAvailableMaterialCourses([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
+      resetMaterialForm();
       fetchMaterials();
     } catch (error: any) {
       console.error("Error uploading material:", error);
@@ -565,6 +558,141 @@ export default function AdminDashboard() {
       notifyUser("error", "Failed to delete material");
     }
   };
+
+  const handleEditMaterial = (material: Material) => {
+    setFormData({
+      title: material.title,
+      description: material.description || "",
+      resourceType: material.resourceType,
+      level: material.level,
+      semester: material.semester,
+      courseCode: material.courseCode,
+      section: material.section || "preclinical",
+    });
+    // Load available courses for the material's level and semester
+    if (material.level && material.semester) {
+      const courses = getCoursesForLevelAndSemester(material.level, material.semester);
+      setAvailableMaterialCourses(courses);
+    }
+    setEditingMaterialId(material.id);
+    setActiveTab("materials");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleUpdateMaterial = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingMaterialId) return;
+
+    if (!formData.title || !formData.resourceType || !formData.level || !formData.semester || !formData.courseCode) {
+      notifyUser("error", "Please fill in all required fields");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      notifyUser("loading", "Updating material...");
+
+      const updateData: any = {
+        title: formData.title,
+        description: formData.description,
+        resourceType: formData.resourceType,
+        level: formData.level,
+        semester: formData.semester,
+        courseCode: formData.courseCode,
+        section: formData.section,
+        updatedAt: serverTimestamp(),
+      };
+
+      // If a new file is selected, upload it and update the file info
+      if (selectedFile) {
+        // Get the old material to delete old file
+        const oldMaterial = materials.find(m => m.id === editingMaterialId);
+        
+        // Upload new file
+        const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${Date.now()}-${selectedFile.name}`;
+        
+        const { data, error } = await supabase.storage
+          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (error) {
+          throw new Error(`Failed to upload file: ${error.message}`);
+        }
+
+        const fileUrl = getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
+
+        // Delete old file if exists
+        if (oldMaterial?.filePath) {
+          await supabase.storage
+            .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+            .remove([oldMaterial.filePath]);
+        }
+
+        updateData.fileUrl = fileUrl;
+        updateData.fileName = selectedFile.name;
+        updateData.filePath = filePath;
+        updateData.fileSize = selectedFile.size;
+      }
+
+      await updateDoc(doc(db, "learningMaterials", editingMaterialId), updateData);
+
+      notifyUser("success", "Material updated successfully!");
+      resetMaterialForm();
+      fetchMaterials();
+    } catch (error: any) {
+      console.error("Error updating material:", error);
+      notifyUser("error", "Failed to update material. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const resetMaterialForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      resourceType: "",
+      level: "",
+      semester: "",
+      courseCode: "",
+      section: "preclinical",
+    });
+    setSelectedFile(null);
+    setAvailableMaterialCourses([]);
+    setEditingMaterialId(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Filter materials based on search and filters
+  const filteredMaterials = materials.filter((material) => {
+    const matchesSearch = materialSearchQuery === "" || 
+      material.title.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+      material.courseCode?.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+      material.fileName?.toLowerCase().includes(materialSearchQuery.toLowerCase());
+    
+    const matchesLevel = materialLevelFilter === "" || material.level === materialLevelFilter;
+    const matchesSemester = materialSemesterFilter === "" || material.semester === materialSemesterFilter;
+    const matchesType = materialTypeFilter === "" || material.resourceType === materialTypeFilter;
+    
+    return matchesSearch && matchesLevel && matchesSemester && matchesType;
+  });
+
+  // Group materials by level and course
+  const groupedMaterials = filteredMaterials.reduce((acc, material) => {
+    const key = `${material.level}L - ${material.courseCode}`;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(material);
+    return acc;
+  }, {} as Record<string, Material[]>);
 
   // Blog functions
   const handleBlogInputChange = (
@@ -1591,10 +1719,21 @@ Blog Posts
               custom={3}
               className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6"
             >
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                Upload New Material
-              </h2>
-              <form onSubmit={handleUploadMaterial} className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  {editingMaterialId ? "Edit Material" : "Upload New Material"}
+                </h2>
+                {editingMaterialId && (
+                  <button
+                    type="button"
+                    onClick={resetMaterialForm}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+              <form onSubmit={editingMaterialId ? handleUpdateMaterial : handleUploadMaterial} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Title <span className="text-red-500">*</span>
@@ -1776,7 +1915,8 @@ Blog Posts
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    File <span className="text-red-500">*</span>
+                    File {!editingMaterialId && <span className="text-red-500">*</span>}
+                    {editingMaterialId && <span className="text-gray-500 text-xs ml-1">(optional - leave empty to keep current file)</span>}
                   </label>
                   <input
                     ref={fileInputRef}
@@ -1800,10 +1940,10 @@ Blog Posts
                   {isUploading ? (
                     <>
                       <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
-                      <span>Uploading...</span>
+                      <span>{editingMaterialId ? "Updating..." : "Uploading..."}</span>
                     </>
                   ) : (
-                    "Upload Material"
+                    editingMaterialId ? "Update Material" : "Upload Material"
                   )}
                 </button>
               </form>
@@ -1818,9 +1958,70 @@ Blog Posts
               custom={5}
               className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6"
             >
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                Uploaded Materials ({materials.length})
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">
+                  Uploaded Materials ({filteredMaterials.length}/{materials.length})
+                </h2>
+                {(materialSearchQuery || materialLevelFilter || materialSemesterFilter || materialTypeFilter) && (
+                  <button
+                    onClick={() => {
+                      setMaterialSearchQuery("");
+                      setMaterialLevelFilter("");
+                      setMaterialSemesterFilter("");
+                      setMaterialTypeFilter("");
+                    }}
+                    className="text-sm text-green2 hover:text-green1"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+
+              {/* Search and Filters */}
+              <div className="mb-4 space-y-3">
+                <input
+                  type="text"
+                  placeholder="Search by title, course code, or filename..."
+                  value={materialSearchQuery}
+                  onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={materialLevelFilter}
+                    onChange={(e) => setMaterialLevelFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                  >
+                    <option value="">All Levels</option>
+                    <option value="100">100 Level</option>
+                    <option value="200">200 Level</option>
+                    <option value="300">300 Level</option>
+                    <option value="400">400 Level</option>
+                    <option value="500">500 Level</option>
+                    <option value="600">600 Level</option>
+                  </select>
+                  <select
+                    value={materialSemesterFilter}
+                    onChange={(e) => setMaterialSemesterFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                  >
+                    <option value="">All Semesters</option>
+                    <option value="First">First Semester</option>
+                    <option value="Second">Second Semester</option>
+                  </select>
+                  <select
+                    value={materialTypeFilter}
+                    onChange={(e) => setMaterialTypeFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                  >
+                    <option value="">All Types</option>
+                    <option value="handouts">Handouts</option>
+                    <option value="textbooks">Textbooks</option>
+                    <option value="pastquestions">Past Questions</option>
+                  </select>
+                </div>
+              </div>
+
               {isLoading ? (
                 <div className="flex justify-center py-10">
                   <Spinner className="w-8 h-8" />
@@ -1829,50 +2030,69 @@ Blog Posts
                 <div className="text-center py-10 text-gray-500">
                   <p>No materials uploaded yet.</p>
                 </div>
+              ) : filteredMaterials.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No materials match your filters.</p>
+                </div>
               ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {materials.map((material) => (
-                    <div
-                      key={material.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm">
-                          {material.title}
-                        </h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded">
-                            {material.level}L
-                          </span>
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                            {material.semester || "N/A"}
-                          </span>
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                            {material.courseCode || material.resourceType || "N/A"}
-                          </span>
-                          <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded capitalize">
-                            {material.resourceType || "material"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {material.fileName}
-                        </p>
+                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  {Object.entries(groupedMaterials).sort().map(([groupKey, groupMaterials]) => (
+                    <div key={groupKey} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="bg-gray-100 px-4 py-2 flex items-center justify-between">
+                        <h3 className="font-semibold text-sm text-gray-800">{groupKey}</h3>
+                        <span className="text-xs text-gray-500">{groupMaterials.length} file(s)</span>
                       </div>
-                      <div className="flex gap-2">
-                        <a
-                          href={material.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
-                        >
-                          View
-                        </a>
-                        <button
-                          onClick={() => handleDeleteMaterial(material.id, material.filePath)}
-                          className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
-                        >
-                          Delete
-                        </button>
+                      <div className="divide-y divide-gray-100">
+                        {groupMaterials.map((material) => (
+                          <div
+                            key={material.id}
+                            className={`flex items-center justify-between p-4 hover:bg-gray-50 transition-colors ${
+                              editingMaterialId === material.id ? "bg-green2/5 border-l-4 border-green2" : ""
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 text-sm truncate">
+                                {material.title}
+                              </h4>
+                              {material.description && (
+                                <p className="text-xs text-gray-500 mt-0.5 truncate">{material.description}</p>
+                              )}
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
+                                  {material.semester || "N/A"}
+                                </span>
+                                <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded capitalize">
+                                  {material.resourceType || "material"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1 truncate">
+                                {material.fileName}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 ml-4 flex-shrink-0">
+                              <a
+                                href={material.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                              >
+                                View
+                              </a>
+                              <button
+                                onClick={() => handleEditMaterial(material)}
+                                className="px-2.5 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-medium hover:bg-green-200 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMaterial(material.id, material.filePath)}
+                                className="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
