@@ -183,10 +183,10 @@ export default function Dashboard() {
     <>
       {studentDetails ? (
         <div className="bg-white min-h-screen overflow-x-auto">
-          <div className="min-w-[320px] max-w-[1720px] w-full mx-auto px-4 sm:px-6 lg:px-8 lg:pr-12">
-            <div className="pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-0">
-              <div className="grid lg:grid-cols-7 gap-4">
-                <div className="w-full lg:col-span-2 px-4 grid sm:grid-cols-2 lg:grid-rows-2 lg:grid-cols-none gap-4 mb-4 lg:mb-0">
+          <div className="max-w-[1720px] w-full mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 lg:pr-12">
+            <div className="pt-[70px] xxss:pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-4">
+              <div className="grid lg:grid-cols-7 gap-3 sm:gap-4">
+                <div className="w-full lg:col-span-2 px-0 sm:px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-rows-2 lg:grid-cols-none gap-3 sm:gap-4 mb-4 lg:mb-0">
                   <motion.div
                     variants={fadeInVariants5}
                     initial="initial"
@@ -197,7 +197,7 @@ export default function Dashboard() {
                     custom={1}
                     className="shadow rounded-lg bg-white w-full row-span-1"
                   >
-                    <div className="p-4">
+                    <div className="p-3 xxss:p-4">
                       <div className="flex items-center justify-center">
                         {studentDetails &&
                         studentDetails?.profileImageURL.length > 0 ? (
@@ -258,7 +258,7 @@ export default function Dashboard() {
                       once: true,
                     }}
                     custom={3}
-                    className="details bg-white shadow px-4 py-6 rounded-lg w-full lg:h-fit "
+                    className="details bg-white shadow px-3 xxss:px-4 py-4 xxss:py-6 rounded-lg w-full lg:h-fit"
                   >
                     <div className="flex items-center justify-between flex-col h-full">
                       <div className="flex items-center justify-between gap-4 xxss:gap-2 mb-4 w-full flex-col xxss:flex-row">
@@ -311,9 +311,9 @@ export default function Dashboard() {
                     </div>
                   </motion.div>
                 </div>
-                <div className="lg:col-span-5 px-4 h-full mb-5 lg:mb-0">
-                  <div className="mb-4">
-                    <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-4 ">
+                <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
+                  <div className="mb-3 sm:mb-4">
+                    <div className="grid grid-cols-2 sss:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4">
                       <NavLink to="/u/gpa-calculator">
                         <motion.div
                           variants={fadeInVariants5}
@@ -323,13 +323,13 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={5}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#f0abfc] bg-[#f0abfc]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#f0abfc] bg-[#f0abfc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <CalculatorIcon
-                            className=" w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#a21caf"
                           />
-                          <p className="  uppercase text-[#a21caf] text-xs lg:text-base font-semibold text-center ">
+                          <p className="uppercase text-[#a21caf] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             GPA Calculator
                           </p>
                         </motion.div>
@@ -343,13 +343,13 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={7}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <BooksIcon
-                            className=" w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#00875a"
                           />
-                          <p className="  uppercase text-[#00875a] text-xs lg:text-base font-semibold text-center ">
+                          <p className="uppercase text-[#00875a] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             Course Outlines
                           </p>
                         </motion.div>
@@ -363,21 +363,21 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={9}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <FilesIcon
-                            className=" w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#1d4ed8"
                           />
-                          <p className="  uppercase text-[#1d4ed8] text-xs lg:text-base font-semibold text-center ">
+                          <p className="uppercase text-[#1d4ed8] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             Learning Resources
                           </p>
                         </motion.div>
                       </NavLink>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="mb-3 sm:mb-4">
+                    <div className="grid grid-cols-2 sss:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4">
                       <NavLink to="/u/id-card">
                         <motion.div
                           variants={fadeInVariants5}
@@ -387,13 +387,13 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={11}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <IDCardIcon
-                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#b45309"
                           />
-                          <p className="uppercase text-[#b45309] text-xs lg:text-base font-semibold text-center">
+                          <p className="uppercase text-[#b45309] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             ID Card Registration
                           </p>
                         </motion.div>
@@ -407,13 +407,13 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={13}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <ResourcesIcon
-                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#7c3aed"
                           />
-                          <p className="uppercase text-[#7c3aed] text-xs lg:text-base font-semibold text-center">
+                          <p className="uppercase text-[#7c3aed] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             Study Materials
                           </p>
                         </motion.div>
@@ -434,13 +434,13 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={15}
-                          className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-6 flex-col items-center justify-center"
+                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <ChatIcon
-                            className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                             color="#047857"
                           />
-                          <p className="uppercase text-[#047857] text-xs lg:text-base font-semibold text-center">
+                          <p className="uppercase text-[#047857] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             AI Assistant
                           </p>
                         </motion.div>
@@ -456,16 +456,16 @@ export default function Dashboard() {
                               once: true,
                             }}
                             custom={17}
-                            className="w-full min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-6 flex-col items-center justify-center"
+                            className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                           >
                             <svg
-                              className="w-[52px] h-[52px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                              className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
                               fill="#dc2626"
                               viewBox="0 0 24 24"
                             >
                               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                             </svg>
-                            <p className="uppercase text-[#dc2626] text-xs lg:text-base font-semibold text-center">
+                            <p className="uppercase text-[#dc2626] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                               Admin Panel
                             </p>
                           </motion.div>
@@ -473,7 +473,7 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-2 mmd:gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2 mmd:gap-4">
                     {/* Recent Activities Section */}
                     <motion.div
                       variants={fadeInVariants5}
@@ -483,11 +483,11 @@ export default function Dashboard() {
                         once: true,
                       }}
                       custom={11}
-                      className="shadow rounded-lg w-full py-2 bg-white h-[340px] flex flex-col"
+                      className="shadow rounded-lg w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col"
                     >
-                      <div className="text-sm sm:text-xs md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
+                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
                         <span>Recent Activities</span>
-                        <span className="text-xs font-normal text-gray-500">{activities.length} items</span>
+                        <span className="text-xss xxss:text-xs font-normal text-gray-500">{activities.length} items</span>
                       </div>
                       <div className="flex-1 overflow-y-auto">
                         {activities.length > 0 ? (
@@ -496,18 +496,18 @@ export default function Dashboard() {
                               <div
                                 key={activity.id}
                                 onClick={() => activity.link && navigate(activity.link)}
-                                className={`p-3 flex items-start gap-3 hover:bg-gray-50 transition-colors ${activity.link ? 'cursor-pointer' : ''}`}
+                                className={`p-2 xxss:p-3 flex items-start gap-2 xxss:gap-3 hover:bg-gray-50 transition-colors ${activity.link ? 'cursor-pointer' : ''}`}
                               >
                                 {getActivityIcon(activity.type)}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                                  <p className="text-xss xxss:text-xs sm:text-sm font-medium text-gray-900 truncate">
                                     {activity.title}
                                   </p>
-                                  <p className="text-xss sm:text-xs text-gray-500 truncate">
+                                  <p className="text-sss xxss:text-xss sm:text-xs text-gray-500 truncate">
                                     {activity.description}
                                   </p>
                                 </div>
-                                <span className="text-xss text-gray-400 whitespace-nowrap">
+                                <span className="text-sss xxss:text-xss text-gray-400 whitespace-nowrap hidden xxss:block">
                                   {formatActivityTime(activity.timestamp)}
                                 </span>
                               </div>
@@ -535,12 +535,12 @@ export default function Dashboard() {
                         once: true,
                       }}
                       custom={13}
-                      className="shadow rounded-lg w-full py-2 bg-white h-[340px] flex flex-col"
+                      className="shadow rounded-lg w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col"
                     >
-                      <div className="text-sm sm:text-xs md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
+                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
                         <span>Notifications</span>
                         {notifications.filter(n => !n.read).length > 0 && (
-                          <span className="bg-red-500 text-white text-xss px-2 py-0.5 rounded-full">
+                          <span className="bg-red-500 text-white text-sss xxss:text-xss px-1.5 xxss:px-2 py-0.5 rounded-full">
                             {notifications.filter(n => !n.read).length} new
                           </span>
                         )}
@@ -557,23 +557,23 @@ export default function Dashboard() {
                                     markAsRead(notification.id);
                                     if (notification.link) navigate(notification.link);
                                   }}
-                                  className={`p-3 flex items-start gap-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/50' : ''}`}
+                                  className={`p-2 xxss:p-3 flex items-start gap-2 xxss:gap-3 hover:bg-gray-50 transition-colors cursor-pointer ${!notification.read ? 'bg-blue-50/50' : ''}`}
                                 >
-                                  <div className={`w-8 h-8 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>
-                                    <svg className={`w-4 h-4 ${style.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <div className={`w-6 h-6 xxss:w-8 xxss:h-8 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>
+                                    <svg className={`w-3 h-3 xxss:w-4 xxss:h-4 ${style.text}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={style.icon} />
                                     </svg>
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className={`text-xs sm:text-sm font-medium text-gray-900 truncate ${!notification.read ? 'font-semibold' : ''}`}>
+                                    <p className={`text-xss xxss:text-xs sm:text-sm font-medium text-gray-900 truncate ${!notification.read ? 'font-semibold' : ''}`}>
                                       {notification.title}
                                     </p>
-                                    <p className="text-xss sm:text-xs text-gray-500 line-clamp-2">
+                                    <p className="text-sss xxss:text-xss sm:text-xs text-gray-500 line-clamp-2">
                                       {notification.message}
                                     </p>
                                   </div>
                                   <div className="flex flex-col items-end">
-                                    <span className="text-xss text-gray-400 whitespace-nowrap">
+                                    <span className="text-sss xxss:text-xss text-gray-400 whitespace-nowrap hidden xxss:block">
                                       {formatRelativeTime(notification.createdAt)}
                                     </span>
                                     {!notification.read && (
