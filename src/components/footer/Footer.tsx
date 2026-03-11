@@ -107,13 +107,13 @@ export default function Footer() {
             </a>
 
             <a
-              href="/"
+              href="https://x.com/Ebsumsaofficial"
               className="text-white hover:text-white/80 ms-2"
             >
               <XIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
             </a>
             <a
-              href="https://futo.edu.ng/"
+              href="https://ebsu.edu.ng/"
               className="text-white hover:text-white/80 ms-2"
             >
               <WebIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
