@@ -153,10 +153,7 @@ export default function Blog() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    console.log("[v0] Clicking All button");
-                    setSelectedCategory(null);
-                  }}
+                  onClick={() => setSelectedCategory(null)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                     selectedCategory === null
                       ? "bg-green2 text-white"
@@ -169,10 +166,7 @@ export default function Blog() {
                   <button
                     type="button"
                     key={category}
-                    onClick={() => {
-                      console.log("[v0] Clicking category:", category);
-                      setSelectedCategory(category);
-                    }}
+                    onClick={() => setSelectedCategory(category)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                       selectedCategory === category
                         ? "bg-green2 text-white"
@@ -194,10 +188,7 @@ export default function Blog() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => {
-                    console.log("[v0] Clicking All tags button");
-                    setSelectedTag(null);
-                  }}
+                  onClick={() => setSelectedTag(null)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                     selectedTag === null
                       ? "bg-green2 text-white"
@@ -210,10 +201,7 @@ export default function Blog() {
                   <button
                     type="button"
                     key={tag}
-                    onClick={() => {
-                      console.log("[v0] Clicking tag:", tag);
-                      setSelectedTag(tag);
-                    }}
+                    onClick={() => setSelectedTag(tag)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
                       selectedTag === tag
                         ? "bg-green2 text-white"
