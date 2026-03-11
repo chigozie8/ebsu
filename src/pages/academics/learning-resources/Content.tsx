@@ -13,7 +13,7 @@ import { fadeInVariants1 } from "../../../animation/variants";
 import { db, isFirebaseConfigured } from "../../../config/firebase";
 import { collection, getDocs, query, where, and } from "firebase/firestore";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
-import { LockIcon } from "../../../components/icons/general/LockIcon";
+import { LockKeyhole } from "lucide-react";
 
 interface AdminMaterial {
   id: string;
@@ -196,7 +196,7 @@ export default function Content() {
               className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-sm mx-4 text-center border border-gray-100"
             >
               <div className="w-16 h-16 bg-green1/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <LockIcon className="w-8 h-8 text-green1" />
+                <LockKeyhole className="w-8 h-8 text-green1" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
                 Login Required
