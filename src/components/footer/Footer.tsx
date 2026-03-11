@@ -1,7 +1,7 @@
 import logo from "../../assets/logo/logo.png";
 import { WebIcon } from "../icons/socials/WebIcon";
 import { XIcon } from "../icons/socials/XIcon";
-import { FacebookIcon } from "../icons/socials/FacebookIcon";
+import { InstagramIcon } from "../icons/socials/InstagramIcon";
 
 export default function Footer() {
   return (
@@ -100,10 +100,10 @@ export default function Footer() {
 
           <div className="flex mt-4 sm:justify-center sm:mt-0">
             <a
-              href="https://www.facebook.com/F.U.T.O.Nigeria/"
+              href="https://www.instagram.com/ebsumsa_national/"
               className="text-white hover:text-white/80"
             >
-              <FacebookIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 fill-white" />
+              <InstagramIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 fill-white" />
             </a>
 
             <a
