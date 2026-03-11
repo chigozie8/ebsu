@@ -158,13 +158,13 @@ export default function LearningResources() {
               {/* Action buttons */}
               <div className="flex flex-col gap-3">
                 <Link
-                  to="/login?redirect=/learning-resources"
+                  to="/login?redirect=/u/learning-resources"
                   className="w-full py-3 px-4 bg-green1 hover:bg-green2 text-white font-semibold rounded-xl transition-colors text-center"
                 >
                   Login to Continue
                 </Link>
                 <Link
-                  to="/signup?redirect=/learning-resources"
+                  to="/signup?redirect=/u/learning-resources"
                   className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-xl transition-colors text-center"
                 >
                   Create Free Account
