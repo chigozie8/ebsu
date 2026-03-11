@@ -1,5 +1,11 @@
 import { FC } from "react";
 import { ContentBlockProp } from "../../../../models/misc/blog/blogPosts";
+
+// Helper to generate heading IDs for TOC
+const generateHeadingId = (content: string, index: number): string => {
+  return `heading-${index}-${content.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
+};
+
 export const PostContent: FC<ContentBlockProp> = ({ contents }) => {
   if (!contents || !Array.isArray(contents)) {
     return null;
@@ -8,13 +14,21 @@ export const PostContent: FC<ContentBlockProp> = ({ contents }) => {
   return contents.map(({ type, content }, i) => {
     if (type === "h1" && typeof content === "string") {
       return (
-        <h1 key={i} className="text-base sm:text-md md:text-lg font-semibold">
+        <h1 
+          key={i} 
+          id={generateHeadingId(content, i)}
+          className="text-base sm:text-md md:text-lg font-semibold scroll-mt-24"
+        >
           {content}
         </h1>
       );
     } else if (type === "h2" && typeof content === "string") {
       return (
-        <h2 key={i} className="text-xs sm:text-base font-semibold">
+        <h2 
+          key={i} 
+          id={generateHeadingId(content, i)}
+          className="text-xs sm:text-base font-semibold scroll-mt-24"
+        >
           {content}
         </h2>
       );
