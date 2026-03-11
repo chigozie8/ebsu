@@ -33,6 +33,9 @@ const AppRoutes = () => {
     () =>
       import("../pages/academics/learning-resources/LearningResourcesContent")
   );
+  const ExamTimetable = lazy(
+    () => import("../pages/academics/exam-timetable/ExamTimetable")
+  );
   const Blog = lazy(() => import("../pages/misc/blog/Blog"));
   const BlogPost = lazy(() => import("../pages/misc/blog/post/BlogPost"));
   const ProjectTeam = lazy(() => import("../pages/students/ProjectTeam"));
@@ -102,6 +105,7 @@ const AppRoutes = () => {
             path={"/learning-resources/:level/:id/:courseTitle"}
             element={<LearningResourcesContent />}
           />
+          <Route path="/exam-timetable" element={<ExamTimetable />} />
           <Route path="/blog" element={<Blog />} />
           <Route
             path="/blog/posts/:title/:postID/:postType"
