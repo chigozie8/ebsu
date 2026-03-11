@@ -46,33 +46,33 @@ const teamMembers: TeamMember[] = [
     name: "Ken",
     department: "Medicine and Surgery",
     level: "600 Level",
-    role: "Software Engineer",
+    role: "Software Engineer Team Lead",
     email: "kenronkwo@gmail.com",
-    portfolio: "https://codeblockportfolio.vercel.app",
+    portfolio: "", // commented out
     github: "https://github.com/kenchigozie23",
-    linkedin: "https://linkedin.com/in/kenneth-okoronkwo",
+    linkedin: "", // commented out
     image: chris,
   },
   {
-    name: "Blu",
+    name: "Victor",
     department: "Medicine and Surgery",
     level: "400 Level",
     role: "Frontend Engineer",
     email: "ada.okonkwo@example.com",
-    portfolio: "https://vercel.app",
+    portfolio: "",
     github: "https://github.com",
-    linkedin: "https://linkedin.com",
+    linkedin: "",
     image: member2,
   },
   {
-    name: "Red",
+    name: "Geoffrey",
     department: "Medicine and Surgery",
     level: "400 Level",
     role: "Backend Engineer",
     email: "Redress6310.com@gmail.com",
-    portfolio: "https://vercel.app",
+    portfolio: "",
     github: "https://github.com",
-    linkedin: "https://linkedin.com",
+    linkedin: "",
     image: member3,
   },
   
@@ -165,19 +165,21 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
           </motion.div>
         </Link>
 
-        <Link to={member.portfolio}>
-          <motion.div
-            variants={fadeInVariants3}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={9}
-            className="flex gap-1 items-center"
-          >
-            <Lottie loop={false} animationData={link} className="w-4 ss:w-5 sm:w-6" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">Portfolio</p>
-          </motion.div>
-        </Link>
+        {member.portfolio && (
+          <Link to={member.portfolio}>
+            <motion.div
+              variants={fadeInVariants3}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={9}
+              className="flex gap-1 items-center"
+            >
+              <Lottie loop={false} animationData={link} className="w-4 ss:w-5 sm:w-6" />
+              <p className="font-semibold text-xss ss:text-ss sm:text-sm">Portfolio</p>
+            </motion.div>
+          </Link>
+        )}
 
         <Link to={member.github}>
           <motion.div
@@ -193,19 +195,21 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
           </motion.div>
         </Link>
 
-        <Link to={member.linkedin}>
-          <motion.div
-            variants={fadeInVariants3}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={11}
-            className="flex gap-1 items-center"
-          >
-            <Lottie loop={false} animationData={work} className="w-3 ss:w-4 sm:w-5" />
-            <p className="font-semibold text-xss ss:text-ss sm:text-sm">LinkedIn</p>
-          </motion.div>
-        </Link>
+        {member.linkedin && (
+          <Link to={member.linkedin}>
+            <motion.div
+              variants={fadeInVariants3}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={11}
+              className="flex gap-1 items-center"
+            >
+              <Lottie loop={false} animationData={work} className="w-3 ss:w-4 sm:w-5" />
+              <p className="font-semibold text-xss ss:text-ss sm:text-sm">LinkedIn</p>
+            </motion.div>
+          </Link>
+        )}
       </div>
     </div>
   </motion.div>
