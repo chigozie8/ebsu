@@ -313,6 +313,19 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteIDCard = async (cardId: string) => {
+    if (!confirm("Are you sure you want to delete this ID card registration?")) return;
+
+    try {
+      await deleteDoc(doc(db, "idCardRegistrations", cardId));
+      notifyUser("success", "ID card registration deleted successfully");
+      fetchIDCards();
+    } catch (error) {
+      console.error("Error deleting ID card:", error);
+      notifyUser("error", "Failed to delete ID card registration");
+    }
+  };
+
   const fetchBlogPosts = async () => {
     try {
       const q = query(
@@ -1915,12 +1928,20 @@ Blog Posts
                           </span>
                         </td>
                         <td className="p-3">
-                          <button
-                            onClick={() => printIDCard(card)}
-                            className="px-3 py-1 bg-green2 text-white rounded-lg text-xs font-medium hover:bg-green1 transition-colors"
-                          >
-                            Print ID
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => printIDCard(card)}
+                              className="px-3 py-1 bg-green2 text-white rounded-lg text-xs font-medium hover:bg-green1 transition-colors"
+                            >
+                              Print ID
+                            </button>
+                            <button
+                              onClick={() => handleDeleteIDCard(card.id)}
+                              className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
