@@ -30,6 +30,7 @@ interface Material {
   level: string;
   semester: "First" | "Second";
   courseCode: string;
+  courseTitle?: string;
   section: "preclinical" | "clinical";
   fileUrl: string;
   fileName: string;
@@ -181,10 +182,12 @@ export default function AdminDashboard() {
     level: "",
     semester: "" as "" | "First" | "Second",
     courseCode: "",
+    courseTitle: "", // For custom courses
     section: "preclinical" as "preclinical" | "clinical",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [availableMaterialCourses, setAvailableMaterialCourses] = useState<{courseCode: string; courseTitle: string}[]>([]);
+  const [useCustomCourse, setUseCustomCourse] = useState(false);
   const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
   
   // Material filters
@@ -517,6 +520,7 @@ export default function AdminDashboard() {
         level: formData.level,
         semester: formData.semester,
         courseCode: formData.courseCode,
+        courseTitle: formData.courseTitle,
         section: formData.section,
         fileUrl: fileUrl,
         fileName: selectedFile.name,
@@ -567,12 +571,16 @@ export default function AdminDashboard() {
       level: material.level,
       semester: material.semester,
       courseCode: material.courseCode,
+      courseTitle: material.courseTitle || "",
       section: material.section || "preclinical",
     });
     // Load available courses for the material's level and semester
     if (material.level && material.semester) {
       const courses = getCoursesForLevelAndSemester(material.level, material.semester);
       setAvailableMaterialCourses(courses);
+      // Check if this is a custom course (not in the predefined list)
+      const isCustom = !courses.some(c => c.courseCode === material.courseCode);
+      setUseCustomCourse(isCustom);
     }
     setEditingMaterialId(material.id);
     setActiveTab("materials");
@@ -601,6 +609,7 @@ export default function AdminDashboard() {
         level: formData.level,
         semester: formData.semester,
         courseCode: formData.courseCode,
+        courseTitle: formData.courseTitle,
         section: formData.section,
         updatedAt: serverTimestamp(),
       };
@@ -660,11 +669,13 @@ export default function AdminDashboard() {
       level: "",
       semester: "",
       courseCode: "",
+      courseTitle: "",
       section: "preclinical",
     });
     setSelectedFile(null);
     setAvailableMaterialCourses([]);
     setEditingMaterialId(null);
+    setUseCustomCourse(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -686,7 +697,10 @@ export default function AdminDashboard() {
 
   // Group materials by level and course
   const groupedMaterials = filteredMaterials.reduce((acc, material) => {
-    const key = `${material.level}L - ${material.courseCode}`;
+    const courseDisplay = material.courseTitle 
+      ? `${material.courseCode} - ${material.courseTitle}`
+      : material.courseCode;
+    const key = `${material.level}L | ${courseDisplay}`;
     if (!acc[key]) {
       acc[key] = [];
     }
@@ -1872,27 +1886,71 @@ Blog Posts
 
                 {/* Course Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Course <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="courseCode"
-                    value={formData.courseCode}
-                    onChange={handleInputChange}
-                    disabled={!formData.level || !formData.semester}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {!formData.level || !formData.semester 
-                        ? "Select level & semester first" 
-                        : "Select Course"}
-                    </option>
-                    {availableMaterialCourses.map((course) => (
-                      <option key={course.courseCode} value={course.courseCode}>
-                        {course.courseCode} - {course.courseTitle}
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Course <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseCustomCourse(!useCustomCourse);
+                        setFormData(prev => ({ ...prev, courseCode: "", courseTitle: "" }));
+                      }}
+                      className="text-xs text-green2 hover:text-green1 font-medium"
+                    >
+                      {useCustomCourse ? "Select from list" : "Add custom course"}
+                    </button>
+                  </div>
+                  
+                  {useCustomCourse ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        name="courseCode"
+                        value={formData.courseCode}
+                        onChange={handleInputChange}
+                        placeholder="Course Code (e.g., PHY 101)"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                      />
+                      <input
+                        type="text"
+                        name="courseTitle"
+                        value={formData.courseTitle}
+                        onChange={handleInputChange}
+                        placeholder="Course Title (e.g., General Physics I)"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
+                      />
+                      <p className="text-xs text-gray-500">
+                        Enter any course code and title. This will create a new course that appears on the client side.
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      name="courseCode"
+                      value={formData.courseCode}
+                      onChange={(e) => {
+                        const selectedCourse = availableMaterialCourses.find(c => c.courseCode === e.target.value);
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          courseCode: e.target.value,
+                          courseTitle: selectedCourse?.courseTitle || ""
+                        }));
+                      }}
+                      disabled={!formData.level || !formData.semester}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!formData.level || !formData.semester 
+                          ? "Select level & semester first" 
+                          : "Select Course"}
                       </option>
-                    ))}
-                  </select>
+                      {availableMaterialCourses.map((course) => (
+                        <option key={course.courseCode} value={course.courseCode}>
+                          {course.courseCode} - {course.courseTitle}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Resource Type */}
