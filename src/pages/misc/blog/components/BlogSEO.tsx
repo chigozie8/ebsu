@@ -1,8 +1,8 @@
 import { Helmet } from "react-helmet-async";
-import { IBlogPost } from "../../../../models/misc/blog/blogPosts";
+import { TBlogPost } from "../../../../models/misc/blog/blogPosts";
 
 interface BlogSEOProps {
-  post: IBlogPost;
+  post: TBlogPost;
   readTime: number;
 }
 

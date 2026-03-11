@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useMemo, useState } from "react";
 import { useFetchBlogPosts } from "../hooks/useFetchBlogPosts";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { PostContent } from "./PostContent";
 import { PopularPosts } from "./cards/Popular";
 import { RelatedPosts } from "./cards/Related";
@@ -14,7 +14,7 @@ import { useBlogComments } from "../hooks/useBlogComments";
 import PostSkeleton from "./skeleton/PostSkeleton";
 import Lottie from "lottie-react";
 import profileAnim from "../../../../json/animation/avatar1.json";
-import { IoArrowBack, IoShareSocial, IoLogoWhatsapp, IoLogoTwitter, IoLink, IoCheckmark } from "react-icons/io5";
+import { IoShareSocial, IoLogoWhatsapp, IoLogoTwitter, IoLink, IoCheckmark } from "react-icons/io5";
 import { BlogSEO } from "../components/BlogSEO";
 import { ReadingProgress } from "../components/ReadingProgress";
 import { Breadcrumbs } from "../components/Breadcrumbs";
