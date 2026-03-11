@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { db, isFirebaseConfigured } from "../../config/firebase";
-import { doc, getDoc, collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, limit, where } from "firebase/firestore";
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";

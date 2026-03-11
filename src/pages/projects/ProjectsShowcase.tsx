@@ -4,7 +4,7 @@ import { fadeInVariants3 } from "../../animation/variants";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, isFirebaseConfigured } from "../../config/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { Spinner } from "../../components/loaders/Spinner";
 
 // =============================================
