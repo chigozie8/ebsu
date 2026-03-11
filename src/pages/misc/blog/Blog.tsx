@@ -8,7 +8,7 @@ import Footer from "../../../components/footer/Footer";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { BadNetworkIcon } from "../../../components/icons/general/BadNetworkIcon";
 import { Link } from "react-router-dom";
-import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter, IoHashtagOutline } from "react-icons/io5";
+import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter, IoPricetagOutline } from "react-icons/io5";
 import { EngagementStats } from "./components/EngagementStats";
 import { Tags } from "./components/Tags";
 
@@ -181,7 +181,7 @@ export default function Blog() {
             {allTags.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <IoHashtagOutline className="w-4 h-4" />
+                  <IoPricetagOutline className="w-4 h-4" />
                   Tags:
                 </span>
                 <button
@@ -221,7 +221,7 @@ export default function Blog() {
                 </span>
                 {selectedTag && (
                   <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded-full flex items-center gap-1">
-                    <IoHashtagOutline className="w-3 h-3" />
+                    <IoPricetagOutline className="w-3 h-3" />
                     {selectedTag}
                   </span>
                 )}

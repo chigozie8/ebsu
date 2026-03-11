@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { Link } from "react-router-dom";
-import { IoHashtagOutline } from "react-icons/io5";
+import { IoPricetagOutline } from "react-icons/io5";
 
 interface TagsProps {
   tags?: string[];
@@ -29,7 +29,7 @@ export const Tags: FC<TagsProps> = ({
     <span
       className={`inline-flex items-center gap-1 ${sizeClasses[size]} bg-gray-100 text-gray-600 rounded-full hover:bg-green2/10 hover:text-green2 transition-colors`}
     >
-      <IoHashtagOutline className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
+      <IoPricetagOutline className={size === "sm" ? "w-3 h-3" : "w-4 h-4"} />
       {tag}
     </span>
   );
@@ -97,7 +97,7 @@ export const AllTags: FC<AllTagsProps> = ({ posts, selectedTag, onTagSelect }) =
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
         >
-          <IoHashtagOutline className="w-3 h-3" />
+          <IoPricetagOutline className="w-3 h-3" />
           {tag}
         </button>
       ))}
