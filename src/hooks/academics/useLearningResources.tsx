@@ -3,6 +3,22 @@
 import { useState } from "react";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { FileMetadata } from "../../models/academics/learning-resources";
+import { db, isFirebaseConfigured } from "../../config/firebase";
+import { collection, getDocs, query, where, and } from "firebase/firestore";
+
+interface AdminMaterial {
+  id: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  courseCode: string;
+  level: string;
+  semester: string;
+  resourceType: string;
+}
 
 export const useLearningResources = () => {
   const [files, setFiles] = useState<FileMetadata[]>([]);
@@ -20,31 +36,74 @@ export const useLearningResources = () => {
       setError(false);
       setGettingResources(true);
       
-      // List files from Supabase Storage
-      const { data, error: listError } = await supabase.storage
-        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-        .list(folderPath, {
-          limit: 100,
-          sortBy: { column: 'name', order: 'asc' },
-        });
+      let fileList: FileMetadata[] = [];
 
-      if (listError) {
-        throw listError;
+      // 1. First fetch from Firestore (admin-uploaded materials with metadata)
+      if (isFirebaseConfigured) {
+        try {
+          const q = query(
+            collection(db, "learningMaterials"),
+            and(
+              where("level", "==", level),
+              where("courseCode", "==", course),
+              where("resourceType", "==", resourcesType)
+            )
+          );
+          const snapshot = await getDocs(q);
+          const adminMaterials = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as AdminMaterial[];
+
+          // Add admin materials to file list
+          adminMaterials.forEach(material => {
+            fileList.push({
+              name: material.title || material.fileName,
+              path: material.filePath,
+              size: material.fileSize || 0,
+              url: material.fileUrl,
+              description: material.description,
+            });
+          });
+        } catch (firestoreError) {
+          console.error("Error fetching from Firestore:", firestoreError);
+        }
       }
 
-      // Map files to FileMetadata format
-      const fileList: FileMetadata[] = (data || [])
-        .filter(item => item.name && !item.name.startsWith('.')) // Filter out hidden files
-        .map((item) => ({
-          name: item.name,
-          path: `${folderPath}/${item.name}`,
-          size: item.metadata?.size || 0,
-          url: getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, `${folderPath}/${item.name}`),
-        }));
+      // 2. Also fetch directly from Supabase Storage (for backwards compatibility)
+      try {
+        const { data, error: listError } = await supabase.storage
+          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+          .list(folderPath, {
+            limit: 100,
+            sortBy: { column: 'name', order: 'asc' },
+          });
+
+        if (!listError && data) {
+          // Map files to FileMetadata format
+          const storageFiles: FileMetadata[] = data
+            .filter(item => item.name && !item.name.startsWith('.'))
+            .map((item) => ({
+              name: item.name,
+              path: `${folderPath}/${item.name}`,
+              size: item.metadata?.size || 0,
+              url: getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, `${folderPath}/${item.name}`),
+            }));
+
+          // Add storage files that aren't already in the list (avoid duplicates)
+          const existingUrls = new Set(fileList.map(f => f.url));
+          storageFiles.forEach(file => {
+            if (!existingUrls.has(file.url)) {
+              fileList.push(file);
+            }
+          });
+        }
+      } catch (storageError) {
+        console.error("Error fetching from Supabase Storage:", storageError);
+      }
 
       setFiles(fileList);
       setGettingResources(false);
-      console.log(fileList);
     } catch (error: any) {
       setError(error);
       setGettingResources(false);

@@ -51,4 +51,5 @@ export interface FileMetadata {
   path: string;
   size: number;
   url?: string;
+  description?: string;
 }

@@ -2,117 +2,35 @@ import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { db, isFirebaseConfigured } from "../../config/firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { Spinner } from "../../components/loaders/Spinner";
 
 // =============================================
 // TypeScript Interfaces
 // =============================================
 interface Project {
   id: string;
+  no?: number;
   title: string;
   description: string;
   category: "voluntary" | "who" | "personal" | "research" | "community";
   date: string;
+  endDate?: string;
   collaborators?: string[];
   image?: string;
   link?: string;
   tags: string[];
   featured?: boolean;
+  status?: "ongoing" | "completed" | "upcoming";
 }
 
 interface ProjectCardProps {
   project: Project;
   index: number;
+  onClick: () => void;
 }
-
-// =============================================
-// Sample Projects Data (will be replaced with Supabase data)
-// =============================================
-const sampleProjects: Project[] = [
-  {
-    id: "1",
-    title: "Community Health Outreach - Abakaliki",
-    description:
-      "Organized a free medical screening and health education program for residents of Abakaliki community. Over 500 people were screened for hypertension, diabetes, and malaria. Health education on disease prevention was provided.",
-    category: "community",
-    date: "February 2026",
-    collaborators: ["EBSUMSA", "WHO Nigeria", "Ebonyi State Ministry of Health"],
-    tags: ["Health Outreach", "Community Health", "Screening"],
-    featured: true,
-  },
-  {
-    id: "2",
-    title: "WHO World Health Day Campaign",
-    description:
-      "Participated in the World Health Organization's World Health Day campaign focusing on universal health coverage. Organized awareness walks, seminars, and social media campaigns to educate the public on the importance of accessible healthcare.",
-    category: "who",
-    date: "April 2025",
-    collaborators: ["WHO", "EBSUMSA", "Nigerian Medical Association"],
-    tags: ["WHO", "Awareness Campaign", "UHC"],
-    featured: true,
-  },
-  {
-    id: "3",
-    title: "Medical Students Website Development",
-    description:
-      "Developed and deployed a comprehensive website for EBSU medical students featuring learning resources, GPA calculator, course outlines, and student information management system. Built with React, TypeScript, and Supabase.",
-    category: "personal",
-    date: "January 2026",
-    collaborators: ["Project Development Team"],
-    tags: ["Web Development", "React", "Student Resources"],
-    link: "https://ebsu-medicine.vercel.app",
-    featured: true,
-  },
-  {
-    id: "4",
-    title: "Blood Donation Drive",
-    description:
-      "Organized a voluntary blood donation drive in collaboration with the National Blood Transfusion Service. Over 100 units of blood were collected to support the FETHA blood bank.",
-    category: "voluntary",
-    date: "December 2025",
-    collaborators: ["NBTS", "FETHA", "Red Cross"],
-    tags: ["Blood Donation", "Voluntary Service", "Healthcare"],
-  },
-  {
-    id: "5",
-    title: "Research on Malaria Prevalence in Rural Ebonyi",
-    description:
-      "Conducted epidemiological research on malaria prevalence among children under 5 in rural communities of Ebonyi State. Findings were presented at the annual medical students' research symposium.",
-    category: "research",
-    date: "November 2025",
-    collaborators: ["Department of Community Medicine", "EBSU Research Unit"],
-    tags: ["Research", "Malaria", "Epidemiology"],
-  },
-  {
-    id: "6",
-    title: "Mental Health Awareness Week",
-    description:
-      "Led a week-long campaign to raise awareness about mental health among students. Activities included seminars, counseling sessions, and social media campaigns to destigmatize mental health issues.",
-    category: "voluntary",
-    date: "October 2025",
-    collaborators: ["Student Counseling Unit", "Psychology Department"],
-    tags: ["Mental Health", "Awareness", "Student Welfare"],
-  },
-  {
-    id: "7",
-    title: "WHO Immunization Week Participation",
-    description:
-      "Volunteered in the WHO African Immunization Week program, helping to administer vaccines and educate parents on the importance of childhood immunization in underserved communities.",
-    category: "who",
-    date: "April 2025",
-    collaborators: ["WHO", "UNICEF", "Primary Healthcare Centers"],
-    tags: ["WHO", "Immunization", "Child Health"],
-  },
-  {
-    id: "8",
-    title: "First Aid Training Program",
-    description:
-      "Organized first aid training sessions for non-medical students and staff. Over 200 participants learned basic life support, wound management, and emergency response skills.",
-    category: "voluntary",
-    date: "September 2025",
-    collaborators: ["Nigerian Red Cross", "EBSU Health Services"],
-    tags: ["First Aid", "Training", "Emergency Response"],
-  },
-];
 
 // Category colors and labels
 const categoryConfig = {
@@ -126,31 +44,48 @@ const categoryConfig = {
 // =============================================
 // Project Card Component
 // =============================================
-const ProjectCard = ({ project, index }: ProjectCardProps) => (
+const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => (
   <motion.div
     variants={fadeInVariants3}
     initial="initial"
     whileInView="animate"
     viewport={{ once: true }}
     custom={index}
-    className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 ${
+    onClick={onClick}
+    className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
       project.featured ? "border-l-4 border-green2" : ""
-    }`}
+    } hover:-translate-y-1`}
   >
+    {project.image && (
+      <div className="h-40 overflow-hidden">
+        <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
+      </div>
+    )}
     <div className="p-5">
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${
-            categoryConfig[project.category].color
+            categoryConfig[project.category]?.color || "bg-gray-100 text-gray-800"
           }`}
         >
-          {categoryConfig[project.category].label}
+          {categoryConfig[project.category]?.label || project.category}
         </span>
-        {project.featured && (
-          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
-            Featured
-          </span>
-        )}
+        <div className="flex gap-2">
+          {project.featured && (
+            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+              Featured
+            </span>
+          )}
+          {project.status && (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              project.status === "ongoing" ? "bg-blue-100 text-blue-800" :
+              project.status === "completed" ? "bg-green-100 text-green-800" :
+              "bg-orange-100 text-orange-800"
+            }`}>
+              {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+            </span>
+          )}
+        </div>
       </div>
 
       <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
@@ -160,7 +95,7 @@ const ProjectCard = ({ project, index }: ProjectCardProps) => (
       <p className="text-gray-600 text-sm mb-4 line-clamp-3">{project.description}</p>
 
       <div className="flex flex-wrap gap-1 mb-4">
-        {project.tags.slice(0, 3).map((tag) => (
+        {project.tags?.slice(0, 3).map((tag) => (
           <span
             key={tag}
             className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs"
@@ -171,30 +106,26 @@ const ProjectCard = ({ project, index }: ProjectCardProps) => (
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-xs text-gray-500">{project.date}</span>
-        {project.link && (
-          <a
-            href={project.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green2 hover:text-green1 text-sm font-medium flex items-center gap-1"
+        <span className="text-xs text-gray-500">
+          {project.date}
+          {project.endDate && ` - ${project.endDate}`}
+        </span>
+        <span className="text-green2 hover:text-green1 text-sm font-medium flex items-center gap-1">
+          View Details
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            View Project
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-              />
-            </svg>
-          </a>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </span>
       </div>
 
       {project.collaborators && project.collaborators.length > 0 && (
@@ -212,14 +143,64 @@ const ProjectCard = ({ project, index }: ProjectCardProps) => (
 );
 
 // =============================================
-// Stats Component
+// Countdown Timer Component
 // =============================================
-const StatsSection = () => {
+const CountdownTimer = ({ targetCount, label, duration = 2000 }: { targetCount: number; label: string; duration?: number }) => {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    if (hasAnimated) return;
+    
+    const startTime = Date.now();
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeOut * targetCount));
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setHasAnimated(true);
+      }
+    };
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !hasAnimated) {
+          requestAnimationFrame(animate);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    
+    const element = document.getElementById(`stat-${label.replace(/\s+/g, '-')}`);
+    if (element) observer.observe(element);
+    
+    return () => observer.disconnect();
+  }, [targetCount, label, duration, hasAnimated]);
+
+  return (
+    <div id={`stat-${label.replace(/\s+/g, '-')}`} className="bg-white rounded-xl p-4 text-center shadow-md">
+      <p className="text-2xl sm:text-3xl font-bold text-green2">
+        {count.toLocaleString()}+
+      </p>
+      <p className="text-sm text-gray-600 mt-1">{label}</p>
+    </div>
+  );
+};
+
+// =============================================
+// Stats Component with Countdown
+// =============================================
+const StatsSection = ({ projectCount }: { projectCount: number }) => {
   const stats = [
-    { label: "Projects Completed", value: "25+" },
-    { label: "Lives Impacted", value: "5,000+" },
-    { label: "WHO Collaborations", value: "8" },
-    { label: "Team Members", value: "50+" },
+    { label: "Projects Completed", value: Math.max(projectCount, 25) },
+    { label: "Lives Impacted", value: 5000 },
+    { label: "WHO Collaborations", value: 8 },
+    { label: "Team Members", value: 50 },
   ];
 
   return (
@@ -232,10 +213,7 @@ const StatsSection = () => {
       className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
     >
       {stats.map((stat) => (
-        <div key={stat.label} className="bg-white rounded-xl p-4 text-center shadow-md">
-          <p className="text-2xl sm:text-3xl font-bold text-green2">{stat.value}</p>
-          <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
-        </div>
+        <CountdownTimer key={stat.label} targetCount={stat.value} label={stat.label} />
       ))}
     </motion.div>
   );
@@ -245,8 +223,40 @@ const StatsSection = () => {
 // Main Component
 // =============================================
 export default function ProjectsShowcase() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<string>("all");
-  const [projects] = useState<Project[]>(sampleProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch projects from Firestore
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!isFirebaseConfigured) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "projects"),
+          orderBy("createdAt", "desc")
+        );
+        const snapshot = await getDocs(q);
+        const projectsData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Project[];
+        setProjects(projectsData);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+    window.scrollTo(0, 0);
+  }, []);
 
   const filteredProjects =
     filter === "all"
@@ -254,10 +264,6 @@ export default function ProjectsShowcase() {
       : projects.filter((p) => p.category === filter);
 
   const featuredProjects = projects.filter((p) => p.featured);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -275,113 +281,132 @@ export default function ProjectsShowcase() {
           </div>
 
           {/* Stats */}
-          <StatsSection />
+          <StatsSection projectCount={projects.length} />
 
-          {/* About Section */}
-          <motion.div
-            variants={fadeInVariants3}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={0}
-            className="bg-white rounded-2xl shadow-md p-6 mb-12 max-w-3xl mx-auto"
-          >
-            <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="w-8 h-1 bg-green2 rounded-full"></span>
-              Our Impact
-            </h4>
-            <p className="text-gray-600 text-sm leading-relaxed">
-              At EBSUMSA, we believe in giving back to our community through various initiatives. 
-              From WHO-sponsored health programs to voluntary medical outreaches, our students actively 
-              participate in projects that make a real difference. This page showcases our collective 
-              efforts and achievements in health promotion, research, and community service.
-            </p>
-          </motion.div>
-
-          {/* Featured Projects */}
-          {featuredProjects.length > 0 && (
-            <div className="mb-12">
-              <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-yellow-500"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-                Featured Projects
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProjects.map((project, index) => (
-                  <ProjectCard key={project.id} project={project} index={index} />
-                ))}
-              </div>
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Spinner className="w-10 h-10 text-gray-200 animate-spin fill-green1" />
             </div>
-          )}
+          ) : (
+            <>
+              {/* About Section */}
+              <motion.div
+                variants={fadeInVariants3}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true }}
+                custom={0}
+                className="bg-white rounded-2xl shadow-md p-6 mb-12 max-w-3xl mx-auto"
+              >
+                <h4 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-8 h-1 bg-green2 rounded-full"></span>
+                  Our Impact
+                </h4>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  At EBSUMSA, we believe in giving back to our community through various initiatives. 
+                  From WHO-sponsored health programs to voluntary medical outreaches, our students actively 
+                  participate in projects that make a real difference. This page showcases our collective 
+                  efforts and achievements in health promotion, research, and community service.
+                </p>
+              </motion.div>
+
+              {/* Featured Projects */}
+              {featuredProjects.length > 0 && (
+                <div className="mb-12">
+                  <h4 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg
+                      className="w-6 h-6 text-yellow-500"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    Featured Projects
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featuredProjects.map((project, index) => (
+                      <ProjectCard 
+                        key={project.id} 
+                        project={project} 
+                        index={index}
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
           {/* Filter Section */}
-          <div className="mb-8">
-            <h4 className="text-xl font-bold text-gray-900 mb-4">All Projects</h4>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filter === "all"
-                    ? "bg-green2 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                All
-              </button>
-              {Object.entries(categoryConfig).map(([key, value]) => (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                    filter === key
-                      ? "bg-green2 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {value.label}
-                </button>
-              ))}
-            </div>
-          </div>
+              <div className="mb-8">
+                <h4 className="text-xl font-bold text-gray-900 mb-4">All Projects</h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilter("all")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      filter === "all"
+                        ? "bg-green2 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-100"
+                    }`}
+                  >
+                    All
+                  </button>
+{Object.entries(categoryConfig).map(([key, value]) => (
+                      <button
+                        key={key}
+                        onClick={() => setFilter(key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                          filter === key
+                            ? "bg-green2 text-white"
+                            : "bg-white text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        {value.label}
+                      </button>
+                    ))}
+                </div>
+              </div>
 
           {/* Projects Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {filteredProjects.map((project, index) => (
-              <ProjectCard key={project.id} project={project} index={index + 5} />
-            ))}
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {filteredProjects.map((project, index) => (
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project} 
+                    index={index + 5}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                  />
+                ))}
+              </div>
 
-          {filteredProjects.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No projects found in this category.</p>
-            </div>
+          {filteredProjects.length === 0 && !loading && (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">No projects found in this category.</p>
+                </div>
+              )}
+
+              {/* Call to Action */}
+              <motion.div
+                variants={fadeInVariants3}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true }}
+                custom={20}
+                className="bg-green2 rounded-2xl p-6 text-center text-white max-w-2xl mx-auto"
+              >
+                <h4 className="text-lg font-bold mb-2">Want to Contribute?</h4>
+                <p className="text-sm opacity-90 mb-4">
+                  Have a project idea or want to share your work? Contact us to have your project featured!
+                </p>
+                <a
+                  href="mailto:projects@ebsumsa.com"
+                  className="inline-block bg-white text-green2 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
+                >
+                  Submit Your Project
+                </a>
+              </motion.div>
+            </>
           )}
-
-          {/* Call to Action */}
-          <motion.div
-            variants={fadeInVariants3}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={20}
-            className="bg-green2 rounded-2xl p-6 text-center text-white max-w-2xl mx-auto"
-          >
-            <h4 className="text-lg font-bold mb-2">Want to Contribute?</h4>
-            <p className="text-sm opacity-90 mb-4">
-              Have a project idea or want to share your work? Contact us to have your project featured!
-            </p>
-            <a
-              href="mailto:projects@ebsumsa.com"
-              className="inline-block bg-white text-green2 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
-            >
-              Submit Your Project
-            </a>
-          </motion.div>
         </div>
       </div>
       <Footer />
