@@ -4,13 +4,6 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { NavLink } from "react-router-dom";
 
-// Define puter globally
-declare global {
-  interface Window {
-    puter: any;
-  }
-}
-
 interface Message {
   id: string;
   role: "user" | "assistant";
