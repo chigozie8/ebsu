@@ -94,15 +94,7 @@ export default function Footer() {
               </a>
             </span>
             <span className="text-ss md:text-sm text-white sm:text-center">
-              Architected by{" "}
-              <a
-                href="https://chrismbah.vercel.app/"
-                target="_"
-                className="hover:underline text-white"
-              >
-                Ken.
-              </a>{" "}
-              All Rights Reserved.
+              Built by EBSUMSA Tech Team. All Rights Reserved.
             </span>
           </div>
 
