@@ -9,10 +9,15 @@ interface Material {
   id: string;
   title: string;
   description: string;
-  category: string;
+  resourceType: string; // handouts, textbooks, pastquestions
+  category?: string; // legacy field
   level: string;
+  semester?: string;
+  courseCode?: string;
+  courseTitle?: string;
   fileUrl: string;
   fileName: string;
+  fileSize?: number;
   uploadedBy: string;
   createdAt: any;
 }
@@ -56,12 +61,17 @@ export default function ResourcesPage() {
     let filtered = [...materials];
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((m) => m.category === selectedCategory);
+      // Check both resourceType (new) and category (legacy)
+      filtered = filtered.filter((m) => 
+        m.resourceType === selectedCategory || m.category === selectedCategory
+      );
     }
 
     if (selectedLevel !== "all") {
+      // Handle both "100" and "100L" formats
+      const levelNumber = selectedLevel.replace("L", "");
       filtered = filtered.filter(
-        (m) => m.level === selectedLevel || m.level === "all"
+        (m) => m.level === selectedLevel || m.level === levelNumber || m.level === "all"
       );
     }
 
@@ -69,26 +79,31 @@ export default function ResourcesPage() {
       filtered = filtered.filter(
         (m) =>
           m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          m.description?.toLowerCase().includes(searchTerm.toLowerCase())
+          m.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.courseCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.courseTitle?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     setFilteredMaterials(filtered);
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (resourceType: string) => {
     const labels: { [key: string]: string } = {
+      textbooks: "Textbooks",
       books: "Books",
       handouts: "Handouts",
+      pastquestions: "Past Questions",
       pastQuestions: "Past Questions",
       notes: "Lecture Notes",
       others: "Others",
     };
-    return labels[category] || category;
+    return labels[resourceType] || resourceType;
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
+  const getCategoryIcon = (resourceType: string) => {
+    switch (resourceType) {
+      case "textbooks":
       case "books":
         return (
           <svg
@@ -123,6 +138,7 @@ export default function ResourcesPage() {
             />
           </svg>
         );
+      case "pastquestions":
       case "pastQuestions":
         return (
           <svg
@@ -232,11 +248,9 @@ export default function ResourcesPage() {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
               >
                 <option value="all">All Categories</option>
-                <option value="books">Books</option>
+                <option value="textbooks">Textbooks</option>
                 <option value="handouts">Handouts</option>
-                <option value="pastQuestions">Past Questions</option>
-                <option value="notes">Lecture Notes</option>
-                <option value="others">Others</option>
+                <option value="pastquestions">Past Questions</option>
               </select>
             </div>
 
@@ -251,12 +265,12 @@ export default function ResourcesPage() {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
               >
                 <option value="all">All Levels</option>
-                <option value="100L">100 Level</option>
-                <option value="200L">200 Level</option>
-                <option value="300L">300 Level</option>
-                <option value="400L">400 Level</option>
-                <option value="500L">500 Level</option>
-                <option value="600L">600 Level</option>
+                <option value="100">100 Level</option>
+                <option value="200">200 Level</option>
+                <option value="300">300 Level</option>
+                <option value="400">400 Level</option>
+                <option value="500">500 Level</option>
+                <option value="600">600 Level</option>
               </select>
             </div>
           </div>
@@ -302,24 +316,34 @@ export default function ResourcesPage() {
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-green2/10 text-green2 rounded-xl flex items-center justify-center flex-shrink-0">
-                    {getCategoryIcon(material.category)}
+                    {getCategoryIcon(material.resourceType || material.category || "")}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 text-sm truncate">
                       {material.title}
                     </h3>
+                    {material.courseCode && (
+                      <p className="text-xs text-green2 font-medium mt-0.5">
+                        {material.courseCode}{material.courseTitle ? ` - ${material.courseTitle}` : ""}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                       {material.description || "No description available"}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                        {getCategoryLabel(material.category)}
+                        {getCategoryLabel(material.resourceType || material.category || "")}
                       </span>
                       <span className="px-2 py-1 bg-green2/10 text-green2 rounded text-xs">
                         {material.level === "all"
                           ? "All Levels"
-                          : material.level}
+                          : `${material.level}L`}
                       </span>
+                      {material.semester && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs">
+                          {material.semester} Sem
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
