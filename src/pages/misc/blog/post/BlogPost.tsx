@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFetchBlogPosts } from "../hooks/useFetchBlogPosts";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { PostContent } from "./PostContent";
 import { PopularPosts } from "./cards/Popular";
 import { RelatedPosts } from "./cards/Related";
@@ -14,6 +14,7 @@ import { useBlogComments } from "../hooks/useBlogComments";
 import PostSkeleton from "./skeleton/PostSkeleton";
 import Lottie from "lottie-react";
 import profileAnim from "../../../../json/animation/avatar1.json";
+import { IoArrowBack, IoShareSocial, IoLogoWhatsapp, IoLogoTwitter, IoLink, IoCheckmark } from "react-icons/io5";
 
 // Helper function to calculate read time
 const calculateReadTime = (contents: { type: string; content: string | unknown[] }[] | undefined): number => {
@@ -47,6 +48,47 @@ export default function BlogPost() {
 
   const readTime = useMemo(() => calculateReadTime(blogPost?.contents), [blogPost?.contents]);
 
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // Share functions
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const shareTitle = blogPost?.title || 'Check out this article';
+
+  const shareToWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`${shareTitle} - ${shareUrl}`)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const shareToTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
+    setShowShareMenu(false);
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => {
+        setLinkCopied(false);
+        setShowShareMenu(false);
+      }, 1500);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => {
+        setLinkCopied(false);
+        setShowShareMenu(false);
+      }, 1500);
+    }
+  };
+
   // Get unique categories from all blog posts
   const categories = useMemo(() => {
     if (!blogPosts) return [];
@@ -72,6 +114,15 @@ export default function BlogPost() {
     <div className="min-h-screen bg-white">
       <div className="box-width2">
         <div className="px-3 py-20 sm:px-10 lg:px-12 sm:py-24">
+          {/* Back to Blog Button */}
+          <Link
+            to="/blog"
+            className="inline-flex items-center gap-2 mb-4 text-sm font-medium text-gray-600 hover:text-green2 transition-colors group"
+          >
+            <IoArrowBack className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Blog
+          </Link>
+
           <div className="sticky grid md:grid-cols-5 gap-4">
             <div className="md:col-span-3">
               {blogPostLoading && (
@@ -82,19 +133,68 @@ export default function BlogPost() {
               {blogPostError && "Something went wrong!"}
               {!blogPostLoading && !blogPostError && blogPost && (
                 <div className="bg-white shadow rounded-lg p-4">
-                  {/* Category & Read Time */}
-                  <div className="flex items-center gap-3 mb-3">
-                    {(blogPost as { category?: string })?.category && (
-                      <span className="px-2 py-1 bg-green2/10 text-green2 text-xs font-medium rounded-full">
-                        {(blogPost as { category?: string }).category}
+                  {/* Category, Read Time & Share */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      {(blogPost as { category?: string })?.category && (
+                        <span className="px-2 py-1 bg-green2/10 text-green2 text-xs font-medium rounded-full">
+                          {(blogPost as { category?: string }).category}
+                        </span>
+                      )}
+                      <span className="text-gray-500 text-xs flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {readTime} min read
                       </span>
-                    )}
-                    <span className="text-gray-500 text-xs flex items-center gap-1">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {readTime} min read
-                    </span>
+                    </div>
+                    
+                    {/* Share Button */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowShareMenu(!showShareMenu)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-green2 hover:bg-green2/5 rounded-full transition-colors"
+                      >
+                        <IoShareSocial className="w-4 h-4" />
+                        Share
+                      </button>
+                      
+                      {/* Share Dropdown */}
+                      {showShareMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50">
+                          <button
+                            onClick={shareToWhatsApp}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <IoLogoWhatsapp className="w-5 h-5 text-green-500" />
+                            WhatsApp
+                          </button>
+                          <button
+                            onClick={shareToTwitter}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <IoLogoTwitter className="w-5 h-5 text-sky-500" />
+                            Twitter / X
+                          </button>
+                          <button
+                            onClick={copyLink}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            {linkCopied ? (
+                              <>
+                                <IoCheckmark className="w-5 h-5 text-green-500" />
+                                <span className="text-green-600">Link copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <IoLink className="w-5 h-5 text-gray-500" />
+                                Copy link
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <h1 className="text-lg sm:text-xl md:text-2xl font-semibold w-full">
