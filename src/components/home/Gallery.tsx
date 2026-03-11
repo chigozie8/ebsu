@@ -1,36 +1,60 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Lottie from "lottie-react";
 import gallery from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages } from "react-icons/io5";
+import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages, IoPlay, IoVideocam } from "react-icons/io5";
 
 // Dynamically import all images from the gallery folder
-// This allows unlimited images - just add new images to the folder!
 const imageModules = import.meta.glob("../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
 
+// Dynamically import all videos from the gallery folder
+const videoModules = import.meta.glob("../../assets/img/gallery/*.{mp4,webm,mov,avi,mkv}", {
+  eager: true,
+  import: "default",
+}) as Record<string, string>;
+
+interface MediaItem {
+  src: string;
+  alt: string;
+  type: "image" | "video";
+}
+
 // Filter out unsupported formats and create image array
-const allImages = Object.entries(imageModules)
+const imageItems: MediaItem[] = Object.entries(imageModules)
   .filter(([path]) => {
     // Skip .heif files as they're not widely supported in browsers
     const ext = path.split(".").pop()?.toLowerCase();
     return ext !== "heif";
   })
   .map(([path, src]) => {
-    // Extract filename without extension for alt text
     const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
-    // Convert filename to readable alt text (e.g., "front-gate" -> "Front Gate")
     const alt = filename
       .replace(/[-_]/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/IMG.*WA/i, "Campus")
       .replace(/\d+/g, "")
       .trim() || "Campus View";
-    return { src: src as string, alt };
+    return { src: src as string, alt, type: "image" as const };
   });
+
+// Create video array
+const videoItems: MediaItem[] = Object.entries(videoModules).map(([path, src]) => {
+  const filename = path.split("/").pop()?.split(".")[0] || "Campus Video";
+  const alt = filename
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/IMG.*WA/i, "Campus")
+    .replace(/\d+/g, "")
+    .trim() || "Campus Video";
+  return { src: src as string, alt, type: "video" as const };
+});
+
+// Combine images and videos (videos first for prominence, then images)
+const allMedia: MediaItem[] = [...videoItems, ...imageItems];
 
 const PREVIEW_COUNT = 8; // Number of images to show on home page
 
@@ -125,26 +149,77 @@ function GalleryImage({
   );
 }
 
+// Video thumbnail component
+function GalleryVideoThumbnail({
+  src,
+  alt,
+  onClick,
+  className = "",
+}: {
+  src: string;
+  alt: string;
+  onClick?: () => void;
+  className?: string;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  if (hasError) {
+    return (
+      <div className={`bg-gray-200 flex items-center justify-center ${className}`} onClick={onClick}>
+        <IoVideocam className="text-gray-400 text-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative cursor-pointer" onClick={onClick}>
+      {!isLoaded && (
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg ${className}`} />
+      )}
+      <video
+        ref={videoRef}
+        src={src}
+        muted
+        playsInline
+        preload="metadata"
+        onLoadedData={() => setIsLoaded(true)}
+        onError={() => setHasError(true)}
+        className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+      />
+      {/* Play icon overlay */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="bg-black/50 rounded-full p-3 backdrop-blur-sm">
+          <IoPlay className="text-white text-xl ml-0.5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Gallery() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20); // For infinite scroll in modal
 
-  const previewImages = allImages.slice(0, PREVIEW_COUNT);
+  const previewMedia = allMedia.slice(0, PREVIEW_COUNT);
+  const imageCount = imageItems.length;
+  const videoCount = videoItems.length;
 
-  // Load more images when scrolling in grid view
+  // Load more media when scrolling in grid view
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
     const bottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
-    if (bottom && visibleCount < allImages.length) {
-      setVisibleCount((prev) => Math.min(prev + 20, allImages.length));
+    if (bottom && visibleCount < allMedia.length) {
+      setVisibleCount((prev) => Math.min(prev + 20, allMedia.length));
     }
   }, [visibleCount]);
 
   const openModal = (index: number, mode: "lightbox" | "grid" = "grid") => {
-    setSelectedImageIndex(index);
+    setSelectedMediaIndex(index);
     setViewMode(mode);
     setIsModalOpen(true);
     setVisibleCount(20); // Reset visible count
@@ -157,13 +232,13 @@ export default function Gallery() {
     document.body.style.overflow = "unset";
   };
 
-  const navigateImage = useCallback(
+  const navigateMedia = useCallback(
     (newDirection: number) => {
       setDirection(newDirection);
-      setSelectedImageIndex((prev) => {
+      setSelectedMediaIndex((prev) => {
         const newIndex = prev + newDirection;
-        if (newIndex < 0) return allImages.length - 1;
-        if (newIndex >= allImages.length) return 0;
+        if (newIndex < 0) return allMedia.length - 1;
+        if (newIndex >= allMedia.length) return 0;
         return newIndex;
       });
     },
@@ -174,10 +249,10 @@ export default function Gallery() {
     (e: KeyboardEvent) => {
       if (!isModalOpen) return;
       if (e.key === "Escape") closeModal();
-      if (e.key === "ArrowLeft") navigateImage(-1);
-      if (e.key === "ArrowRight") navigateImage(1);
+      if (e.key === "ArrowLeft") navigateMedia(-1);
+      if (e.key === "ArrowRight") navigateMedia(1);
     },
-    [isModalOpen, navigateImage]
+    [isModalOpen, navigateMedia]
   );
 
   useEffect(() => {
@@ -193,7 +268,7 @@ export default function Gallery() {
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {previewImages.map((image, index) => (
+                  {previewMedia.map((media, index) => (
                     <motion.div
                       key={index}
                       variants={fadeInVariants1}
@@ -205,20 +280,29 @@ export default function Gallery() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <GalleryImage
-                        src={image.src}
-                        alt={image.alt}
-                        onClick={() => openModal(index, "lightbox")}
-                        loading="eager"
-                        className="w-full h-full object-cover cursor-pointer rounded-xl"
-                      />
+                      {media.type === "video" ? (
+                        <GalleryVideoThumbnail
+                          src={media.src}
+                          alt={media.alt}
+                          onClick={() => openModal(index, "lightbox")}
+                          className="w-full h-full object-cover cursor-pointer rounded-xl"
+                        />
+                      ) : (
+                        <GalleryImage
+                          src={media.src}
+                          alt={media.alt}
+                          onClick={() => openModal(index, "lightbox")}
+                          loading="eager"
+                          className="w-full h-full object-cover cursor-pointer rounded-xl"
+                        />
+                      )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 rounded-xl cursor-pointer" onClick={() => openModal(index, "lightbox")} />
                     </motion.div>
                   ))}
                 </div>
 
                 {/* View All Button */}
-                {allImages.length > PREVIEW_COUNT && (
+                {allMedia.length > PREVIEW_COUNT && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -239,7 +323,7 @@ export default function Gallery() {
                           <IoImages className="text-xl text-white group-hover:text-white" />
                         </span>
                         <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
-                          View All Photos
+                          View All Media
                         </span>
                         <span className="flex items-center justify-center ml-2 w-8 h-8 rounded-full bg-green1/10 group-hover:bg-white/20 transition-colors duration-300">
                           <IoChevronForward className="text-green1 group-hover:text-white transition-colors duration-300" />
@@ -292,7 +376,7 @@ export default function Gallery() {
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-4">
                 <h3 className="text-white font-medium">
-                  Gallery ({allImages.length} photos)
+                  Gallery ({imageCount} photos{videoCount > 0 ? `, ${videoCount} videos` : ""})
                 </h3>
                 <div className="flex gap-1">
                   <button
@@ -322,12 +406,12 @@ export default function Gallery() {
               /* Grid View with Infinite Scroll */
               <div className="flex-1 overflow-y-auto p-4" onScroll={handleScroll}>
                 <div className="max-w-7xl mx-auto">
-                  {/* Image count indicator */}
+                  {/* Media count indicator */}
                   <div className="text-white/60 text-sm mb-4 text-center">
-                    Showing {Math.min(visibleCount, allImages.length)} of {allImages.length} photos
+                    Showing {Math.min(visibleCount, allMedia.length)} of {allMedia.length} items ({imageCount} photos{videoCount > 0 ? `, ${videoCount} videos` : ""})
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {allImages.slice(0, visibleCount).map((image, index) => (
+                    {allMedia.slice(0, visibleCount).map((media, index) => (
                       <motion.div
                         key={index}
                         variants={gridItemVariants}
@@ -336,31 +420,45 @@ export default function Gallery() {
                         custom={index % 20} // Reset delay for each batch
                         className="relative group aspect-square overflow-hidden rounded-lg"
                       >
-                        <GalleryImage
-                          src={image.src}
-                          alt={image.alt}
-                          onClick={() => {
-                            setSelectedImageIndex(index);
-                            setViewMode("lightbox");
-                          }}
-                          className="w-full h-full object-cover cursor-pointer"
-                        />
-                        <div 
-                          className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 cursor-pointer flex items-center justify-center"
-                          onClick={() => {
-                            setSelectedImageIndex(index);
-                            setViewMode("lightbox");
-                          }}
-                        >
-                          <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                            View
-                          </span>
-                        </div>
+                        {media.type === "video" ? (
+                          <GalleryVideoThumbnail
+                            src={media.src}
+                            alt={media.alt}
+                            onClick={() => {
+                              setSelectedMediaIndex(index);
+                              setViewMode("lightbox");
+                            }}
+                            className="w-full h-full object-cover cursor-pointer"
+                          />
+                        ) : (
+                          <>
+                            <GalleryImage
+                              src={media.src}
+                              alt={media.alt}
+                              onClick={() => {
+                                setSelectedMediaIndex(index);
+                                setViewMode("lightbox");
+                              }}
+                              className="w-full h-full object-cover cursor-pointer"
+                            />
+                            <div 
+                              className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 cursor-pointer flex items-center justify-center"
+                              onClick={() => {
+                                setSelectedMediaIndex(index);
+                                setViewMode("lightbox");
+                              }}
+                            >
+                              <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
+                                View
+                              </span>
+                            </div>
+                          </>
+                        )}
                       </motion.div>
                     ))}
                   </div>
                   {/* Load more indicator */}
-                  {visibleCount < allImages.length && (
+                  {visibleCount < allMedia.length && (
                     <div className="text-center py-6">
                       <div className="inline-flex items-center gap-2 text-white/60 text-sm">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
@@ -375,46 +473,63 @@ export default function Gallery() {
               <div className="flex-1 flex items-center justify-center relative">
                 {/* Navigation Buttons */}
                 <button
-                  onClick={() => navigateImage(-1)}
+                  onClick={() => navigateMedia(-1)}
                   className="absolute left-2 sm:left-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
-                  aria-label="Previous image"
+                  aria-label="Previous media"
                 >
                   <IoChevronBack className="text-xl sm:text-2xl" />
                 </button>
 
                 <button
-                  onClick={() => navigateImage(1)}
+                  onClick={() => navigateMedia(1)}
                   className="absolute right-2 sm:right-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
-                  aria-label="Next image"
+                  aria-label="Next media"
                 >
                   <IoChevronForward className="text-xl sm:text-2xl" />
                 </button>
 
-                {/* Image */}
+                {/* Media (Image or Video) */}
                 <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
                   <AnimatePresence initial={false} custom={direction} mode="wait">
-                    <motion.img
-                      key={selectedImageIndex}
-                      src={allImages[selectedImageIndex]?.src}
-                      alt={allImages[selectedImageIndex]?.alt || "Gallery image"}
-                      variants={imageVariants}
-                      custom={direction}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={{ duration: 0.3 }}
-                      className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
-                    />
+                    {allMedia[selectedMediaIndex]?.type === "video" ? (
+                      <motion.video
+                        key={selectedMediaIndex}
+                        src={allMedia[selectedMediaIndex]?.src}
+                        variants={imageVariants}
+                        custom={direction}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.3 }}
+                        controls
+                        autoPlay
+                        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+                      />
+                    ) : (
+                      <motion.img
+                        key={selectedMediaIndex}
+                        src={allMedia[selectedMediaIndex]?.src}
+                        alt={allMedia[selectedMediaIndex]?.alt || "Gallery image"}
+                        variants={imageVariants}
+                        custom={direction}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.3 }}
+                        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+                      />
+                    )}
                   </AnimatePresence>
                 </div>
 
-                {/* Image Info & Counter */}
+                {/* Media Info & Counter */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
-                    {selectedImageIndex + 1} / {allImages.length}
+                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium flex items-center gap-2">
+                    {allMedia[selectedMediaIndex]?.type === "video" && <IoVideocam className="text-sm" />}
+                    {selectedMediaIndex + 1} / {allMedia.length}
                   </div>
                   <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/80 text-xs max-w-[200px] truncate">
-                    {allImages[selectedImageIndex]?.alt}
+                    {allMedia[selectedMediaIndex]?.alt}
                   </div>
                 </div>
 
@@ -429,26 +544,41 @@ export default function Gallery() {
 
                 {/* Thumbnail strip for quick navigation */}
                 <div className="absolute bottom-20 left-1/2 -translate-x-1/2 hidden md:flex gap-1 bg-black/40 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto">
-                  {allImages.slice(Math.max(0, selectedImageIndex - 4), Math.min(allImages.length, selectedImageIndex + 5)).map((image, i) => {
-                    const actualIndex = Math.max(0, selectedImageIndex - 4) + i;
+                  {allMedia.slice(Math.max(0, selectedMediaIndex - 4), Math.min(allMedia.length, selectedMediaIndex + 5)).map((media, i) => {
+                    const actualIndex = Math.max(0, selectedMediaIndex - 4) + i;
                     return (
                       <button
                         key={actualIndex}
                         onClick={() => {
-                          setDirection(actualIndex > selectedImageIndex ? 1 : -1);
-                          setSelectedImageIndex(actualIndex);
+                          setDirection(actualIndex > selectedMediaIndex ? 1 : -1);
+                          setSelectedMediaIndex(actualIndex);
                         }}
-                        className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all ${
-                          actualIndex === selectedImageIndex
+                        className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all relative ${
+                          actualIndex === selectedMediaIndex
                             ? "ring-2 ring-white scale-110"
                             : "opacity-60 hover:opacity-100"
                         }`}
                       >
-                        <img
-                          src={image.src}
-                          alt={image.alt}
-                          className="w-full h-full object-cover"
-                        />
+                        {media.type === "video" ? (
+                          <>
+                            <video
+                              src={media.src}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <IoPlay className="text-white text-xs" />
+                            </div>
+                          </>
+                        ) : (
+                          <img
+                            src={media.src}
+                            alt={media.alt}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </button>
                     );
                   })}
