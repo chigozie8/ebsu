@@ -100,7 +100,7 @@ export default function Footer() {
 
           <div className="flex mt-4 sm:justify-center sm:mt-0">
             <a
-              href="https://www.instagram.com/ebsumsa_national/"
+              href="https://www.instagram.com/ebsumsaofficial?igsh=Z2JxMGtpMTJkOXYx"
               className="text-white hover:text-white/80"
             >
               <InstagramIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 fill-white" />
