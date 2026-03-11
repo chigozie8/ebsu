@@ -260,9 +260,16 @@ export default function Blog() {
                           </div>
                           <div className="p-4 flex-1 flex flex-col">
                             {post.category && (
-                              <span className="inline-block self-start mb-1 px-2 py-0.5 bg-green2/10 text-green2 text-xs font-medium rounded-full">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setSelectedCategory(post.category || null);
+                                }}
+                                className="inline-block self-start mb-1 px-2 py-0.5 bg-green2/10 text-green2 text-xs font-medium rounded-full hover:bg-green2 hover:text-white transition-colors"
+                              >
                                 {post.category}
-                              </span>
+                              </button>
                             )}
                             {(post as { tags?: string[] }).tags && (post as { tags?: string[] }).tags!.length > 0 && (
                               <div className="mb-1">
