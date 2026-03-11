@@ -26,7 +26,6 @@ interface TeamMember {
   department: string;
   level: string;
   role: string;
-  role2?: string;
   email: string;
   portfolio: string;
   github: string;
@@ -48,7 +47,6 @@ const teamMembers: TeamMember[] = [
     department: "Medicine and Surgery",
     level: "600 Level",
     role: "Senior Software Engineer",
-    role2: "Team Lead",
     email: "kenronkwo@gmail.com",
     portfolio: "", // commented out
     github: "https://github.com/kenchigozie23",
@@ -150,12 +148,6 @@ const TeamCard = ({ member, index }: TeamCardProps) => (
           className="w-[17px] ss:w-[20px] -mb-1 inline-block"
         />{" "}
         {member.role}
-        {member.role2 && (
-          <>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-600 mx-3 align-middle"></span>
-            {member.role2}
-          </>
-        )}
       </motion.p>
 
       <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 pb-12 sm:pb-8">
