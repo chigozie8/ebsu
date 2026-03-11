@@ -114,6 +114,24 @@ interface CourseOutlineEntry {
   updatedAt?: any;
 }
 
+interface ProjectEntry {
+  id: string;
+  no: number;
+  title: string;
+  description: string;
+  category: "voluntary" | "who" | "personal" | "research" | "community";
+  date: string;
+  endDate?: string;
+  collaborators: string[];
+  image?: string;
+  link?: string;
+  tags: string[];
+  featured: boolean;
+  status: "ongoing" | "completed" | "upcoming";
+  createdAt: any;
+  updatedAt?: any;
+}
+
 // Admin email - add your admin email here
 const ADMIN_EMAIL = "patronkwo@gmail.com";
 
@@ -122,16 +140,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "courses", "levels", "outlines"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "courses" | "levels" | "outlines";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "courses" | "levels" | "outlines">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines">(
     getInitialTab()
   );
   
@@ -141,6 +159,7 @@ export default function AdminDashboard() {
   const [courses, setCourses] = useState<CourseEntry[]>([]);
   const [levels, setLevels] = useState<LevelEntry[]>([]);
   const [courseOutlines, setCourseOutlines] = useState<CourseOutlineEntry[]>([]);
+  const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -209,6 +228,26 @@ export default function AdminDashboard() {
   ]);
   const [editingOutlineId, setEditingOutlineId] = useState<string | null>(null);
   
+  // Project form state
+  const [projectFormData, setProjectFormData] = useState({
+    title: "",
+    description: "",
+    category: "" as "" | "voluntary" | "who" | "personal" | "research" | "community",
+    date: "",
+    endDate: "",
+    link: "",
+    status: "ongoing" as "ongoing" | "completed" | "upcoming",
+    featured: false,
+  });
+  const [projectCollaborators, setProjectCollaborators] = useState<string[]>([]);
+  const [projectTags, setProjectTags] = useState<string[]>([]);
+  const [projectImage, setProjectImage] = useState<File | null>(null);
+  const [projectImagePreview, setProjectImagePreview] = useState<string>("");
+  const projectImageRef = useRef<HTMLInputElement>(null);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [newCollaborator, setNewCollaborator] = useState("");
+  const [newTag, setNewTag] = useState("");
+  
   // Course Outline filters and UI state
   const [outlineSearchQuery, setOutlineSearchQuery] = useState("");
   const [outlineLevelFilter, setOutlineLevelFilter] = useState("");
@@ -226,6 +265,7 @@ export default function AdminDashboard() {
       fetchMaterials();
       fetchIDCards();
       fetchBlogPosts();
+      fetchProjects();
       fetchCourses();
       fetchLevels();
       fetchCourseOutlines();
@@ -280,11 +320,28 @@ export default function AdminDashboard() {
         ...doc.data(),
       })) as BlogPost[];
       setBlogPosts(postsData);
-    } catch (error) {
+} catch (error) {
       console.error("Error fetching blog posts:", error);
     }
   };
-
+  
+  const fetchProjects = async () => {
+    try {
+      const q = query(
+        collection(db, "projects"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const projectsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as ProjectEntry[];
+      setProjects(projectsData);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
+  
   const fetchCourses = async () => {
     try {
       const q = query(
@@ -1055,6 +1112,187 @@ export default function AdminDashboard() {
     return stats;
   };
 
+  // Project handlers
+  const handleProjectInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    if (type === "checkbox") {
+      setProjectFormData(prev => ({
+        ...prev,
+        [name]: (e.target as HTMLInputElement).checked,
+      }));
+    } else {
+      setProjectFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleProjectImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProjectImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProjectImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addCollaborator = () => {
+    if (newCollaborator.trim() && !projectCollaborators.includes(newCollaborator.trim())) {
+      setProjectCollaborators([...projectCollaborators, newCollaborator.trim()]);
+      setNewCollaborator("");
+    }
+  };
+
+  const removeCollaborator = (index: number) => {
+    setProjectCollaborators(projectCollaborators.filter((_, i) => i !== index));
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !projectTags.includes(newTag.trim())) {
+      setProjectTags([...projectTags, newTag.trim()]);
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (index: number) => {
+    setProjectTags(projectTags.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!projectFormData.title || !projectFormData.description || !projectFormData.category) {
+      notifyUser("error", "Please fill in all required fields");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      let imageUrl = "";
+      if (projectImage) {
+        const fileName = `projects/${Date.now()}_${projectImage.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+          .upload(fileName, projectImage);
+
+        if (uploadError) throw uploadError;
+
+        imageUrl = getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, fileName);
+      }
+
+      // Get next project number
+      const existingNos = projects.map(p => p.no || 0);
+      const maxNo = existingNos.length > 0 ? Math.max(...existingNos) : 0;
+      const nextNo = editingProjectId
+        ? projects.find(p => p.id === editingProjectId)?.no || maxNo + 1
+        : maxNo + 1;
+
+      // Keep existing image if no new one provided
+      let finalImageUrl = imageUrl;
+      if (!imageUrl && editingProjectId) {
+        const existingProject = projects.find(p => p.id === editingProjectId);
+        if (existingProject) {
+          finalImageUrl = existingProject.image || "";
+        }
+      }
+
+      const projectData = {
+        no: nextNo,
+        title: projectFormData.title,
+        description: projectFormData.description,
+        category: projectFormData.category,
+        date: projectFormData.date,
+        endDate: projectFormData.endDate || null,
+        collaborators: projectCollaborators,
+        tags: projectTags,
+        image: finalImageUrl,
+        link: projectFormData.link || null,
+        featured: projectFormData.featured,
+        status: projectFormData.status,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingProjectId) {
+        await updateDoc(doc(db, "projects", editingProjectId), projectData);
+        notifyUser("success", "Project updated successfully!");
+      } else {
+        await addDoc(collection(db, "projects"), {
+          ...projectData,
+          createdAt: serverTimestamp(),
+        });
+        notifyUser("success", "Project created successfully!");
+      }
+
+      // Reset form
+      setProjectFormData({
+        title: "",
+        description: "",
+        category: "",
+        date: "",
+        endDate: "",
+        link: "",
+        status: "ongoing",
+        featured: false,
+      });
+      setProjectCollaborators([]);
+      setProjectTags([]);
+      setProjectImage(null);
+      setProjectImagePreview("");
+      setEditingProjectId(null);
+      fetchProjects();
+    } catch (error) {
+      console.error("Error saving project:", error);
+      notifyUser("error", "Failed to save project");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleEditProject = (project: ProjectEntry) => {
+    setProjectFormData({
+      title: project.title,
+      description: project.description,
+      category: project.category,
+      date: project.date,
+      endDate: project.endDate || "",
+      link: project.link || "",
+      status: project.status,
+      featured: project.featured,
+    });
+    setProjectCollaborators(project.collaborators || []);
+    setProjectTags(project.tags || []);
+    setProjectImagePreview(project.image || "");
+    setEditingProjectId(project.id);
+    setActiveTab("projects");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+
+    try {
+      await deleteDoc(doc(db, "projects", projectId));
+      notifyUser("success", "Project deleted successfully");
+      fetchProjects();
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      notifyUser("error", "Failed to delete project");
+    }
+  };
+
+  const categoryConfig = {
+    voluntary: { label: "Voluntary", color: "bg-blue-100 text-blue-800" },
+    who: { label: "WHO Project", color: "bg-green-100 text-green-800" },
+    personal: { label: "Personal", color: "bg-purple-100 text-purple-800" },
+    research: { label: "Research", color: "bg-orange-100 text-orange-800" },
+    community: { label: "Community", color: "bg-teal-100 text-teal-800" },
+  };
+
   const printIDCard = (card: IDCardRegistration) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
@@ -1209,10 +1447,20 @@ export default function AdminDashboard() {
                 : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-            Blog Posts
-          </button>
-          <button
-            onClick={() => setActiveTab("courses")}
+Blog Posts
+                </button>
+                <button
+                  onClick={() => setActiveTab("projects")}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                    activeTab === "projects"
+                      ? "bg-green2 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Projects
+                </button>
+                <button
+                  onClick={() => setActiveTab("courses")}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
               activeTab === "courses"
                 ? "bg-green2 text-white"
@@ -2024,8 +2272,389 @@ export default function AdminDashboard() {
               )}
             </motion.div>
           </div>
-        )}
+)}
 
+        {/* Projects Tab */}
+        {activeTab === "projects" && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Project Form */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={3}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                {editingProjectId ? "Edit Project" : "Create Project"}
+              </h2>
+              <form onSubmit={handleSubmitProject} className="space-y-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={projectFormData.title}
+                    onChange={handleProjectInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                    placeholder="Enter project title"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={projectFormData.description}
+                    onChange={handleProjectInputChange}
+                    rows={4}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none resize-none"
+                    placeholder="Describe the project in detail..."
+                  />
+                </div>
+
+                {/* Category & Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Category *
+                    </label>
+                    <select
+                      name="category"
+                      value={projectFormData.category}
+                      onChange={handleProjectInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                    >
+                      <option value="">Select Category</option>
+                      <option value="voluntary">Voluntary</option>
+                      <option value="who">WHO Project</option>
+                      <option value="personal">Personal</option>
+                      <option value="research">Research</option>
+                      <option value="community">Community</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      name="status"
+                      value={projectFormData.status}
+                      onChange={handleProjectInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                    >
+                      <option value="ongoing">Ongoing</option>
+                      <option value="completed">Completed</option>
+                      <option value="upcoming">Upcoming</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="text"
+                      name="date"
+                      value={projectFormData.date}
+                      onChange={handleProjectInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                      placeholder="e.g., February 2026"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="endDate"
+                      value={projectFormData.endDate}
+                      onChange={handleProjectInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                      placeholder="e.g., March 2026"
+                    />
+                  </div>
+                </div>
+
+                {/* Link */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    External Link (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    name="link"
+                    value={projectFormData.link}
+                    onChange={handleProjectInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                    placeholder="https://..."
+                  />
+                </div>
+
+                {/* Collaborators */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Collaborators
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCollaborator}
+                      onChange={(e) => setNewCollaborator(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCollaborator())}
+                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                      placeholder="Add collaborator"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCollaborator}
+                      className="px-4 py-2 bg-green2 text-white rounded-lg hover:bg-green1 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {projectCollaborators.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {projectCollaborators.map((collab, index) => (
+                        <span key={index} className="px-3 py-1 bg-gray-100 rounded-full text-sm flex items-center gap-2">
+                          {collab}
+                          <button
+                            type="button"
+                            onClick={() => removeCollaborator(index)}
+                            className="text-gray-500 hover:text-red-500"
+                          >
+                            x
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tags
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none"
+                      placeholder="Add tag"
+                    />
+                    <button
+                      type="button"
+                      onClick={addTag}
+                      className="px-4 py-2 bg-green2 text-white rounded-lg hover:bg-green1 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {projectTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {projectTags.map((tag, index) => (
+                        <span key={index} className="px-3 py-1 bg-green2/10 text-green2 rounded-full text-sm flex items-center gap-2">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(index)}
+                            className="text-green2 hover:text-red-500"
+                          >
+                            x
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Project Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Project Image (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    ref={projectImageRef}
+                    accept="image/*"
+                    onChange={handleProjectImageChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => projectImageRef.current?.click()}
+                    className="w-full p-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green2 transition-colors"
+                  >
+                    {projectImagePreview ? (
+                      <img src={projectImagePreview} alt="Preview" className="h-32 w-full object-cover rounded-lg" />
+                    ) : (
+                      <span className="text-gray-500">Click to upload image</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Featured Toggle */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    name="featured"
+                    id="featured"
+                    checked={projectFormData.featured}
+                    onChange={handleProjectInputChange}
+                    className="w-5 h-5 text-green2 rounded focus:ring-green2"
+                  />
+                  <label htmlFor="featured" className="text-sm font-medium text-gray-700">
+                    Mark as Featured Project
+                  </label>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="flex-1 bg-green2 text-white py-3 rounded-lg font-medium hover:bg-green1 transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Spinner className="w-5 h-5" />
+                        Saving...
+                      </span>
+                    ) : editingProjectId ? (
+                      "Update Project"
+                    ) : (
+                      "Create Project"
+                    )}
+                  </button>
+                  {editingProjectId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProjectId(null);
+                        setProjectFormData({
+                          title: "",
+                          description: "",
+                          category: "",
+                          date: "",
+                          endDate: "",
+                          link: "",
+                          status: "ongoing",
+                          featured: false,
+                        });
+                        setProjectCollaborators([]);
+                        setProjectTags([]);
+                        setProjectImage(null);
+                        setProjectImagePreview("");
+                      }}
+                      className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </motion.div>
+
+            {/* Projects List */}
+            <motion.div
+              variants={fadeInVariants5}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              custom={5}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                Projects ({projects.length})
+              </h2>
+              {projects.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  <p>No projects yet.</p>
+                  <p className="text-sm mt-2">Create your first project using the form.</p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[700px] overflow-y-auto">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              categoryConfig[project.category]?.color || "bg-gray-100 text-gray-800"
+                            }`}>
+                              {categoryConfig[project.category]?.label || project.category}
+                            </span>
+                            {project.featured && (
+                              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                                Featured
+                              </span>
+                            )}
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              project.status === "ongoing" ? "bg-blue-100 text-blue-800" :
+                              project.status === "completed" ? "bg-green-100 text-green-800" :
+                              "bg-orange-100 text-orange-800"
+                            }`}>
+                              {project.status}
+                            </span>
+                          </div>
+                          <h3 className="font-semibold text-gray-900 line-clamp-1">
+                            {project.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                            {project.description}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {project.date}
+                            {project.endDate && ` - ${project.endDate}`}
+                          </p>
+                        </div>
+                        {project.image && (
+                          <img
+                            src={project.image}
+                            alt={project.title}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                          />
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={() => handleEditProject(project)}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(project.id)}
+                          className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+        
         {/* Courses Tab */}
         {activeTab === "courses" && (
           <div className="grid lg:grid-cols-3 gap-6">
