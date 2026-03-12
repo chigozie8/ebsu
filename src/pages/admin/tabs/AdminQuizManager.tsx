@@ -94,8 +94,14 @@ export const AdminQuizManager = () => {
       }
       
       console.log('[v0] Error message extracted:', errorMsg);
-      setDbError(`Failed to load quizzes: ${errorMsg}`);
-      toast.error(`Failed to load quizzes: ${errorMsg}`);
+      
+      // Check if it's a table not found error
+      if (errorMsg.includes('does not exist') || errorMsg.includes('not found') || errorMsg.includes('schema cache')) {
+        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
+      } else {
+        setDbError(`Failed to load quizzes: ${errorMsg}`);
+        toast.error(`Failed to load quizzes: ${errorMsg}`);
+      }
     } finally {
       setLoading(false);
     }
