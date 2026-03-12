@@ -242,7 +242,7 @@ const CommunityPage: React.FC = () => {
                         isOwn={message.user_id === userId}
                         onDelete={() => deleteMessage(message.id)}
                         onEdit={(id, text) => editMessage(id, text)}
-                        userId={userId}
+                        isAdmin={message.user_id === userId}
                       />
                     </div>
                   ))}
@@ -260,8 +260,8 @@ const CommunityPage: React.FC = () => {
                       isOwn={message.user_id === userId}
                       onDelete={() => deleteMessage(message.id)}
                       onEdit={(id, text) => editMessage(id, text)}
-                      userId={userId}
                       onThreadClick={setSelectedThreadId}
+                      isAdmin={message.user_id === userId}
                     />
                   </div>
                 ))}
