@@ -2167,8 +2167,12 @@ Blog Posts
                               >
                                 Delete
                               </button>
-            </div>
-          </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </div>
       )}
 
       {/* Projects Tab */}
