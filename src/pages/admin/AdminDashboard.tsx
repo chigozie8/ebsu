@@ -2171,19 +2171,6 @@ Blog Posts
           </div>
       )}
 
-      {/* Community Management Tab */}
-      {activeTab === "community" && (
-        <CommunityMonitor />
-      )}
-
-      {/* Community Analytics Tab */}
-      {activeTab === "community-analytics" && (
-        <CommunityAnalytics />
-      )}
-    </div>
-  );
-}
-
                 {/* Submit Button */}
                 <div className="flex gap-2 pt-4">
                   <button
@@ -3753,11 +3740,15 @@ Blog Posts
         <CommunityMonitor />
       )}
 
+      {/* Community Management Tab */}
+      {activeTab === "community" && (
+        <CommunityMonitor />
+      )}
+
       {/* Community Analytics Tab */}
       {activeTab === "community-analytics" && (
         <CommunityAnalytics />
       )}
-      </div>
     </div>
   );
 }
