@@ -26,10 +26,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
   const { reactions } = useReactions(message.id);
-  const { addReaction } = useAddReaction();
   const { togglePin } = usePinMessage();
-
-  const THUMBS_UP_EMOJI = '👍🏼';
 
   const topicColors: Record<string, string> = {
     'General': 'bg-purple-100 text-purple-700',
@@ -57,9 +54,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   };
 
-  const handleReaction = async () => {
-    if (!userId) return;
-    await addReaction(message.id, userId, THUMBS_UP_EMOJI);
+  const handleEditMessage = async () => {
+    await onEdit(message.id, editText);
+    setEditing(false);
   };
 
   // Calculate thumbs up count and if user has reacted
@@ -178,20 +175,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
             {/* Reactions and Actions Section */}
             <div className="mt-3 flex items-center gap-2">
-              {/* Thumbs Up Button - Facebook Style */}
-              <button
-                onClick={handleReaction}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all font-medium ${
-                  userHasLiked
-                    ? 'bg-blue-100 text-blue-600 border border-blue-300'
-                    : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                }`}
-                title="Like"
-              >
-                <span className="text-lg">{THUMBS_UP_EMOJI}</span>
-                {thumbsUpCount > 0 && <span className="text-sm font-semibold">{thumbsUpCount}</span>}
-              </button>
-              
               {/* View Thread Button */}
               {onThreadClick && (
                 <button
