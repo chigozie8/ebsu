@@ -33,7 +33,7 @@ const CommunityPage: React.FC = () => {
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
-  // Fetch user likes for messages
+  // Fetch user likes for messages and subscribe to changes
   useEffect(() => {
     const fetchLikes = async () => {
       if (!userId || userId === 'anonymous') return;
@@ -82,6 +82,28 @@ const CommunityPage: React.FC = () => {
       channel.unsubscribe();
     };
   }, [userId]);
+
+  // Subscribe to message updates (for like count changes)
+  useEffect(() => {
+    const channel = supabase
+      .channel('community_messages_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'community_messages',
+        },
+        (payload) => {
+          // Message was updated (likes_count changed), the component will re-render with new data from the hook
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, []);
 
   const filteredMessages = messages.filter((msg) =>
     msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
