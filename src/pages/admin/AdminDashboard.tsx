@@ -2169,17 +2169,17 @@ Blog Posts
                               </button>
             </div>
           </div>
-        )}
+      )}
 
-        {/* Community Management Tab */}
-        {activeTab === "community" && (
-          <CommunityMonitor />
-        )}
+      {/* Community Management Tab */}
+      {activeTab === "community" && (
+        <CommunityMonitor />
+      )}
 
-        {/* Community Analytics Tab */}
-        {activeTab === "community-analytics" && (
-          <CommunityAnalytics />
-        )}
+      {/* Community Analytics Tab */}
+      {activeTab === "community-analytics" && (
+        <CommunityAnalytics />
+      )}
       </div>
     </div>
   );
