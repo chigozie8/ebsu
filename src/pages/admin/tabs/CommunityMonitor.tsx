@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { supabase, Community, CommunityReport } from '../../../lib/supabase';
-import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2, Send, Check } from 'lucide-react';
+import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2, Send, Check, Pin } from 'lucide-react';
 
 interface ExtendedMessage extends Community {
   report_count?: number;
@@ -19,6 +19,10 @@ const CommunityMonitor: React.FC = () => {
   const [editText, setEditText] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [posting, setPosting] = useState(false);
+  const [showGuidelinesTab, setShowGuidelinesTab] = useState(false);
+  const [guidelines, setGuidelines] = useState<Array<{ id: string; content: string; created_at: string }>>([]);
+  const [newGuideline, setNewGuideline] = useState('');
+  const [postingGuideline, setPostingGuideline] = useState(false);
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalReports: 0,
@@ -75,8 +79,17 @@ const CommunityMonitor: React.FC = () => {
 
       if (reportErr) throw reportErr;
 
+      // Fetch guidelines
+      const { data: guidelineData, error: guidelineErr } = await supabase
+        .from('community_guidelines')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (guidelineErr) throw guidelineErr;
+
       setMessages((msgData || []) as ExtendedMessage[]);
       setReports(reportData || []);
+      setGuidelines(guidelineData || []);
 
       // Calculate stats
       const uniqueUsers = new Set((msgData || []).map((msg: any) => msg.user_id));
@@ -89,6 +102,53 @@ const CommunityMonitor: React.FC = () => {
       console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddGuideline = async () => {
+    if (!newGuideline.trim()) return;
+
+    setPostingGuideline(true);
+    try {
+      const { error } = await supabase.from('community_guidelines').insert([
+        {
+          content: newGuideline,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+      if (error) throw error;
+
+      setNewGuideline('');
+      setGuidelines((prev) => [
+        { id: Date.now().toString(), content: newGuideline, created_at: new Date().toISOString() },
+        ...prev,
+      ]);
+      toast.success('Guideline added!');
+    } catch (err) {
+      console.error('Failed to add guideline:', err);
+      toast.error('Failed to add guideline');
+    } finally {
+      setPostingGuideline(false);
+    }
+  };
+
+  const handleDeleteGuideline = async (guidelineId: string) => {
+    if (!window.confirm('Delete this guideline?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('community_guidelines')
+        .delete()
+        .eq('id', guidelineId);
+
+      if (error) throw error;
+
+      setGuidelines((prev) => prev.filter((g) => g.id !== guidelineId));
+      toast.success('Guideline deleted!');
+    } catch (err) {
+      console.error('Failed to delete guideline:', err);
+      toast.error('Failed to delete guideline');
     }
   };
 
@@ -146,6 +206,31 @@ const CommunityMonitor: React.FC = () => {
     }
   };
 
+  const handlePinMessage = async (messageId: string, currentPinnedState: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('community_messages')
+        .update({ is_pinned: !currentPinnedState })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, is_pinned: !currentPinnedState } : msg
+        )
+      );
+
+      toast.success(!currentPinnedState ? 'Message pinned!' : 'Message unpinned!', {
+        duration: 2000,
+        position: 'top-right',
+      });
+    } catch (err) {
+      console.error('Failed to pin message:', err);
+      toast.error('Failed to update pin status');
+    }
+  };
+
   const handlePostAdminMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -162,6 +247,7 @@ const CommunityMonitor: React.FC = () => {
           updated_at: new Date().toISOString(),
           is_edited: false,
           is_deleted: false,
+          is_pinned: false,
         },
       ]);
 
@@ -211,30 +297,107 @@ const CommunityMonitor: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Admin Message Composer */}
-      <div className="bg-white rounded-xl p-6 border-2 border-teal-200 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Post Admin Message</h3>
-        <div className="space-y-3">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Write an admin announcement or message..."
-            className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-            rows={3}
-          />
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500">Posting as: <span className="font-semibold text-teal-600">Admin</span></p>
-            <button
-              onClick={handlePostAdminMessage}
-              disabled={posting || !newMessage.trim()}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            >
-              <Send className="w-4 h-4" />
-              Post Message
-            </button>
-          </div>
-        </div>
+      {/* Tab Buttons */}
+      <div className="flex gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setShowGuidelinesTab(false)}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            !showGuidelinesTab
+              ? 'border-teal-500 text-teal-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Messages & Reports
+        </button>
+        <button
+          onClick={() => setShowGuidelinesTab(true)}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            showGuidelinesTab
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Community Guidelines
+        </button>
       </div>
+
+      {!showGuidelinesTab ? (
+        <>
+          {/* Admin Message Composer */}
+          <div className="bg-white rounded-xl p-6 border-2 border-teal-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Post Admin Message</h3>
+            <div className="space-y-3">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Write an admin announcement or message..."
+                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                rows={3}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Posting as: <span className="font-semibold text-teal-600">Admin</span></p>
+                <button
+                  onClick={handlePostAdminMessage}
+                  disabled={posting || !newMessage.trim()}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <Send className="w-4 h-4" />
+                  Post Message
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats */}
+        </>
+      ) : (
+        <>
+          {/* Guidelines Management */}
+          <div className="bg-white rounded-xl p-6 border-2 border-blue-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Manage Community Guidelines</h3>
+            <div className="space-y-3">
+              <textarea
+                value={newGuideline}
+                onChange={(e) => setNewGuideline(e.target.value)}
+                placeholder="Add a new community guideline..."
+                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                rows={2}
+              />
+              <button
+                onClick={handleAddGuideline}
+                disabled={postingGuideline || !newGuideline.trim()}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <Check className="w-4 h-4" />
+                Add Guideline
+              </button>
+            </div>
+          </div>
+
+          {/* Current Guidelines */}
+          {guidelines.length > 0 && (
+            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Guidelines</h3>
+              <div className="space-y-3">
+                {guidelines.map((guideline, index) => (
+                  <div key={guideline.id} className="flex items-start justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-sm mb-1">#{index + 1}</p>
+                      <p className="text-gray-700 text-sm">{guideline.content}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteGuideline(guideline.id)}
+                      className="ml-3 text-rose-600 hover:text-rose-700 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -393,7 +556,7 @@ const CommunityMonitor: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 flex-wrap">
                       <button
                         onClick={() => {
                           setEditingId(msg.id);
@@ -403,6 +566,17 @@ const CommunityMonitor: React.FC = () => {
                       >
                         <Edit2 className="w-4 h-4" />
                         Edit
+                      </button>
+                      <button
+                        onClick={() => handlePinMessage(msg.id, msg.is_pinned || false)}
+                        className={`flex items-center gap-1 text-sm transition-colors ${
+                          msg.is_pinned
+                            ? 'text-amber-600 hover:text-amber-700'
+                            : 'text-gray-600 hover:text-amber-600'
+                        }`}
+                      >
+                        <Pin className="w-4 h-4" />
+                        {msg.is_pinned ? 'Unpin' : 'Pin'}
                       </button>
                       <button
                         onClick={() => setSelectedMessage(msg)}
