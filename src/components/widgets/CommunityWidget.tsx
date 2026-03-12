@@ -7,7 +7,6 @@ const CommunityWidget: React.FC = () => {
 
   let messages: any[] = [];
   let loading = false;
-  let error = false;
 
   const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
   messages = result?.messages || [];
