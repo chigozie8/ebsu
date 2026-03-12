@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
@@ -13,12 +14,13 @@ const CommunityPage: React.FC = () => {
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
 
-  // Get current user from localStorage
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  const userId = user?.id || 'anonymous';
-  const userName = user?.displayName || user?.name || 'Anonymous';
-  const userAvatar = user?.photoURL || user?.avatar || undefined;
+  // Get current user from useGetUserInfo hook
+  const { studentDetails } = useGetUserInfo();
+  const userId = studentDetails?.userID || 'anonymous';
+  const userName = studentDetails?.firstName && studentDetails?.lastName 
+    ? `${studentDetails.firstName} ${studentDetails.lastName}` 
+    : 'Student User';
+  const userAvatar = studentDetails?.profileImageURL || undefined;
 
   const { messages, loading } = useCommunityMessages(topic === 'All' ? undefined : topic);
   const { postMessage, posting } = usePostMessage();
