@@ -485,6 +485,90 @@ export default function Dashboard() {
                       )}
                     </div>
                   </div>
+                  </div>
+
+                  {/* Featured Section - Quick Stats */}
+                  <div className="mt-6 sm:mt-8">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Your Learning Progress</h2>
+                    <motion.div
+                      variants={fadeInVariants5}
+                      initial="initial"
+                      whileInView="animate"
+                      viewport={{
+                        once: true,
+                      }}
+                      custom={19}
+                      className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg p-4 sm:p-6 border border-teal-200"
+                    >
+                      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl sm:text-3xl font-bold text-teal-600">0</p>
+                          <p className="text-xss sm:text-sm text-gray-600 mt-1">Study Hours</p>
+                        </div>
+                        <div className="text-center border-l border-r border-teal-200">
+                          <p className="text-2xl sm:text-3xl font-bold text-emerald-600">0</p>
+                          <p className="text-xss sm:text-sm text-gray-600 mt-1">Courses</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl sm:text-3xl font-bold text-teal-600">0%</p>
+                          <p className="text-xss sm:text-sm text-gray-600 mt-1">Progress</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Recommended Section */}
+                  <div className="mt-6 sm:mt-8">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">Recommended For You</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <motion.div
+                        variants={fadeInVariants5}
+                        initial="initial"
+                        whileInView="animate"
+                        viewport={{
+                          once: true,
+                        }}
+                        custom={21}
+                        className="bg-white rounded-lg p-4 sm:p-5 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all"
+                      >
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="bg-blue-100 rounded-lg p-2 sm:p-3">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.669 0-3.218-.51-4.5-1.385A7.954 7.954 0 009 4.804z" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm sm:text-base text-gray-800">Introduction to Programming</h3>
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1">Perfect for beginners</p>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        variants={fadeInVariants5}
+                        initial="initial"
+                        whileInView="animate"
+                        viewport={{
+                          once: true,
+                        }}
+                        custom={23}
+                        className="bg-white rounded-lg p-4 sm:p-5 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all"
+                      >
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className="bg-purple-100 rounded-lg p-2 sm:p-3">
+                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v2a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm sm:text-base text-gray-800">Exam Prep Session</h3>
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1">Start preparing today</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2 mmd:gap-4">
                     {/* Recent Activities Section */}
                     <motion.div
