@@ -89,6 +89,9 @@ const AppRoutes = () => {
   const ExamPapersPage = lazy(
     () => import("../pages/user/exam-papers/ExamPapersPage")
   );
+  const StudentQuizDashboard = lazy(
+    () => import("../pages/user/quiz/StudentQuizDashboard")
+  );
 
   return (
     <>
@@ -217,6 +220,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <ExamPapersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/quiz"
+            element={
+              <ProtectedRoute>
+                <StudentQuizDashboard />
               </ProtectedRoute>
             }
           />
