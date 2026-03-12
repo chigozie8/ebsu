@@ -82,7 +82,7 @@ export const useQuizManagement = () => {
           description: quizData.description,
           course_id: quizData.courseId || null,
           total_questions: quizData.questions?.length || 0,
-          is_published: quizData.published,
+          is_published: true, // Always publish quizzes immediately
         }])
         .select();
 
