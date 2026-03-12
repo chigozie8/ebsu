@@ -114,6 +114,8 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [location, setLocation] = useState("Abakaliki");
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // EBSU is located in Abakaliki, Ebonyi State, Nigeria
   // Coordinates: 6.3249° N, 8.1137° E
@@ -157,6 +159,61 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
     const interval = setInterval(fetchWeather, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Calculate countdown to December 25
+  useEffect(() => {
+    const calculateCountdown = () => {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      let christmas = new Date(currentYear, 11, 25); // December 25
+      
+      // If Christmas has passed this year, target next year
+      if (now > christmas) {
+        christmas = new Date(currentYear + 1, 11, 25);
+      }
+      
+      const diff = christmas.getTime() - now.getTime();
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setCountdown({ days, hours, minutes, seconds });
+    };
+
+    calculateCountdown();
+    const timer = setInterval(calculateCountdown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format date
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  // Format time
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
 
   const weatherInfo = weather ? getWeatherInfo(weather.weatherCode, weather.isDay) : null;
 
@@ -221,6 +278,24 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
         </div>
       ) : weather && weatherInfo ? (
         <div className="p-2.5 xxss:p-3 sm:p-4">
+          {/* Date and Time */}
+          <div className="mb-2 xxss:mb-3 pb-2 xxss:pb-3 border-b border-white/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3 h-3 xxss:w-3.5 xxss:h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-xss xxss:text-xs font-medium">{formatDate(currentTime)}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1">
+              <svg className="w-3 h-3 xxss:w-3.5 xxss:h-3.5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm xxss:text-base sm:text-lg font-bold tracking-wide">{formatTime(currentTime)}</span>
+            </div>
+          </div>
+
           {/* Location */}
           <div className="flex items-center gap-1 mb-2 xxss:mb-3">
             <svg className="w-3 h-3 xxss:w-3.5 xxss:h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -260,6 +335,34 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
               <span className="text-sss xxss:text-xss">{weather.windSpeed} km/h</span>
+            </div>
+          </div>
+
+          {/* Christmas Countdown */}
+          <div className="mt-2 xxss:mt-3 pt-2 xxss:pt-3 border-t border-white/20">
+            <div className="flex items-center gap-1.5 mb-1.5 xxss:mb-2">
+              <svg className="w-3 h-3 xxss:w-3.5 xxss:h-3.5 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
+              </svg>
+              <span className="text-xss xxss:text-xs font-medium opacity-90">Christmas Countdown</span>
+            </div>
+            <div className="grid grid-cols-4 gap-1 xxss:gap-1.5">
+              <div className="bg-white/10 rounded-md xxss:rounded-lg p-1 xxss:p-1.5 text-center">
+                <p className="text-sm xxss:text-base sm:text-lg font-bold leading-none">{countdown.days}</p>
+                <p className="text-sss xxss:text-xss opacity-70 mt-0.5">days</p>
+              </div>
+              <div className="bg-white/10 rounded-md xxss:rounded-lg p-1 xxss:p-1.5 text-center">
+                <p className="text-sm xxss:text-base sm:text-lg font-bold leading-none">{countdown.hours}</p>
+                <p className="text-sss xxss:text-xss opacity-70 mt-0.5">hrs</p>
+              </div>
+              <div className="bg-white/10 rounded-md xxss:rounded-lg p-1 xxss:p-1.5 text-center">
+                <p className="text-sm xxss:text-base sm:text-lg font-bold leading-none">{countdown.minutes}</p>
+                <p className="text-sss xxss:text-xss opacity-70 mt-0.5">min</p>
+              </div>
+              <div className="bg-white/10 rounded-md xxss:rounded-lg p-1 xxss:p-1.5 text-center">
+                <p className="text-sm xxss:text-base sm:text-lg font-bold leading-none">{countdown.seconds}</p>
+                <p className="text-sss xxss:text-xss opacity-70 mt-0.5">sec</p>
+              </div>
             </div>
           </div>
         </div>
