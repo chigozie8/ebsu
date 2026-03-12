@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
-import { Send, Search, X, MessageSquare, ChevronDown } from 'lucide-react';
+import { Send, Search, X, MessageSquare } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {
@@ -12,7 +12,6 @@ const CommunityPage: React.FC = () => {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
-  const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set());
 
   // Get current user from localStorage
   const userStr = localStorage.getItem('user');
