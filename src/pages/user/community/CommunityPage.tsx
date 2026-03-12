@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
-import { Send, Search, MessageSquare } from 'lucide-react';
+import { Send, Search, MessageSquare, Heart, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {
@@ -116,20 +117,61 @@ const CommunityPage: React.FC = () => {
     try {
       await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar);
       setNewMessage('');
+      toast.success('Message posted successfully!', {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+          color: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+        icon: <Check className="w-5 h-5" />,
+      });
     } catch (err) {
       console.error('Failed to post message:', err);
+      toast.error('Failed to post message. Please try again.');
     }
   };
 
   const handleLike = async (messageId: string) => {
     try {
-      if (likedMessages.has(messageId)) {
-        await unlikeMessage(messageId, userId);
-      } else {
+      const isLiking = !likedMessages.has(messageId);
+      if (isLiking) {
         await likeMessage(messageId, userId);
+        toast.success('You liked this message!', {
+          duration: 2000,
+          position: 'bottom-right',
+          style: {
+            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            color: 'white',
+            borderRadius: '8px',
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+          icon: <Heart className="w-5 h-5 fill-current" />,
+        });
+      } else {
+        await unlikeMessage(messageId, userId);
+        toast.success('You unliked this message', {
+          duration: 2000,
+          position: 'bottom-right',
+          style: {
+            background: '#6b7280',
+            color: 'white',
+            borderRadius: '8px',
+            padding: '16px',
+            fontSize: '14px',
+            fontWeight: '500',
+          },
+        });
       }
     } catch (err) {
       console.error('Failed to toggle like:', err);
+      toast.error('Failed to update like. Please try again.');
     }
   };
 
@@ -140,8 +182,22 @@ const CommunityPage: React.FC = () => {
     try {
       await postReply(messageId, userId, userName, text, userAvatar);
       setReplyText({ ...replyText, [messageId]: '' });
+      toast.success('Reply posted successfully!', {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)',
+          color: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+        icon: <Check className="w-5 h-5" />,
+      });
     } catch (err) {
       console.error('Failed to post reply:', err);
+      toast.error('Failed to post reply. Please try again.');
     }
   };
 
