@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase, Community, CommunityReply, CommunityLike } from '../lib/supabase';
+import { supabase, Community, CommunityReply } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 export const useCommunityMessages = (topic?: string, limit: number = 20) => {
