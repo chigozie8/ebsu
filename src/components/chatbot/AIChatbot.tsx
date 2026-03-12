@@ -9,18 +9,20 @@ declare global {
       ai: {
         chat: (
           message: string | Array<{ role: string; content: string }>,
-          options?: {
+          imageOrOptions?: string | {
             model?: string;
             stream?: boolean;
             messages?: Array<{ role: string; content: any }>;
-            vision?: boolean;
-            image?: string;
+          },
+          options?: {
+            model?: string;
+            stream?: boolean;
           }
         ) => Promise<any>;
         txt2img: (
           prompt: string,
-          options?: { model?: string; testMode?: boolean }
-        ) => Promise<any>;
+          optionsOrTestMode?: boolean | { model?: string; testMode?: boolean }
+        ) => Promise<HTMLImageElement>;
       };
     };
   }
