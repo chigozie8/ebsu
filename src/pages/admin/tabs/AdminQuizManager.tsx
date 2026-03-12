@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
-import { AdminQuizBuilder } from '../../components/quiz/AdminQuizBuilder';
-import { PDFSummarizer } from '../../components/quiz/PDFSummarizer';
-import { supabase } from '../../lib/supabase';
+import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
+import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
+import { supabase } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface Course {
