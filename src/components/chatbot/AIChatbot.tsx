@@ -9,7 +9,16 @@ declare global {
       ai: {
         chat: (
           message: string | Array<{ role: string; content: string }>,
-          options?: { model?: string; stream?: boolean }
+          options?: {
+            model?: string;
+            stream?: boolean;
+            messages?: Array<{ role: string; content: any }>;
+            vision?: boolean;
+          }
+        ) => Promise<any>;
+        txt2img: (
+          prompt: string,
+          options?: { model?: string; testMode?: boolean }
         ) => Promise<any>;
       };
     };
