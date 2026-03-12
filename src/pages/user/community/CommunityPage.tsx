@@ -4,16 +4,14 @@ import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
-import { Send, Search, MessageSquare, Heart, Check } from 'lucide-react';
+import { Send, Search, MessageSquare, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {
   const [topic, setTopic] = useState<string>('All');
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   const [replyText, setReplyText] = useState<Record<string, string>>({});
-  const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
 
   // Get current user from useGetUserInfo hook
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
@@ -33,57 +31,7 @@ const CommunityPage: React.FC = () => {
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
-  // Fetch user likes for messages and subscribe to changes
-  useEffect(() => {
-    const fetchLikes = async () => {
-      if (!userId || userId === 'anonymous') return;
-
-      try {
-        const { data } = await supabase
-          .from('community_likes')
-          .select('message_id')
-          .eq('user_id', userId);
-
-        if (data) {
-          setLikedMessages(new Set(data.map((like) => like.message_id)));
-        }
-      } catch (err) {
-        console.error('Failed to fetch likes:', err);
-      }
-    };
-
-    fetchLikes();
-
-    const channel = supabase
-      .channel(`likes:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_likes',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setLikedMessages((prev) => new Set([...prev, payload.new.message_id]));
-          } else if (payload.eventType === 'DELETE') {
-            setLikedMessages((prev) => {
-              const next = new Set(prev);
-              next.delete(payload.old.message_id);
-              return next;
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [userId]);
-
-  // Subscribe to message updates (for like count changes)
+  // Subscribe to message updates
   useEffect(() => {
     const channel = supabase
       .channel('community_messages_changes')
