@@ -28,7 +28,6 @@ const StudentQuizDashboard = () => {
   const [stats, setStats] = useState<AttemptStats>({ totalAttempts: 0, averageScore: 0, bestScore: 0 });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQuizzes();
@@ -37,7 +36,6 @@ const StudentQuizDashboard = () => {
 
   const fetchQuizzes = async () => {
     setLoading(true);
-    setError(null);
     try {
       console.log('[v0] Fetching quizzes...');
       
@@ -49,7 +47,6 @@ const StudentQuizDashboard = () => {
       if (err) {
         console.error('[v0] Supabase error:', err.message);
         const errorMsg = err.message || 'Failed to load quizzes';
-        setError(errorMsg);
         toast.error(errorMsg);
         setQuizzes([]);
       } else {
@@ -58,16 +55,10 @@ const StudentQuizDashboard = () => {
         const publishedQuizzes = (data || []).filter(q => q.is_published === true);
         console.log('[v0] Published quizzes:', publishedQuizzes.length);
         setQuizzes(publishedQuizzes);
-        setError(null);
-        
-        if (publishedQuizzes.length === 0) {
-          toast.info('No quizzes available yet');
-        }
       }
     } catch (err) {
       console.error('[v0] Unexpected error:', err);
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(errorMsg);
       toast.error(errorMsg);
     } finally {
       setLoading(false);
