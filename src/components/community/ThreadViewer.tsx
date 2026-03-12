@@ -147,7 +147,7 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
                         {new Date(reply.created_at).toLocaleString()}
                       </p>
                     </div>
-                    <p className="text-gray-700 text-sm mt-1">{reply.reply_text}</p>
+                    <p className="text-gray-700 text-sm mt-1">{reply.reply}</p>
                   </div>
                 </div>
               </div>
