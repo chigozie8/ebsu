@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
 import { useNotifications } from "../../../hooks/notifications/useNotifications";
+import WeatherWidget from "../../../components/widgets/WeatherWidget";
 
 // Activity types with icons and colors
 interface Activity {
@@ -186,7 +187,7 @@ export default function Dashboard() {
           <div className="max-w-[1720px] w-full mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 lg:pr-12">
             <div className="pt-[70px] xxss:pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-4">
               <div className="grid lg:grid-cols-7 gap-3 sm:gap-4">
-                <div className="w-full lg:col-span-2 px-0 sm:px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-rows-2 lg:grid-cols-none gap-3 sm:gap-4 mb-4 lg:mb-0">
+                <div className="w-full lg:col-span-2 px-0 sm:px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-rows-3 lg:grid-cols-none gap-3 sm:gap-4 mb-4 lg:mb-0">
                   <motion.div
                     variants={fadeInVariants5}
                     initial="initial"
@@ -310,6 +311,10 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </motion.div>
+                  {/* Weather Widget */}
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <WeatherWidget customIndex={5} />
+                  </div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">
