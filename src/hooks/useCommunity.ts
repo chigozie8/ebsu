@@ -458,3 +458,30 @@ export const useAddReaction = () => {
 
   return { addReaction, adding, error };
 };
+
+export const usePinMessage = () => {
+  const [pinning, setPinning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const togglePin = useCallback(async (messageId: string, currentPinStatus: boolean) => {
+    try {
+      setPinning(true);
+      setError(null);
+      
+      const { error: err } = await supabase
+        .from('community_messages')
+        .update({ is_pinned: !currentPinStatus })
+        .eq('id', messageId);
+
+      if (err) throw err;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to pin message';
+      setError(errorMsg);
+      console.error('[v0] Pin error:', err);
+    } finally {
+      setPinning(false);
+    }
+  }, []);
+
+  return { togglePin, pinning, error };
+};

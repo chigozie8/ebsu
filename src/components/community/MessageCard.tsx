@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, MessageCircle } from 'lucide-react';
-import { useReactions, useAddReaction } from '../../hooks/useCommunity';
+import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin } from 'lucide-react';
+import { useReactions, useAddReaction, usePinMessage } from '../../hooks/useCommunity';
 
 interface MessageCardProps {
   message: Community;
@@ -10,6 +10,7 @@ interface MessageCardProps {
   onEdit: (messageId: string, newMessage: string) => void;
   userId?: string;
   onThreadClick?: (messageId: string) => void;
+  isAdmin?: boolean;
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -19,12 +20,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onEdit,
   userId,
   onThreadClick,
+  isAdmin = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
   const { reactions } = useReactions(message.id);
   const { addReaction } = useAddReaction();
+  const { togglePin } = usePinMessage();
 
   const THUMBS_UP_EMOJI = '👍🏼';
 
@@ -114,6 +117,18 @@ const MessageCard: React.FC<MessageCardProps> = ({
                           <Edit2 className="w-4 h-4" />
                           Edit
                         </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => {
+                              togglePin(message.id, message.is_pinned || false);
+                              setShowMenu(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2 border-b border-gray-200"
+                          >
+                            <Pin className="w-4 h-4" />
+                            {message.is_pinned ? 'Unpin' : 'Pin'}
+                          </button>
+                        )}
                         <button
                           onClick={() => {
                             onDelete(message.id);
