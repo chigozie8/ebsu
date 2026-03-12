@@ -80,6 +80,9 @@ const AppRoutes = () => {
   const ResourcesPage = lazy(
     () => import("../pages/user/resources/ResourcesPage")
   );
+  const AIAssistant = lazy(
+    () => import("../pages/user/ai-assistant/AIAssistant")
+  );
 
   return (
     <>
@@ -184,6 +187,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <ResourcesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/ai-assistant"
+            element={
+              <ProtectedRoute>
+                <AIAssistant />
               </ProtectedRoute>
             }
           />

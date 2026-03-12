@@ -418,14 +418,7 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
-                      <button
-                        onClick={() => {
-                          const chatButton = document.querySelector(
-                            '[class*="fixed bottom-6 right-6"]'
-                          ) as HTMLButtonElement;
-                          if (chatButton) chatButton.click();
-                        }}
-                      >
+                      <NavLink to="/u/ai-assistant">
                         <motion.div
                           variants={fadeInVariants5}
                           initial="initial"
@@ -444,7 +437,7 @@ export default function Dashboard() {
                             AI Assistant
                           </p>
                         </motion.div>
-                      </button>
+                      </NavLink>
                       {/* Admin Panel Link - Only visible to admin */}
                       {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
                         <NavLink to="/admin">
