@@ -167,30 +167,28 @@ const MessageCard: React.FC<MessageCardProps> = ({
             )}
 
             {/* Reactions and Actions Section */}
-            <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-              {/* Reactions Container */}
-              <div className="flex gap-2 items-center flex-shrink-0">
-                {reactionGroups.map((group) => (
-                  <button
-                    key={group.emoji}
-                    onClick={() => handleReaction(group.emoji)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                      group.userReacted
-                        ? 'bg-teal-100 text-teal-700 border border-teal-300'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span>{group.emoji}</span>
-                    <span className="text-xs font-medium">{group.count}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              {/* Reaction Buttons */}
+              {reactionGroups.map((group) => (
+                <button
+                  key={group.emoji}
+                  onClick={() => handleReaction(group.emoji)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors ${
+                    group.userReacted
+                      ? 'bg-teal-100 text-teal-700 border border-teal-300'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>{group.emoji}</span>
+                  <span className="text-xs font-medium">{group.count}</span>
+                </button>
+              ))}
               
               {/* View Thread Button */}
               {onThreadClick && (
                 <button
                   onClick={() => onThreadClick(message.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-blue-200 hover:border-blue-400 whitespace-nowrap flex-shrink-0"
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-blue-200 hover:border-blue-400"
                 >
                   <MessageCircle className="w-4 h-4" />
                   <span>Thread</span>
@@ -198,7 +196,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               )}
               
               {/* Reaction Picker Button */}
-              <div className="relative flex-shrink-0">
+              <div className="relative">
                 <button
                   onClick={() => setShowReactionPicker(!showReactionPicker)}
                   className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
