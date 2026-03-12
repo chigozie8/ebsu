@@ -82,7 +82,18 @@ export const AdminQuizManager = () => {
       }
     } catch (err) {
       console.error('[v0] Failed to fetch quizzes:', err);
-      const errorMsg = err instanceof Error ? err.message : String(err);
+      
+      // Extract error message from different error types
+      let errorMsg = 'Unknown error occurred';
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      } else if (typeof err === 'object' && err !== null && 'message' in err) {
+        errorMsg = String((err as any).message);
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      }
+      
+      console.log('[v0] Error message extracted:', errorMsg);
       setDbError(`Failed to load quizzes: ${errorMsg}`);
       toast.error(`Failed to load quizzes: ${errorMsg}`);
     } finally {
