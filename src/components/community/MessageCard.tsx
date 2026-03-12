@@ -7,11 +7,8 @@ interface MessageCardProps {
   isOwn: boolean;
   onReply: (messageId: string) => void;
   onLike: (messageId: string) => void;
-  onUnlike: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
-  isLiked: boolean;
-  liking?: boolean;
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -19,11 +16,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   isOwn,
   onReply,
   onLike,
-  onUnlike,
   onDelete,
   onEdit,
-  isLiked,
-  liking = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
