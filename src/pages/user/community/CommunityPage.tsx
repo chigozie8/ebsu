@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies } from '../../../hooks/useCommunity';
+import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
-import { Send, Search, X } from 'lucide-react';
+import ReplyCard from '../../../components/community/ReplyCard';
+import { Send, Search, X, MessageSquare, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {
   const [topic, setTopic] = useState<string>('All');
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
   const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
-  
+  const [likedReplies, setLikedReplies] = useState<Set<string>>(new Set());
+
   // Get current user from localStorage
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
@@ -23,21 +26,23 @@ const CommunityPage: React.FC = () => {
   const { likeMessage, unlikeMessage, liking } = useLikeMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
-  useCommunityReplies(selectedMessage || '');
+  const { postReply, posting: postingReply } = usePostReply();
+  const { deleteReply } = useDeleteReply();
+  const { editReply } = useEditReply();
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
-  // Fetch user likes
+  // Fetch user likes for messages
   useEffect(() => {
     const fetchLikes = async () => {
       if (!userId || userId === 'anonymous') return;
-      
+
       try {
         const { data } = await supabase
           .from('community_likes')
           .select('message_id')
           .eq('user_id', userId);
-        
+
         if (data) {
           setLikedMessages(new Set(data.map((like) => like.message_id)));
         }
@@ -48,7 +53,6 @@ const CommunityPage: React.FC = () => {
 
     fetchLikes();
 
-    // Subscribe to like changes
     const channel = supabase
       .channel(`likes:${userId}`)
       .on(
@@ -85,7 +89,7 @@ const CommunityPage: React.FC = () => {
 
   const handlePostMessage = async () => {
     if (!newMessage.trim()) return;
-    
+
     try {
       await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar);
       setNewMessage('');
@@ -102,156 +106,248 @@ const CommunityPage: React.FC = () => {
         await likeMessage(messageId, userId);
       }
     } catch (err) {
-      console.error('Failed to like message:', err);
+      console.error('Failed to toggle like:', err);
     }
   };
 
-  const handleDelete = async (messageId: string) => {
-    if (!window.confirm('Are you sure you want to delete this message?')) return;
-    
-    try {
-      await deleteMessage(messageId);
-    } catch (err) {
-      console.error('Failed to delete message:', err);
-    }
-  };
+  const handlePostReply = async (messageId: string) => {
+    const text = replyText[messageId]?.trim();
+    if (!text) return;
 
-  const handleEdit = async (messageId: string, newMessage: string) => {
     try {
-      await editMessage(messageId, newMessage);
+      await postReply(messageId, userId, userName, text, userAvatar);
+      setReplyText({ ...replyText, [messageId]: '' });
     } catch (err) {
-      console.error('Failed to edit message:', err);
+      console.error('Failed to post reply:', err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Student Community</h1>
-          <p className="text-gray-600">Ask questions, share knowledge, and connect with fellow students</p>
-        </div>
-
-        {/* Post Message Box */}
-        <div className="bg-white rounded-2xl p-6 mb-8 shadow-md border border-gray-200">
-          <div className="flex gap-3 mb-4">
-            {userAvatar ? (
-              <img src={userAvatar} alt={userName} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center text-white font-bold">
-                {userName.charAt(0)}
-              </div>
-            )}
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">{userName}</p>
-              <p className="text-xs text-gray-500">Posting as yourself</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-blue-50 pb-8">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="w-6 h-6 text-teal-600" />
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Student Community</h1>
           </div>
-
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="What's on your mind? Ask a question or share an insight..."
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent mb-3 resize-none"
-            rows={4}
-          />
-
-          <div className="flex items-center justify-between">
-            <select
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-            >
-              {topics.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={handlePostMessage}
-              disabled={!newMessage.trim() || posting}
-              className="flex items-center gap-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-6 py-2 rounded-lg hover:from-teal-600 hover:to-cyan-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
-            >
-              <Send className="w-4 h-4" />
-              {posting ? 'Posting...' : 'Post'}
-            </button>
-          </div>
+          <p className="text-gray-600">Ask questions, share ideas, and connect with your classmates</p>
         </div>
+      </div>
 
-        {/* Search and Filters */}
-        <div className="mb-6 flex gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+      <div className="max-w-4xl mx-auto px-4 mt-6">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
-                <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-              </button>
-            )}
           </div>
         </div>
 
-        {/* Topic Badges */}
-        <div className="mb-6 flex gap-2 flex-wrap">
-          {topics.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTopic(t)}
-              className={`px-4 py-2 rounded-full font-medium transition-all ${
-                topic === t
-                  ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:border-teal-300'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        {/* Topic Filter */}
+        <div className="mb-6 overflow-x-auto pb-2">
+          <div className="flex gap-2 min-w-max">
+            {topics.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTopic(t)}
+                className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
+                  topic === t
+                    ? 'bg-teal-500 text-white shadow-lg'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-300'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Messages Feed */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-pulse space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-32 bg-gray-200 rounded-xl" />
-                ))}
+        {/* New Message Composer */}
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 mb-6">
+          <div className="flex gap-3">
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white font-bold">
+                {userName.charAt(0)}
+              </div>
+            )}
+
+            <div className="flex-1">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="What's on your mind?"
+                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                rows={3}
+              />
+              <div className="flex gap-2 justify-between items-center mt-3">
+                <select
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  {topics.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handlePostMessage}
+                  disabled={posting || !newMessage.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                  Post
+                </button>
               </div>
             </div>
-          ) : filteredMessages.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-              <p className="text-gray-500 text-lg">
-                {searchQuery ? 'No messages match your search' : 'No messages yet. Be the first to start a discussion!'}
-              </p>
-            </div>
-          ) : (
-            filteredMessages.map((msg) => (
-              <MessageCard
-                key={msg.id}
-                message={msg}
-                isOwn={msg.user_id === userId}
-                onReply={() => setSelectedMessage(msg.id)}
-                onLike={() => handleLike(msg.id)}
-                onUnlike={() => handleLike(msg.id)}
-                onDelete={() => handleDelete(msg.id)}
-                onEdit={(id, text) => handleEdit(id, text)}
-                isLiked={likedMessages.has(msg.id)}
-                liking={liking}
-              />
-            ))
-          )}
+          </div>
+        </div>
+
+        {/* Messages */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading discussions...</p>
+          </div>
+        ) : filteredMessages.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
+            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600">No messages yet. Be the first to ask something!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredMessages.map((message) => (
+              <div key={message.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+                <MessageCard
+                  message={message}
+                  isOwn={message.user_id === userId}
+                  onReply={() => setExpandedMessage(expandedMessage === message.id ? null : message.id)}
+                  onLike={() => handleLike(message.id)}
+                  onUnlike={() => handleLike(message.id)}
+                  onDelete={() => deleteMessage(message.id)}
+                  onEdit={(id, text) => editMessage(id, text)}
+                  isLiked={likedMessages.has(message.id)}
+                  liking={liking}
+                />
+
+                {/* Expanded Thread */}
+                {expandedMessage === message.id && (
+                  <ExpandedThread
+                    messageId={message.id}
+                    userId={userId}
+                    userName={userName}
+                    userAvatar={userAvatar}
+                    replyText={replyText[message.id] || ''}
+                    setReplyText={(text) =>
+                      setReplyText({ ...replyText, [message.id]: text })
+                    }
+                    onPostReply={() => handlePostReply(message.id)}
+                    onDeleteReply={deleteReply}
+                    onEditReply={editReply}
+                    postingReply={postingReply}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface ExpandedThreadProps {
+  messageId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  replyText: string;
+  setReplyText: (text: string) => void;
+  onPostReply: () => void;
+  onDeleteReply: (replyId: string) => void;
+  onEditReply: (replyId: string, newReply: string) => void;
+  postingReply: boolean;
+}
+
+const ExpandedThread: React.FC<ExpandedThreadProps> = ({
+  messageId,
+  userId,
+  userName,
+  userAvatar,
+  replyText,
+  setReplyText,
+  onPostReply,
+  onDeleteReply,
+  onEditReply,
+  postingReply,
+}) => {
+  const { replies, loading } = useCommunityReplies(messageId);
+
+  return (
+    <div className="border-t border-gray-100 bg-gray-50 p-4">
+      {/* Existing Replies */}
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+        </div>
+      ) : replies.length > 0 ? (
+        <div className="space-y-3 mb-4">
+          {replies.map((reply) => (
+            <ReplyCard
+              key={reply.id}
+              reply={reply}
+              isOwn={reply.user_id === userId}
+              onDelete={onDeleteReply}
+              onEdit={onEditReply}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {/* Reply Composer */}
+      <div className="flex gap-3 pt-4 border-t border-gray-200">
+        {userAvatar ? (
+          <img
+            src={userAvatar}
+            alt={userName}
+            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+            {userName.charAt(0)}
+          </div>
+        )}
+
+        <div className="flex-1">
+          <textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            placeholder="Write a reply..."
+            className="w-full p-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            rows={2}
+          />
+          <button
+            onClick={onPostReply}
+            disabled={postingReply || !replyText.trim()}
+            className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Send className="w-4 h-4" />
+            Reply
+          </button>
         </div>
       </div>
     </div>

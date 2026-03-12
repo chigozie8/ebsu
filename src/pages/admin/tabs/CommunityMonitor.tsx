@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, Community, CommunityReport } from '../../../lib/supabase';
-import { MessageCircle, AlertTriangle, Trash2, Eye, Search } from 'lucide-react';
+import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2 } from 'lucide-react';
 
 interface ExtendedMessage extends Community {
   report_count?: number;
@@ -14,6 +14,8 @@ const CommunityMonitor: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'reported'>('all');
   const [, setSelectedMessage] = useState<ExtendedMessage | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState<string>('');
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalReports: 0,
@@ -115,6 +117,29 @@ const CommunityMonitor: React.FC = () => {
       setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status: 'resolved' } : r)));
     } catch (err) {
       console.error('Failed to resolve report:', err);
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, newText: string) => {
+    if (!newText.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('community_messages')
+        .update({ message: newText, is_edited: true, updated_at: new Date().toISOString() })
+        .eq('id', messageId);
+
+      if (error) throw error;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId ? { ...msg, message: newText, is_edited: true } : msg
+        )
+      );
+      setEditingId(null);
+      setEditText('');
+    } catch (err) {
+      console.error('Failed to edit message:', err);
+      alert('Failed to edit message');
     }
   };
 
@@ -245,7 +270,35 @@ const CommunityMonitor: React.FC = () => {
                       </div>
                     </div>
 
-                    <p className="text-gray-700 mt-2">{msg.message}</p>
+                    {editingId === msg.id ? (
+                      <div className="mt-2">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="w-full p-2 border border-teal-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          rows={3}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleEditMessage(msg.id, editText)}
+                            className="px-3 py-1 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditText('');
+                            }}
+                            className="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-400 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 mt-2">{msg.message}</p>
+                    )}
 
                     {hasUnresolvedReports && (
                       <div className="mt-3 bg-orange-100 rounded-lg p-3 text-sm">
@@ -270,6 +323,16 @@ const CommunityMonitor: React.FC = () => {
                     )}
 
                     <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          setEditingId(msg.id);
+                          setEditText(msg.message);
+                        }}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Edit
+                      </button>
                       <button
                         onClick={() => setSelectedMessage(msg)}
                         className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors"

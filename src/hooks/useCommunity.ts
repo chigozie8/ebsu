@@ -295,3 +295,53 @@ export const useEditMessage = () => {
 
   return { editMessage, editing, error };
 };
+
+export const useDeleteReply = () => {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const deleteReply = useCallback(async (replyId: string) => {
+    try {
+      setDeleting(true);
+      setError(null);
+      const { error: err } = await supabase
+        .from('community_replies')
+        .update({ is_deleted: true })
+        .eq('id', replyId);
+
+      if (err) throw err;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete reply';
+      setError(errorMsg);
+    } finally {
+      setDeleting(false);
+    }
+  }, []);
+
+  return { deleteReply, deleting, error };
+};
+
+export const useEditReply = () => {
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const editReply = useCallback(async (replyId: string, newReply: string) => {
+    try {
+      setEditing(true);
+      setError(null);
+      const { error: err } = await supabase
+        .from('community_replies')
+        .update({ reply: newReply, is_edited: true, updated_at: new Date().toISOString() })
+        .eq('id', replyId);
+
+      if (err) throw err;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to edit reply';
+      setError(errorMsg);
+    } finally {
+      setEditing(false);
+    }
+  }, []);
+
+  return { editReply, editing, error };
+};
