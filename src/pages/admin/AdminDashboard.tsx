@@ -2170,6 +2170,49 @@ Blog Posts
             </div>
           </div>
       )}
+    </div>
+  )}
+
+  {/* Blog Tab */}
+  {activeTab === "blog" && (
+    <div className="grid lg:grid-cols-2 gap-6">
+      {/* Blog Form */}
+      <motion.div
+        variants={fadeInVariants5}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={4}
+        className="bg-white rounded-2xl shadow-lg p-6"
+      >
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          {editingBlogId ? "Edit Blog Post" : "Create Blog Post"}
+        </h2>
+        <form onSubmit={handleBlogSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Title
+            </label>
+            <input
+              type="text"
+              value={blogForm.title}
+              onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Content
+            </label>
+            <textarea
+              value={blogForm.content}
+              onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+              rows={6}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+            />
+          </div>
 
                 {/* Submit Button */}
                 <div className="flex gap-2 pt-4">
