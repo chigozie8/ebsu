@@ -10,7 +10,6 @@ const CommunityPage: React.FC = () => {
   const [topic, setTopic] = useState<string>('All');
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [replyText, setReplyText] = useState<Record<string, string>>({});
 
   // Get current user from useGetUserInfo hook
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
@@ -82,29 +81,6 @@ const CommunityPage: React.FC = () => {
     } catch (err) {
       console.error('[v0] Failed to post message:', err);
       toast.error('Failed to post message. Please try again.');
-    }
-  };
-
-
-    try {
-      await postReply(messageId, userId, userName, text, userAvatar);
-      setReplyText({ ...replyText, [messageId]: '' });
-      toast.success('Reply posted successfully!', {
-        duration: 3000,
-        position: 'top-right',
-        style: {
-          background: 'linear-gradient(135deg, #10b981 0%, #14b8a6 100%)',
-          color: 'white',
-          borderRadius: '8px',
-          padding: '16px',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
-        icon: <Check className="w-5 h-5" />,
-      });
-    } catch (err) {
-      console.error('Failed to post reply:', err);
-      toast.error('Failed to post reply. Please try again.');
     }
   };
 
