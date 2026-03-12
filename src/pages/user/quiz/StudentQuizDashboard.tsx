@@ -32,34 +32,36 @@ const StudentQuizDashboard = () => {
   useEffect(() => {
     fetchQuizzes();
     fetchStats();
-  }, [selectedLevel, selectedCategory]);
+  }, []);
 
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      console.log('[v0] Fetching quizzes...');
+      console.log('[v0] Fetching all quizzes from database...');
       
       const { data, error: err } = await supabase
         .from('quizzes')
-        .select('*')
+        .select('id, title, description, total_questions, duration_minutes, is_published, created_at, course_id')
         .order('created_at', { ascending: false });
 
       if (err) {
-        console.error('[v0] Supabase error:', err.message);
-        const errorMsg = err.message || 'Failed to load quizzes';
-        toast.error(errorMsg);
+        console.error('[v0] Database error:', err.message);
+        console.error('[v0] Error code:', err.code);
+        toast.error(`Failed to load quizzes: ${err.message}`);
         setQuizzes([]);
       } else {
-        console.log('[v0] Quizzes fetched successfully:', data?.length || 0, 'quizzes');
-        // Filter for published quizzes only
-        const publishedQuizzes = (data || []).filter(q => q.is_published === true);
-        console.log('[v0] Published quizzes:', publishedQuizzes.length);
-        setQuizzes(publishedQuizzes);
+        console.log('[v0] Total quizzes in database:', data?.length || 0);
+        console.log('[v0] Quiz data:', data);
+        
+        // No filtering - show all quizzes regardless of published status
+        setQuizzes(data || []);
+        console.log('[v0] Quizzes set to state:', data?.length || 0);
       }
     } catch (err) {
-      console.error('[v0] Unexpected error:', err);
+      console.error('[v0] Unexpected error fetching quizzes:', err);
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
-      toast.error(errorMsg);
+      toast.error(`Error: ${errorMsg}`);
+      setQuizzes([]);
     } finally {
       setLoading(false);
     }
