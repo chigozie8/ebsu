@@ -59,10 +59,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
     setEditing(false);
   };
 
-  // Calculate thumbs up count and if user has reacted
-  const thumbsUpCount = reactions.filter((r) => r.reaction_emoji === THUMBS_UP_EMOJI).length;
-  const userHasLiked = reactions.some((r) => r.reaction_emoji === THUMBS_UP_EMOJI && r.user_id === userId);
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
       <div className="p-4">
