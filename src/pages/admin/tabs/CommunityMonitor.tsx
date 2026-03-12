@@ -54,22 +54,29 @@ const CommunityMonitor: React.FC = () => {
 
       if (reportErr) throw reportErr;
 
-      // Fetch guidelines
-      const { data: guidelineData, error: guidelineErr } = await supabase
+      // Try to fetch guidelines - if table doesn't exist, continue without error
+      let guidelineData = [];
+      const { data: gData, error: guidelineErr } = await supabase
         .from('community_guidelines')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('[v0] Guidelines fetched:', { guidelineData, guidelineErr });
+      console.log('[v0] Guidelines fetched:', { gData, guidelineErr });
 
-      if (guidelineErr) throw guidelineErr;
+      if (guidelineErr && !guidelineErr.message.includes('Could not find the table')) {
+        throw guidelineErr;
+      }
+      
+      if (gData) {
+        guidelineData = gData;
+      }
 
       const messagesArray = (msgData || []) as ExtendedMessage[];
       console.log('[v0] Setting messages:', messagesArray.length, 'items');
       
       setMessages(messagesArray);
       setReports(reportData || []);
-      setGuidelines(guidelineData || []);
+      setGuidelines(guidelineData);
 
       // Calculate stats
       const uniqueUsers = new Set(messagesArray.map((msg: any) => msg.user_id));
