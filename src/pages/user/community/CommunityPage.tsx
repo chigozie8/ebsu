@@ -204,6 +204,7 @@ const CommunityPage: React.FC = () => {
                   isOwn={message.user_id === userId}
                   onDelete={() => deleteMessage(message.id)}
                   onEdit={(id, text) => editMessage(id, text)}
+                  userId={userId}
                 />
 
 
