@@ -62,12 +62,15 @@ const CommunityMonitor: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      console.log('[v0] Fetching community data...');
 
       // Fetch messages
       const { data: msgData, error: msgErr } = await supabase
         .from('community_messages')
         .select('*')
         .order('created_at', { ascending: false });
+
+      console.log('[v0] Messages fetched:', { msgData, msgErr });
 
       if (msgErr) throw msgErr;
 
@@ -77,6 +80,8 @@ const CommunityMonitor: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('[v0] Reports fetched:', { reportData, reportErr });
+
       if (reportErr) throw reportErr;
 
       // Fetch guidelines
@@ -85,21 +90,27 @@ const CommunityMonitor: React.FC = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('[v0] Guidelines fetched:', { guidelineData, guidelineErr });
+
       if (guidelineErr) throw guidelineErr;
 
-      setMessages((msgData || []) as ExtendedMessage[]);
+      const messagesArray = (msgData || []) as ExtendedMessage[];
+      console.log('[v0] Setting messages:', messagesArray.length, 'items');
+      
+      setMessages(messagesArray);
       setReports(reportData || []);
       setGuidelines(guidelineData || []);
 
       // Calculate stats
-      const uniqueUsers = new Set((msgData || []).map((msg: any) => msg.user_id));
+      const uniqueUsers = new Set(messagesArray.map((msg: any) => msg.user_id));
       setStats({
-        totalMessages: msgData?.length || 0,
+        totalMessages: messagesArray.length,
         totalReports: reportData?.length || 0,
         activeUsers: uniqueUsers.size,
       });
     } catch (err) {
-      console.error('Failed to fetch data:', err);
+      console.error('[v0] Failed to fetch data:', err);
+      toast.error('Failed to load community data');
     } finally {
       setLoading(false);
     }
@@ -468,6 +479,13 @@ const CommunityMonitor: React.FC = () => {
           <option value="all">All Messages</option>
           <option value="reported">Reported Only</option>
         </select>
+        <button
+          onClick={() => fetchData()}
+          disabled={loading}
+          className="px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 disabled:opacity-50 transition-colors font-medium"
+        >
+          Refresh
+        </button>
       </div>
 
       {/* Messages List */}
