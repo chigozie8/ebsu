@@ -16,9 +16,11 @@ const CommunityPage: React.FC = () => {
 
   // Get current user from useGetUserInfo hook
   const { studentDetails } = useGetUserInfo();
-  const userId = studentDetails?.user_id || studentDetails?.id || 'anonymous';
-  const userName = studentDetails?.fullname || studentDetails?.name || 'Student User';
-  const userAvatar = studentDetails?.profile_picture || studentDetails?.avatar || undefined;
+  const userId = studentDetails?.userID || 'anonymous';
+  const userName = studentDetails?.firstName && studentDetails?.lastName 
+    ? `${studentDetails.firstName} ${studentDetails.lastName}` 
+    : 'Student User';
+  const userAvatar = studentDetails?.profileImageURL || undefined;
 
   const { messages, loading } = useCommunityMessages(topic === 'All' ? undefined : topic);
   const { postMessage, posting } = usePostMessage();
