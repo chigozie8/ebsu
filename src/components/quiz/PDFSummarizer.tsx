@@ -34,7 +34,7 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
     try {
       const reader = new FileReader();
       
-      reader.onload = async (e) => {
+      reader.onload = async () => {
         try {
           let fileContent = '';
           
