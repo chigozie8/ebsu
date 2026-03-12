@@ -157,19 +157,25 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <button
                 onClick={() => (isLiked ? onUnlike(message.id) : onLike(message.id))}
                 disabled={liking}
-                className={`flex items-center gap-1.5 transition-colors ${
-                  isLiked ? 'text-rose-500 font-semibold' : 'hover:text-rose-500'
-                } disabled:opacity-50`}
+                className={`flex items-center gap-2 transition-all duration-200 transform hover:scale-110 ${
+                  isLiked ? 'text-rose-500 font-semibold' : 'text-gray-600 hover:text-rose-500'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                {message.likes_count}
+                <Heart 
+                  className={`w-5 h-5 transition-all duration-200 ${
+                    isLiked ? 'fill-rose-500 stroke-rose-500' : 'stroke-current'
+                  }`} 
+                />
+                <span className={`transition-all ${isLiked ? 'font-bold' : ''}`}>
+                  {message.likes_count}
+                </span>
               </button>
               <button
                 onClick={() => onReply(message.id)}
-                className="flex items-center gap-1.5 hover:text-teal-500 transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:text-teal-500 transition-colors"
               >
-                <MessageSquareMore className="w-4 h-4" />
-                {message.reply_count}
+                <MessageSquareMore className="w-5 h-5" />
+                <span>{message.reply_count}</span>
               </button>
             </div>
           </div>

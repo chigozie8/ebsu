@@ -21,6 +21,8 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
+import CommunityMonitor from "./tabs/CommunityMonitor";
+import CommunityAnalytics from "./tabs/CommunityAnalytics";
 
 interface Material {
   id: string;
@@ -147,16 +149,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "community-analytics"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics">(
     getInitialTab()
   );
   
@@ -1707,18 +1709,35 @@ Blog Posts
             Learning Resources
           </button>
           <button
-            onClick={() => setActiveTab("outlines")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-              activeTab === "outlines"
-                ? "bg-green1 text-white shadow-md"
-                : "bg-green-50 text-green1 hover:bg-green-100 border-2 border-green1"
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Course Outlines
-          </button>
+          onClick={() => setActiveTab("outlines")}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === "outlines"
+              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Outlines
+        </button>
+        <button
+          onClick={() => setActiveTab("community")}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === "community"
+              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Community
+        </button>
+        <button
+          onClick={() => setActiveTab("community-analytics")}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === "community-analytics"
+              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          }`}
+        >
+          Community Analytics
+        </button>
         </div>
 
         {/* Materials Tab */}
@@ -2148,376 +2167,23 @@ Blog Posts
                               >
                                 Delete
                               </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
+            </div>
           </div>
         )}
 
-        {/* ID Cards Tab */}
-        {activeTab === "idcards" && (
-          <motion.div
-            variants={fadeInVariants5}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={3}
-            className="bg-white rounded-2xl shadow-lg p-6"
-          >
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              ID Card Registrations ({idCards.length})
-            </h2>
-            {idCards.length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                <p>No ID card registrations yet.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="text-left p-3 font-medium">Photo</th>
-                      <th className="text-left p-3 font-medium">Name</th>
-                      <th className="text-left p-3 font-medium">Reg. No.</th>
-                      <th className="text-left p-3 font-medium">Level</th>
-                      <th className="text-left p-3 font-medium">Class</th>
-                      <th className="text-left p-3 font-medium">Status</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {idCards.map((card) => (
-                      <tr key={card.id} className="hover:bg-gray-50">
-                        <td className="p-3">
-                          <img
-                            src={card.photoUrl}
-                            alt={card.firstName}
-                            className="w-12 h-12 rounded-lg object-cover"
-                          />
-                        </td>
-                        <td className="p-3 font-medium">
-                          {card.firstName} {card.surname}
-                        </td>
-                        <td className="p-3">{card.registrationNumber || "N/A"}</td>
-                        <td className="p-3">{card.level}</td>
-                        <td className="p-3">{card.classSet || "N/A"}</td>
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              card.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : card.status === "rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {card.status || "pending"}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => printIDCard(card)}
-                              className="px-3 py-1 bg-green2 text-white rounded-lg text-xs font-medium hover:bg-green1 transition-colors"
-                            >
-                              Print ID
-                            </button>
-<button
-                            onClick={() => openDeleteIdCardModal(card.id, `${card.firstName} ${card.surname}`)}
-                            className="p-1.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                            title="Delete ID Card"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </motion.div>
+        {/* Community Management Tab */}
+        {activeTab === "community" && (
+          <CommunityMonitor />
         )}
 
-        {/* Blog Tab */}
-        {activeTab === "blog" && (
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Blog Form */}
-            <motion.div
-              variants={fadeInVariants5}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-              custom={3}
-              className="bg-white rounded-2xl shadow-lg p-6"
-            >
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                {editingBlogId ? "Edit Blog Post" : "Create Blog Post"}
-              </h2>
-              <form onSubmit={handleSubmitBlogPost} className="space-y-4">
-                {/* Title */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Title <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={blogFormData.title}
-                    onChange={handleBlogInputChange}
-                    placeholder="Blog post title"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  />
-                </div>
-
-                {/* Author */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Author <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="author"
-                    value={blogFormData.author}
-                    onChange={handleBlogInputChange}
-                    placeholder="Author name"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  />
-                </div>
-
-                {/* Author Image */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Author Image
-                  </label>
-                  <input
-                    ref={authorImageRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAuthorImageChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
-                  />
-                  {authorImagePreview && (
-                    <div className="mt-2">
-                      <img
-                        src={authorImagePreview}
-                        alt="Author Preview"
-                        className="w-16 h-16 object-cover rounded-full"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    name="category"
-                    value={blogFormData.category}
-                    onChange={handleBlogInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Education">Education</option>
-                    <option value="Health">Health</option>
-                    <option value="Technology">Technology</option>
-                    <option value="Lifestyle">Lifestyle</option>
-                    <option value="News">News</option>
-                    <option value="Research">Research</option>
-                    <option value="Campus Life">Campus Life</option>
-                    <option value="Career">Career</option>
-                  </select>
-                </div>
-
-                {/* Post Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Post Type
-                  </label>
-                  <select
-                    name="postType"
-                    value={blogFormData.postType}
-                    onChange={handleBlogInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm"
-                  >
-                    <option value="top">Top (Featured on top)</option>
-                    <option value="featured">Featured</option>
-                    <option value="others">Others</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Top posts appear prominently at the top of the blog page
-                  </p>
-                </div>
-
-                {/* Featured Image */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Featured Image <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    ref={blogImageRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBlogImageChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
-                  />
-                  {blogImagePreview && (
-                    <div className="mt-2">
-                      <img
-                        src={blogImagePreview}
-                        alt="Preview"
-                        className="w-full h-40 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Content Blocks Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Content Blocks <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => addContentBlock("p")}
-                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded font-medium"
-                      >
-                        + Paragraph
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addContentBlock("h2")}
-                        className="px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 rounded font-medium"
-                      >
-                        + Heading
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addContentBlock("list")}
-                        className="px-2 py-1 text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 rounded font-medium"
-                      >
-                        + List
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => addContentBlock("img")}
-                        className="px-2 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium"
-                      >
-                        + Image
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Content Blocks */}
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                    {contentBlocks.map((block, index) => (
-                      <div
-                        key={index}
-                        className="p-3 border border-gray-200 rounded-lg bg-gray-50"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <select
-                            value={block.type}
-                            onChange={(e) => updateContentBlockType(index, e.target.value as ContentBlock["type"])}
-                            className="text-xs p-1 border rounded"
-                          >
-                            <option value="p">Paragraph</option>
-                            <option value="p-bold">Bold Paragraph</option>
-                            <option value="h1">Heading 1</option>
-                            <option value="h2">Heading 2</option>
-                            <option value="list">List (comma-separated)</option>
-                            <option value="img">Image</option>
-                          </select>
-                          <div className="flex-1" />
-                          <button
-                            type="button"
-                            onClick={() => moveContentBlock(index, "up")}
-                            disabled={index === 0}
-                            className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveContentBlock(index, "down")}
-                            disabled={index === contentBlocks.length - 1}
-                            className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-30"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeContentBlock(index)}
-                            className="p-1 text-red-500 hover:text-red-700"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        {block.type === "img" ? (
-                          <div>
-                            <input
-                              ref={contentImageRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleContentImageUpload(index, e)}
-                              className="w-full p-2 border border-gray-300 rounded text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-green2 file:text-white"
-                            />
-                            {block.content && (
-                              <img
-                                src={block.content}
-                                alt="Content"
-                                className="mt-2 w-full h-24 object-cover rounded"
-                              />
-                            )}
-                            <p className="text-xs text-gray-500 mt-1">Or paste image URL:</p>
-                            <input
-                              type="text"
-                              value={block.content}
-                              onChange={(e) => updateContentBlock(index, e.target.value)}
-                              placeholder="https://example.com/image.jpg"
-                              className="w-full p-2 border border-gray-300 rounded text-xs mt-1"
-                            />
-                          </div>
-                        ) : block.type === "list" ? (
-                          <div>
-                            <textarea
-                              value={block.content}
-                              onChange={(e) => updateContentBlock(index, e.target.value)}
-                              placeholder="Enter list items separated by commas: Item 1, Item 2, Item 3"
-                              rows={3}
-                              className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Separate items with commas
-                            </p>
-                          </div>
-                        ) : (
-                          <textarea
-                            value={block.content}
-                            onChange={(e) => updateContentBlock(index, e.target.value)}
-                            placeholder={
-                              block.type === "h1" || block.type === "h2"
-                                ? "Enter heading text..."
-                                : "Enter paragraph text..."
-                            }
+        {/* Community Analytics Tab */}
+        {activeTab === "community-analytics" && (
+          <CommunityAnalytics />
+        )}
+      </div>
+    </div>
+  );
+}
                             rows={block.type === "h1" || block.type === "h2" ? 1 : 3}
                             className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
                           />
