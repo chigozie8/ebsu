@@ -13,7 +13,7 @@ const CommunityMonitor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'reported'>('all');
-  const [selectedMessage, setSelectedMessage] = useState<ExtendedMessage | null>(null);
+  const [, setSelectedMessage] = useState<ExtendedMessage | null>(null);
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalReports: 0,

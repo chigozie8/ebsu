@@ -14,6 +14,7 @@ interface TopicsStats {
 }
 
 const CommunityAnalytics: React.FC = () => {
+  const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [topicsStats, setTopicsStats] = useState<TopicsStats>({});
   const [totalStats, setTotalStats] = useState({
