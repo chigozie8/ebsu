@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
@@ -23,7 +23,6 @@ export const AdminQuizManager = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
 
   useEffect(() => {
     fetchQuizzes();
@@ -253,7 +252,7 @@ export const AdminQuizManager = () => {
           <div className="bg-white rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate Questions from PDF</h3>
             <PDFSummarizer
-              onSummaryComplete={(summary: string, questions: any[]) => {
+              onSummaryComplete={(summary: string) => {
                 console.log('[v0] Summary generated:', summary);
                 toast.success('PDF processed! You can now create a quiz with these questions.');
               }}
