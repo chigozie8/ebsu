@@ -4,10 +4,10 @@ import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
 
 const CommunityWidget: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
-  const [error, setError] = useState<string | null>(null);
 
   let messages: any[] = [];
   let loading = false;
+  let error = false;
 
   try {
     const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
@@ -15,11 +15,11 @@ const CommunityWidget: React.FC = () => {
     loading = result?.loading || false;
   } catch (err) {
     console.error('[v0] Community widget error:', err);
-    setError('Community feature not available');
+    error = true;
   }
 
   // If there's an error, show a friendly message instead of breaking the dashboard
-  if (error) {
+  if (error || !messages) {
     return (
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700">
         <div className="flex items-center justify-between mb-4">
