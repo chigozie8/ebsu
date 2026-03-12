@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
+import { initializeQuizTables, createSampleQuiz } from '../../../lib/quiz-db';
 import toast from 'react-hot-toast';
 
 // Admin Quiz Manager Tab - Manage and create quizzes
@@ -12,12 +13,11 @@ interface Quiz {
   id: string;
   title: string;
   description: string;
-  level: number;
-  category: 'preclinical' | 'clinical';
-  question_count: number;
-  duration: number;
-  published: boolean;
+  total_questions: number;
+  duration_minutes: number;
+  is_published: boolean;
   created_at: string;
+  course_id: string;
 }
 
 export const AdminQuizManager = () => {
@@ -25,23 +25,66 @@ export const AdminQuizManager = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
-    fetchQuizzes();
+    initializeDatabase();
   }, []);
+
+  const initializeDatabase = async () => {
+    try {
+      setIsInitializing(true);
+      console.log('[v0] Initializing quiz database...');
+      const success = await initializeQuizTables();
+      if (success) {
+        await fetchQuizzes();
+        setDbError(null);
+      } else {
+        setDbError('Failed to initialize quiz database. Please try again.');
+      }
+    } catch (error) {
+      console.error('[v0] Database initialization error:', error);
+      setDbError('Unable to connect to database');
+    } finally {
+      setIsInitializing(false);
+    }
+  };
 
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
+      setDbError(null);
+      console.log('[v0] Fetching quizzes from Supabase...');
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setQuizzes(data || []);
+      if (error) {
+        console.log('[v0] Supabase error:', error.message);
+        setDbError(error.message);
+        if (error.message.includes('relation') || error.message.includes('does not exist')) {
+          // Tables don't exist, suggest creating sample data
+          setDbError('Quiz database not initialized. Creating sample data...');
+          await createSampleQuiz();
+          // Try fetching again
+          const { data: retryData, error: retryError } = await supabase
+            .from('quizzes')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (retryError) throw retryError;
+          setQuizzes(retryData || []);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('[v0] Quizzes fetched:', data);
+        setQuizzes(data || []);
+      }
     } catch (err) {
-      console.error('Failed to fetch quizzes:', err);
+      console.error('[v0] Failed to fetch quizzes:', err);
+      setDbError('Failed to load quizzes. Please refresh the page.');
       toast.error('Failed to load quizzes');
     } finally {
       setLoading(false);
@@ -52,11 +95,11 @@ export const AdminQuizManager = () => {
     try {
       const { error } = await supabase
         .from('quizzes')
-        .update({ published: !quiz.published })
+        .update({ is_published: !quiz.is_published })
         .eq('id', quiz.id);
 
       if (error) throw error;
-      toast.success(quiz.published ? 'Quiz unpublished' : 'Quiz published');
+      toast.success(quiz.is_published ? 'Quiz unpublished' : 'Quiz published');
       fetchQuizzes();
     } catch (err) {
       console.error('Failed to toggle publish:', err);
@@ -88,6 +131,23 @@ export const AdminQuizManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Database Error Banner */}
+      {dbError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Database Error</h3>
+            <p className="text-red-800 text-sm">{dbError}</p>
+            {isInitializing && (
+              <p className="text-red-700 text-sm mt-1">Setting up database tables...</p>
+            )}
+          </div>
+        </motion.div>
+      )}
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-200">
         <button
@@ -159,9 +219,8 @@ export const AdminQuizManager = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Level</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Category</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Questions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Duration</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
@@ -170,24 +229,15 @@ export const AdminQuizManager = () => {
                   {filteredQuizzes.map((quiz) => (
                     <tr key={quiz.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3 text-sm text-gray-900">{quiz.title}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">Level {quiz.level}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.total_questions}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.duration_minutes} mins</td>
                       <td className="px-6 py-3 text-sm">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          quiz.category === 'preclinical'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {quiz.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.question_count}</td>
-                      <td className="px-6 py-3 text-sm">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          quiz.published
+                          quiz.is_published
                             ? 'bg-green-100 text-green-700'
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
-                          {quiz.published ? 'Published' : 'Draft'}
+                          {quiz.is_published ? 'Published' : 'Draft'}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-sm">
@@ -195,9 +245,9 @@ export const AdminQuizManager = () => {
                           <button
                             onClick={() => togglePublish(quiz)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title={quiz.published ? 'Unpublish' : 'Publish'}
+                            title={quiz.is_published ? 'Unpublish' : 'Publish'}
                           >
-                            {quiz.published ? (
+                            {quiz.is_published ? (
                               <Eye className="w-4 h-4 text-green-600" />
                             ) : (
                               <EyeOff className="w-4 h-4 text-gray-400" />

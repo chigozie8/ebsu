@@ -156,3 +156,5 @@ ON CONFLICT (category_id, level_number) DO NOTHING;
 INSERT INTO quiz_levels (category_id, level_number, title, description)
 SELECT id, 6, 'Level 6', 'Advanced clinical practice and board review' FROM quiz_categories WHERE name = 'Clinical'
 ON CONFLICT (category_id, level_number) DO NOTHING;
+
+-- Note: RLS policies will be added in a separate migration once tables are created
