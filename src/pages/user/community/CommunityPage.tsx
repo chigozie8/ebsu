@@ -95,7 +95,7 @@ const CommunityPage: React.FC = () => {
           schema: 'public',
           table: 'community_messages',
         },
-        (payload) => {
+        () => {
           // Message was updated (likes_count changed), the component will re-render with new data from the hook
         }
       )
