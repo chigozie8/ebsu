@@ -61,3 +61,9 @@ export type CommunityReaction = {
   reaction_emoji: string;
   created_at: string;
 };
+
+export type CommunityGuideline = {
+  id: string;
+  content: string;
+  created_at: string;
+};

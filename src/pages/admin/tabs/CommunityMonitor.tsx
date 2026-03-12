@@ -110,24 +110,40 @@ const CommunityMonitor: React.FC = () => {
 
     setPostingGuideline(true);
     try {
-      const { error } = await supabase.from('community_guidelines').insert([
+      console.log('[v0] Adding guideline:', newGuideline);
+      
+      const { data, error } = await supabase.from('community_guidelines').insert([
         {
-          content: newGuideline,
+          content: newGuideline.trim(),
           created_at: new Date().toISOString(),
         },
-      ]);
+      ]).select();
 
-      if (error) throw error;
+      console.log('[v0] Insert response:', { data, error });
+
+      if (error) {
+        console.error('[v0] Insert error details:', error);
+        throw error;
+      }
 
       setNewGuideline('');
-      setGuidelines((prev) => [
-        { id: Date.now().toString(), content: newGuideline, created_at: new Date().toISOString() },
-        ...prev,
-      ]);
+      
+      // Use the returned data if available, otherwise use a temporary ID
+      if (data && data.length > 0) {
+        setGuidelines((prev) => [data[0], ...prev]);
+      } else {
+        // Fallback: fetch the guidelines again to ensure consistency
+        const { data: guidelineData } = await supabase
+          .from('community_guidelines')
+          .select('*')
+          .order('created_at', { ascending: false });
+        setGuidelines(guidelineData || []);
+      }
+      
       toast.success('Guideline added!');
-    } catch (err) {
-      console.error('Failed to add guideline:', err);
-      toast.error('Failed to add guideline');
+    } catch (err: any) {
+      console.error('[v0] Failed to add guideline:', err);
+      toast.error(err?.message || 'Failed to add guideline');
     } finally {
       setPostingGuideline(false);
     }
