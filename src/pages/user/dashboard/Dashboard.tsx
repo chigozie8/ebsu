@@ -332,7 +332,7 @@ export default function Dashboard() {
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">
-                    <div className="grid grid-cols-2 sss:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4 auto-rows-max">
                       <NavLink to="/u/gpa-calculator">
                         <motion.div
                           variants={fadeInVariants5}
@@ -342,7 +342,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={5}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#f0abfc] bg-[#f0abfc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#f0abfc] bg-[#f0abfc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <CalculatorIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -362,7 +362,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={7}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <BooksIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -382,7 +382,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={9}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <FilesIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -396,7 +396,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="mb-3 sm:mb-4">
-                    <div className="grid grid-cols-2 sss:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4 auto-rows-max">
                       <NavLink to="/u/id-card">
                         <motion.div
                           variants={fadeInVariants5}
@@ -406,7 +406,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={11}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <IDCardIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -426,7 +426,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={13}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <ResourcesIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -446,7 +446,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={15}
-                          className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <ChatIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -468,7 +468,7 @@ export default function Dashboard() {
                               once: true,
                             }}
                             custom={17}
-                            className="w-full min-h-[140px] xxss:min-h-[160px] sss:min-h-[195px] sss:h-[215px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                            className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                           >
                             <svg
                               className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
