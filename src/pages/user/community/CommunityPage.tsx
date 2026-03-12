@@ -25,7 +25,6 @@ const CommunityPage: React.FC = () => {
 
   const { messages, loading } = useCommunityMessages(topic === 'All' ? undefined : topic);
   const { postMessage, posting } = usePostMessage();
-  const { likeMessage, unlikeMessage, liking } = useLikeMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
   const { postReply, posting: postingReply } = usePostReply();
@@ -139,45 +138,6 @@ const CommunityPage: React.FC = () => {
     } catch (err) {
       console.error('[v0] Failed to post message:', err);
       toast.error('Failed to post message. Please try again.');
-    }
-  };
-
-  const handleLike = async (messageId: string) => {
-    try {
-      const isLiking = !likedMessages.has(messageId);
-      if (isLiking) {
-        await likeMessage(messageId, userId);
-        toast.success('You liked this message!', {
-          duration: 2000,
-          position: 'bottom-right',
-          style: {
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
-            color: 'white',
-            borderRadius: '8px',
-            padding: '16px',
-            fontSize: '14px',
-            fontWeight: '500',
-          },
-          icon: <Heart className="w-5 h-5 fill-current" />,
-        });
-      } else {
-        await unlikeMessage(messageId, userId);
-        toast.success('You unliked this message', {
-          duration: 2000,
-          position: 'bottom-right',
-          style: {
-            background: '#6b7280',
-            color: 'white',
-            borderRadius: '8px',
-            padding: '16px',
-            fontSize: '14px',
-            fontWeight: '500',
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Failed to toggle like:', err);
-      toast.error('Failed to update like. Please try again.');
     }
   };
 
@@ -325,7 +285,6 @@ const CommunityPage: React.FC = () => {
                 <MessageCard
                   message={message}
                   isOwn={message.user_id === userId}
-                  onReply={() => setExpandedMessage(expandedMessage === message.id ? null : message.id)}
                   onDelete={() => deleteMessage(message.id)}
                   onEdit={(id, text) => editMessage(id, text)}
                 />

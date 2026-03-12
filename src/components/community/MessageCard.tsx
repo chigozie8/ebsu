@@ -5,7 +5,6 @@ import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 interface MessageCardProps {
   message: Community;
   isOwn: boolean;
-  onReply: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
 }
@@ -13,7 +12,6 @@ interface MessageCardProps {
 const MessageCard: React.FC<MessageCardProps> = ({
   message,
   isOwn,
-  onReply,
   onDelete,
   onEdit,
 }) => {
