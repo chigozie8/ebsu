@@ -4,7 +4,17 @@ import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
 
 const CommunityWidget: React.FC = () => {
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
-  const { messages, loading } = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
+  let messages: any[] = [];
+  let loading = false;
+  
+  try {
+    const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
+    messages = result.messages;
+    loading = result.loading;
+  } catch (err) {
+    console.error('Community widget error:', err);
+    return null;
+  }
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
   

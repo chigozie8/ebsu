@@ -19,7 +19,6 @@ import { fadeInVariants5 } from "../../../animation/variants";
 import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
 import { useNotifications } from "../../../hooks/notifications/useNotifications";
 import WeatherWidget from "../../../components/widgets/WeatherWidget";
-import CommunityWidget from "../../../components/widgets/CommunityWidget";
 
 // Activity types with icons and colors
 interface Activity {
@@ -316,19 +315,6 @@ export default function Dashboard() {
                   <div className="sm:col-span-2 lg:col-span-1">
                     <WeatherWidget customIndex={5} />
                   </div>
-                  {/* Community Widget */}
-                  <motion.div
-                    variants={fadeInVariants5}
-                    initial="initial"
-                    whileInView="animate"
-                    viewport={{
-                      once: true,
-                    }}
-                    custom={6}
-                    className="sm:col-span-2 lg:col-span-1"
-                  >
-                    <CommunityWidget />
-                  </motion.div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">
