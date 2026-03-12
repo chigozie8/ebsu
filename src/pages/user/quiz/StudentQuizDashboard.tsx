@@ -23,8 +23,6 @@ interface AttemptStats {
 
 const StudentQuizDashboard = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'Preclinical' | 'Clinical' | null>(null);
   const [stats, setStats] = useState<AttemptStats>({ totalAttempts: 0, averageScore: 0, bestScore: 0 });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
