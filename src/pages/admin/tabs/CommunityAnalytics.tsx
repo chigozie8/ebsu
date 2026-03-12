@@ -23,7 +23,7 @@ const CommunityAnalytics: React.FC = () => {
     avgMessagesPerDay: 0,
     topTopic: '',
   });
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [dateRange] = useState({ start: '', end: '' });
 
   useEffect(() => {
     fetchAnalytics();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, Community, CommunityReport } from '../../../lib/supabase';
-import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Filter } from 'lucide-react';
+import { MessageCircle, AlertTriangle, Trash2, Eye, Search } from 'lucide-react';
 
 interface ExtendedMessage extends Community {
   report_count?: number;
@@ -13,7 +13,7 @@ const CommunityMonitor: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'reported'>('all');
-  const [selectedMessage, setSelectedMessage] = useState<ExtendedMessage | null>(null);
+  const [selectedMessage] = useState<ExtendedMessage | null>(null);
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalReports: 0,
