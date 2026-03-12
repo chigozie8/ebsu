@@ -51,7 +51,7 @@ export default function BlogPost() {
     blogPostError,
   } = useFetchBlogPosts();
   const { postID, postType } = useParams();
-  const { getPostComments, postComments } = useBlogComments();
+  const { getPostComments } = useBlogComments();
 
   const readTime = useMemo(() => calculateReadTime(blogPost?.contents), [blogPost?.contents]);
 

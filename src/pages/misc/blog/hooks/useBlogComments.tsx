@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 import {
   collection,
   setDoc,
-  getDocs,
   query,
   where,
   deleteDoc,
