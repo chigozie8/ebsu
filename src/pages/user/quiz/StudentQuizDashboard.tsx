@@ -169,31 +169,6 @@ const StudentQuizDashboard = () => {
         <div className="grid grid-cols-1 gap-4">
           <div></div>
         </div>
-          </div>
-
-          {/* Clinical Levels */}
-          <div>
-            <h3 className="font-semibold text-gray-700 mb-2">Clinical (Levels 4-6)</h3>
-            <div className="flex gap-2">
-              {clinicalLevels.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => {
-                    setSelectedLevel(selectedLevel === level ? null : level);
-                    setSelectedCategory('Clinical');
-                  }}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedLevel === level
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       </motion.div>
 
       {/* Quizzes Grid */}
