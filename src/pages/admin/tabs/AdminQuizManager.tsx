@@ -6,6 +6,8 @@ import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
 
+// Admin Quiz Manager Tab - Manage and create quizzes
+
 interface Quiz {
   id: string;
   title: string;
