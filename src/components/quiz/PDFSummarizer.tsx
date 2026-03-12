@@ -26,7 +26,6 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
     try {
       // Check if puter.js is available
       if (typeof window !== 'undefined' && (window as any).puter) {
-        const puter = (window as any).puter;
         
         // Use Puter's AI capabilities for PDF processing
         const formData = new FormData();
