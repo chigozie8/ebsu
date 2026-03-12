@@ -86,6 +86,9 @@ const AppRoutes = () => {
   const CommunityPage = lazy(
     () => import("../pages/user/community/CommunityPage")
   );
+  const ExamPapersPage = lazy(
+    () => import("../pages/user/exam-papers/ExamPapersPage")
+  );
 
   return (
     <>
@@ -206,6 +209,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/exam-papers"
+            element={
+              <ProtectedRoute>
+                <ExamPapersPage />
               </ProtectedRoute>
             }
           />
