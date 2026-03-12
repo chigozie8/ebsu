@@ -397,6 +397,7 @@ ON CONFLICT (name) DO NOTHING;`}
         >
           <div className="bg-white rounded-lg p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Quiz</h3>
+            <AdminQuizBuilder onQuizCreated={fetchQuizzes} />
             <AdminQuizBuilder courseId="" levelId="" />
           </div>
         </motion.div>

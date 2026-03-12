@@ -5,11 +5,12 @@ import { useQuizManagement, type QuizQuestion } from '../../hooks/useQuizManagem
 import toast from 'react-hot-toast';
 
 interface AdminQuizBuilderProps {
-  courseId: string;
-  levelId: string;
+  courseId?: string;
+  levelId?: string;
+  onQuizCreated?: () => void;
 }
 
-export const AdminQuizBuilder: React.FC<AdminQuizBuilderProps> = ({ courseId, levelId }) => {
+export const AdminQuizBuilder: React.FC<AdminQuizBuilderProps> = ({ courseId, levelId, onQuizCreated }) => {
   const { createQuiz, publishQuiz, loading } = useQuizManagement();
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDescription, setQuizDescription] = useState('');
@@ -52,21 +53,32 @@ export const AdminQuizBuilder: React.FC<AdminQuizBuilderProps> = ({ courseId, le
       return;
     }
 
-    const newQuiz = await createQuiz({
+    console.log('[v0] Publishing quiz with:', {
       title: quizTitle,
       description: quizDescription,
       courseId,
       levelId,
+      questionsCount: questions.length
+    });
+
+    const newQuiz = await createQuiz({
+      title: quizTitle,
+      description: quizDescription,
+      courseId: courseId || '',
+      levelId: levelId || '',
       questions,
       published: false,
     });
 
     if (newQuiz) {
+      console.log('[v0] Quiz created, now publishing...');
       await publishQuiz(newQuiz.id);
+      toast.success('Quiz published successfully!');
       // Reset form
       setQuizTitle('');
       setQuizDescription('');
       setQuestions([]);
+      onQuizCreated?.();
     }
   };
 
