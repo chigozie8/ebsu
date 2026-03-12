@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Fallback credentials for the EBSU project
+const FALLBACK_SUPABASE_URL = 'https://hdmoyywwgllwjtklzvnk.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkbW95eXd3Z2xsd2p0a2x6dm5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDM4MzAsImV4cCI6MjA4ODU3OTgzMH0.qA2EKC6r7p45g0R-iZXHxEnO_ptQ9oDupPvbOOBrGiI';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
