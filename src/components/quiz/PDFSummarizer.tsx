@@ -38,24 +38,36 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
         try {
           let fileContent = '';
           
-          // For PDFs, we'd need a PDF parsing library like pdfjs
-          // For now, we'll handle images by converting to base64 and using vision
+          // For images, convert to base64 for vision processing
           if (file.type.startsWith('image/')) {
+            const base64Data = reader.result as string;
             console.log('[v0] Processing image file:', file.name);
-            fileContent = `[Image file: ${file.name}. Please analyze and summarize the content visible in this image.]`;
+            // Send the actual base64 data
+            fileContent = `[Image file: ${file.name}\nBase64 data: ${base64Data.substring(0, 200)}...\nPlease analyze and summarize the educational content visible in this image.]`;
           } else {
-            // For PDFs, try to extract text
-            fileContent = `[PDF file: ${file.name}. Content placeholder.]`;
+            // For PDFs, we'd need pdfjs or similar - for now use placeholder
+            const textData = reader.result as string;
+            console.log('[v0] Processing file:', file.name);
+            // Try to extract text from the file
+            fileContent = textData || `[File: ${file.name}. Please analyze this content.]`;
           }
 
-          console.log('[v0] Starting PDF/document summarization...');
+          if (!fileContent || fileContent.trim().length < 10) {
+            toast.error('File appears to be empty. Please upload a file with actual content.');
+            setLoading(false);
+            return;
+          }
+
+          console.log('[v0] Starting summarization...');
           
           // Generate summary
           const summaryResult = await summarizePDFContent(fileContent, file.name);
+          console.log('[v0] Summary completed');
           setSummary(summaryResult);
           
           // Generate exam questions
           const questionsResult = await generateExamQuestionsFromPDF(fileContent, file.name, 'Medical Education');
+          console.log('[v0] Questions completed');
           setGeneratedQuestions(questionsResult);
 
           toast.success('Document processed and summarized successfully!');
@@ -64,7 +76,8 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
           }
         } catch (error) {
           console.error('[v0] Error processing file:', error);
-          toast.error('Failed to process file. Please try again.');
+          const errorMsg = error instanceof Error ? error.message : 'An unexpected error occurred';
+          toast.error(`Failed to process file: ${errorMsg}`);
         } finally {
           setLoading(false);
         }

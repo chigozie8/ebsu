@@ -6,6 +6,10 @@ export async function summarizePDFContent(fileContent: string, fileName: string)
   try {
     console.log('[v0] Summarizing PDF:', fileName)
     
+    if (!fileContent || fileContent.trim().length === 0) {
+      throw new Error('File content is empty')
+    }
+    
     const result = await generateText({
       model: 'openai/gpt-4o-mini',
       system: 'You are an expert at summarizing educational documents. Provide a clear, concise summary highlighting key concepts and important information.',
@@ -16,13 +20,18 @@ export async function summarizePDFContent(fileContent: string, fileName: string)
     return result.text
   } catch (error) {
     console.error('[v0] Error summarizing PDF:', error)
-    throw new Error('Failed to summarize PDF content')
+    const errorMsg = error instanceof Error ? error.message : 'Failed to summarize PDF content'
+    throw new Error(`PDF Summarization Error: ${errorMsg}`)
   }
 }
 
 export async function generateExamQuestionsFromPDF(fileContent: string, fileName: string, topicArea: string = 'general') {
   try {
     console.log('[v0] Generating exam questions from PDF:', fileName)
+    
+    if (!fileContent || fileContent.trim().length === 0) {
+      throw new Error('File content is empty')
+    }
     
     const result = await generateText({
       model: 'openai/gpt-4o-mini',
@@ -34,6 +43,7 @@ export async function generateExamQuestionsFromPDF(fileContent: string, fileName
     return result.text
   } catch (error) {
     console.error('[v0] Error generating questions:', error)
-    throw new Error('Failed to generate exam questions')
+    const errorMsg = error instanceof Error ? error.message : 'Failed to generate exam questions'
+    throw new Error(`Exam Questions Error: ${errorMsg}`)
   }
 }
