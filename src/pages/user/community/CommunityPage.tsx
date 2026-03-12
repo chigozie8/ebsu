@@ -122,44 +122,48 @@ const CommunityPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-blue-50 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 pb-6 sm:pb-8 lg:pb-10">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <MessageSquare className="w-6 h-6 text-teal-600" />
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Student Community</h1>
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur shadow-sm border-b border-gray-200">
+        <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg p-2 sm:p-2.5">
+              <MessageSquare className="w-5 sm:w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Student Community</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Ask questions, share ideas, and connect</p>
+            </div>
           </div>
-          <p className="text-gray-600">Ask questions, share ideas, and connect with your classmates</p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 mt-6">
+      <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8">
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-5 lg:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-2.5 sm:top-3 w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search messages..."
+              placeholder="Search messages or users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
             />
           </div>
         </div>
 
-        {/* Topic Filter */}
-        <div className="mb-6 overflow-x-auto pb-2">
+        {/* Topic Filter - Horizontal Scroll on Mobile */}
+        <div className="mb-4 sm:mb-5 lg:mb-6 overflow-x-auto pb-2 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8">
           <div className="flex gap-2 min-w-max">
             {topics.map((t) => (
               <button
                 key={t}
                 onClick={() => setTopic(t)}
-                className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   topic === t
-                    ? 'bg-teal-500 text-white shadow-lg'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-300'
+                    ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-300 hover:bg-gray-50'
                 }`}
               >
                 {t}
@@ -169,33 +173,33 @@ const CommunityPage: React.FC = () => {
         </div>
 
         {/* New Message Composer */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 mb-6">
-          <div className="flex gap-3">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 sm:p-4 lg:p-5 mb-4 sm:mb-5 lg:mb-6">
+          <div className="flex gap-2 sm:gap-3">
             {userAvatar ? (
               <img
                 src={userAvatar}
                 alt={userName}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                className="w-9 sm:w-10 h-9 sm:h-10 rounded-full object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white font-bold">
+              <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-xs sm:text-sm font-bold">
                 {userName.charAt(0)}
               </div>
             )}
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <textarea
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="What's on your mind?"
-                className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                rows={3}
+                className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                rows={2}
               />
-              <div className="flex gap-2 justify-between items-center mt-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-stretch sm:items-center mt-2 sm:mt-3">
                 <select
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                 >
                   {topics.map((t) => (
                     <option key={t} value={t}>
@@ -206,10 +210,11 @@ const CommunityPage: React.FC = () => {
                 <button
                   onClick={handlePostMessage}
                   disabled={posting || !newMessage.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-teal-500 text-white rounded-lg font-medium hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm sm:text-base rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <Send className="w-4 h-4" />
-                  Post
+                  <span className="hidden sm:inline">Post</span>
+                  <span className="sm:hidden">Post</span>
                 </button>
               </div>
             </div>
@@ -218,19 +223,19 @@ const CommunityPage: React.FC = () => {
 
         {/* Messages */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading discussions...</p>
+          <div className="text-center py-12 sm:py-16">
+            <div className="animate-spin rounded-full h-10 sm:h-12 w-10 sm:w-12 border-b-2 border-teal-500 mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-sm sm:text-base text-gray-600">Loading discussions...</p>
           </div>
         ) : filteredMessages.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-            <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No messages yet. Be the first to ask something!</p>
+          <div className="text-center py-12 sm:py-16 bg-white rounded-xl border border-gray-100">
+            <MessageSquare className="w-10 sm:w-12 h-10 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-600">No messages yet. Be the first to ask something!</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4 lg:space-y-5">
             {filteredMessages.map((message) => (
-              <div key={message.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
+              <div key={message.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
                 <MessageCard
                   message={message}
                   isOwn={message.user_id === userId}
@@ -297,14 +302,14 @@ const ExpandedThread: React.FC<ExpandedThreadProps> = ({
   const { replies, loading } = useCommunityReplies(messageId);
 
   return (
-    <div className="border-t border-gray-100 bg-gray-50 p-4">
+    <div className="border-t border-gray-100 bg-gray-50 p-3 sm:p-4">
       {/* Existing Replies */}
       {loading ? (
         <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-5 sm:h-6 w-5 sm:w-6 border-b-2 border-teal-500 mx-auto"></div>
         </div>
       ) : replies.length > 0 ? (
-        <div className="space-y-3 mb-4">
+        <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
           {replies.map((reply) => (
             <ReplyCard
               key={reply.id}
@@ -318,33 +323,33 @@ const ExpandedThread: React.FC<ExpandedThreadProps> = ({
       ) : null}
 
       {/* Reply Composer */}
-      <div className="flex gap-3 pt-4 border-t border-gray-200">
+      <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
         {userAvatar ? (
           <img
             src={userAvatar}
             alt={userName}
-            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+            className="w-7 sm:w-8 h-7 sm:h-8 rounded-full object-cover flex-shrink-0"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+          <div className="w-7 sm:w-8 h-7 sm:h-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
             {userName.charAt(0)}
           </div>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <textarea
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             placeholder="Write a reply..."
-            className="w-full p-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full p-2 sm:p-2.5 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             rows={2}
           />
           <button
             onClick={onPostReply}
             disabled={postingReply || !replyText.trim()}
-            className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="mt-2 flex items-center justify-center gap-2 px-3 py-1.5 sm:py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             Reply
           </button>
         </div>
