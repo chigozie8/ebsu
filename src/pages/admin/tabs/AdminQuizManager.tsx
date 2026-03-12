@@ -12,12 +12,11 @@ interface Quiz {
   id: string;
   title: string;
   description: string;
-  level: number;
-  category: 'preclinical' | 'clinical';
-  question_count: number;
-  duration: number;
-  published: boolean;
+  total_questions: number;
+  duration_minutes: number;
+  is_published: boolean;
   created_at: string;
+  course_id: string;
 }
 
 export const AdminQuizManager = () => {
@@ -33,15 +32,20 @@ export const AdminQuizManager = () => {
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
+      console.log('[v0] Fetching quizzes from Supabase...');
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.log('[v0] Supabase error:', error);
+        throw error;
+      }
+      console.log('[v0] Quizzes fetched:', data);
       setQuizzes(data || []);
     } catch (err) {
-      console.error('Failed to fetch quizzes:', err);
+      console.error('[v0] Failed to fetch quizzes:', err);
       toast.error('Failed to load quizzes');
     } finally {
       setLoading(false);
@@ -52,11 +56,11 @@ export const AdminQuizManager = () => {
     try {
       const { error } = await supabase
         .from('quizzes')
-        .update({ published: !quiz.published })
+        .update({ is_published: !quiz.is_published })
         .eq('id', quiz.id);
 
       if (error) throw error;
-      toast.success(quiz.published ? 'Quiz unpublished' : 'Quiz published');
+      toast.success(quiz.is_published ? 'Quiz unpublished' : 'Quiz published');
       fetchQuizzes();
     } catch (err) {
       console.error('Failed to toggle publish:', err);
@@ -159,9 +163,8 @@ export const AdminQuizManager = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Level</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Category</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Questions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Duration</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
@@ -170,24 +173,15 @@ export const AdminQuizManager = () => {
                   {filteredQuizzes.map((quiz) => (
                     <tr key={quiz.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3 text-sm text-gray-900">{quiz.title}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">Level {quiz.level}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.total_questions}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.duration_minutes} mins</td>
                       <td className="px-6 py-3 text-sm">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          quiz.category === 'preclinical'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}>
-                          {quiz.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.question_count}</td>
-                      <td className="px-6 py-3 text-sm">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          quiz.published
+                          quiz.is_published
                             ? 'bg-green-100 text-green-700'
                             : 'bg-yellow-100 text-yellow-700'
                         }`}>
-                          {quiz.published ? 'Published' : 'Draft'}
+                          {quiz.is_published ? 'Published' : 'Draft'}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-sm">
@@ -195,9 +189,9 @@ export const AdminQuizManager = () => {
                           <button
                             onClick={() => togglePublish(quiz)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title={quiz.published ? 'Unpublish' : 'Publish'}
+                            title={quiz.is_published ? 'Unpublish' : 'Publish'}
                           >
-                            {quiz.published ? (
+                            {quiz.is_published ? (
                               <Eye className="w-4 h-4 text-green-600" />
                             ) : (
                               <EyeOff className="w-4 h-4 text-gray-400" />
