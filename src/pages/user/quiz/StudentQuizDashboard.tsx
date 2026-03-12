@@ -37,26 +37,29 @@ const StudentQuizDashboard = () => {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      console.log('[v0] Fetching quizzes with filters:', { selectedLevel, selectedCategory });
+      console.log('[v0] Fetching quizzes...');
       
-      let query = supabase
+      const { data, error: err } = await supabase
         .from('quizzes')
         .select('*')
-        .eq('is_published', true)
         .order('created_at', { ascending: false });
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('[v0] Error fetching quizzes:', error);
-        throw error;
+      if (err) {
+        console.error('[v0] Supabase error:', err.message);
+        const errorMsg = err.message || 'Failed to load quizzes';
+        toast.error(errorMsg);
+        setQuizzes([]);
+      } else {
+        console.log('[v0] Quizzes fetched successfully:', data?.length || 0, 'quizzes');
+        // Filter for published quizzes only
+        const publishedQuizzes = (data || []).filter(q => q.is_published === true);
+        console.log('[v0] Published quizzes:', publishedQuizzes.length);
+        setQuizzes(publishedQuizzes);
       }
-      
-      console.log('[v0] Quizzes fetched:', data);
-      setQuizzes(data || []);
     } catch (err) {
-      console.error('[v0] Failed to fetch quizzes:', err);
-      toast.error('Failed to load quizzes');
+      console.error('[v0] Unexpected error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
