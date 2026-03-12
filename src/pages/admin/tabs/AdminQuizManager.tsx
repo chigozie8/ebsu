@@ -256,7 +256,7 @@ export const AdminQuizManager = () => {
       {activeTab === 'pdf' && (
         <motion.div variants={fadeInVariants} initial="initial" animate="animate">
           <PDFSummarizer
-            onSummaryComplete={(summary, questions) => {
+            onSummaryComplete={(summary: string, questions: any[]) => {
               console.log('Summary:', summary);
               console.log('Questions:', questions);
               toast.success('Summary generated! You can now use these questions in your quiz.');
