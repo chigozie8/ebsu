@@ -267,5 +267,3 @@ export const AdminQuizManager = () => {
     </div>
   );
 };
-
-export { AdminQuizManager };

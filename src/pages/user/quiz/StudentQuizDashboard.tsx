@@ -20,7 +20,7 @@ interface AttemptStats {
   bestScore: number;
 }
 
-export const StudentQuizDashboard = () => {
+const StudentQuizDashboard = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'Preclinical' | 'Clinical' | null>(null);
@@ -258,3 +258,5 @@ export const StudentQuizDashboard = () => {
     </div>
   );
 };
+
+export default StudentQuizDashboard;
