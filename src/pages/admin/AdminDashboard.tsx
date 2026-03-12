@@ -2180,18 +2180,9 @@ Blog Posts
       {activeTab === "community-analytics" && (
         <CommunityAnalytics />
       )}
-      </div>
     </div>
   );
 }
-                            rows={block.type === "h1" || block.type === "h2" ? 1 : 3}
-                            className="w-full p-2 border border-gray-300 rounded text-sm resize-none"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Submit Button */}
                 <div className="flex gap-2 pt-4">
