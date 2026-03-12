@@ -219,30 +219,8 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
 
   // Get background gradient based on weather and time
   const getBackgroundGradient = () => {
-    if (!weather) return "from-gray-200 to-gray-300";
-    
-    if (!weather.isDay) {
-      return "from-slate-800 to-slate-900";
-    }
-    
-    switch (weatherInfo?.icon) {
-      case "sun":
-        return "from-sky-400 to-blue-500";
-      case "sun-cloud":
-      case "moon-cloud":
-        return "from-sky-300 to-blue-400";
-      case "cloud":
-      case "clouds":
-        return "from-slate-300 to-slate-400";
-      case "rain":
-      case "drizzle":
-      case "rain-heavy":
-        return "from-slate-400 to-slate-600";
-      case "thunder":
-        return "from-slate-600 to-slate-800";
-      default:
-        return "from-sky-400 to-blue-500";
-    }
+    // Always use night version background
+    return "from-slate-800 to-slate-900";
   };
 
   const getTextColor = () => {
