@@ -29,36 +29,6 @@ const CommunityMonitor: React.FC = () => {
     activeUsers: 0,
   });
 
-  useEffect(() => {
-    fetchData();
-    const channel = supabase
-      .channel('admin:community')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_messages',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setMessages((prev) => [payload.new as ExtendedMessage, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === payload.new.id ? (payload.new as ExtendedMessage) : msg))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -108,13 +78,44 @@ const CommunityMonitor: React.FC = () => {
         totalReports: reportData?.length || 0,
         activeUsers: uniqueUsers.size,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('[v0] Failed to fetch data:', err);
-      toast.error('Failed to load community data');
+      const errorMsg = err?.message || 'Failed to load community data';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+    const channel = supabase
+      .channel('admin:community')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'community_messages',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setMessages((prev) => [payload.new as ExtendedMessage, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === payload.new.id ? (payload.new as ExtendedMessage) : msg))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, []);
 
   const handleAddGuideline = async () => {
     if (!newGuideline.trim()) return;
