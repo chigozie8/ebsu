@@ -159,9 +159,9 @@ export const AdminQuizManager = () => {
             </ol>
           </div>
 
-          <details className="ml-8 mt-3">
-            <summary className="cursor-pointer font-medium text-blue-700 hover:text-blue-800">Show SQL Migration Script</summary>
-            <pre className="mt-2 bg-white p-3 rounded border border-blue-200 text-xs overflow-auto max-h-64">
+          <div className="ml-8 mt-4 bg-white p-4 rounded border border-blue-200">
+            <p className="font-medium text-blue-900 mb-2">SQL Migration Script:</p>
+            <pre className="text-xs overflow-auto max-h-80 bg-gray-900 text-gray-100 p-3 rounded font-mono leading-relaxed whitespace-pre-wrap break-words">
 {`-- Quiz System Database Schema
 CREATE TABLE IF NOT EXISTS quiz_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -240,7 +240,7 @@ VALUES
   ('Clinical', 'Clinical practice and case studies (Levels 4-6)', 2)
 ON CONFLICT (name) DO NOTHING;`}
             </pre>
-          </details>
+          </div>
         </motion.div>
       )}
       {/* Tab Navigation */}
