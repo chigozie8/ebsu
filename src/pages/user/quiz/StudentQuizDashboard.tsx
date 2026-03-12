@@ -8,10 +8,11 @@ interface Quiz {
   id: string;
   title: string;
   description: string;
-  level: number;
-  category: string;
-  questionCount: number;
-  duration?: number;
+  total_questions: number;
+  duration_minutes: number;
+  is_published: boolean;
+  course_id?: string;
+  created_at: string;
 }
 
 interface AttemptStats {
@@ -36,21 +37,25 @@ const StudentQuizDashboard = () => {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('quizzes').select('*').eq('published', true);
-
-      if (selectedLevel) {
-        query = query.eq('level_id', selectedLevel);
-      }
-      if (selectedCategory) {
-        query = query.eq('category', selectedCategory);
-      }
+      console.log('[v0] Fetching quizzes with filters:', { selectedLevel, selectedCategory });
+      
+      let query = supabase
+        .from('quizzes')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
 
       const { data, error } = await query;
-      if (error) throw error;
       
+      if (error) {
+        console.error('[v0] Error fetching quizzes:', error);
+        throw error;
+      }
+      
+      console.log('[v0] Quizzes fetched:', data);
       setQuizzes(data || []);
     } catch (err) {
-      console.error('Failed to fetch quizzes:', err);
+      console.error('[v0] Failed to fetch quizzes:', err);
       toast.error('Failed to load quizzes');
     } finally {
       setLoading(false);
@@ -63,12 +68,12 @@ const StudentQuizDashboard = () => {
       if (!user) return;
 
       const { data } = await supabase
-        .from('user_attempts')
-        .select('score')
+        .from('quiz_attempts')
+        .select('score, percentage')
         .eq('user_id', user.id);
 
       if (data && data.length > 0) {
-        const scores = data.map((d: any) => d.score || 0);
+        const scores = data.map((d: any) => d.percentage || 0);
         const totalAttempts = data.length;
         const averageScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / totalAttempts);
         const bestScore = Math.max(...scores);
@@ -76,7 +81,7 @@ const StudentQuizDashboard = () => {
         setStats({ totalAttempts, averageScore, bestScore });
       }
     } catch (err) {
-      console.error('Failed to fetch stats:', err);
+      console.error('[v0] Failed to fetch stats:', err);
     }
   };
 
@@ -237,12 +242,12 @@ const StudentQuizDashboard = () => {
               <div className="flex items-center justify-between mb-4 text-xs text-gray-500">
                 <div className="flex items-center gap-1">
                   <BookOpen className="w-4 h-4" />
-                  {quiz.questionCount} Questions
+                  {quiz.total_questions} Questions
                 </div>
-                {quiz.duration && (
+                {quiz.duration_minutes && (
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {quiz.duration} min
+                    {quiz.duration_minutes} min
                   </div>
                 )}
               </div>
