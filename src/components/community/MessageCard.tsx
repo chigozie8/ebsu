@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, SmilePlus } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, SmilePlus, MessageCircle } from 'lucide-react';
 import { useReactions, useAddReaction } from '../../hooks/useCommunity';
 
 interface MessageCardProps {
@@ -9,6 +9,7 @@ interface MessageCardProps {
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
   userId?: string;
+  onThreadClick?: (messageId: string) => void;
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -17,6 +18,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onDelete,
   onEdit,
   userId,
+  onThreadClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -164,7 +166,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <p className="text-gray-700 mt-2 whitespace-pre-wrap break-words">{message.message}</p>
             )}
 
-            {/* Reactions Section */}
+            {/* Reactions and Actions Section */}
             <div className="mt-3 flex flex-wrap gap-2 items-center">
               {reactionGroups.map((group) => (
                 <button
@@ -180,6 +182,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <span className="text-xs font-medium">{group.count}</span>
                 </button>
               ))}
+              
+              {/* View Thread Button */}
+              {onThreadClick && (
+                <button
+                  onClick={() => onThreadClick(message.id)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-blue-200 hover:border-blue-400"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Thread</span>
+                </button>
+              )}
               
               {/* Reaction Picker Button */}
               <div className="relative">
