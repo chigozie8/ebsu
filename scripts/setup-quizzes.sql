@@ -157,13 +157,4 @@ INSERT INTO quiz_levels (category_id, level_number, title, description)
 SELECT id, 6, 'Level 6', 'Advanced clinical practice and board review' FROM quiz_categories WHERE name = 'Clinical'
 ON CONFLICT (category_id, level_number) DO NOTHING;
 
--- Enable RLS
-ALTER TABLE quiz_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_levels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_answers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_quiz_answers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pdf_summaries ENABLE ROW LEVEL SECURITY;
+-- Note: RLS policies will be added in a separate migration once tables are created

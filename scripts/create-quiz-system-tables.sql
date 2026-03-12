@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS quiz_courses (
 -- Quizzes table
 CREATE TABLE IF NOT EXISTS quizzes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id UUID NOT NULL REFERENCES quiz_courses(id) ON DELETE CASCADE,
+  course_id UUID REFERENCES quiz_courses(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,
   total_questions INT DEFAULT 0,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   quiz_id UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
   question_text TEXT NOT NULL,
-  question_type TEXT DEFAULT 'multiple_choice', -- multiple_choice, true_false, short_answer
+  question_type TEXT DEFAULT 'multiple_choice',
   points INT DEFAULT 1,
   order_index INT DEFAULT 0,
   explanation TEXT,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
   created_at TIMESTAMP DEFAULT now()
 );
 
--- User Answers table (for tracking individual question responses)
+-- User Answers table
 CREATE TABLE IF NOT EXISTS user_quiz_answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   attempt_id UUID NOT NULL REFERENCES quiz_attempts(id) ON DELETE CASCADE,
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS user_quiz_answers (
   created_at TIMESTAMP DEFAULT now()
 );
 
--- PDF Summaries table (for AI-generated summaries)
+-- PDF Summaries table
 CREATE TABLE IF NOT EXISTS pdf_summaries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID REFERENCES quiz_courses(id),
@@ -156,14 +156,3 @@ ON CONFLICT (category_id, level_number) DO NOTHING;
 INSERT INTO quiz_levels (category_id, level_number, title, description)
 SELECT id, 6, 'Level 6', 'Advanced clinical practice and board review' FROM quiz_categories WHERE name = 'Clinical'
 ON CONFLICT (category_id, level_number) DO NOTHING;
-
--- Enable RLS if needed
-ALTER TABLE quiz_categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_levels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_answers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_quiz_answers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pdf_summaries ENABLE ROW LEVEL SECURITY;
