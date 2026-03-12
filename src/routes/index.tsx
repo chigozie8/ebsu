@@ -83,6 +83,9 @@ const AppRoutes = () => {
   const AIAssistant = lazy(
     () => import("../pages/user/ai-assistant/AIAssistant")
   );
+  const CommunityPage = lazy(
+    () => import("../pages/user/community/CommunityPage")
+  );
 
   return (
     <>
@@ -195,6 +198,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <AIAssistant />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/community"
+            element={
+              <ProtectedRoute>
+                <CommunityPage />
               </ProtectedRoute>
             }
           />
