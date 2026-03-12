@@ -82,7 +82,9 @@ export const AdminQuizManager = () => {
       }
     } catch (err) {
       console.error('[v0] Failed to fetch quizzes:', err);
-      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setDbError(`Failed to load quizzes: ${errorMsg}`);
+      toast.error(`Failed to load quizzes: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
