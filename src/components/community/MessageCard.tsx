@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
 import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin } from 'lucide-react';
-import { useReactions, useAddReaction, usePinMessage } from '../../hooks/useCommunity';
+import { usePinMessage } from '../../hooks/useCommunity';
 
 interface MessageCardProps {
   message: Community;
   isOwn: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
-  userId?: string;
   onThreadClick?: (messageId: string) => void;
   isAdmin?: boolean;
 }
