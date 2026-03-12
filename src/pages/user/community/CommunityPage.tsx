@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
-import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
+import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
-import ReplyCard from '../../../components/community/ReplyCard';
 import { Send, Search, MessageSquare, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
@@ -25,9 +24,6 @@ const CommunityPage: React.FC = () => {
   const { postMessage, posting } = usePostMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
-  const { postReply, posting: postingReply } = usePostReply();
-  const { deleteReply } = useDeleteReply();
-  const { editReply } = useEditReply();
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
@@ -89,9 +85,6 @@ const CommunityPage: React.FC = () => {
     }
   };
 
-  const handlePostReply = async (messageId: string) => {
-    const text = replyText[messageId]?.trim();
-    if (!text) return;
 
     try {
       await postReply(messageId, userId, userName, text, userAvatar);
