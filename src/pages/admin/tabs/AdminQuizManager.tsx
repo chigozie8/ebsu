@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
@@ -202,7 +202,7 @@ export const AdminQuizManager = () => {
                             )}
                           </button>
                           <button
-                            onClick={() => setEditingQuiz(quiz)}
+                            onClick={() => console.log('Edit quiz:', quiz.id)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Edit"
                           >
