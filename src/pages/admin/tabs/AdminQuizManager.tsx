@@ -36,16 +36,16 @@ export const AdminQuizManager = () => {
       console.log('[v0] Checking if quiz database is initialized...');
       const exists = await initializeQuizTables();
       
-      if (!exists) {
-        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to get started.');
-        console.log('[v0] Quiz tables do not exist - user needs to run SQL migration');
-      } else {
+      if (exists) {
         await fetchQuizzes();
         setDbError(null);
+      } else {
+        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
+        console.log('[v0] Quiz tables do not exist - displaying setup instructions');
       }
     } catch (error) {
       console.error('[v0] Database initialization error:', error);
-      setDbError('Unable to connect to database');
+      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
     }
   };
 
@@ -82,8 +82,7 @@ export const AdminQuizManager = () => {
       }
     } catch (err) {
       console.error('[v0] Failed to fetch quizzes:', err);
-      setDbError('Failed to load quizzes. Please refresh the page.');
-      toast.error('Failed to load quizzes');
+      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
     } finally {
       setLoading(false);
     }
