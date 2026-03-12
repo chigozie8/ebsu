@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import { Send, Search, X } from 'lucide-react';
@@ -23,17 +23,9 @@ const CommunityPage: React.FC = () => {
   const { likeMessage, unlikeMessage, liking } = useLikeMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
-  const { replies } = useCommunityReplies(selectedMessage || '');
+  useCommunityReplies(selectedMessage || '');
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
-
-  const topicColors: Record<string, string> = {
-    'General': 'bg-purple-100 text-purple-700',
-    'Academics': 'bg-blue-100 text-blue-700',
-    'Campus Life': 'bg-pink-100 text-pink-700',
-    'Tech': 'bg-green-100 text-green-700',
-    'Events': 'bg-amber-100 text-amber-700',
-  };
 
   // Fetch user likes
   useEffect(() => {
