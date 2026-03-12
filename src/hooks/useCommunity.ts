@@ -55,9 +55,16 @@ export const useCommunityMessages = (topic?: string, limit: number = 20) => {
           if (payload.eventType === 'INSERT') {
             setMessages((prev) => [payload.new as Community, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === payload.new.id ? (payload.new as Community) : msg))
-            );
+            const updatedMessage = payload.new as Community;
+            // If the message is marked as deleted, remove it from the list
+            if (updatedMessage.is_deleted) {
+              setMessages((prev) => prev.filter((msg) => msg.id !== updatedMessage.id));
+            } else {
+              // Otherwise, update the message normally
+              setMessages((prev) =>
+                prev.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg))
+              );
+            }
           } else if (payload.eventType === 'DELETE') {
             setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
           }
