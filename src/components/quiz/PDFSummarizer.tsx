@@ -43,11 +43,10 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
           if (file.type.startsWith('image/')) {
             const base64 = e.target?.result as string;
             console.log('[v0] Processing image file:', file.name);
-            fileContent = `[Image file: ${file.name}. Please analyze and summarize the content visible in this image based on the base64 data provided.]`;
+            fileContent = `[Image file: ${file.name}. Please analyze and summarize the content visible in this image.]`;
           } else {
             // For PDFs, try to extract text
             fileContent = `[PDF file: ${file.name}. Content placeholder.]`;
-            toast.info('For PDF files, please ensure content is extractable');
           }
 
           console.log('[v0] Starting PDF/document summarization...');
