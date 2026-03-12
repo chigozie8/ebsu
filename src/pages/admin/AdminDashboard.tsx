@@ -21,8 +21,6 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
-import CommunityMonitor from "./tabs/CommunityMonitor";
-import CommunityAnalytics from "./tabs/CommunityAnalytics";
 
 interface Material {
   id: string;
@@ -149,16 +147,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "community-analytics"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "community-analytics">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines">(
     getInitialTab()
   );
   
@@ -1717,26 +1715,6 @@ Blog Posts
           }`}
         >
           Outlines
-        </button>
-        <button
-          onClick={() => setActiveTab("community")}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === "community"
-              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Community
-        </button>
-        <button
-          onClick={() => setActiveTab("community-analytics")}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === "community-analytics"
-              ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          Community Analytics
         </button>
         </div>
 
@@ -3618,16 +3596,6 @@ Blog Posts
             </div>
           </motion.div>
         </div>
-      )}
-
-      {/* Community Management Tab */}
-      {activeTab === "community" && (
-        <CommunityMonitor />
-      )}
-
-      {/* Community Analytics Tab */}
-      {activeTab === "community-analytics" && (
-        <CommunityAnalytics />
       )}
     </div>
   );
