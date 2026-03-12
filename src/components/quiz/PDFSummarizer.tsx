@@ -4,7 +4,7 @@ import { Upload, Loader, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PDFSummarizerProps {
-  onSummaryComplete: (summary: string, questions: any[]) => void;
+  onSummaryComplete: (summary: string) => void;
 }
 
 export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete }) => {
@@ -43,24 +43,21 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
         if (response.ok) {
           const data = await response.json();
           const summary = data.summary || '';
-          const extractedQuestions = data.questions || [];
 
           toast.success('PDF processed successfully');
-          onSummaryComplete(summary, extractedQuestions);
+          onSummaryComplete(summary);
         } else {
           // Fallback for demo purposes
           toast.success('PDF uploaded (Demo mode - Puter.js integration pending)');
           onSummaryComplete(
-            `Summary of ${file.name}: This is a placeholder summary. In production, this would be powered by Puter.js AI.`,
-            []
+            `Summary of ${file.name}: This is a placeholder summary. In production, this would be powered by Puter.js AI.`
           );
         }
       } else {
         // Puter.js not loaded, show demo message
         toast.success('Puter.js AI integration ready. Upload PDFs to auto-generate questions and summaries.');
         onSummaryComplete(
-          `Summary of ${file.name}: Puter.js integration is configured and ready to process educational documents.`,
-          []
+          `Summary of ${file.name}: Puter.js integration is configured and ready to process educational documents.`
         );
       }
     } catch (error) {
