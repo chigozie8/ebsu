@@ -13,8 +13,6 @@ const CommunityWidget: React.FC = () => {
   const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
   messages = result?.messages || [];
   loading = result?.loading || false;
-  
-  console.log('[v0] Community Widget:', { messages, loading, selectedTopic, result });
 
   // If there's an error, show a friendly message instead of breaking the dashboard
   if (!messages) {
