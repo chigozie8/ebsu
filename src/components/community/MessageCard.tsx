@@ -180,6 +180,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
+                    <span className="text-sm">{group.emoji}</span>
                     <span className="text-xs font-medium">{group.count}</span>
                   </button>
                 ))}
@@ -200,19 +201,22 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <div className="relative flex-shrink-0">
                 <button
                   onClick={() => setShowReactionPicker(!showReactionPicker)}
-                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700 active:bg-gray-200"
                   title="Add reaction"
                 >
-                  <SmilePlus className="w-4 h-4" />
+                  <SmilePlus className="w-5 h-5" />
                 </button>
                 
                 {showReactionPicker && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-10">
+                  <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-20 min-w-max">
                     {EMOJI_REACTIONS.map((emoji) => (
                       <button
                         key={emoji}
-                        onClick={() => handleReaction(emoji)}
-                        className="text-xl hover:scale-125 transition-transform p-1"
+                        onClick={() => {
+                          handleReaction(emoji);
+                          setShowReactionPicker(false);
+                        }}
+                        className="text-lg hover:scale-125 transition-transform p-1 hover:bg-gray-100 rounded"
                         title={`React with ${emoji}`}
                       >
                         {emoji}
