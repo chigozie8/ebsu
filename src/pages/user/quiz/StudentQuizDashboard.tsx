@@ -93,9 +93,6 @@ const StudentQuizDashboard = () => {
     animate: { opacity: 1, y: 0 },
   };
 
-  const preclinicalLevels = [1, 2, 3];
-  const clinicalLevels = [4, 5, 6];
-
   const filteredQuizzes = quizzes.filter((q) =>
     q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     q.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -169,28 +166,9 @@ const StudentQuizDashboard = () => {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Preclinical Levels */}
-          <div>
-            <h3 className="font-semibold text-gray-700 mb-2">Preclinical (Levels 1-3)</h3>
-            <div className="flex gap-2">
-              {preclinicalLevels.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => {
-                    setSelectedLevel(selectedLevel === level ? null : level);
-                    setSelectedCategory('Preclinical');
-                  }}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedLevel === level
-                      ? 'bg-teal-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-            </div>
+        <div className="grid grid-cols-1 gap-4">
+          <div></div>
+        </div>
           </div>
 
           {/* Clinical Levels */}
