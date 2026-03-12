@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
-import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
+import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
 import { Send, Search, MessageSquare, Check } from 'lucide-react';
@@ -237,23 +237,7 @@ const CommunityPage: React.FC = () => {
                   onEdit={(id, text) => editMessage(id, text)}
                 />
 
-                {/* Expanded Thread */}
-                {expandedMessage === message.id && (
-                  <ExpandedThread
-                    messageId={message.id}
-                    userId={userId}
-                    userName={userName}
-                    userAvatar={userAvatar}
-                    replyText={replyText[message.id] || ''}
-                    setReplyText={(text) =>
-                      setReplyText({ ...replyText, [message.id]: text })
-                    }
-                    onPostReply={() => handlePostReply(message.id)}
-                    onDeleteReply={deleteReply}
-                    onEditReply={editReply}
-                    postingReply={postingReply}
-                  />
-                )}
+
               </div>
             ))}
           </div>
