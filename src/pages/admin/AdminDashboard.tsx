@@ -2151,6 +2151,7 @@ Blog Posts
                       </div>
                     </motion.div>
                   </div>
+                </div>
       )}
 
       {/* Projects Tab */}
@@ -3597,6 +3598,7 @@ Blog Posts
           </motion.div>
         </div>
       )}
+      </div>
     </div>
   );
 }
