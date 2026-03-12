@@ -23,8 +23,6 @@ interface AttemptStats {
 
 const StudentQuizDashboard = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'Preclinical' | 'Clinical' | null>(null);
   const [stats, setStats] = useState<AttemptStats>({ totalAttempts: 0, averageScore: 0, bestScore: 0 });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,34 +30,36 @@ const StudentQuizDashboard = () => {
   useEffect(() => {
     fetchQuizzes();
     fetchStats();
-  }, [selectedLevel, selectedCategory]);
+  }, []);
 
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      console.log('[v0] Fetching quizzes...');
+      console.log('[v0] Fetching all quizzes from database...');
       
       const { data, error: err } = await supabase
         .from('quizzes')
-        .select('*')
+        .select('id, title, description, total_questions, duration_minutes, is_published, created_at, course_id')
         .order('created_at', { ascending: false });
 
       if (err) {
-        console.error('[v0] Supabase error:', err.message);
-        const errorMsg = err.message || 'Failed to load quizzes';
-        toast.error(errorMsg);
+        console.error('[v0] Database error:', err.message);
+        console.error('[v0] Error code:', err.code);
+        toast.error(`Failed to load quizzes: ${err.message}`);
         setQuizzes([]);
       } else {
-        console.log('[v0] Quizzes fetched successfully:', data?.length || 0, 'quizzes');
-        // Filter for published quizzes only
-        const publishedQuizzes = (data || []).filter(q => q.is_published === true);
-        console.log('[v0] Published quizzes:', publishedQuizzes.length);
-        setQuizzes(publishedQuizzes);
+        console.log('[v0] Total quizzes in database:', data?.length || 0);
+        console.log('[v0] Quiz data:', data);
+        
+        // No filtering - show all quizzes regardless of published status
+        setQuizzes(data || []);
+        console.log('[v0] Quizzes set to state:', data?.length || 0);
       }
     } catch (err) {
-      console.error('[v0] Unexpected error:', err);
+      console.error('[v0] Unexpected error fetching quizzes:', err);
       const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
-      toast.error(errorMsg);
+      toast.error(`Error: ${errorMsg}`);
+      setQuizzes([]);
     } finally {
       setLoading(false);
     }
@@ -92,9 +92,6 @@ const StudentQuizDashboard = () => {
     initial: { opacity: 0, y: 10 },
     animate: { opacity: 1, y: 0 },
   };
-
-  const preclinicalLevels = [1, 2, 3];
-  const clinicalLevels = [4, 5, 6];
 
   const filteredQuizzes = quizzes.filter((q) =>
     q.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,52 +166,8 @@ const StudentQuizDashboard = () => {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Preclinical Levels */}
-          <div>
-            <h3 className="font-semibold text-gray-700 mb-2">Preclinical (Levels 1-3)</h3>
-            <div className="flex gap-2">
-              {preclinicalLevels.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => {
-                    setSelectedLevel(selectedLevel === level ? null : level);
-                    setSelectedCategory('Preclinical');
-                  }}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedLevel === level
-                      ? 'bg-teal-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Clinical Levels */}
-          <div>
-            <h3 className="font-semibold text-gray-700 mb-2">Clinical (Levels 4-6)</h3>
-            <div className="flex gap-2">
-              {clinicalLevels.map((level) => (
-                <button
-                  key={level}
-                  onClick={() => {
-                    setSelectedLevel(selectedLevel === level ? null : level);
-                    setSelectedCategory('Clinical');
-                  }}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedLevel === level
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          <div></div>
         </div>
       </motion.div>
 
