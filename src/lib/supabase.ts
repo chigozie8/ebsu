@@ -53,3 +53,11 @@ export type CommunityReport = {
   created_at: string;
   status: string;
 };
+
+export type CommunityReaction = {
+  id: string;
+  message_id: string;
+  user_id: string;
+  reaction_emoji: string;
+  created_at: string;
+};

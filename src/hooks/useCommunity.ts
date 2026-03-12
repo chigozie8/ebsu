@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase, Community, CommunityReply } from '../lib/supabase';
+import { supabase, Community, CommunityReply, CommunityReaction } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 export const useCommunityMessages = (topic?: string, limit: number = 20) => {
@@ -351,4 +351,110 @@ export const useEditReply = () => {
   }, []);
 
   return { editReply, editing, error };
+};
+
+export const useReactions = (messageId: string) => {
+  const [reactions, setReactions] = useState<CommunityReaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchReactions = async () => {
+      try {
+        setLoading(true);
+        const { data, error: err } = await supabase
+          .from('community_reactions')
+          .select('*')
+          .eq('message_id', messageId);
+
+        if (err) throw err;
+        setReactions(data || []);
+      } catch (err) {
+        console.error('[v0] Failed to fetch reactions:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch reactions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReactions();
+
+    // Subscribe to realtime reaction updates
+    const channel = supabase
+      .channel(`reactions:${messageId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'community_reactions',
+          filter: `message_id=eq.${messageId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setReactions((prev) => [...prev, payload.new as CommunityReaction]);
+          } else if (payload.eventType === 'DELETE') {
+            setReactions((prev) => prev.filter((r) => r.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [messageId]);
+
+  return { reactions, loading, error };
+};
+
+export const useAddReaction = () => {
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const addReaction = useCallback(async (messageId: string, userId: string, emoji: string) => {
+    try {
+      setAdding(true);
+      setError(null);
+
+      // Check if user already reacted with this emoji
+      const { data: existing } = await supabase
+        .from('community_reactions')
+        .select('id')
+        .eq('message_id', messageId)
+        .eq('user_id', userId)
+        .eq('reaction_emoji', emoji)
+        .single();
+
+      if (existing) {
+        // Already reacted with this emoji, remove it
+        const { error: err } = await supabase
+          .from('community_reactions')
+          .delete()
+          .eq('id', existing.id);
+        if (err) throw err;
+      } else {
+        // Add new reaction
+        const { error: err } = await supabase
+          .from('community_reactions')
+          .insert([
+            {
+              message_id: messageId,
+              user_id: userId,
+              reaction_emoji: emoji,
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        if (err) throw err;
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add reaction';
+      setError(errorMsg);
+      console.error('[v0] Reaction error:', err);
+    } finally {
+      setAdding(false);
+    }
+  }, []);
+
+  return { addReaction, adding, error };
 };

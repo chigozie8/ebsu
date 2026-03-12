@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, SmilePlus } from 'lucide-react';
+import { useReactions, useAddReaction } from '../../hooks/useCommunity';
 
 interface MessageCardProps {
   message: Community;
   isOwn: boolean;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
+  userId?: string;
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
@@ -14,10 +16,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
   isOwn,
   onDelete,
   onEdit,
+  userId,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const { reactions } = useReactions(message.id);
+  const { addReaction } = useAddReaction();
+
+  const EMOJI_REACTIONS = ['👍', '❤️', '🔥', '😂', '🎉'];
 
   const topicColors: Record<string, string> = {
     'General': 'bg-purple-100 text-purple-700',
@@ -44,6 +52,19 @@ const MessageCard: React.FC<MessageCardProps> = ({
       setEditing(false);
     }
   };
+
+  const handleReaction = async (emoji: string) => {
+    if (!userId) return;
+    await addReaction(message.id, userId, emoji);
+    setShowReactionPicker(false);
+  };
+
+  // Group reactions by emoji
+  const reactionGroups = EMOJI_REACTIONS.map((emoji) => ({
+    emoji,
+    count: reactions.filter((r) => r.reaction_emoji === emoji).length,
+    userReacted: reactions.some((r) => r.reaction_emoji === emoji && r.user_id === userId),
+  })).filter((group) => group.count > 0);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
@@ -143,7 +164,49 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <p className="text-gray-700 mt-2 whitespace-pre-wrap break-words">{message.message}</p>
             )}
 
-
+            {/* Reactions Section */}
+            <div className="mt-3 flex flex-wrap gap-2 items-center">
+              {reactionGroups.map((group) => (
+                <button
+                  key={group.emoji}
+                  onClick={() => handleReaction(group.emoji)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors ${
+                    group.userReacted
+                      ? 'bg-teal-100 text-teal-700 border border-teal-300'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span>{group.emoji}</span>
+                  <span className="text-xs font-medium">{group.count}</span>
+                </button>
+              ))}
+              
+              {/* Reaction Picker Button */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700"
+                  title="Add reaction"
+                >
+                  <SmilePlus className="w-4 h-4" />
+                </button>
+                
+                {showReactionPicker && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-10">
+                    {EMOJI_REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleReaction(emoji)}
+                        className="text-xl hover:scale-125 transition-transform p-1"
+                        title={`React with ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
