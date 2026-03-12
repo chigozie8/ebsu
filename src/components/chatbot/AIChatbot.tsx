@@ -14,6 +14,7 @@ declare global {
             stream?: boolean;
             messages?: Array<{ role: string; content: any }>;
             vision?: boolean;
+            image?: string;
           }
         ) => Promise<any>;
         txt2img: (
