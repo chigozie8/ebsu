@@ -36,7 +36,6 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const isAnswered = userAnswers[currentQuestion.id] !== undefined;
 
   // Timer effect
   useEffect(() => {

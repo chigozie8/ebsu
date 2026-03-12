@@ -50,7 +50,7 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
           onSummaryComplete(summary, extractedQuestions);
         } else {
           // Fallback for demo purposes
-          toast.info('PDF uploaded (Demo mode - Puter.js integration pending)');
+          toast.success('PDF uploaded (Demo mode - Puter.js integration pending)');
           onSummaryComplete(
             `Summary of ${file.name}: This is a placeholder summary. In production, this would be powered by Puter.js AI.`,
             []
@@ -58,7 +58,7 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
         }
       } else {
         // Puter.js not loaded, show demo message
-        toast.info('Puter.js AI integration ready. Upload PDFs to auto-generate questions and summaries.');
+        toast.success('Puter.js AI integration ready. Upload PDFs to auto-generate questions and summaries.');
         onSummaryComplete(
           `Summary of ${file.name}: Puter.js integration is configured and ready to process educational documents.`,
           []
