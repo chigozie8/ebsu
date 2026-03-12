@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, SmilePlus, MessageCircle } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, MessageCircle } from 'lucide-react';
 import { useReactions, useAddReaction } from '../../hooks/useCommunity';
 
 interface MessageCardProps {
@@ -23,11 +23,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const { reactions } = useReactions(message.id);
   const { addReaction } = useAddReaction();
 
-  const EMOJI_REACTIONS = ['👍', '❤️', '🔥', '😂', '🎉'];
+  const THUMBS_UP_EMOJI = '👍🏼';
 
   const topicColors: Record<string, string> = {
     'General': 'bg-purple-100 text-purple-700',
@@ -55,18 +54,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
     }
   };
 
-  const handleReaction = async (emoji: string) => {
+  const handleReaction = async () => {
     if (!userId) return;
-    await addReaction(message.id, userId, emoji);
-    setShowReactionPicker(false);
+    await addReaction(message.id, userId, THUMBS_UP_EMOJI);
   };
 
-  // Group reactions by emoji
-  const reactionGroups = EMOJI_REACTIONS.map((emoji) => ({
-    emoji,
-    count: reactions.filter((r) => r.reaction_emoji === emoji).length,
-    userReacted: reactions.some((r) => r.reaction_emoji === emoji && r.user_id === userId),
-  })).filter((group) => group.count > 0);
+  // Calculate thumbs up count and if user has reacted
+  const thumbsUpCount = reactions.filter((r) => r.reaction_emoji === THUMBS_UP_EMOJI).length;
+  const userHasLiked = reactions.some((r) => r.reaction_emoji === THUMBS_UP_EMOJI && r.user_id === userId);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all">
@@ -167,24 +162,20 @@ const MessageCard: React.FC<MessageCardProps> = ({
             )}
 
             {/* Reactions and Actions Section */}
-            <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-              {/* Reactions Container */}
-              <div className="flex gap-2 items-center flex-shrink-0">
-                {reactionGroups.map((group) => (
-                  <button
-                    key={group.emoji}
-                    onClick={() => handleReaction(group.emoji)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-                      group.userReacted
-                        ? 'bg-teal-100 text-teal-700 border border-teal-300'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span className="text-sm">{group.emoji}</span>
-                    <span className="text-xs font-medium">{group.count}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="mt-3 flex items-center gap-2">
+              {/* Thumbs Up Button - Facebook Style */}
+              <button
+                onClick={handleReaction}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all font-medium ${
+                  userHasLiked
+                    ? 'bg-blue-100 text-blue-600 border border-blue-300'
+                    : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                }`}
+                title="Like"
+              >
+                <span className="text-lg">{THUMBS_UP_EMOJI}</span>
+                {thumbsUpCount > 0 && <span className="text-sm font-semibold">{thumbsUpCount}</span>}
+              </button>
               
               {/* View Thread Button */}
               {onThreadClick && (
@@ -196,35 +187,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   <span>Thread</span>
                 </button>
               )}
-              
-              {/* Reaction Picker Button */}
-              <div className="relative flex-shrink-0">
-                <button
-                  onClick={() => setShowReactionPicker(!showReactionPicker)}
-                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-500 hover:text-gray-700 active:bg-gray-200"
-                  title="Add reaction"
-                >
-                  <SmilePlus className="w-5 h-5" />
-                </button>
-                
-                {showReactionPicker && (
-                  <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex gap-1 z-20 min-w-max">
-                    {EMOJI_REACTIONS.map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => {
-                          handleReaction(emoji);
-                          setShowReactionPicker(false);
-                        }}
-                        className="text-lg hover:scale-125 transition-transform p-1 hover:bg-gray-100 rounded"
-                        title={`React with ${emoji}`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
