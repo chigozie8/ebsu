@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { supabase, Community, CommunityReport } from '../../../lib/supabase';
-import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2 } from 'lucide-react';
+import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2, Send, Check } from 'lucide-react';
 
 interface ExtendedMessage extends Community {
   report_count?: number;
@@ -16,6 +17,8 @@ const CommunityMonitor: React.FC = () => {
   const [, setSelectedMessage] = useState<ExtendedMessage | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
+  const [newMessage, setNewMessage] = useState('');
+  const [posting, setPosting] = useState(false);
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalReports: 0,
@@ -143,6 +146,49 @@ const CommunityMonitor: React.FC = () => {
     }
   };
 
+  const handlePostAdminMessage = async () => {
+    if (!newMessage.trim()) return;
+
+    setPosting(true);
+    try {
+      const { error } = await supabase.from('community_messages').insert([
+        {
+          user_id: 'admin',
+          user_name: 'Admin',
+          user_avatar: null,
+          message: newMessage,
+          topic: 'General',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_edited: false,
+          is_deleted: false,
+        },
+      ]);
+
+      if (error) throw error;
+
+      setNewMessage('');
+      toast.success('Admin message posted!', {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+          color: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+        },
+        icon: <Check className="w-5 h-5" />,
+      });
+    } catch (err) {
+      console.error('Failed to post admin message:', err);
+      toast.error('Failed to post message');
+    } finally {
+      setPosting(false);
+    }
+  };
+
   const filteredMessages = messages.filter((msg) => {
     const matchesSearch =
       msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -165,6 +211,31 @@ const CommunityMonitor: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Admin Message Composer */}
+      <div className="bg-white rounded-xl p-6 border-2 border-teal-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Post Admin Message</h3>
+        <div className="space-y-3">
+          <textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Write an admin announcement or message..."
+            className="w-full p-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+            rows={3}
+          />
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">Posting as: <span className="font-semibold text-teal-600">Admin</span></p>
+            <button
+              onClick={handlePostAdminMessage}
+              disabled={posting || !newMessage.trim()}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <Send className="w-4 h-4" />
+              Post Message
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
