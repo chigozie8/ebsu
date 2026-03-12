@@ -104,12 +104,23 @@ export default function AIAssistant() {
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (activeTab === "image") {
         // Image generation - txt2img returns an HTMLImageElement
-        const imageElement = await window.puter.ai.txt2img(inputValue, {
+        const imageResult = await window.puter.ai.txt2img(inputValue, {
           model: selectedModel.id,
         });
 
-        // Get the src from the image element (it's a data URL)
-        const imageUrl = imageElement.src;
+        // Get the src from the image element (it's a data URL or URL)
+        // The result could be an HTMLImageElement or an object with src
+        let imageUrl = "";
+        if (typeof imageResult === "string") {
+          imageUrl = imageResult;
+        } else if (imageResult?.src) {
+          imageUrl = imageResult.src;
+        } else if (imageResult instanceof HTMLImageElement) {
+          imageUrl = imageResult.src;
+        } else {
+          throw new Error("Could not get image URL from response");
+        }
+
         const assistantMessage: Message = {
           id: generateId(),
           role: "assistant",
@@ -121,18 +132,33 @@ export default function AIAssistant() {
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (activeTab === "vision" && uploadedImage) {
         // Image analysis/vision - pass image as second argument
+        // Use a vision-capable model (gpt-4o or claude-3)
+        const visionModel = selectedModel.category === "vision" ? "gpt-4o" : selectedModel.id;
+        
         response = await window.puter.ai.chat(
           inputValue || "Describe this image in detail",
           uploadedImage,
           {
-            model: selectedModel.id,
+            model: visionModel,
           }
         );
+
+        // Handle response - can be string or object with message.content
+        let responseContent = "";
+        if (typeof response === "string") {
+          responseContent = response;
+        } else if (response?.message?.content) {
+          responseContent = response.message.content;
+        } else if (response?.text) {
+          responseContent = response.text;
+        } else {
+          responseContent = JSON.stringify(response) || "No response received";
+        }
 
         const assistantMessage: Message = {
           id: generateId(),
           role: "assistant",
-          content: typeof response === "string" ? response : response?.message?.content || response?.toString() || "No response",
+          content: responseContent,
           type: "text",
           timestamp: new Date(),
         };
