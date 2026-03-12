@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, FileText, BookOpen, Clock, Trophy, Filter } from 'lucide-react';
+import { Search, FileText, BookOpen, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
@@ -142,7 +142,7 @@ export default function ExamPapersPage() {
           >
             <h2 className="text-xl font-bold text-gray-900 mb-4">AI PDF Exam Summarizer</h2>
             <PDFSummarizer
-              onSummaryComplete={(summary: string, questions: any[]) => {
+              onSummaryComplete={(summary: string) => {
                 console.log('[v0] Summary generated:', summary);
                 toast.success('PDF summary generated! You can download it or use the questions for practice.');
               }}
