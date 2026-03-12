@@ -82,7 +82,7 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
           user_id: userId,
           user_name: userName,
           user_avatar: userAvatar,
-          reply_text: replyText,
+          reply: replyText,
           created_at: new Date().toISOString(),
           is_edited: false,
           is_deleted: false,
