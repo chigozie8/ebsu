@@ -3756,6 +3756,17 @@ Blog Posts
           </motion.div>
         </div>
       )}
+
+        {/* Community Management Tab */}
+        {activeTab === "community" && (
+          <CommunityMonitor />
+        )}
+
+        {/* Community Analytics Tab */}
+        {activeTab === "community-analytics" && (
+          <CommunityAnalytics />
+        )}
+      </div>
     </div>
   );
 }
