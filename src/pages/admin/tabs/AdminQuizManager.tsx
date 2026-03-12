@@ -26,7 +26,6 @@ export const AdminQuizManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     initializeDatabase();
@@ -34,20 +33,19 @@ export const AdminQuizManager = () => {
 
   const initializeDatabase = async () => {
     try {
-      setIsInitializing(true);
-      console.log('[v0] Initializing quiz database...');
-      const success = await initializeQuizTables();
-      if (success) {
+      console.log('[v0] Checking if quiz database is initialized...');
+      const exists = await initializeQuizTables();
+      
+      if (exists) {
         await fetchQuizzes();
         setDbError(null);
       } else {
-        setDbError('Failed to initialize quiz database. Please try again.');
+        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
+        console.log('[v0] Quiz tables do not exist - displaying setup instructions');
       }
     } catch (error) {
       console.error('[v0] Database initialization error:', error);
-      setDbError('Unable to connect to database');
-    } finally {
-      setIsInitializing(false);
+      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
     }
   };
 
@@ -84,8 +82,7 @@ export const AdminQuizManager = () => {
       }
     } catch (err) {
       console.error('[v0] Failed to fetch quizzes:', err);
-      setDbError('Failed to load quizzes. Please refresh the page.');
-      toast.error('Failed to load quizzes');
+      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
     } finally {
       setLoading(false);
     }
@@ -131,20 +128,113 @@ export const AdminQuizManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Database Error Banner */}
+      {/* Database Error/Setup Banner */}
       {dbError && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3"
+          className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3"
         >
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-red-900">Database Error</h3>
-            <p className="text-red-800 text-sm">{dbError}</p>
-            {isInitializing && (
-              <p className="text-red-700 text-sm mt-1">Setting up database tables...</p>
-            )}
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900">Setup Required</h3>
+              <p className="text-blue-800 text-sm">{dbError}</p>
+            </div>
+          </div>
+          
+          <div className="ml-8 space-y-2 text-sm text-blue-800">
+            <p className="font-medium">To get started, follow these steps:</p>
+            <ol className="list-decimal list-inside space-y-1 ml-2">
+              <li>Go to your Supabase dashboard at <a href="https://app.supabase.com" target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-700">app.supabase.com</a></li>
+              <li>Select your project and go to the SQL Editor</li>
+              <li>Copy and paste the SQL migration script below</li>
+              <li>Execute the script to create the necessary database tables</li>
+              <li>Refresh this page after the tables are created</li>
+            </ol>
+          </div>
+
+          <div className="ml-8 mt-4 bg-white p-4 rounded border border-blue-200">
+            <p className="font-medium text-blue-900 mb-2">SQL Migration Script:</p>
+            <pre className="text-xs overflow-auto max-h-80 bg-gray-900 text-gray-100 p-3 rounded font-mono leading-relaxed whitespace-pre-wrap break-words">
+{`-- Quiz System Database Schema
+CREATE TABLE IF NOT EXISTS quiz_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  order_index INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS quiz_levels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id UUID NOT NULL REFERENCES quiz_categories(id) ON DELETE CASCADE,
+  level_number INT NOT NULL CHECK (level_number >= 1 AND level_number <= 6),
+  title TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now(),
+  UNIQUE(category_id, level_number)
+);
+
+CREATE TABLE IF NOT EXISTS quiz_courses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level_id UUID NOT NULL REFERENCES quiz_levels(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  code TEXT UNIQUE,
+  instructor_id UUID REFERENCES auth.users(id),
+  is_published BOOLEAN DEFAULT false,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS quizzes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id UUID REFERENCES quiz_courses(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  total_questions INT DEFAULT 0,
+  duration_minutes INT DEFAULT 30,
+  pass_score INT DEFAULT 60,
+  is_published BOOLEAN DEFAULT false,
+  is_randomized BOOLEAN DEFAULT false,
+  shuffle_questions BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS quiz_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quiz_id UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+  question_text TEXT NOT NULL,
+  question_type TEXT DEFAULT 'multiple_choice',
+  points INT DEFAULT 1,
+  order_index INT DEFAULT 0,
+  explanation TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS quiz_answers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question_id UUID NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
+  answer_text TEXT NOT NULL,
+  is_correct BOOLEAN DEFAULT false,
+  order_index INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
+);
+
+-- Insert default data
+INSERT INTO quiz_categories (name, description, order_index) 
+VALUES 
+  ('Preclinical', 'Foundation and basic sciences (Levels 1-3)', 1),
+  ('Clinical', 'Clinical practice and case studies (Levels 4-6)', 2)
+ON CONFLICT (name) DO NOTHING;`}
+            </pre>
           </div>
         </motion.div>
       )}
