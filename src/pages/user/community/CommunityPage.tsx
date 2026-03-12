@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCommunityMessages, usePostMessage, useLikeMessage, useDeleteMessage, useEditMessage, useCommunityReplies, usePostReply, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import ReplyCard from '../../../components/community/ReplyCard';
-import { Send, Search, X, MessageSquare } from 'lucide-react';
+import { Send, Search, MessageSquare } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {

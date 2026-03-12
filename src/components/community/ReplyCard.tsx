@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CommunityReply } from '../../lib/supabase';
-import { Heart, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 
 interface ReplyCardProps {
   reply: CommunityReply;
