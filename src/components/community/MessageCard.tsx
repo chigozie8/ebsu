@@ -18,14 +18,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
   isOwn,
   onDelete,
   onEdit,
-  userId,
   onThreadClick,
   isAdmin = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
-  const { reactions } = useReactions(message.id);
   const { togglePin } = usePinMessage();
 
   const topicColors: Record<string, string> = {
@@ -52,11 +50,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
       onEdit(message.id, editText);
       setEditing(false);
     }
-  };
-
-  const handleEditMessage = async () => {
-    await onEdit(message.id, editText);
-    setEditing(false);
   };
 
   return (
