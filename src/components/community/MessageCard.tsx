@@ -1,29 +1,19 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { Heart, MessageSquareMore, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 
 interface MessageCardProps {
   message: Community;
   isOwn: boolean;
-  onReply: (messageId: string) => void;
-  onLike: (messageId: string) => void;
-  onUnlike: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
-  isLiked: boolean;
-  liking?: boolean;
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
   message,
   isOwn,
-  onReply,
-  onLike,
-  onUnlike,
   onDelete,
   onEdit,
-  isLiked,
-  liking = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -153,25 +143,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <p className="text-gray-700 mt-2 whitespace-pre-wrap break-words">{message.message}</p>
             )}
 
-            <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 border-t border-gray-100 pt-2">
-              <button
-                onClick={() => (isLiked ? onUnlike(message.id) : onLike(message.id))}
-                disabled={liking}
-                className={`flex items-center gap-1.5 transition-colors ${
-                  isLiked ? 'text-rose-500 font-semibold' : 'hover:text-rose-500'
-                } disabled:opacity-50`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                {message.likes_count}
-              </button>
-              <button
-                onClick={() => onReply(message.id)}
-                className="flex items-center gap-1.5 hover:text-teal-500 transition-colors"
-              >
-                <MessageSquareMore className="w-4 h-4" />
-                {message.reply_count}
-              </button>
-            </div>
+
           </div>
         </div>
       </div>
