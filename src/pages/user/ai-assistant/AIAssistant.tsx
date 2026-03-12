@@ -103,12 +103,13 @@ export default function AIAssistant() {
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (activeTab === "image") {
-        // Image generation
-        const imageBlob = await window.puter.ai.txt2img(inputValue, {
+        // Image generation - txt2img returns an HTMLImageElement
+        const imageElement = await window.puter.ai.txt2img(inputValue, {
           model: selectedModel.id,
         });
 
-        const imageUrl = URL.createObjectURL(imageBlob);
+        // Get the src from the image element (it's a data URL)
+        const imageUrl = imageElement.src;
         const assistantMessage: Message = {
           id: generateId(),
           role: "assistant",
@@ -119,12 +120,14 @@ export default function AIAssistant() {
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } else if (activeTab === "vision" && uploadedImage) {
-        // Image analysis/vision
-        response = await window.puter.ai.chat(inputValue || "Describe this image in detail", {
-          model: selectedModel.id,
-          vision: true,
-          image: uploadedImage,
-        });
+        // Image analysis/vision - pass image as second argument
+        response = await window.puter.ai.chat(
+          inputValue || "Describe this image in detail",
+          uploadedImage,
+          {
+            model: selectedModel.id,
+          }
+        );
 
         const assistantMessage: Message = {
           id: generateId(),
