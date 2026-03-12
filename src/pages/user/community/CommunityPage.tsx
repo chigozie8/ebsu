@@ -326,12 +326,8 @@ const CommunityPage: React.FC = () => {
                   message={message}
                   isOwn={message.user_id === userId}
                   onReply={() => setExpandedMessage(expandedMessage === message.id ? null : message.id)}
-                  onLike={() => handleLike(message.id)}
-                  onUnlike={() => handleLike(message.id)}
                   onDelete={() => deleteMessage(message.id)}
                   onEdit={(id, text) => editMessage(id, text)}
-                  isLiked={likedMessages.has(message.id)}
-                  liking={liking}
                 />
 
                 {/* Expanded Thread */}

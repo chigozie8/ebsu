@@ -6,7 +6,6 @@ interface MessageCardProps {
   message: Community;
   isOwn: boolean;
   onReply: (messageId: string) => void;
-  onLike: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
 }
@@ -15,7 +14,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
   message,
   isOwn,
   onReply,
-  onLike,
   onDelete,
   onEdit,
 }) => {
