@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCommunityMessages } from '../../hooks/useCommunity';
 import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
 
 const CommunityWidget: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
 
   let messages: any[] = [];
@@ -147,7 +149,10 @@ const CommunityWidget: React.FC = () => {
       </div>
 
       {/* View All Button */}
-      <button className="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold py-2 rounded-lg hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md">
+      <button 
+        onClick={() => navigate('/u/community')}
+        className="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold py-2 rounded-lg hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
+      >
         View Community
       </button>
     </div>
