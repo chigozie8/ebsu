@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Eye, EyeOff } from 'lucide-react';
-import { useQuizManagement, type QuizQuestion, type Quiz } from '../../hooks/useQuizManagement';
+import { Plus, Trash2 } from 'lucide-react';
+import { useQuizManagement, type QuizQuestion } from '../../hooks/useQuizManagement';
 import toast from 'react-hot-toast';
 
 interface AdminQuizBuilderProps {
@@ -10,7 +10,7 @@ interface AdminQuizBuilderProps {
 }
 
 export const AdminQuizBuilder: React.FC<AdminQuizBuilderProps> = ({ courseId, levelId }) => {
-  const { createQuiz, addQuestionsToQuiz, publishQuiz, loading } = useQuizManagement();
+  const { createQuiz, publishQuiz, loading } = useQuizManagement();
   const [quizTitle, setQuizTitle] = useState('');
   const [quizDescription, setQuizDescription] = useState('');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
