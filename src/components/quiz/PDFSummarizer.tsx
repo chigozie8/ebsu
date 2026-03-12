@@ -41,7 +41,6 @@ export const PDFSummarizer: React.FC<PDFSummarizerProps> = ({ onSummaryComplete 
           // For PDFs, we'd need a PDF parsing library like pdfjs
           // For now, we'll handle images by converting to base64 and using vision
           if (file.type.startsWith('image/')) {
-            const base64 = e.target?.result as string;
             console.log('[v0] Processing image file:', file.name);
             fileContent = `[Image file: ${file.name}. Please analyze and summarize the content visible in this image.]`;
           } else {
