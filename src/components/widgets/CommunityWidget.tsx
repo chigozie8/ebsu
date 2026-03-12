@@ -7,19 +7,15 @@ const CommunityWidget: React.FC = () => {
 
   let messages: any[] = [];
   let loading = false;
-  let error = false;
 
-  try {
-    const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
-    messages = result?.messages || [];
-    loading = result?.loading || false;
-  } catch (err) {
-    console.error('[v0] Community widget error:', err);
-    error = true;
-  }
+  const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
+  messages = result?.messages || [];
+  loading = result?.loading || false;
+  
+  console.log('[v0] Community Widget:', { messages, loading, selectedTopic, result });
 
   // If there's an error, show a friendly message instead of breaking the dashboard
-  if (error || !messages) {
+  if (!messages) {
     return (
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700">
         <div className="flex items-center justify-between mb-4">
