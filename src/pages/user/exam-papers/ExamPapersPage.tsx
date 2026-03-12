@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, Play, Plus, BookOpen, BarChart3, Zap, Clock } from 'lucide-react';
-import { supabase } from '../../config/supabase';
+import { Upload, Play, Plus, BookOpen, BarChart3, Zap } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 
 const fadeInVariants = {
   initial: { opacity: 0, y: 20 },
@@ -57,7 +57,7 @@ export default function ExamPapersPage() {
 
       if (data && data.length > 0) {
         const totalAttempts = data.length;
-        const averageScore = data.reduce((sum, p) => sum + (p.score || 0), 0) / totalAttempts;
+        const averageScore = data.reduce((sum: number, p: any) => sum + (p.score || 0), 0) / totalAttempts;
         
         setStats({
           totalExams: exams.length,
