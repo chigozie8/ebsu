@@ -22,6 +22,7 @@ import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
 import CommunityMonitor from "./tabs/CommunityMonitor";
+import { AdminQuizManager } from "./tabs/AdminQuizManager";
 
 interface Material {
   id: string;
@@ -148,16 +149,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes">(
     getInitialTab()
   );
   
@@ -1729,6 +1730,16 @@ Blog Posts
             }`}
           >
             Community
+          </button>
+          <button
+            onClick={() => setActiveTab("quizzes")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "quizzes"
+                ? "bg-purple-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Quiz Manager
           </button>
         </div>
 
@@ -4063,6 +4074,17 @@ Blog Posts
             transition={{ duration: 0.3 }}
           >
             <CommunityMonitor />
+          </motion.div>
+        )}
+
+        {activeTab === "quizzes" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AdminQuizManager />
           </motion.div>
         )}
       </div>
