@@ -97,21 +97,16 @@ export const useBlogLikes = () => {
 
       if (currentlyLiked) {
         // Unlike: Remove user from likedBy array
-        // Calculate new likes count from array
-        const newLikedBy = likedBy.filter(id => id !== userID);
         await updateDoc(postRef, {
-          likes: newLikedBy.length,
           likedBy: arrayRemove(userID),
         });
       } else {
         // Like: Add user to likedBy array (arrayUnion prevents duplicates)
-        const newLikedBy = [...likedBy, userID];
         await updateDoc(postRef, {
-          likes: newLikedBy.length,
           likedBy: arrayUnion(userID),
         });
       }
-      // Real-time listener will update the UI automatically
+      // Real-time listener will update the UI automatically and recalculate likes from likedBy array
     } catch (err) {
       console.error("Error toggling like:", err);
       notifyUser("error", "Couldn't update like. Please try again.");

@@ -43,7 +43,10 @@ export default function CommentSection() {
   };
 
   useEffect(() => {
-    getPostComments();
+    if (postID) {
+      // getPostComments now returns unsubscribe function but we rely on the hook's useEffect
+      getPostComments();
+    }
   }, [postID]);
 
   return (
