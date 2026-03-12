@@ -180,7 +180,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <span>{group.emoji}</span>
                     <span className="text-xs font-medium">{group.count}</span>
                   </button>
                 ))}
