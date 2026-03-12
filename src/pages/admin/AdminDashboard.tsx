@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
+import CommunityMonitor from "./tabs/CommunityMonitor";
 
 interface Material {
   id: string;
@@ -147,16 +148,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community">(
     getInitialTab()
   );
   
@@ -1718,6 +1719,16 @@ Blog Posts
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Course Outlines
+          </button>
+          <button
+            onClick={() => setActiveTab("community")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "community"
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Community
           </button>
         </div>
 
@@ -4041,6 +4052,18 @@ Blog Posts
             </div>
           )}
           </div>
+        )}
+
+        {/* Community Tab */}
+        {activeTab === "community" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <CommunityMonitor />
+          </motion.div>
         )}
       </div>
 
