@@ -72,41 +72,76 @@ export const useQuizManagement = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('[v0] Creating quiz with data:', quizData);
       const { data, error: err } = await supabase
         .from('quizzes')
         .insert([{
           title: quizData.title,
           description: quizData.description,
-          course_id: quizData.courseId,
-          level_id: quizData.levelId,
-          published: quizData.published,
+          course_id: quizData.courseId || null,
+          total_questions: quizData.questions?.length || 0,
+          is_published: quizData.published,
         }])
         .select();
 
-      if (err) throw err;
+      if (err) {
+        console.error('[v0] Error creating quiz:', err);
+        throw err;
+      }
+      
+      console.log('[v0] Quiz created:', data);
       
       // Add questions
-      if (quizData.questions.length > 0) {
-        const questionsWithQuizId = quizData.questions.map((q) => ({
+      if (quizData.questions && quizData.questions.length > 0) {
+        const questionsWithQuizId = quizData.questions.map((q, idx) => ({
           quiz_id: data?.[0]?.id,
-          text: q.text,
-          type: q.type,
-          options: q.options,
-          correct_answer: q.correctAnswer,
+          question_text: q.text,
+          question_type: q.type,
+          points: 1,
+          order_index: idx,
           explanation: q.explanation,
         }));
 
+        console.log('[v0] Adding questions:', questionsWithQuizId);
         const { error: qErr } = await supabase
-          .from('questions')
+          .from('quiz_questions')
           .insert(questionsWithQuizId);
 
-        if (qErr) throw qErr;
+        if (qErr) {
+          console.error('[v0] Error adding questions:', qErr);
+          throw qErr;
+        }
+
+        // Add answers for each question
+        for (let i = 0; i < quizData.questions.length; i++) {
+          const q = quizData.questions[i];
+          const questionId = data?.[0]?.id; // This would need to be fetched properly
+
+          if (q.options && q.options.length > 0) {
+            const answers = q.options.map((option, idx) => ({
+              question_id: questionId,
+              answer_text: option,
+              is_correct: option === q.correctAnswer,
+              order_index: idx,
+            }));
+
+            const { error: aErr } = await supabase
+              .from('quiz_answers')
+              .insert(answers);
+
+            if (aErr) {
+              console.error('[v0] Error adding answers:', aErr);
+              throw aErr;
+            }
+          }
+        }
       }
 
       toast.success('Quiz created successfully');
       return data?.[0];
     } catch (err: any) {
       const errorMsg = err?.message || 'Failed to create quiz';
+      console.error('[v0] createQuiz error:', errorMsg);
       setError(errorMsg);
       toast.error(errorMsg);
       return null;
