@@ -26,7 +26,6 @@ export const AdminQuizManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     initializeDatabase();
@@ -34,7 +33,6 @@ export const AdminQuizManager = () => {
 
   const initializeDatabase = async () => {
     try {
-      setIsInitializing(true);
       console.log('[v0] Checking if quiz database is initialized...');
       const exists = await initializeQuizTables();
       
@@ -48,8 +46,6 @@ export const AdminQuizManager = () => {
     } catch (error) {
       console.error('[v0] Database initialization error:', error);
       setDbError('Unable to connect to database');
-    } finally {
-      setIsInitializing(false);
     }
   };
 
