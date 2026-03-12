@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Search, Edit2, Trash2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
+import { initializeQuizTables, createSampleQuiz } from '../../../lib/quiz-db';
 import toast from 'react-hot-toast';
 
 // Admin Quiz Manager Tab - Manage and create quizzes
@@ -24,14 +25,36 @@ export const AdminQuizManager = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
-    fetchQuizzes();
+    initializeDatabase();
   }, []);
+
+  const initializeDatabase = async () => {
+    try {
+      setIsInitializing(true);
+      console.log('[v0] Initializing quiz database...');
+      const success = await initializeQuizTables();
+      if (success) {
+        await fetchQuizzes();
+        setDbError(null);
+      } else {
+        setDbError('Failed to initialize quiz database. Please try again.');
+      }
+    } catch (error) {
+      console.error('[v0] Database initialization error:', error);
+      setDbError('Unable to connect to database');
+    } finally {
+      setIsInitializing(false);
+    }
+  };
 
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
+      setDbError(null);
       console.log('[v0] Fetching quizzes from Supabase...');
       const { data, error } = await supabase
         .from('quizzes')
@@ -39,13 +62,29 @@ export const AdminQuizManager = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.log('[v0] Supabase error:', error);
-        throw error;
+        console.log('[v0] Supabase error:', error.message);
+        setDbError(error.message);
+        if (error.message.includes('relation') || error.message.includes('does not exist')) {
+          // Tables don't exist, suggest creating sample data
+          setDbError('Quiz database not initialized. Creating sample data...');
+          await createSampleQuiz();
+          // Try fetching again
+          const { data: retryData, error: retryError } = await supabase
+            .from('quizzes')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (retryError) throw retryError;
+          setQuizzes(retryData || []);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('[v0] Quizzes fetched:', data);
+        setQuizzes(data || []);
       }
-      console.log('[v0] Quizzes fetched:', data);
-      setQuizzes(data || []);
     } catch (err) {
       console.error('[v0] Failed to fetch quizzes:', err);
+      setDbError('Failed to load quizzes. Please refresh the page.');
       toast.error('Failed to load quizzes');
     } finally {
       setLoading(false);
@@ -92,6 +131,23 @@ export const AdminQuizManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Database Error Banner */}
+      {dbError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-red-900">Database Error</h3>
+            <p className="text-red-800 text-sm">{dbError}</p>
+            {isInitializing && (
+              <p className="text-red-700 text-sm mt-1">Setting up database tables...</p>
+            )}
+          </div>
+        </motion.div>
+      )}
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b border-gray-200">
         <button
