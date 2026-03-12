@@ -24,9 +24,15 @@ export const useCommunityMessages = (topic?: string, limit: number = 20) => {
         }
 
         const { data, error: err } = await query;
-        if (err) throw err;
-        setMessages(data || []);
+        if (err) {
+          console.error('[v0] Community fetch error:', err);
+          // Don't throw - just set empty messages and continue
+          setMessages([]);
+        } else {
+          setMessages(data || []);
+        }
       } catch (err) {
+        console.error('[v0] Community hook error:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch messages');
       } finally {
         setLoading(false);
