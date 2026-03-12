@@ -16,7 +16,7 @@ const CommunityPage: React.FC = () => {
   const [likedMessages, setLikedMessages] = useState<Set<string>>(new Set());
 
   // Get current user from useGetUserInfo hook
-  const { studentDetails } = useGetUserInfo();
+  const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   const userId = studentDetails?.userID || 'anonymous';
   const userName = studentDetails?.firstName && studentDetails?.lastName 
     ? `${studentDetails.firstName} ${studentDetails.lastName}` 
@@ -114,6 +114,12 @@ const CommunityPage: React.FC = () => {
   const handlePostMessage = async () => {
     if (!newMessage.trim()) return;
 
+    // Check if user info is loaded
+    if (!studentDetails || !studentDetails.userID) {
+      toast.error('Loading your profile... Please try again in a moment.');
+      return;
+    }
+
     try {
       await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar);
       setNewMessage('');
@@ -131,7 +137,7 @@ const CommunityPage: React.FC = () => {
         icon: <Check className="w-5 h-5" />,
       });
     } catch (err) {
-      console.error('Failed to post message:', err);
+      console.error('[v0] Failed to post message:', err);
       toast.error('Failed to post message. Please try again.');
     }
   };
@@ -289,7 +295,7 @@ const CommunityPage: React.FC = () => {
                 </select>
                 <button
                   onClick={handlePostMessage}
-                  disabled={posting || !newMessage.trim()}
+                  disabled={posting || !newMessage.trim() || gettingStudentDetails}
                   className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm sm:text-base rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   <Send className="w-4 h-4" />
