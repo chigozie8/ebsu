@@ -126,7 +126,7 @@ export const useAnalytics = (): AnalyticsSummary => {
         const dayActivities = activities.filter(
           (a) => a.timestamp >= dayStart && a.timestamp < dayEnd && a.type === "session_start"
         );
-        const mins = dayActivities.reduce((acc, s, i) => {
+        const mins = dayActivities.reduce((acc, s, _i) => {
           const arr = activities.filter((a) => a.type === "session_start");
           const nextIdx = arr.findIndex((a) => a.timestamp === s.timestamp) + 1;
           const nextSession = arr[nextIdx];

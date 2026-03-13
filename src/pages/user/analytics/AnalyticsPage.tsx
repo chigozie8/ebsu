@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, BookOpen, Target, Award, BarChart3, Clock, Zap, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAnalytics, trackActivity } from "../../hooks/analytics/useAnalytics";
+import { useAnalytics, trackActivity } from "../../../hooks/analytics/useAnalytics";
 
 const fadeIn = {
   initial: { opacity: 0, y: 18 },
@@ -46,7 +46,7 @@ export default function AnalyticsPage() {
     trackActivity("page_visit", "Learning Analytics");
   }, []);
 
-  const maxWeeklyMins = Math.max(...analytics.weeklyActivity.map((d) => d.minutes), 1);
+  const maxWeeklyMins = Math.max(...analytics.weeklyActivity.map((d: { minutes: number }) => d.minutes), 1);
 
   return (
     <motion.div
