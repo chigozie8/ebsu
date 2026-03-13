@@ -248,6 +248,63 @@ export default function LearningResources() {
             </p>
           </div>
 
+          {/* Google Drive Full Access Banner */}
+          <div className="mb-10 bg-gradient-to-br from-green1/5 to-green2/10 border border-green1/20 rounded-2xl p-5 sm:p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-green1/10 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base">Full Resource Library on Google Drive</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                  Click on the following links to have full access to all EBSUMSA learning materials organized by year group.
+                </p>
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <a
+                href="https://drive.google.com/folderview?id=1-JZRq-aFQzkN04ViATbH2vbCt_qgTUQg"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-white border border-green1/30 rounded-xl p-4 hover:border-green1 hover:shadow-md transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0 group-hover:bg-green1/20 transition-colors">
+                  <svg className="w-5 h-5 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm">Preclinicals Drive</p>
+                  <p className="text-xs text-gray-500">Years 1 – 3 (100L – 300L)</p>
+                </div>
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+              <a
+                href="https://drive.google.com/folderview?id=1--udSwv2mWUf39QGa2yL2wnOpENLtgxX"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 bg-white border border-green1/30 rounded-xl p-4 hover:border-green1 hover:shadow-md transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0 group-hover:bg-green1/20 transition-colors">
+                  <svg className="w-5 h-5 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm">Clinicals Drive</p>
+                  <p className="text-xs text-gray-500">Years 4 – 6 (400L – 600L)</p>
+                </div>
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
           {/* Preclinical Section */}
           <div className="mb-10">
             <div className="mb-4">
