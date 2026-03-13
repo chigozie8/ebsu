@@ -1741,19 +1741,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           >
             Quiz Manager
           </button>
-          <button
-            onClick={() => setActiveTab("teamimages")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-              activeTab === "teamimages"
-                ? "bg-indigo-600 text-white shadow-md"
-                : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-2 border-indigo-600"
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Team Images
-          </button>
         </div>
 
         {/* Materials Tab */}
@@ -4098,27 +4085,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         )}
 
-        {activeTab === "teamimages" && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Team Image Management</h1>
-              <p className="text-gray-600 mb-6">Manage profile images for team members across all teams</p>
-              <iframe 
-                src="/admin/team-image-upload" 
-                title="Team Image Upload"
-                className="w-full h-screen border-0 rounded-lg"
-              />
-            </div>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Delete ID Card Confirmation Modal */}
+        {/* Delete ID Card Confirmation Modal */}
       {deleteIdCardModal.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div
