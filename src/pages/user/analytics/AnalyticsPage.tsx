@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
                   <h2 className="font-bold text-gray-900">Pages Visited Most</h2>
                 </div>
                 <div className="space-y-2">
-                  {analytics.pageBreakdown.map((item, idx) => (
+                  {analytics.pageBreakdown.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between">
                       <span className="text-xs text-gray-600 truncate max-w-[160px]">{item.label}</span>
                       <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export default function AnalyticsPage() {
             <span className="ml-auto text-xs text-gray-400">last 7 days</span>
           </div>
           <div className="flex items-end justify-between gap-1.5 h-32">
-            {analytics.weeklyActivity.map((item, idx) => {
+            {analytics.weeklyActivity.map((item: any, idx: number) => {
               const heightPct = maxWeeklyMins > 0 ? (item.minutes / maxWeeklyMins) * 100 : 0;
               const isToday = idx === analytics.weeklyActivity.length - 1;
               return (
