@@ -4075,7 +4075,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </motion.div>
             </div>
           )}
-        )}
 
         {/* Community Tab */}
         {activeTab === "community" && (
