@@ -146,7 +146,7 @@ const ADMIN_EMAIL = "patronkwo@gmail.com";
 
 export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
-  const { studentDetails, gettingStudentDetails } = useGetUserInfo();
+  const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
   const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" => {
@@ -1590,7 +1590,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
     }
   };
 
-  if (gettingStudentDetails) {
+  if (authLoading || gettingStudentDetails) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner className="w-10 h-10" />
