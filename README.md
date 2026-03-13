@@ -1,27 +1,3 @@
-Here is the complete combined README.md with:
-
-Project description
-
-Features
-
-Installation
-
-Tech stack
-
-Supabase environment variables
-
-Live demo
-
-Contribution guide
-
-MIT License
-
-
-You can copy everything below into your README.md file.
-
-
----
-
 # EBSUMSA-EBSU
 
 Ebonyi State University Medical Students Association Platform
