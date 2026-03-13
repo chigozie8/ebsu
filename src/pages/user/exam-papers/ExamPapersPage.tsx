@@ -45,18 +45,43 @@ export default function AnalyticsDashboard() {
   const [coursePerformance, setCoursePerformance] = useState<CoursePerformance[]>([]);
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [selectedPeriod]);
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsAuthenticated(true);
+        fetchAnalytics();
+      } else {
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('[v0] Auth check error:', error);
+      setIsAuthenticated(false);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchAnalytics();
+    }
+  }, [selectedPeriod, isAuthenticated]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (!user) {
-        toast.error('Please log in to view analytics');
+        setIsAuthenticated(false);
         return;
       }
 
@@ -149,6 +174,39 @@ export default function AnalyticsDashboard() {
       setLoading(false);
     }
   };
+
+  if (loading || isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }} className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <motion.div
+          variants={fadeInVariants}
+          initial="initial"
+          animate="animate"
+          className="text-center"
+        >
+          <div className="mb-4">
+            <BarChart3 className="w-16 h-16 text-teal-600 mx-auto opacity-50" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+          <p className="text-gray-600 mb-6">Please log in to view your performance analytics and insights</p>
+          <a
+            href="/login"
+            className="inline-block px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            Go to Login
+          </a>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
