@@ -4131,7 +4131,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
-      </div>
     </div>
   );
 }
