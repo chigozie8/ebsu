@@ -4076,47 +4076,51 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </div>
           )}
 
-      {/* Community Tab */}
-      {activeTab === "community" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          <CommunityMonitor />
-        </motion.div>
-      )}
-
-      {activeTab === "quizzes" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          <AdminQuizManager />
-        </motion.div>
-      )}
-
-      {activeTab === "teamimages" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Team Image Management</h1>
-            <p className="text-gray-600 mb-6">Manage profile images for team members across all teams</p>
-            <iframe 
-              src="/admin/team-image-upload" 
-              title="Team Image Upload"
-              className="w-full h-screen border-0 rounded-lg"
-            />
           </div>
-        </motion.div>
-      )}
+        )}
+
+        {/* Community Tab */}
+        {activeTab === "community" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <CommunityMonitor />
+          </motion.div>
+        )}
+
+        {activeTab === "quizzes" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AdminQuizManager />
+          </motion.div>
+        )}
+
+        {activeTab === "teamimages" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Team Image Management</h1>
+              <p className="text-gray-600 mb-6">Manage profile images for team members across all teams</p>
+              <iframe 
+                src="/admin/team-image-upload" 
+                title="Team Image Upload"
+                className="w-full h-screen border-0 rounded-lg"
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
 
       {/* Delete ID Card Confirmation Modal */}
       {deleteIdCardModal.show && (
@@ -4164,7 +4168,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
-    </div>
     </div>
   );
 }
