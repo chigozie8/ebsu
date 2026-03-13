@@ -53,28 +53,6 @@ export default function StudyAIPage() {
     }
   };
 
-  // Extract text from PDF file
-  const extractPDFText = async (file: File): Promise<string> => {
-    try {
-      console.log("[v0] Starting PDF text extraction");
-      const arrayBuffer = await file.arrayBuffer();
-      console.log("[v0] PDF file loaded, size:", arrayBuffer.byteLength);
-      
-      let fullText = '';
-
-      if (!fullText || fullText.trim().length === 0) {
-        throw new Error('No text could be extracted from the PDF. The document may be scanned or image-based.');
-      }
-
-      console.log("[v0] Total extracted PDF text length:", fullText.length);
-      return fullText;
-    } catch (error) {
-      console.error("[v0] Error extracting PDF text:", error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
-      throw new Error(`PDF extraction failed: ${errorMsg}`);
-    }
-  };
-
   const handleAnalyzeDocument = async () => {
     if (!selectedFile) {
       toast.error('Please select a PDF file first');
