@@ -1,14 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from "react";
-import { db } from "../../config/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { useState, useEffect } from "react";
 import { supabase } from "../../config/supabase";
 import { useGetUserInfo } from "../auth/useGetUserInfo";
 
@@ -85,7 +76,6 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export const useAnalytics = (): AnalyticsSummary => {
   const { userID } = useGetUserInfo();
-  const sessionStartRef = useRef<number>(Date.now());
   const [summary, setSummary] = useState<AnalyticsSummary>({
     totalStudyMinutes: 0,
     studyStreak: 0,
