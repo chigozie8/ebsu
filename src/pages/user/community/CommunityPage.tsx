@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
 import MessageCard from '../../../components/community/MessageCard';
 import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
-import { Send, Search, MessageSquare, Check } from 'lucide-react';
+import { Send, Search, MessageSquare, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 const CommunityPage: React.FC = () => {
+  const navigate = useNavigate();
   const [topic, setTopic] = useState<string>('All');
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +111,13 @@ const CommunityPage: React.FC = () => {
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur shadow-sm border-b border-gray-200">
         <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Go back"
+            >
+              <ArrowLeft className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
+            </button>
             <div className="bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg p-2 sm:p-2.5">
               <MessageSquare className="w-5 sm:w-6 text-white" />
             </div>
