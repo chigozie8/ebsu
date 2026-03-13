@@ -73,21 +73,6 @@ export default function AnalyticsDashboard() {
     };
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('[v0] Auth check result:', !!user);
-      if (user) {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('[v0] Auth check error:', error);
-      setIsAuthenticated(false);
-    }
-  };
-
   useEffect(() => {
     if (isAuthenticated) {
       console.log('[v0] Period changed, reloading analytics');
