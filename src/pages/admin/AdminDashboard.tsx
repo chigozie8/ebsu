@@ -342,6 +342,23 @@ export default function AdminDashboard() {
   const [notifyModal, setNotifyModal] = useState<{ show: boolean; card: IDCardRegistration | null }>({ show: false, card: null });
   const [sendingNotification, setSendingNotification] = useState(false);
 
+  // Sends a notification visible to all users by using userId "global"
+  const sendGlobalNotification = async (title: string, message: string, type: "info" | "success", link: string) => {
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: "global",
+        title,
+        message,
+        type,
+        createdAt: serverTimestamp(),
+        read: false,
+        link,
+      });
+    } catch (error) {
+      console.error("Error sending global notification:", error);
+    }
+  };
+
   const sendIDCardNotification = async (card: IDCardRegistration, messageType: "ready" | "twoweeks") => {
     if (!card.userId) return;
     setSendingNotification(true);
@@ -564,6 +581,12 @@ export default function AdminDashboard() {
       });
 
       notifyUser("success", "Material uploaded successfully!");
+      await sendGlobalNotification(
+        "New Learning Resource",
+        `A new ${formData.resourceType} has been uploaded for ${formData.courseTitle} (${formData.level}). Access it in your Learning Resources.`,
+        "success",
+        "/u/learning-resources"
+      );
 
       resetMaterialForm();
       fetchMaterials();
@@ -915,6 +938,12 @@ export default function AdminDashboard() {
           createdAt: serverTimestamp(),
         });
         notifyUser("success", "Blog post created successfully!");
+        await sendGlobalNotification(
+          "New Blog Post",
+          `A new blog post has been published: "${blogFormData.title}". Check it out now!`,
+          "info",
+          "/blog"
+        );
       }
 
       // Reset form
