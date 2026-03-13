@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, FileText, Brain, Zap, Download, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import OpenAI from 'openai';
 
 interface StudyMaterial {
   summary: string;
@@ -32,6 +33,17 @@ const tabVariants = {
   transition: { duration: 0.3 }
 };
 
+// Initialize Puter OpenAI client with Grok AI
+const initializePuterClient = () => {
+  const puterAuthToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0IjoiZ3VpIiwidiI6IjAuMC4wIiwidSI6ImpyUjQyb253UnpTNmNBcUpoUHdjbXc9PSIsInV1IjoiRHpIRTZmY3ZTR2lJeEFGcU5TcmY4Zz09IiwiaWF0IjoxNzczMTA4MTkyfQ.-Ypd--18XjJV4e3Fz4ovNBAV34iXJ5DJdrGxWgv_L8Q";
+  
+  return new OpenAI({
+    baseURL: "https://api.puter.com/puterai/openai/v1/",
+    apiKey: puterAuthToken,
+    dangerouslyAllowBrowser: true
+  });
+};
+
 export default function StudyAIPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +65,15 @@ export default function StudyAIPage() {
     }
   };
 
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Simple PDF text extraction - extract raw text from PDF
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
+    return text.slice(0, 5000); // Limit text for processing
+  };
+
   const handleAnalyzeDocument = async () => {
     if (!selectedFile) {
       toast.error('Please select a PDF file first');
@@ -61,50 +82,69 @@ export default function StudyAIPage() {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log("[v0] Starting document analysis with Grok AI");
+      
+      // Extract text from PDF
+      const documentText = await extractTextFromPDF(selectedFile);
+      console.log("[v0] Extracted text length:", documentText.length);
 
-      const mockMaterial: StudyMaterial = {
-        summary: `This document provides a comprehensive overview of ${selectedFile.name}. The content covers essential concepts and principles that are fundamental to understanding the subject matter. Key theories, methodologies, and practical applications are discussed in detail to provide students with a thorough grasp of the material.`,
-        keyPoints: [
-          'Core concepts and foundational principles are essential for mastery',
-          'Integration of theoretical knowledge with practical applications',
-          'Understanding of key terminology and medical classifications',
-          'Recognition of important patterns and relationships',
-          'Application of principles to clinical scenarios',
-          'Critical thinking in medical decision-making',
-          'Evidence-based approaches to treatment and diagnosis',
-          'Recognition of exceptions and special cases'
-        ],
-        mcqs: [
+      // Initialize Puter OpenAI client
+      const client = initializePuterClient();
+      console.log("[v0] Puter client initialized");
+
+      // Call Grok AI via Puter to analyze the document
+      const prompt = `Analyze the following document and provide study materials:
+
+Document Content:
+${documentText}
+
+Please provide:
+1. A comprehensive summary
+2. 8 key points
+3. 3 multiple choice questions with 4 options each, including correct answer and explanation
+4. 3 short answer questions
+5. 2 essay questions
+
+Format the response as JSON with the following structure:
+{
+  "summary": "...",
+  "keyPoints": ["...", "..."],
+  "mcqs": [{"question": "...", "options": [...], "correctAnswer": "...", "explanation": "..."}],
+  "shortAnswerQuestions": ["...", "..."],
+  "essayQuestions": ["...", "..."]
+}`;
+
+      const response = await client.chat.completions.create({
+        model: "grok-4",
+        messages: [
           {
-            question: 'Which of the following best describes the primary concept discussed in this document?',
-            options: ['Option A', 'Option B', 'Option C', 'Option D'],
-            correctAnswer: 'Option A',
-            explanation: 'This is the most accurate definition based on the document content.'
-          },
-          {
-            question: 'According to the document, what is the significance of the key principle?',
-            options: ['First significance', 'Second significance', 'Third significance', 'Fourth significance'],
-            correctAnswer: 'First significance',
-            explanation: 'The document clearly states this is the primary significance.'
+            role: "user",
+            content: prompt
           }
         ],
-        shortAnswerQuestions: [
-          'Define the main concept discussed in this document.',
-          'Explain how the key principles can be applied in practice.',
-          'What are the main advantages of understanding this concept?'
-        ],
-        essayQuestions: [
-          'Discuss the practical implications of the concepts covered in this document.',
-          'How does this document contribute to your understanding of the subject?',
-          'Write a comprehensive essay on the application of these concepts in real-world scenarios.'
-        ]
-      };
+        temperature: 0.7,
+        max_tokens: 2000
+      });
 
-      setStudyMaterial(mockMaterial);
-      toast.success('Document analyzed successfully!');
+      console.log("[v0] Received Grok response");
+
+      const responseText = response.choices[0].message.content || "";
+      console.log("[v0] Response text:", responseText.substring(0, 200));
+
+      // Parse the JSON response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("Invalid JSON response from Grok");
+      }
+
+      const studyMaterials: StudyMaterial = JSON.parse(jsonMatch[0]);
+      console.log("[v0] Study materials generated successfully");
+
+      setStudyMaterial(studyMaterials);
+      toast.success('Document analyzed successfully with Grok AI!');
     } catch (error) {
-      toast.error('Failed to analyze document');
+      console.error("[v0] Error analyzing document:", error);
+      toast.error('Failed to analyze document. Please try again.');
     } finally {
       setIsLoading(false);
     }
