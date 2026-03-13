@@ -74,12 +74,13 @@ export default async function handler(
     const documentText = await extractPDFText(buffer);
     console.log('[v0] PDF text extracted successfully');
 
-    // Initialize OpenAI client with ChatGPT
+    // Initialize Puter OpenAI client with ChatGPT model
     const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: 'https://api.puter.com/puterai/openai/v1/',
+      apiKey: process.env.PUTER_AUTH_TOKEN,
     });
 
-    console.log('[v0] Starting ChatGPT analysis');
+    console.log('[v0] Starting ChatGPT analysis via Puter JS');
 
     // Create comprehensive analysis prompt
     const analysisPrompt = `Analyze the following medical/educational document and provide comprehensive study materials in JSON format.
@@ -125,11 +126,11 @@ Ensure all content is medically accurate, clinically relevant, and pedagogically
       max_tokens: 4000,
     });
 
-    console.log('[v0] Received ChatGPT response');
+    console.log('[v0] Received ChatGPT response via Puter');
 
     const responseContent = completion.choices[0].message.content;
     if (!responseContent) {
-      throw new Error('Empty response from ChatGPT');
+      throw new Error('Empty response from ChatGPT via Puter');
     }
 
     // Extract JSON from response
