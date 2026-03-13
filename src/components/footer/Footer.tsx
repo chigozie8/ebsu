@@ -44,7 +44,9 @@ export default function Footer() {
               </h2>
               <ul className="text-white font-medium text-ss md:text-sm flex flex-col gap-2 sm:gap-4">
                 <li className="">
-                  <p>Active Community</p>
+                  <a href="/u/community" className="hover:underline">
+                    Active Community
+                  </a>
                 </li>
                 <li className="">
                   <a href="/course-outlines" className="hover:underline">
