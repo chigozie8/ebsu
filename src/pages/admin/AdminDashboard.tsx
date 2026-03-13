@@ -4166,7 +4166,5 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
         </div>
       )}
     </div>
-      </div>
-    </div>
   );
 }
