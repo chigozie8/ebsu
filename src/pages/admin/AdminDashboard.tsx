@@ -44,6 +44,7 @@ interface Material {
 
 interface IDCardRegistration {
   id: string;
+  userId: string;
   firstName: string;
   surname: string;
   dateOfBirth: string;
@@ -336,6 +337,35 @@ export default function AdminDashboard() {
 
   const closeDeleteIdCardModal = () => {
     setDeleteIdCardModal({ show: false, cardId: null, cardName: "" });
+  };
+
+  const [notifyModal, setNotifyModal] = useState<{ show: boolean; card: IDCardRegistration | null }>({ show: false, card: null });
+  const [sendingNotification, setSendingNotification] = useState(false);
+
+  const sendIDCardNotification = async (card: IDCardRegistration, messageType: "ready" | "twoweeks") => {
+    if (!card.userId) return;
+    setSendingNotification(true);
+    try {
+      const isReady = messageType === "ready";
+      await addDoc(collection(db, "notifications"), {
+        userId: card.userId,
+        title: isReady ? "Your ID Card is Ready!" : "ID Card Update",
+        message: isReady
+          ? `Hi ${card.firstName}, your EBSUMSA student ID card is ready for collection. Please visit the ID card office to pick it up.`
+          : `Hi ${card.firstName}, your EBSUMSA student ID card is being processed and will be ready in approximately 2 weeks. We will notify you once it is available.`,
+        type: isReady ? "success" : "info",
+        createdAt: new Date().toISOString(),
+        read: false,
+        link: "/u/id-card-payment",
+      });
+      notifyUser("success", `Notification sent to ${card.firstName} ${card.surname}`);
+      setNotifyModal({ show: false, card: null });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      notifyUser("error", "Failed to send notification");
+    } finally {
+      setSendingNotification(false);
+    }
   };
 
   const confirmDeleteIDCard = async () => {
@@ -2276,20 +2306,26 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                           </span>
                         </td>
                         <td className="p-3">
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             <button
                               onClick={() => printIDCard(card)}
                               className="px-3 py-1 bg-green2 text-white rounded-lg text-xs font-medium hover:bg-green1 transition-colors"
                             >
                               Print ID
                             </button>
-<button
-                            onClick={() => openDeleteIdCardModal(card.id, `${card.firstName} ${card.surname}`)}
-                            className="p-1.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                            title="Delete ID Card"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
+                            <button
+                              onClick={() => setNotifyModal({ show: true, card })}
+                              className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                            >
+                              Notify
+                            </button>
+                            <button
+                              onClick={() => openDeleteIdCardModal(card.id, `${card.firstName} ${card.surname}`)}
+                              className="p-1.5 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                              title="Delete ID Card"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -4138,6 +4174,67 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               />
             </div>
           </motion.div>
+        )}
+
+      {/* Notify ID Card Modal */}
+        {notifyModal.show && notifyModal.card && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Notify Student</h3>
+                  <p className="text-xs text-gray-500">{notifyModal.card.firstName} {notifyModal.card.surname}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-5">
+                Choose a message to send to this student about their ID card status:
+              </p>
+              <div className="flex flex-col gap-3 mb-4">
+                <button
+                  onClick={() => sendIDCardNotification(notifyModal.card!, "ready")}
+                  disabled={sendingNotification}
+                  className="w-full flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors disabled:opacity-50 text-left"
+                >
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-green-800">ID Card is Ready</p>
+                    <p className="text-xs text-green-600">Notify student to come pick up their ID card</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => sendIDCardNotification(notifyModal.card!, "twoweeks")}
+                  disabled={sendingNotification}
+                  className="w-full flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors disabled:opacity-50 text-left"
+                >
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">Ready in 2 Weeks</p>
+                    <p className="text-xs text-blue-600">Inform student their ID will be ready in approximately 2 weeks</p>
+                  </div>
+                </button>
+              </div>
+              <button
+                onClick={() => setNotifyModal({ show: false, card: null })}
+                disabled={sendingNotification}
+                className="w-full py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
 
       {/* Delete ID Card Confirmation Modal */}
