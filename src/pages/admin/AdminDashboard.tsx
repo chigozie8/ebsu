@@ -4074,8 +4074,6 @@ Blog Posts
               </motion.div>
             </div>
           )}
-          </div>
-        )}
 
         {/* Community Tab */}
         {activeTab === "community" && (
