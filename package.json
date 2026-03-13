@@ -17,6 +17,7 @@
     "firebase": "^10.7.1",
     "flowbite": "^4.0.1",
     "flowbite-react": "^0.7.2",
+    "formidable": "^3.5.4",
     "framer-motion": "^11.0.8",
     "hamburgers": "^1.2.1",
     "heic2any": "^0.0.4",
