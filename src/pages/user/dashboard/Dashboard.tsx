@@ -380,6 +380,26 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      <NavLink to="/u/ai-assistant">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={11}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        >
+                          <ChatIcon
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            color="#047857"
+                          />
+                          <p className="uppercase text-[#047857] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            AI Assistant
+                          </p>
+                        </motion.div>
+                      </NavLink>
                     </div>
                   </div>
                   <div className="mb-3 sm:mb-4">
@@ -392,7 +412,7 @@ export default function Dashboard() {
                           viewport={{
                             once: true,
                           }}
-                          custom={11}
+                          custom={12}
                           className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <IDCardIcon
@@ -421,26 +441,6 @@ export default function Dashboard() {
                           />
                           <p className="uppercase text-[#7c3aed] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
                             Study Materials
-                          </p>
-                        </motion.div>
-                      </NavLink>
-                      <NavLink to="/u/ai-assistant">
-                        <motion.div
-                          variants={fadeInVariants5}
-                          initial="initial"
-                          whileInView="animate"
-                          viewport={{
-                            once: true,
-                          }}
-                          custom={15}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
-                        >
-                          <ChatIcon
-                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
-                            color="#047857"
-                          />
-                          <p className="uppercase text-[#047857] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
-                            AI Assistant
                           </p>
                         </motion.div>
                       </NavLink>
