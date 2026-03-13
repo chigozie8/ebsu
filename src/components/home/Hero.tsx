@@ -49,8 +49,7 @@ export default function Hero() {
               custom={5}
               className="text-ss ss:text-sm md:text-xs text-gray-700 font-medium mb-4"
             >
-              Dive into comprehensive course outlines and get instant access to learning materials, previous exam questions and handouts tailored for medical students. <br className="hidden ss:block" /> Track
-              your academic progress with our GPA calculator, stay up to date with
+              Dive into comprehensive course outlines and get instant access to learning materials, previous exam questions and handouts tailored for medical students. <br className="hidden ss:block" /> Stay up to date with
               the latest news and articles <br className="hidden ss:block" />{" "}
               and become part of an active, supportive community of fellow medical learners.
             </motion.p>
