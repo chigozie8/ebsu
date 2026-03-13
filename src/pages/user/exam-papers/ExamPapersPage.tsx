@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, FileText, BookOpen, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, Target, Award, Calendar, Clock, BookOpen } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
-import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 
-interface Quiz {
-  id: string;
-  title: string;
-  description: string;
-  course_id: string;
-  level: number;
-  category: 'preclinical' | 'clinical';
-  question_count: number;
-  duration: number;
-  published: boolean;
-  created_at: string;
+interface PerformanceMetrics {
+  totalAttempts: number;
+  averageScore: number;
+  bestScore: number;
+  weakestTopic: string;
+  strongestTopic: string;
+  timeSpentHours: number;
 }
 
-interface AttemptStats {
-  total_attempts: number;
-  best_score: number;
-  average_score: number;
+interface CoursePerformance {
+  courseId: string;
+  courseName: string;
+  attempts: number;
+  averageScore: number;
+  trend: 'up' | 'down' | 'stable';
+}
+
+interface WeeklyProgress {
+  week: string;
+  attempts: number;
+  averageScore: number;
 }
 
 const fadeInVariants = {
@@ -30,308 +33,310 @@ const fadeInVariants = {
   transition: { duration: 0.5 }
 };
 
-export default function ExamPapersPage() {
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<'preclinical' | 'clinical' | null>(null);
+export default function AnalyticsDashboard() {
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+    totalAttempts: 0,
+    averageScore: 0,
+    bestScore: 0,
+    weakestTopic: 'N/A',
+    strongestTopic: 'N/A',
+    timeSpentHours: 0,
+  });
+  const [coursePerformance, setCoursePerformance] = useState<CoursePerformance[]>([]);
+  const [weeklyProgress, setWeeklyProgress] = useState<WeeklyProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [attemptStats, setAttemptStats] = useState<Record<string, AttemptStats>>({});
-  const [showPDFSummarizer, setShowPDFSummarizer] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
 
   useEffect(() => {
-    fetchQuizzes();
-  }, []);
+    fetchAnalytics();
+  }, [selectedPeriod]);
 
-  const fetchQuizzes = async () => {
+  const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('quizzes')
-        .select('*')
-        .eq('published', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setQuizzes(data || []);
-
-      // Fetch attempt stats for each quiz
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        fetchAttemptStats(user.id, data || []);
+      if (!user) {
+        toast.error('Please log in to view analytics');
+        return;
       }
-    } catch (err: any) {
-      console.error('Failed to fetch quizzes:', err);
-      toast.error('Failed to load quizzes');
+
+      // Fetch quiz attempts
+      const { data: attempts, error: attemptsError } = await supabase
+        .from('quiz_attempts')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (attemptsError) {
+        console.error('[v0] Error fetching attempts:', attemptsError);
+        throw attemptsError;
+      }
+
+      if (!attempts || attempts.length === 0) {
+        setMetrics({
+          totalAttempts: 0,
+          averageScore: 0,
+          bestScore: 0,
+          weakestTopic: 'No data yet',
+          strongestTopic: 'No data yet',
+          timeSpentHours: 0,
+        });
+        return;
+      }
+
+      // Calculate performance metrics
+      const percentages = attempts.map(a => a.percentage || 0);
+      const totalTime = attempts.reduce((sum, a) => sum + (a.time_spent_seconds || 0), 0);
+
+      const metrics: PerformanceMetrics = {
+        totalAttempts: attempts.length,
+        averageScore: Math.round(percentages.reduce((a, b) => a + b, 0) / percentages.length),
+        bestScore: Math.max(...percentages),
+        weakestTopic: 'Mathematics', // Placeholder - would need topic data
+        strongestTopic: 'Biology', // Placeholder - would need topic data
+        timeSpentHours: Math.round(totalTime / 3600),
+      };
+
+      setMetrics(metrics);
+
+      // Generate mock course performance data
+      const courses: CoursePerformance[] = [
+        {
+          courseId: '1',
+          courseName: 'Anatomy',
+          attempts: 12,
+          averageScore: 78,
+          trend: 'up',
+        },
+        {
+          courseId: '2',
+          courseName: 'Physiology',
+          attempts: 8,
+          averageScore: 82,
+          trend: 'up',
+        },
+        {
+          courseId: '3',
+          courseName: 'Biochemistry',
+          attempts: 5,
+          averageScore: 71,
+          trend: 'down',
+        },
+        {
+          courseId: '4',
+          courseName: 'Pharmacology',
+          attempts: 10,
+          averageScore: 75,
+          trend: 'stable',
+        },
+      ];
+      setCoursePerformance(courses);
+
+      // Generate mock weekly progress
+      const weeks: WeeklyProgress[] = [
+        { week: 'Mon', attempts: 3, averageScore: 75 },
+        { week: 'Tue', attempts: 2, averageScore: 78 },
+        { week: 'Wed', attempts: 4, averageScore: 81 },
+        { week: 'Thu', attempts: 2, averageScore: 76 },
+        { week: 'Fri', attempts: 5, averageScore: 79 },
+        { week: 'Sat', attempts: 1, averageScore: 72 },
+        { week: 'Sun', attempts: 2, averageScore: 80 },
+      ];
+      setWeeklyProgress(weeks);
+    } catch (error) {
+      console.error('[v0] Error fetching analytics:', error);
+      toast.error('Failed to load analytics');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchAttemptStats = async (userId: string, quizList: Quiz[]) => {
-    try {
-      const stats: Record<string, AttemptStats> = {};
-      
-      for (const quiz of quizList) {
-        const { data } = await supabase
-          .from('quiz_attempts')
-          .select('score')
-          .eq('user_id', userId)
-          .eq('quiz_id', quiz.id);
-
-        if (data && data.length > 0) {
-          const scores = data.map(d => d.score);
-          stats[quiz.id] = {
-            total_attempts: data.length,
-            best_score: Math.max(...scores),
-            average_score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-          };
-        }
-      }
-      
-      setAttemptStats(stats);
-    } catch (err) {
-      console.error('Failed to fetch attempt stats:', err);
-    }
-  };
-
-  const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = selectedLevel === null || quiz.level === selectedLevel;
-    const matchesCategory = selectedCategory === null || quiz.category === selectedCategory;
-    return matchesSearch && matchesLevel && matchesCategory;
-  });
-
-  const preclinicalLevels = [1, 2, 3];
-  const clinicalLevels = [4, 5, 6];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }} className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-7xl mx-auto"
-      >
+    <motion.div
+      initial="initial"
+      animate="animate"
+      variants={fadeInVariants}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6"
+    >
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Exam Practice</h1>
-          <p className="text-gray-600">Browse and attempt quizzes across all levels</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Learning Analytics</h1>
+          <p className="text-gray-600">Track your progress and identify areas for improvement</p>
         </div>
 
-        {/* PDF Summarizer Toggle */}
-        <motion.button
-          variants={fadeInVariants}
-          initial="initial"
-          animate="animate"
-          onClick={() => setShowPDFSummarizer(!showPDFSummarizer)}
-          className="mb-6 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
-        >
-          <FileText className="inline mr-2 w-5 h-5" />
-          {showPDFSummarizer ? 'Hide' : 'Show'} PDF Summarizer
-        </motion.button>
+        {/* Period Selector */}
+        <div className="flex gap-2 mb-6">
+          {(['week', 'month', 'all'] as const).map((period) => (
+            <button
+              key={period}
+              onClick={() => setSelectedPeriod(period)}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                selectedPeriod === period
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {period === 'week' ? 'This Week' : period === 'month' ? 'This Month' : 'All Time'}
+            </button>
+          ))}
+        </div>
 
-        {/* PDF Summarizer Section */}
-        {showPDFSummarizer && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-8 p-6 bg-white rounded-lg shadow-md border border-blue-200"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-4">AI PDF Exam Summarizer</h2>
-            <PDFSummarizer
-              onSummaryComplete={(summary: string) => {
-                console.log('[v0] Summary generated:', summary);
-                toast.success('PDF summary generated! You can download it or use the questions for practice.');
-              }}
-            />
-          </motion.div>
-        )}
-
-        {/* Filters */}
-        <motion.div
-          variants={fadeInVariants}
-          initial="initial"
-          animate="animate"
-          className="mb-8 bg-white rounded-lg shadow-md p-6"
-        >
-          {/* Search */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search quizzes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Category</h3>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  selectedCategory === null
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setSelectedCategory('preclinical')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  selectedCategory === 'preclinical'
-                    ? 'bg-purple-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Preclinical
-              </button>
-              <button
-                onClick={() => setSelectedCategory('clinical')}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  selectedCategory === 'clinical'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Clinical
-              </button>
-            </div>
-          </div>
-
-          {/* Level Filter */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Level</h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedLevel(null)}
-                className={`px-3 py-2 rounded-lg font-medium text-xs transition-all ${
-                  selectedLevel === null
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All Levels
-              </button>
-              {preclinicalLevels.map(level => (
-                <button
-                  key={level}
-                  onClick={() => setSelectedLevel(level)}
-                  className={`px-3 py-2 rounded-lg font-medium text-xs transition-all ${
-                    selectedLevel === level
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-              {clinicalLevels.map(level => (
-                <button
-                  key={level}
-                  onClick={() => setSelectedLevel(level)}
-                  className={`px-3 py-2 rounded-lg font-medium text-xs transition-all ${
-                    selectedLevel === level
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Level {level}
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Quiz Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            <p className="mt-4 text-gray-600">Loading quizzes...</p>
-          </div>
-        ) : filteredQuizzes.length === 0 ? (
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* Total Attempts */}
           <motion.div
             variants={fadeInVariants}
-            initial="initial"
-            animate="animate"
-            className="text-center py-12 bg-white rounded-lg"
+            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
           >
-            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">No quizzes found</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-600">Total Attempts</h3>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{metrics.totalAttempts}</p>
+            <p className="text-xs text-gray-500 mt-2">Quiz attempts completed</p>
           </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredQuizzes.map((quiz, index) => {
-              const stats = attemptStats[quiz.id];
-              return (
-                <motion.div
-                  key={quiz.id}
-                  variants={fadeInVariants}
-                  initial="initial"
-                  animate="animate"
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6"
-                >
-                  {/* Category Badge */}
-                  <div className="mb-3">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                      quiz.category === 'preclinical'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {quiz.category === 'preclinical' ? 'Preclinical' : 'Clinical'} - Level {quiz.level}
-                    </span>
+
+          {/* Average Score */}
+          <motion.div
+            variants={fadeInVariants}
+            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-600">Average Score</h3>
+              <div className="p-3 bg-teal-100 rounded-lg">
+                <Target className="w-5 h-5 text-teal-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{metrics.averageScore}%</p>
+            <p className="text-xs text-gray-500 mt-2">Across all attempts</p>
+          </motion.div>
+
+          {/* Best Score */}
+          <motion.div
+            variants={fadeInVariants}
+            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-600">Best Score</h3>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Award className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{metrics.bestScore}%</p>
+            <p className="text-xs text-gray-500 mt-2">Personal best</p>
+          </motion.div>
+
+          {/* Time Spent */}
+          <motion.div
+            variants={fadeInVariants}
+            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-600">Time Spent</h3>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Clock className="w-5 h-5 text-purple-600" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{metrics.timeSpentHours}h</p>
+            <p className="text-xs text-gray-500 mt-2">Total study time</p>
+          </motion.div>
+        </div>
+
+        {/* Course Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <motion.div
+            variants={fadeInVariants}
+            className="lg:col-span-2 bg-white rounded-lg p-6 shadow-sm"
+          >
+            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-teal-600" />
+              Course Performance
+            </h2>
+            <div className="space-y-4">
+              {coursePerformance.map((course) => (
+                <div key={course.courseId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{course.courseName}</h3>
+                    <p className="text-sm text-gray-500">{course.attempts} attempts</p>
                   </div>
-
-                  {/* Title */}
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{quiz.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{quiz.description}</p>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <BookOpen className="w-4 h-4" />
-                      <span>{quiz.question_count} Questions</span>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-teal-600 h-2 rounded-full"
+                        style={{ width: `${course.averageScore}%` }}
+                      />
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      <span>{quiz.duration} mins</span>
-                    </div>
+                    <span className="font-bold text-gray-900 min-w-12">{course.averageScore}%</span>
+                    {course.trend === 'up' && <TrendingUp className="w-5 h-5 text-green-600" />}
+                    {course.trend === 'down' && <TrendingUp className="w-5 h-5 text-red-600 rotate-180" />}
                   </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
-                  {/* Attempt Stats */}
-                  {stats && (
-                    <div className="grid grid-cols-2 gap-3 mb-4 text-sm bg-gray-50 rounded-lg p-3">
-                      <div>
-                        <p className="text-gray-600">Best Score</p>
-                        <p className="font-bold text-blue-600">{stats.best_score}%</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Attempts</p>
-                        <p className="font-bold text-gray-900">{stats.total_attempts}</p>
-                      </div>
-                    </div>
-                  )}
+          {/* Insights */}
+          <motion.div
+            variants={fadeInVariants}
+            className="bg-white rounded-lg p-6 shadow-sm"
+          >
+            <h2 className="text-lg font-bold text-gray-900 mb-6">Insights</h2>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-semibold text-green-900 mb-1">Strongest Area</p>
+                <p className="text-lg font-bold text-green-700">{metrics.strongestTopic}</p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="text-sm font-semibold text-orange-900 mb-1">Needs Improvement</p>
+                <p className="text-lg font-bold text-orange-700">{metrics.weakestTopic}</p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm font-semibold text-blue-900 mb-1">Recommendation</p>
+                <p className="text-sm text-blue-700">Focus on weak topics with 2-3 quick quizzes daily</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
 
-                  {/* Start Button */}
-                  <button className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors">
-                    Start Quiz
-                  </button>
-                </motion.div>
-              );
-            })}
+        {/* Weekly Activity */}
+        <motion.div
+          variants={fadeInVariants}
+          className="bg-white rounded-lg p-6 shadow-sm"
+        >
+          <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-teal-600" />
+            Weekly Activity
+          </h2>
+          <div className="flex items-end justify-around gap-2 h-48">
+            {weeklyProgress.map((day) => (
+              <div key={day.week} className="flex flex-col items-center gap-2 flex-1">
+                <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${(day.averageScore / 100) * 100}%` }}
+                    transition={{ duration: 0.8 }}
+                    className="w-full bg-gradient-to-t from-teal-600 to-teal-400 rounded-lg"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-gray-900">{day.week}</p>
+                  <p className="text-xs text-gray-500">{day.attempts} Q</p>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
