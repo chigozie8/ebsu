@@ -3,13 +3,6 @@ import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, FileText, Brain, Zap, Download, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set up PDF.js worker with fallback
-if (typeof window !== 'undefined') {
-  const pdfWorkerVersion = pdfjsLib.version;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfWorkerVersion}/pdf.worker.min.js`;
-}
 
 interface StudyMaterial {
   summary: string;
@@ -67,25 +60,7 @@ export default function StudyAIPage() {
       const arrayBuffer = await file.arrayBuffer();
       console.log("[v0] PDF file loaded, size:", arrayBuffer.byteLength);
       
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      console.log("[v0] PDF document loaded, pages:", pdf.numPages);
-      
       let fullText = '';
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        try {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items
-            .map((item: any) => item.str || '')
-            .join(' ');
-          fullText += pageText + '\n';
-          console.log(`[v0] Extracted page ${i}, text length: ${pageText.length}`);
-        } catch (pageError) {
-          console.error(`[v0] Error extracting page ${i}:`, pageError);
-          fullText += `[Page ${i} - Error extracting text]\n`;
-        }
-      }
 
       if (!fullText || fullText.trim().length === 0) {
         throw new Error('No text could be extracted from the PDF. The document may be scanned or image-based.');
@@ -108,31 +83,38 @@ export default function StudyAIPage() {
 
     setIsLoading(true);
     try {
-      console.log("[v0] Starting PDF analysis for:", selectedFile.name);
+      console.log("[v0] Starting document analysis for:", selectedFile.name);
       
-      // Extract text from the actual PDF
-      const pdfText = await extractPDFText(selectedFile);
-      console.log("[v0] PDF text extracted, sending to Grok AI for analysis");
+      // Convert PDF to base64
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binaryString = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binaryString += String.fromCharCode(uint8Array[i]);
+      }
+      const pdfBase64 = btoa(binaryString);
 
-      // Call backend API with Puter JS + Grok AI
-      const response = await fetch('/api/analyze-document', {
+      console.log("[v0] PDF converted to base64, size:", pdfBase64.length);
+
+      // Send to backend API for analysis
+      const response = await fetch('/api/analyze-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          documentText: pdfText,
+          pdfBuffer: pdfBase64,
           fileName: selectedFile.name,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || 'Analysis failed');
+        throw new Error(error.details || error.error || 'Analysis failed');
       }
 
       const result = await response.json();
-      console.log("[v0] Received analysis from Grok AI");
+      console.log("[v0] Received analysis from backend");
 
       if (result.success && result.data) {
         setStudyMaterial(result.data);
