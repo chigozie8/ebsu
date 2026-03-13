@@ -3,6 +3,10 @@ import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, FileText, Brain, Zap, Download, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface StudyMaterial {
   summary: string;
@@ -53,6 +57,30 @@ export default function StudyAIPage() {
     }
   };
 
+  // Extract text from PDF file
+  const extractPDFText = async (file: File): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+
+      console.log("[v0] Extracted PDF text length:", fullText.length);
+      return fullText;
+    } catch (error) {
+      console.error("[v0] Error extracting PDF text:", error);
+      throw new Error('Failed to extract text from PDF');
+    }
+  };
+
   const handleAnalyzeDocument = async () => {
     if (!selectedFile) {
       toast.error('Please select a PDF file first');
@@ -61,106 +89,41 @@ export default function StudyAIPage() {
 
     setIsLoading(true);
     try {
-      console.log("[v0] Starting detailed document analysis");
+      console.log("[v0] Starting PDF analysis for:", selectedFile.name);
       
-      // Simulate document analysis delay for detailed processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Extract text from the actual PDF
+      const pdfText = await extractPDFText(selectedFile);
+      console.log("[v0] PDF text extracted, sending to Grok AI for analysis");
 
-      // Comprehensive medical-focused study material with detailed analysis
-      const mockMaterial: StudyMaterial = {
-        summary: `DETAILED ANALYSIS: ${selectedFile.name}
+      // Call backend API with Puter JS + Grok AI
+      const response = await fetch('/api/analyze-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          documentText: pdfText,
+          fileName: selectedFile.name,
+        }),
+      });
 
-This document presents an in-depth exploration of critical medical concepts essential for clinical practice. The material systematically addresses fundamental anatomical structures, physiological mechanisms, and pathophysiological processes. The content emphasizes evidence-based diagnostic approaches and therapeutic interventions grounded in current medical literature and guidelines. Multiple clinical scenarios are integrated throughout to bridge theoretical knowledge with practical application in patient management. The analysis includes discussion of epidemiological data, risk factors, clinical presentations, differential diagnoses, and management protocols. Special attention is given to complications, prognosis, and prevention strategies. The document serves as a comprehensive resource for understanding the integration of basic sciences with clinical medicine, enabling practitioners to develop critical clinical reasoning skills necessary for optimal patient outcomes.`,
-        
-        keyPoints: [
-          'Anatomical foundations: Precise understanding of relevant anatomical structures and their spatial relationships is crucial for clinical examination, interpretation of imaging studies, and procedural competency',
-          'Physiological mechanisms: Comprehension of normal physiological processes including cellular signaling, tissue homeostasis, and systemic integration enables recognition of pathological deviations',
-          'Pathophysiological processes: Understanding how disease disrupts normal physiology is essential for rational diagnosis, targeted treatment selection, and prediction of disease progression',
-          'Clinical presentation spectrum: Recognition of variable clinical presentations helps differentiate similar conditions and avoid diagnostic errors in diverse patient populations',
-          'Evidence-based diagnostic criteria: Knowledge of validated diagnostic tools, sensitivity/specificity of investigations, and appropriate investigation ordering prevents unnecessary testing and delays in diagnosis',
-          'Therapeutic interventions: Understanding mechanisms of action, indications, contraindications, and adverse effects of treatments enables safe and effective clinical decision-making',
-          'Prognostic factors: Identification of factors predicting disease course and treatment response allows appropriate patient counseling and individualized management strategies',
-          'Complication management: Anticipation and recognition of potential complications, with knowledge of prevention and management strategies, significantly improves patient safety and outcomes'
-        ],
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Analysis failed');
+      }
 
-        mcqs: [
-          {
-            question: 'In the pathophysiological mechanism described in the document, which of the following represents the primary disruption in cellular function?',
-            options: [
-              'Impaired mitochondrial ATP production leading to cellular energy deficit and dysfunction',
-              'Disrupted calcium homeostasis causing abnormal muscle contraction and nerve signal transmission',
-              'Compromised vascular perfusion resulting in tissue hypoxia and metabolic acidosis',
-              'All of the above represent interconnected pathophysiological derangements'
-            ],
-            correctAnswer: 'All of the above represent interconnected pathophysiological derangements',
-            explanation: 'The document demonstrates that disease pathophysiology involves multiple interconnected mechanisms. Primary cellular disruption can manifest through various pathways including energy metabolism failure, ion channel dysfunction, and vascular insufficiency. Understanding these overlapping mechanisms is essential for comprehensive clinical management and predicting treatment responses.'
-          },
-          {
-            question: 'Based on the clinical presentation patterns outlined, which diagnostic modality would be most appropriate as the initial investigation, and what is the rationale?',
-            options: [
-              'Advanced imaging (CT/MRI) due to superior sensitivity despite higher cost and radiation exposure',
-              'Clinical examination and basic investigations (blood work) as cost-effective first-line assessment to establish pretest probability',
-              'Invasive diagnostic procedures to obtain definitive tissue diagnosis regardless of clinical likelihood',
-              'Empirical treatment initiation without diagnostic confirmation'
-            ],
-            correctAnswer: 'Clinical examination and basic investigations (blood work) as cost-effective first-line assessment to establish pretest probability',
-            explanation: 'Evidence-based diagnostic approach involves establishing clinical likelihood first through history, examination, and basic investigations before proceeding to more invasive or expensive modalities. The document emphasizes appropriate investigation ordering to maximize diagnostic yield while minimizing patient harm, healthcare costs, and delays in management.'
-          },
-          {
-            question: 'Which therapeutic principle best aligns with the management recommendations in the document?',
-            options: [
-              'Aggressive intervention in all cases regardless of disease severity or patient factors',
-              'Risk-stratified approach with treatment intensity proportional to disease severity and individual patient characteristics',
-              'Conservative watchful waiting without intervention',
-              'Treatment based on financial considerations rather than clinical evidence'
-            ],
-            correctAnswer: 'Risk-stratified approach with treatment intensity proportional to disease severity and individual patient characteristics',
-            explanation: 'Modern clinical practice, as emphasized in the document, advocates risk stratification and individualized treatment decisions. This approach optimizes therapeutic benefit while minimizing unnecessary complications, considering patient comorbidities, functional status, preferences, and disease severity in treatment planning.'
-          },
-          {
-            question: 'How do the prognostic factors discussed in the document help guide patient counseling and long-term management?',
-            options: [
-              'They allow unrealistic promises of cure regardless of clinical circumstance',
-              'They enable evidence-based estimation of disease trajectory, treatment outcomes, and complications to guide informed decision-making',
-              'They are irrelevant to clinical practice and prognosis',
-              'They eliminate need for individualized patient assessment'
-            ],
-            correctAnswer: 'They enable evidence-based estimation of disease trajectory, treatment outcomes, and complications to guide informed decision-making',
-            explanation: 'Understanding prognostic factors allows physicians to provide realistic discussions with patients about expected outcomes, enable informed consent for treatments, and establish appropriate follow-up strategies. This knowledge-based counseling improves patient satisfaction, adherence, and overall quality of care.'
-          },
-          {
-            question: 'In managing potential complications identified in the document, what is the recommended clinical approach?',
-            options: [
-              'Wait for complications to develop before intervening',
-              'Proactive identification of risk factors with preventive strategies, close monitoring for early detection, and rapid intervention when complications occur',
-              'Ignore complication risks and focus only on primary disease',
-              'Treat all possible complications empirically without clinical indication'
-            ],
-            correctAnswer: 'Proactive identification of risk factors with preventive strategies, close monitoring for early detection, and rapid intervention when complications occur',
-            explanation: 'The document emphasizes that complication management begins with understanding predisposing factors and implementing preventive measures. Vigilant monitoring allows early detection when interventions are most effective, significantly improving patient outcomes compared to reactive management of established complications.'
-          }
-        ],
+      const result = await response.json();
+      console.log("[v0] Received analysis from Grok AI");
 
-        shortAnswerQuestions: [
-          'Synthesize the key anatomical and physiological concepts from the document: Explain how normal structure-function relationships are disrupted in the disease process, and identify which specific disruptions have the greatest clinical significance.',
-          'Develop a comprehensive diagnostic algorithm based on the clinical presentation patterns discussed: What clinical features would you prioritize in history and examination? Which investigations would you order sequentially and why?',
-          'Analyze the therapeutic options presented: Compare mechanisms of action, effectiveness, safety profiles, and cost-effectiveness. Explain how you would individualize treatment selection for different patient subgroups.',
-          'Discuss the evidence base: What are the strengths and limitations of current evidence for diagnosis and management? Identify areas of clinical uncertainty and how you would approach management when clear evidence is limited.',
-          'Explain the long-term management strategy: How would you monitor for disease progression and treatment complications? What patient education points are essential for improving adherence and outcomes?'
-        ],
-
-        essayQuestions: [
-          'Write a comprehensive essay on the integration of basic science knowledge with clinical practice: Using specific examples from the document, explain how understanding pathophysiology informs rational diagnostic and therapeutic strategies. Discuss how evidence-based medicine bridges scientific knowledge and clinical experience.',
-          'Critically analyze the clinical decision-making process: Examine how pretest probability influences diagnostic test interpretation. Discuss the concepts of sensitivity, specificity, positive/negative predictive values, and how these metrics inform appropriate test selection. Include discussion of when to pursue further investigation versus when clinical diagnosis is sufficient.'
-        ]
-      };
-
-      console.log("[v0] Detailed study materials generated successfully");
-      setStudyMaterial(mockMaterial);
-      toast.success('Document analyzed with comprehensive medical insights!');
+      if (result.success && result.data) {
+        setStudyMaterial(result.data);
+        toast.success('Document analyzed with Grok AI!');
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (error) {
       console.error("[v0] Error analyzing document:", error);
-      toast.error('Failed to analyze document. Please try again.');
+      toast.error(`Failed to analyze document: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
