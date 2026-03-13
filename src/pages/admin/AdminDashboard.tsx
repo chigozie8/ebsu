@@ -3869,7 +3869,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                         Try adjusting your search or filter criteria.
                       </p>
                     </div>
-                  );
+                  )
                 }
 
                 return (
