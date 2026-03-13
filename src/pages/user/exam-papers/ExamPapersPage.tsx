@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, FileText, Brain, Zap, Download, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import * as pdfjsLib from 'pdfjs-dist';
 
 interface StudyMaterial {
   summary: string;
@@ -41,6 +42,22 @@ export default function StudyAIPage() {
   const [activeTab, setActiveTab] = useState<'summary' | 'keyPoints' | 'mcqs' | 'shortAnswer' | 'essay'>('summary');
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
 
+  // Load Puter.js script on component mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).puter) {
+      const script = document.createElement('script');
+      script.src = 'https://js.puter.com/v2/';
+      script.async = true;
+      document.head.appendChild(script);
+      console.log("[v0] Puter.js script loaded");
+    }
+  }, []);
+
+  // Set up PDF.js worker
+  useEffect(() => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  }, []);
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -53,6 +70,33 @@ export default function StudyAIPage() {
     }
   };
 
+  // Extract PDF text using pdfjs-dist
+  const extractPDFText = async (file: File): Promise<string> => {
+    try {
+      console.log("[v0] Extracting PDF text");
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+          fullText += pageText + '\n';
+        } catch (err) {
+          console.error(`[v0] Error extracting page ${i}`, err);
+        }
+      }
+
+      console.log("[v0] Extracted text length:", fullText.length);
+      return fullText;
+    } catch (error) {
+      console.error("[v0] PDF extraction error:", error);
+      throw new Error('Failed to extract PDF text');
+    }
+  };
+
   const handleAnalyzeDocument = async () => {
     if (!selectedFile) {
       toast.error('Please select a PDF file first');
@@ -61,48 +105,57 @@ export default function StudyAIPage() {
 
     setIsLoading(true);
     try {
-      console.log("[v0] Starting document analysis for:", selectedFile.name);
+      console.log("[v0] Starting analysis with Puter.js ChatGPT");
       
-      // Convert PDF to base64
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      let binaryString = '';
-      for (let i = 0; i < uint8Array.length; i++) {
-        binaryString += String.fromCharCode(uint8Array[i]);
-      }
-      const pdfBase64 = btoa(binaryString);
-
-      console.log("[v0] PDF converted to base64, size:", pdfBase64.length);
-
-      // Send to backend API for analysis
-      const response = await fetch('/api/analyze-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pdfBuffer: pdfBase64,
-          fileName: selectedFile.name,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || error.error || 'Analysis failed');
+      // Extract PDF text
+      const pdfText = await extractPDFText(selectedFile);
+      
+      if (!pdfText || pdfText.trim().length === 0) {
+        throw new Error('No text found in PDF');
       }
 
-      const result = await response.json();
-      console.log("[v0] Received analysis from backend");
+      // Call Puter.js ChatGPT directly from frontend
+      const puter = (window as any).puter;
+      if (!puter) {
+        throw new Error('Puter.js not loaded. Please refresh the page.');
+      }
 
-      if (result.success && result.data) {
-        setStudyMaterial(result.data);
-        toast.success('Document analyzed with ChatGPT!');
-      } else {
+      const analysisPrompt = `Analyze this medical document and provide study materials as JSON.
+
+Document: ${selectedFile.name}
+Content: ${pdfText.substring(0, 8000)}
+
+Return ONLY valid JSON (no markdown, no code blocks, just plain JSON):
+{
+  "summary": "comprehensive summary 200+ words",
+  "keyPoints": ["point1", "point2", "point3", "point4", "point5"],
+  "mcqs": [
+    {"question": "Q1?", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "why"},
+    {"question": "Q2?", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "explanation": "why"}
+  ],
+  "shortAnswerQuestions": ["Q1", "Q2", "Q3"],
+  "essayQuestions": ["Essay Q1", "Essay Q2"]
+}`;
+
+      console.log("[v0] Calling Puter.js ChatGPT");
+      const response = await puter.ai.chat(analysisPrompt, { model: 'gpt-5-nano' });
+      console.log("[v0] Received response:", response.substring(0, 100));
+
+      // Parse JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error("[v0] No JSON found in response:", response);
         throw new Error('Invalid response format');
       }
+
+      const studyData: StudyMaterial = JSON.parse(jsonMatch[0]);
+      console.log("[v0] Analysis complete");
+      
+      setStudyMaterial(studyData);
+      toast.success('Document analyzed with ChatGPT via Puter.js!');
     } catch (error) {
-      console.error("[v0] Error analyzing document:", error);
-      toast.error(`Failed to analyze document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("[v0] Analysis error:", error);
+      toast.error(`Failed to analyze: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
