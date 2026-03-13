@@ -3,12 +3,11 @@ import { useState, useEffect, useCallback } from "react";
 import {
   collection,
   query,
-  orderBy,
-  onSnapshot,
   doc,
   updateDoc,
   where,
   limit,
+  onSnapshot,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../../config/firebase";
 import { useGetUserInfo } from "../auth/useGetUserInfo";
@@ -88,11 +87,11 @@ export const useNotifications = () => {
     setLoading(true);
 
     // Query user-specific notifications and global announcements
+    // Note: no orderBy to avoid requiring a composite Firestore index — sorted client-side below
     const userNotificationsRef = collection(db, "notifications");
     const notificationsQuery = query(
       userNotificationsRef,
       where("userId", "in", [userID, "global"]),
-      orderBy("createdAt", "desc"),
       limit(20)
     );
 
@@ -101,11 +100,23 @@ export const useNotifications = () => {
       (snapshot) => {
         const notificationsList: INotification[] = [];
         snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Normalize createdAt — handle both Firestore Timestamp and ISO string
+          const createdAt =
+            data.createdAt?.toDate
+              ? data.createdAt.toDate().toISOString()
+              : data.createdAt ?? new Date().toISOString();
           notificationsList.push({
             id: doc.id,
-            ...doc.data(),
+            ...data,
+            createdAt,
           } as INotification);
         });
+
+        // Sort client-side by createdAt descending
+        notificationsList.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 
         // If no notifications from Firebase, use sample notifications
         if (notificationsList.length === 0) {
