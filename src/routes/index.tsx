@@ -78,7 +78,7 @@ const AppRoutes = () => {
   const CommunityPage = lazy(
     () => import("../pages/user/community/CommunityPage")
   );
-  const ExamPapersPage = lazy(
+  const StudyAIPage = lazy(
     () => import("../pages/user/exam-papers/ExamPapersPage")
   );
   const StudentQuizDashboard = lazy(
@@ -197,10 +197,10 @@ const AppRoutes = () => {
             }
           />
           <Route
-            path="/u/exam-papers"
+            path="/u/study-ai"
             element={
               <ProtectedRoute>
-                <ExamPapersPage />
+                <StudyAIPage />
               </ProtectedRoute>
             }
           />

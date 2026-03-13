@@ -1,30 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, Target, Award, Calendar, Clock, BookOpen } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { Send, ArrowLeft, MessageCircle, Lightbulb, BookOpen, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-interface PerformanceMetrics {
-  totalAttempts: number;
-  averageScore: number;
-  bestScore: number;
-  weakestTopic: string;
-  strongestTopic: string;
-  timeSpentHours: number;
-}
-
-interface CoursePerformance {
-  courseId: string;
-  courseName: string;
-  attempts: number;
-  averageScore: number;
-  trend: 'up' | 'down' | 'stable';
-}
-
-interface WeeklyProgress {
-  week: string;
-  attempts: number;
-  averageScore: number;
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
 }
 
 const fadeInVariants = {
@@ -33,383 +17,247 @@ const fadeInVariants = {
   transition: { duration: 0.5 }
 };
 
-export default function AnalyticsDashboard() {
-  const [metrics, setMetrics] = useState<PerformanceMetrics>({
-    totalAttempts: 0,
-    averageScore: 0,
-    bestScore: 0,
-    weakestTopic: 'N/A',
-    strongestTopic: 'N/A',
-    timeSpentHours: 0,
-  });
-  const [coursePerformance, setCoursePerformance] = useState<CoursePerformance[]>([]);
-  const [weeklyProgress, setWeeklyProgress] = useState<WeeklyProgress[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
-
-  useEffect(() => {
-    console.log('[v0] Setting up auth listener');
-    
-    // Use onAuthStateChange to properly track authentication state
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[v0] Auth state changed:', event, 'Session:', !!session);
-      
-      if (session?.user) {
-        console.log('[v0] User authenticated:', session.user.id);
-        setIsAuthenticated(true);
-        setLoading(true);
-        await fetchAnalytics();
-      } else {
-        console.log('[v0] User not authenticated');
-        setIsAuthenticated(false);
-        setLoading(false);
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('[v0] Period changed, reloading analytics');
-      fetchAnalytics();
+export default function StudyAIPage() {
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I\'m your Study AI Assistant. I\'m here to help you learn medical concepts, explain complex topics, provide study tips, and answer your questions. What would you like to study today?',
+      timestamp: new Date()
     }
-  }, [selectedPeriod]);
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchAnalytics = async () => {
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const suggestedTopics = [
+    { icon: BookOpen, title: 'Anatomy Basics', color: 'from-blue-500 to-blue-600' },
+    { icon: Lightbulb, title: 'Physiology', color: 'from-yellow-500 to-yellow-600' },
+    { icon: Zap, title: 'Clinical Skills', color: 'from-green-500 to-green-600' },
+    { icon: MessageCircle, title: 'Ask a Question', color: 'from-purple-500 to-purple-600' }
+  ];
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputValue,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
     try {
-      setLoading(true);
-      console.log('[v0] Fetching analytics data...');
+      // Simulate AI response delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.log('[v0] No user found during analytics fetch');
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
-
-      console.log('[v0] User found:', user.id, 'Fetching attempts...');
-
-      // Fetch quiz attempts
-      const { data: attempts, error: attemptsError } = await supabase
-        .from('quiz_attempts')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (attemptsError) {
-        console.error('[v0] Error fetching attempts:', attemptsError);
-        throw attemptsError;
-      }
-
-      console.log('[v0] Attempts fetched:', attempts?.length || 0);
-
-      if (!attempts || attempts.length === 0) {
-        console.log('[v0] No attempts found, showing empty state');
-        setMetrics({
-          totalAttempts: 0,
-          averageScore: 0,
-          bestScore: 0,
-          weakestTopic: 'No data yet',
-          strongestTopic: 'No data yet',
-          timeSpentHours: 0,
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Calculate performance metrics
-      const percentages = attempts.map(a => a.percentage || 0);
-      const totalTime = attempts.reduce((sum, a) => sum + (a.time_spent_seconds || 0), 0);
-
-      const metrics: PerformanceMetrics = {
-        totalAttempts: attempts.length,
-        averageScore: Math.round(percentages.reduce((a, b) => a + b, 0) / percentages.length),
-        bestScore: Math.max(...percentages),
-        weakestTopic: 'Mathematics', // Placeholder - would need topic data
-        strongestTopic: 'Biology', // Placeholder - would need topic data
-        timeSpentHours: Math.round(totalTime / 3600),
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: `I understand you asked about: "${inputValue}". As a medical study assistant, I can help explain medical concepts, provide summaries, create study guides, and help you prepare for exams. This is a demo version. In a full implementation, this would connect to an AI API for comprehensive medical education support.`,
+        timestamp: new Date()
       };
 
-      setMetrics(metrics);
-
-      // Generate mock course performance data
-      const courses: CoursePerformance[] = [
-        {
-          courseId: '1',
-          courseName: 'Anatomy',
-          attempts: 12,
-          averageScore: 78,
-          trend: 'up',
-        },
-        {
-          courseId: '2',
-          courseName: 'Physiology',
-          attempts: 8,
-          averageScore: 82,
-          trend: 'up',
-        },
-        {
-          courseId: '3',
-          courseName: 'Biochemistry',
-          attempts: 5,
-          averageScore: 71,
-          trend: 'down',
-        },
-        {
-          courseId: '4',
-          courseName: 'Pharmacology',
-          attempts: 10,
-          averageScore: 75,
-          trend: 'stable',
-        },
-      ];
-      setCoursePerformance(courses);
-
-      // Generate mock weekly progress
-      const weeks: WeeklyProgress[] = [
-        { week: 'Mon', attempts: 3, averageScore: 75 },
-        { week: 'Tue', attempts: 2, averageScore: 78 },
-        { week: 'Wed', attempts: 4, averageScore: 81 },
-        { week: 'Thu', attempts: 2, averageScore: 76 },
-        { week: 'Fri', attempts: 5, averageScore: 79 },
-        { week: 'Sat', attempts: 1, averageScore: 72 },
-        { week: 'Sun', attempts: 2, averageScore: 80 },
-      ];
-      setWeeklyProgress(weeks);
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('[v0] Error fetching analytics:', error);
-      toast.error('Failed to load analytics');
+      toast.error('Failed to get response. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (loading || isAuthenticated === null) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }} className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <motion.div
-          variants={fadeInVariants}
-          initial="initial"
-          animate="animate"
-          className="text-center"
-        >
-          <div className="mb-4">
-            <BarChart3 className="w-16 h-16 text-teal-600 mx-auto opacity-50" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600 mb-6">Please log in to view your performance analytics and insights</p>
-          <a
-            href="/login"
-            className="inline-block px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
-          >
-            Go to Login
-          </a>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }} className="w-12 h-12 border-4 border-teal-200 border-t-teal-600 rounded-full" />
-      </div>
-    );
-  }
+  const handleSuggestedTopic = (topic: string) => {
+    setSelectedTopic(topic);
+    setInputValue(`Teach me about ${topic}`);
+  };
 
   return (
-    <motion.div
-      initial="initial"
-      animate="animate"
-      variants={fadeInVariants}
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6"
-    >
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Learning Analytics</h1>
-          <p className="text-gray-600">Track your progress and identify areas for improvement</p>
-        </div>
-
-        {/* Period Selector */}
-        <div className="flex gap-2 mb-6">
-          {(['week', 'month', 'all'] as const).map((period) => (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur shadow-sm border-b border-gray-200">
+        <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
+          <div className="flex items-center gap-3">
             <button
-              key={period}
-              onClick={() => setSelectedPeriod(period)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                selectedPeriod === period
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              onClick={() => navigate(-1)}
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Go back"
             >
-              {period === 'week' ? 'This Week' : period === 'month' ? 'This Month' : 'All Time'}
+              <ArrowLeft className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
             </button>
-          ))}
-        </div>
-
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {/* Total Attempts */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Total Attempts</h3>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <BookOpen className="w-5 h-5 text-blue-600" />
-              </div>
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg p-2 sm:p-2.5">
+              <MessageCircle className="w-5 sm:w-6 text-white" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{metrics.totalAttempts}</p>
-            <p className="text-xs text-gray-500 mt-2">Quiz attempts completed</p>
-          </motion.div>
-
-          {/* Average Score */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Average Score</h3>
-              <div className="p-3 bg-teal-100 rounded-lg">
-                <Target className="w-5 h-5 text-teal-600" />
-              </div>
+            <div>
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Study AI Assistant</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Learn medical concepts with AI-powered guidance</p>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{metrics.averageScore}%</p>
-            <p className="text-xs text-gray-500 mt-2">Across all attempts</p>
-          </motion.div>
-
-          {/* Best Score */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Best Score</h3>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Award className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{metrics.bestScore}%</p>
-            <p className="text-xs text-gray-500 mt-2">Personal best</p>
-          </motion.div>
-
-          {/* Time Spent */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">Time Spent</h3>
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Clock className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{metrics.timeSpentHours}h</p>
-            <p className="text-xs text-gray-500 mt-2">Total study time</p>
-          </motion.div>
-        </div>
-
-        {/* Course Performance */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <motion.div
-            variants={fadeInVariants}
-            className="lg:col-span-2 bg-white rounded-lg p-6 shadow-sm"
-          >
-            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-teal-600" />
-              Course Performance
-            </h2>
-            <div className="space-y-4">
-              {coursePerformance.map((course) => (
-                <div key={course.courseId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{course.courseName}</h3>
-                    <p className="text-sm text-gray-500">{course.attempts} attempts</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-teal-600 h-2 rounded-full"
-                        style={{ width: `${course.averageScore}%` }}
-                      />
-                    </div>
-                    <span className="font-bold text-gray-900 min-w-12">{course.averageScore}%</span>
-                    {course.trend === 'up' && <TrendingUp className="w-5 h-5 text-green-600" />}
-                    {course.trend === 'down' && <TrendingUp className="w-5 h-5 text-red-600 rotate-180" />}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Insights */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg p-6 shadow-sm"
-          >
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Insights</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm font-semibold text-green-900 mb-1">Strongest Area</p>
-                <p className="text-lg font-bold text-green-700">{metrics.strongestTopic}</p>
-              </div>
-              <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                <p className="text-sm font-semibold text-orange-900 mb-1">Needs Improvement</p>
-                <p className="text-lg font-bold text-orange-700">{metrics.weakestTopic}</p>
-              </div>
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-semibold text-blue-900 mb-1">Recommendation</p>
-                <p className="text-sm text-blue-700">Focus on weak topics with 2-3 quick quizzes daily</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Weekly Activity */}
-        <motion.div
-          variants={fadeInVariants}
-          className="bg-white rounded-lg p-6 shadow-sm"
-        >
-          <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-600" />
-            Weekly Activity
-          </h2>
-          <div className="flex items-end justify-around gap-2 h-48">
-            {weeklyProgress.map((day) => (
-              <div key={day.week} className="flex flex-col items-center gap-2 flex-1">
-                <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${(day.averageScore / 100) * 100}%` }}
-                    transition={{ duration: 0.8 }}
-                    className="w-full bg-gradient-to-t from-teal-600 to-teal-400 rounded-lg"
-                  />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-gray-900">{day.week}</p>
-                  <p className="text-xs text-gray-500">{day.attempts} Q</p>
-                </div>
-              </div>
-            ))}
           </div>
-        </motion.div>
+        </div>
       </div>
-    </motion.div>
+
+      {/* Main Chat Area */}
+      <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-[600px] sm:h-[700px]">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            {messages.length === 0 && !selectedTopic ? (
+              <motion.div
+                variants={fadeInVariants}
+                initial="initial"
+                animate="animate"
+                className="flex flex-col items-center justify-center h-full text-center"
+              >
+                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full p-4 mb-4">
+                  <MessageCircle className="w-8 sm:w-10 h-8 sm:h-10 text-indigo-600" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Study AI</h2>
+                <p className="text-gray-600 text-sm sm:text-base max-w-xs">Choose a topic or ask any medical question. I'm here to help you learn!</p>
+              </motion.div>
+            ) : (
+              <>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    variants={fadeInVariants}
+                    initial="initial"
+                    animate="animate"
+                    custom={index}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-indigo-600 text-white rounded-br-none'
+                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
+                      }`}
+                    >
+                      <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
+                      <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-indigo-200' : 'text-gray-500'}`}>
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 px-4 py-3 rounded-lg rounded-bl-none">
+                      <div className="flex space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Suggested Topics */}
+          {messages.length === 1 && !selectedTopic && (
+            <div className="border-t border-gray-200 p-4 sm:p-6">
+              <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-3">Suggested Topics:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {suggestedTopics.map((topic, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSuggestedTopic(topic.title)}
+                    className={`bg-gradient-to-br ${topic.color} text-white p-3 sm:p-4 rounded-lg hover:shadow-lg transition-all text-xs sm:text-sm font-semibold flex flex-col items-center gap-2`}
+                  >
+                    <topic.icon className="w-4 sm:w-5 h-4 sm:h-5" />
+                    {topic.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input Area */}
+          <div className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50">
+            <div className="flex gap-2 sm:gap-3">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask me anything about medicine and surgery..."
+                disabled={isLoading}
+                className="flex-1 px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 text-sm sm:text-base"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading || !inputValue.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white p-2 sm:p-3 rounded-lg transition-colors"
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Press Enter to send or click the send button</p>
+          </div>
+        </div>
+
+        {/* Info Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 sm:mt-8">
+          <motion.div
+            variants={fadeInVariants}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-900">Comprehensive Learning</h3>
+            </div>
+            <p className="text-sm text-gray-600">Get detailed explanations on medical concepts, anatomy, physiology, and clinical applications.</p>
+          </motion.div>
+
+          <motion.div
+            variants={fadeInVariants}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            custom={1}
+            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Lightbulb className="w-5 h-5 text-yellow-600" />
+              <h3 className="font-semibold text-gray-900">Study Tips</h3>
+            </div>
+            <p className="text-sm text-gray-600">Receive personalized study strategies and exam preparation guidance tailored to your needs.</p>
+          </motion.div>
+
+          <motion.div
+            variants={fadeInVariants}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            custom={2}
+            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <Zap className="w-5 h-5 text-purple-600" />
+              <h3 className="font-semibold text-gray-900">Quick Answers</h3>
+            </div>
+            <p className="text-sm text-gray-600">Get instant responses to your medical questions anytime, anywhere in the learning platform.</p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
   );
 }
