@@ -401,7 +401,7 @@ export default function Dashboard() {
                   </div>
                   <div className="mb-3 sm:mb-4">
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4 auto-rows-max">
-                      <NavLink to="/u/id-card">
+                      <NavLink to="/u/id-card-payment">
                         <motion.div
                           variants={fadeInVariants5}
                           initial="initial"

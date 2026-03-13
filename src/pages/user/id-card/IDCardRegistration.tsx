@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -8,13 +8,32 @@ import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function IDCardRegistration() {
   const { userID, studentDetails } = useGetUserInfo();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Payment receipt state
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+
+  // Get payment info passed from the payment page
+  const paymentVerified = location.state?.paymentVerified as boolean | undefined;
+  const payerName = location.state?.payerName as string | undefined;
+
+  // Guard: if user navigated here directly without going through payment, send them back
+  useEffect(() => {
+    if (!paymentVerified) {
+      navigate("/u/id-card-payment", { replace: true });
+    }
+  }, [paymentVerified, navigate]);
 
   const [formData, setFormData] = useState({
     firstName: studentDetails?.firstName || "",
@@ -50,14 +69,33 @@ export default function IDCardRegistration() {
     }
   };
 
-  const uploadImageToSupabase = async (file: File): Promise<string> => {
-    // Generate unique file path for Supabase Storage
-    const fileExt = file.name.split('.').pop() || 'jpg';
-    const fileName = `${userID}/id-card-${Date.now()}.${fileExt}`;
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+        notifyUser("error", "Please select a valid image or PDF file");
+        return;
+      }
+      setReceiptFile(file);
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setReceiptPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setReceiptPreview("pdf");
+      }
+    }
+  };
 
-    // Upload to Supabase Storage
+  const uploadImageToSupabase = async (file: File, bucketPath: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userID}/${bucketPath}-${Date.now()}.${fileExt}`;
+    const bucket = bucketPath === "receipt" ? "payment-receipts" : STORAGE_BUCKETS.ID_CARDS;
+
     const { data, error } = await supabase.storage
-      .from(STORAGE_BUCKETS.ID_CARDS)
+      .from(bucket)
       .upload(fileName, file, {
         cacheControl: '3600',
         upsert: true,
@@ -65,11 +103,10 @@ export default function IDCardRegistration() {
 
     if (error) {
       console.error("Supabase upload error:", error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+      throw new Error(`Failed to upload file: ${error.message}`);
     }
 
-    // Get the public URL
-    return getPublicUrl(STORAGE_BUCKETS.ID_CARDS, data.path);
+    return getPublicUrl(bucket, data.path);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +122,11 @@ export default function IDCardRegistration() {
       return;
     }
 
+    if (!receiptFile) {
+      notifyUser("error", "Please upload your payment receipt");
+      return;
+    }
+
     if (!userID) {
       notifyUser("error", "You must be logged in to register");
       return;
@@ -95,8 +137,11 @@ export default function IDCardRegistration() {
     try {
       notifyUser("loading", "Uploading your ID card registration...");
 
-      // Upload image to Supabase Storage
-      const imageUrl = await uploadImageToSupabase(imageFile);
+      // Upload passport photo
+      const imageUrl = await uploadImageToSupabase(imageFile, "id-card");
+
+      // Upload payment receipt
+      const receiptUrl = await uploadImageToSupabase(receiptFile!, "receipt");
 
       // Save to Firestore
       await addDoc(collection(db, "idCardRegistrations"), {
@@ -110,6 +155,8 @@ export default function IDCardRegistration() {
         classSet: formData.classSet,
         registrationNumber: formData.registrationNumber,
         photoUrl: imageUrl,
+        paymentReceiptUrl: receiptUrl,
+        payerName: payerName || "",
         status: "pending",
         createdAt: serverTimestamp(),
       });
@@ -175,9 +222,24 @@ export default function IDCardRegistration() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             ID Card Registration
           </h1>
-          <p className="text-sm text-gray-600 mb-6">
+          <p className="text-sm text-gray-600 mb-4">
             Fill in your details below to register for your student ID card.
           </p>
+
+          {/* Payment verified banner */}
+          {paymentVerified && (
+            <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3 mb-6">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-green-800">Payment Confirmed</p>
+                <p className="text-xs text-green-600">Transfer reported by {payerName}. Please upload your receipt below.</p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Photo Upload */}
@@ -350,6 +412,59 @@ export default function IDCardRegistration() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Enter your class set (e.g., 018, 019, 020)</p>
               </div>
+            </div>
+
+            {/* Payment Receipt Upload */}
+            <div className="border border-dashed border-amber-300 bg-amber-50/40 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p className="text-sm font-semibold text-gray-800">
+                  Payment Receipt <span className="text-red-500">*</span>
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                Upload a screenshot or photo of your payment receipt as proof of payment.
+              </p>
+              <div
+                onClick={() => receiptInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-amber-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-amber-400 transition-colors overflow-hidden bg-white min-h-[100px]"
+              >
+                {receiptPreview && receiptPreview !== "pdf" ? (
+                  <img
+                    src={receiptPreview}
+                    alt="Receipt preview"
+                    className="w-full max-h-48 object-contain"
+                  />
+                ) : receiptPreview === "pdf" ? (
+                  <div className="text-center p-4">
+                    <svg className="h-10 w-10 mx-auto text-red-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs text-gray-600 font-medium">{receiptFile?.name}</span>
+                  </div>
+                ) : (
+                  <div className="text-center p-4">
+                    <svg className="h-8 w-8 mx-auto text-amber-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span className="text-xs text-gray-500">Click to upload receipt (image or PDF)</span>
+                  </div>
+                )}
+              </div>
+              <input
+                ref={receiptInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleReceiptChange}
+                className="hidden"
+              />
+              {receiptFile && (
+                <p className="text-xs text-green-600 mt-2 font-medium">
+                  Receipt selected: {receiptFile.name}
+                </p>
+              )}
             </div>
 
             <button

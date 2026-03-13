@@ -66,6 +66,9 @@ const AppRoutes = () => {
   const IDCardRegistration = lazy(
     () => import("../pages/user/id-card/IDCardRegistration")
   );
+  const IDCardPayment = lazy(
+    () => import("../pages/user/id-card/IDCardPayment")
+  );
   const AdminDashboard = lazy(
     () => import("../pages/admin/AdminDashboard")
   );
@@ -161,6 +164,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />{" "}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/id-card-payment"
+            element={
+              <ProtectedRoute>
+                <IDCardPayment />
               </ProtectedRoute>
             }
           />
