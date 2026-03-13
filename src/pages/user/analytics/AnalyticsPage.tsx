@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
               );
             })}
           </div>
-          {analytics.weeklyActivity.every((d) => d.minutes === 0) && (
+          {analytics.weeklyActivity.every((d: any) => d.minutes === 0) && (
             <p className="text-center text-xs text-gray-400 mt-2">Start exploring the portal to see your activity here!</p>
           )}
         </motion.div>
@@ -280,7 +280,7 @@ export default function AnalyticsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {analytics.recentActivity.map((entry, idx) => {
+              {analytics.recentActivity.map((entry: any, idx: number) => {
                 const style = ACTIVITY_LABELS[entry.type] ?? ACTIVITY_LABELS.page_visit;
                 return (
                   <motion.div
