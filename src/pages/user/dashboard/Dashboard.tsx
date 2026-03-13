@@ -20,6 +20,7 @@ import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
 import { useNotifications } from "../../../hooks/notifications/useNotifications";
 import WeatherWidget from "../../../components/widgets/WeatherWidget";
 import CommunityWidget from "../../../components/widgets/CommunityWidget";
+import { trackActivity } from "../../../hooks/analytics/useAnalytics";
 
 // Activity types with icons and colors
 interface Activity {
@@ -82,6 +83,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (studentDetails) {
       setActivities(generateActivities(studentDetails));
+      trackActivity("page_visit", "Dashboard");
     }
   }, [studentDetails]);
 

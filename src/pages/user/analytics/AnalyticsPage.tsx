@@ -1,300 +1,311 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, TrendingUp, BookOpen, Target, Award, BarChart3, PieChart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { ArrowLeft, TrendingUp, BookOpen, Target, Award, BarChart3, Clock, Zap, Activity } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAnalytics, trackActivity } from "../../../hooks/analytics/useAnalytics";
 
-interface AnalyticsData {
-  totalCourses: number;
-  coursesCompleted: number;
-  averageGrade: number;
-  studyStreak: number;
-  totalStudyHours: number;
-  quizzesAttempted: number;
-  averageQuizScore: number;
-  resourcesAccessed: number;
-  topCourses: { name: string; score: number; progress: number }[];
-  monthlyActivity: { month: string; hours: number }[];
-  performanceByCategory: { category: string; percentage: number }[];
-}
-
-const fadeInVariants = {
-  initial: { opacity: 0, y: 20 },
+const fadeIn = {
+  initial: { opacity: 0, y: 18 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
 };
 
-const containerVariants = {
+const stagger = {
   initial: { opacity: 0 },
-  animate: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
+  animate: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+
+const ACTIVITY_LABELS: Record<string, { icon: string; color: string; bg: string }> = {
+  session_start: { icon: "M5 13l4 4L19 7", color: "text-green-600", bg: "bg-green-100" },
+  page_visit:    { icon: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7", color: "text-blue-600", bg: "bg-blue-100" },
+  resource_view: { icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253", color: "text-amber-600", bg: "bg-amber-100" },
+  quiz:          { icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", color: "text-purple-600", bg: "bg-purple-100" },
+  outline_view:  { icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", color: "text-teal-600", bg: "bg-teal-100" },
+};
+
+const formatTime = (ts: number) => {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+};
+
+const formatMinutes = (mins: number) => {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 };
 
 export default function AnalyticsPage() {
   const navigate = useNavigate();
-  const [analytics] = useState<AnalyticsData>({
-    totalCourses: 12,
-    coursesCompleted: 8,
-    averageGrade: 78,
-    studyStreak: 24,
-    totalStudyHours: 156,
-    quizzesAttempted: 32,
-    averageQuizScore: 82,
-    resourcesAccessed: 245,
-    topCourses: [
-      { name: 'Human Anatomy', score: 92, progress: 95 },
-      { name: 'Medical Physiology', score: 88, progress: 87 },
-      { name: 'Biochemistry', score: 85, progress: 82 },
-    ],
-    monthlyActivity: [
-      { month: 'Jan', hours: 12 },
-      { month: 'Feb', hours: 18 },
-      { month: 'Mar', hours: 24 },
-      { month: 'Apr', hours: 20 },
-      { month: 'May', hours: 28 },
-      { month: 'Jun', hours: 32 },
-    ],
-    performanceByCategory: [
-      { category: 'Anatomy', percentage: 92 },
-      { category: 'Physiology', percentage: 88 },
-      { category: 'Biochemistry', percentage: 85 },
-      { category: 'Pathology', percentage: 79 },
-      { category: 'Pharmacology', percentage: 81 },
-    ],
-  });
+  const analytics = useAnalytics();
+
+  // Track that this page was visited
+  useEffect(() => {
+    trackActivity("page_visit", "Learning Analytics");
+  }, []);
+
+  const maxWeeklyMins = Math.max(...analytics.weeklyActivity.map((d: { minutes: number }) => d.minutes), 1);
 
   return (
     <motion.div
-      className="min-h-screen bg-gradient-to-b from-background to-secondary/5 pb-20"
+      className="min-h-screen bg-gray-50 pb-20"
       initial="initial"
       animate="animate"
-      variants={containerVariants}
+      variants={stagger}
     >
       {/* Header */}
       <motion.div
         className="sticky top-0 z-40 bg-white border-b-2 border-green1"
-        variants={fadeInVariants}
+        variants={fadeIn}
+        transition={{ duration: 0.3 }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-4 md:px-6 md:py-6 flex items-center gap-4">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/dashboard')}
+        <div className="max-w-5xl mx-auto px-4 py-4 md:px-6 flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
             className="p-2 hover:bg-green1/10 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-green1" />
-          </motion.button>
+          </button>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-green1">Learning Analytics</h1>
-            <p className="text-sm text-muted-foreground mt-1">Track your academic progress and performance</p>
+            <h1 className="text-xl md:text-2xl font-bold text-green1">Learning Analytics</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Your real-time study activity & progress</p>
           </div>
+          {analytics.isLoading && (
+            <div className="ml-auto w-4 h-4 border-2 border-green1 border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
       </motion.div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6">
-        {/* Key Metrics Grid */}
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-          variants={containerVariants}
-        >
-          {/* Total Study Hours */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground font-medium mb-1">Total Study Hours</p>
-                <h3 className="text-3xl font-bold text-green1">{analytics.totalStudyHours}</h3>
-              </div>
-              <div className="p-2 bg-green1/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-green1" />
-              </div>
-            </div>
-            <p className="text-xs text-green1">+12% from last month</p>
-          </motion.div>
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-6 space-y-6">
 
-          {/* Average Grade */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
+        {/* Key Metrics */}
+        <motion.div
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+          variants={stagger}
+        >
+          {/* Study Time */}
+          <motion.div variants={fadeIn} transition={{ duration: 0.35 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground font-medium mb-1">Average Grade</p>
-                <h3 className="text-3xl font-bold text-green1">{analytics.averageGrade}%</h3>
-              </div>
-              <div className="p-2 bg-green1/10 rounded-lg">
-                <Award className="w-5 h-5 text-green1" />
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-xs text-gray-500 font-medium leading-snug">Study Time<br/>This Session</p>
+              <div className="p-1.5 bg-green1/10 rounded-lg">
+                <Clock className="w-4 h-4 text-green1" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Across all courses</p>
+            <h3 className="text-2xl font-bold text-green1">
+              {analytics.isLoading ? "—" : formatMinutes(analytics.totalStudyMinutes)}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">accumulated total</p>
           </motion.div>
 
           {/* Study Streak */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
+          <motion.div variants={fadeIn} transition={{ duration: 0.35, delay: 0.05 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground font-medium mb-1">Study Streak</p>
-                <h3 className="text-3xl font-bold text-green1">{analytics.studyStreak} days</h3>
-              </div>
-              <div className="p-2 bg-green1/10 rounded-lg">
-                <Target className="w-5 h-5 text-green1" />
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-xs text-gray-500 font-medium leading-snug">Daily<br/>Streak</p>
+              <div className="p-1.5 bg-orange-50 rounded-lg">
+                <Zap className="w-4 h-4 text-orange-500" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Keep it up!</p>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {analytics.isLoading ? "—" : `${analytics.studyStreak} days`}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">consecutive days</p>
           </motion.div>
 
-          {/* Quiz Average */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
+          {/* Resources */}
+          <motion.div variants={fadeIn} transition={{ duration: 0.35, delay: 0.1 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground font-medium mb-1">Quiz Average</p>
-                <h3 className="text-3xl font-bold text-green1">{analytics.averageQuizScore}%</h3>
-              </div>
-              <div className="p-2 bg-green1/10 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-green1" />
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-xs text-gray-500 font-medium leading-snug">Resources<br/>Opened</p>
+              <div className="p-1.5 bg-amber-50 rounded-lg">
+                <BookOpen className="w-4 h-4 text-amber-500" />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">{analytics.quizzesAttempted} quizzes taken</p>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {analytics.isLoading ? "—" : analytics.resourcesAccessed}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">study materials</p>
+          </motion.div>
+
+          {/* Quizzes */}
+          <motion.div variants={fadeIn} transition={{ duration: 0.35, delay: 0.15 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-xs text-gray-500 font-medium leading-snug">Quiz<br/>Attempts</p>
+              <div className="p-1.5 bg-purple-50 rounded-lg">
+                <BarChart3 className="w-4 h-4 text-purple-500" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {analytics.isLoading ? "—" : analytics.quizzesAttempted}
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">
+              {analytics.averageQuizScore > 0 ? `avg ${analytics.averageQuizScore}%` : "no attempts yet"}
+            </p>
           </motion.div>
         </motion.div>
 
-        {/* Course Progress & Performance */}
-        <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8"
-          variants={containerVariants}
-        >
-          {/* Top Courses */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6"
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <BookOpen className="w-5 h-5 text-green1" />
-              <h2 className="text-xl font-bold text-green1">Top Courses</h2>
-            </div>
-            <div className="space-y-4">
-              {analytics.topCourses.map((course, idx) => (
-                <div key={idx} className="border-b border-border pb-4 last:border-0 last:pb-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-foreground text-sm">{course.name}</h3>
-                    <span className="text-sm font-bold text-green1">{course.score}%</span>
-                  </div>
-                  <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${course.progress}%` }}
-                      transition={{ duration: 1, ease: 'easeOut' }}
-                      className="h-full bg-green1"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">{course.progress}% complete</p>
+        {/* Quiz performance + Pages visited row */}
+        {(analytics.averageQuizScore > 0 || analytics.pagesVisited > 0) && (
+          <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-4" variants={stagger}>
+            {analytics.averageQuizScore > 0 && (
+              <motion.div variants={fadeIn} transition={{ duration: 0.35 }}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Award className="w-5 h-5 text-green1" />
+                  <h2 className="font-bold text-gray-900">Quiz Performance</h2>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Performance by Category */}
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-white rounded-lg border border-green1/20 p-6"
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <PieChart className="w-5 h-5 text-green1" />
-              <h2 className="text-xl font-bold text-green1">Performance by Category</h2>
-            </div>
-            <div className="space-y-4">
-              {analytics.performanceByCategory.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground">{item.category}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-24 bg-secondary rounded-full h-2 overflow-hidden">
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Average Score</span>
+                      <span className="font-semibold text-gray-800">{analytics.averageQuizScore}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${item.percentage}%` }}
-                        transition={{ duration: 1, ease: 'easeOut', delay: idx * 0.05 }}
-                        className="h-full bg-green1"
+                        animate={{ width: `${analytics.averageQuizScore}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-full bg-green1 rounded-full"
                       />
                     </div>
-                    <span className="text-sm font-bold text-foreground min-w-[40px]">{item.percentage}%</span>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Best Score</span>
+                      <span className="font-semibold text-gray-800">{analytics.bestQuizScore}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${analytics.bestQuizScore}%` }}
+                        transition={{ duration: 1, ease: "easeOut", delay: 0.15 }}
+                        className="h-full bg-amber-400 rounded-full"
+                      />
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        </motion.div>
+              </motion.div>
+            )}
 
-        {/* Monthly Activity */}
-        <motion.div
-          variants={fadeInVariants}
-          className="bg-white rounded-lg border border-green1/20 p-6"
+            {analytics.pageBreakdown.length > 0 && (
+              <motion.div variants={fadeIn} transition={{ duration: 0.35 }}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-5 h-5 text-green1" />
+                  <h2 className="font-bold text-gray-900">Pages Visited Most</h2>
+                </div>
+                <div className="space-y-2">
+                  {analytics.pageBreakdown.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 truncate max-w-[160px]">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(item.count / (analytics.pageBreakdown[0]?.count || 1)) * 100}%` }}
+                            transition={{ duration: 0.8, ease: "easeOut", delay: idx * 0.05 }}
+                            className="h-full bg-green1 rounded-full"
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 min-w-[20px]">{item.count}x</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Weekly Activity Chart */}
+        <motion.div variants={fadeIn} transition={{ duration: 0.35 }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
         >
-          <h2 className="text-xl font-bold text-green1 mb-6 flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-5">
             <TrendingUp className="w-5 h-5 text-green1" />
-            Monthly Study Activity
-          </h2>
-          <div className="flex items-end justify-between gap-2 h-48">
-            {analytics.monthlyActivity.map((item, idx) => (
-              <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(item.hours / 32) * 150}px` }}
-                  transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.1 }}
-                  className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t-lg hover:shadow-lg transition-shadow cursor-pointer"
-                  title={`${item.hours} hours`}
-                />
-                <span className="text-xs font-medium text-foreground">{item.month}</span>
-              </div>
-            ))}
+            <h2 className="font-bold text-gray-900">Weekly Study Activity</h2>
+            <span className="ml-auto text-xs text-gray-400">last 7 days</span>
           </div>
+          <div className="flex items-end justify-between gap-1.5 h-32">
+            {analytics.weeklyActivity.map((item: any, idx: number) => {
+              const heightPct = maxWeeklyMins > 0 ? (item.minutes / maxWeeklyMins) * 100 : 0;
+              const isToday = idx === analytics.weeklyActivity.length - 1;
+              return (
+                <div key={idx} className="flex flex-col items-center gap-1.5 flex-1">
+                  <span className="text-xs text-gray-400">{item.minutes > 0 ? formatMinutes(item.minutes) : ""}</span>
+                  <div className="w-full flex items-end" style={{ height: "88px" }}>
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${Math.max(heightPct, item.minutes > 0 ? 4 : 0)}%` }}
+                      transition={{ duration: 0.7, ease: "easeOut", delay: idx * 0.07 }}
+                      className={`w-full rounded-t-lg ${isToday ? "bg-green1" : "bg-green1/30"}`}
+                      title={`${item.minutes} min`}
+                    />
+                  </div>
+                  <span className={`text-xs font-medium ${isToday ? "text-green1 font-bold" : "text-gray-500"}`}>
+                    {item.day}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {analytics.weeklyActivity.every((d: any) => d.minutes === 0) && (
+            <p className="text-center text-xs text-gray-400 mt-2">Start exploring the portal to see your activity here!</p>
+          )}
         </motion.div>
 
-        {/* Statistics Overview */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8"
-          variants={containerVariants}
+        {/* Recent Activity Feed */}
+        <motion.div variants={fadeIn} transition={{ duration: 0.35 }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
         >
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20 p-6"
-          >
-            <p className="text-sm text-muted-foreground mb-2">Courses in Progress</p>
-            <h3 className="text-2xl font-bold text-foreground">{analytics.totalCourses - analytics.coursesCompleted}</h3>
-            <p className="text-xs text-muted-foreground mt-2">{analytics.coursesCompleted} completed</p>
-          </motion.div>
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5 text-green1" />
+            <h2 className="font-bold text-gray-900">Recent Activity</h2>
+          </div>
 
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-gradient-to-br from-success/10 to-success/5 rounded-lg border border-success/20 p-6"
-          >
-            <p className="text-sm text-muted-foreground mb-2">Resources Accessed</p>
-            <h3 className="text-2xl font-bold text-foreground">{analytics.resourcesAccessed}</h3>
-            <p className="text-xs text-muted-foreground mt-2">Study materials & documents</p>
-          </motion.div>
-
-          <motion.div
-            variants={fadeInVariants}
-            className="bg-gradient-to-br from-info/10 to-info/5 rounded-lg border border-info/20 p-6"
-          >
-            <p className="text-sm text-muted-foreground mb-2">Overall Performance</p>
-            <h3 className="text-2xl font-bold text-foreground">
-              {Math.round((analytics.averageGrade + analytics.averageQuizScore) / 2)}%
-            </h3>
-            <p className="text-xs text-muted-foreground mt-2">Grade + Quiz average</p>
-          </motion.div>
+          {analytics.recentActivity.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-gray-400">No activity recorded yet.</p>
+              <p className="text-xs text-gray-300 mt-1">Browse resources, take quizzes or view outlines to build your history.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {analytics.recentActivity.map((entry: any, idx: number) => {
+                const style = ACTIVITY_LABELS[entry.type] ?? ACTIVITY_LABELS.page_visit;
+                return (
+                  <motion.div
+                    key={idx}
+                    variants={fadeIn}
+                    transition={{ duration: 0.25, delay: idx * 0.04 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className={`w-8 h-8 rounded-full ${style.bg} flex items-center justify-center flex-shrink-0`}>
+                      <svg className={`w-4 h-4 ${style.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={style.icon} />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{entry.label}</p>
+                      <p className="text-xs text-gray-400 capitalize">{entry.type.replace("_", " ")}</p>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0">{formatTime(entry.timestamp)}</span>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </motion.div>
+
       </div>
     </motion.div>
   );
