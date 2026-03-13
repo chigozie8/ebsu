@@ -79,7 +79,7 @@ const AppRoutes = () => {
     () => import("../pages/user/community/CommunityPage")
   );
   const StudyAIPage = lazy(
-    () => import("../pages/user/exam-papers/ExamPapersPage")
+    () => import("../pages/user/analytics/AnalyticsPage")
   );
   const StudentQuizDashboard = lazy(
     () => import("../pages/user/quiz/StudentQuizDashboard")
