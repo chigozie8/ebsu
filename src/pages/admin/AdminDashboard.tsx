@@ -1754,6 +1754,7 @@ Blog Posts
             </svg>
             Team Images
           </button>
+        </div>
 
         {/* Materials Tab */}
         {activeTab === "materials" && (
