@@ -76,7 +76,7 @@ export default function AnalyticsPage() {
     >
       {/* Header */}
       <motion.div
-        className="sticky top-0 z-40 bg-white border-b border-border"
+        className="sticky top-0 z-40 bg-white border-b-2 border-green1"
         variants={fadeInVariants}
       >
         <div className="max-w-7xl mx-auto px-4 py-4 md:px-6 md:py-6 flex items-center gap-4">
@@ -84,12 +84,12 @@ export default function AnalyticsPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/dashboard')}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            className="p-2 hover:bg-green1/10 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            <ArrowLeft className="w-5 h-5 text-green1" />
           </motion.button>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Learning Analytics</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-green1">Learning Analytics</h1>
             <p className="text-sm text-muted-foreground mt-1">Track your academic progress and performance</p>
           </div>
         </div>
@@ -105,32 +105,32 @@ export default function AnalyticsPage() {
           {/* Total Study Hours */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6 hover:border-primary/50 transition-colors"
+            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground font-medium mb-1">Total Study Hours</p>
-                <h3 className="text-3xl font-bold text-foreground">{analytics.totalStudyHours}</h3>
+                <h3 className="text-3xl font-bold text-green1">{analytics.totalStudyHours}</h3>
               </div>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-primary" />
+              <div className="p-2 bg-green1/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green1" />
               </div>
             </div>
-            <p className="text-xs text-success">+12% from last month</p>
+            <p className="text-xs text-green1">+12% from last month</p>
           </motion.div>
 
           {/* Average Grade */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6 hover:border-primary/50 transition-colors"
+            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground font-medium mb-1">Average Grade</p>
-                <h3 className="text-3xl font-bold text-foreground">{analytics.averageGrade}%</h3>
+                <h3 className="text-3xl font-bold text-green1">{analytics.averageGrade}%</h3>
               </div>
-              <div className="p-2 bg-success/10 rounded-lg">
-                <Award className="w-5 h-5 text-success" />
+              <div className="p-2 bg-green1/10 rounded-lg">
+                <Award className="w-5 h-5 text-green1" />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Across all courses</p>
@@ -139,15 +139,15 @@ export default function AnalyticsPage() {
           {/* Study Streak */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6 hover:border-primary/50 transition-colors"
+            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground font-medium mb-1">Study Streak</p>
-                <h3 className="text-3xl font-bold text-foreground">{analytics.studyStreak} days</h3>
+                <h3 className="text-3xl font-bold text-green1">{analytics.studyStreak} days</h3>
               </div>
-              <div className="p-2 bg-warning/10 rounded-lg">
-                <Target className="w-5 h-5 text-warning" />
+              <div className="p-2 bg-green1/10 rounded-lg">
+                <Target className="w-5 h-5 text-green1" />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Keep it up!</p>
@@ -156,15 +156,15 @@ export default function AnalyticsPage() {
           {/* Quiz Average */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6 hover:border-primary/50 transition-colors"
+            className="bg-white rounded-lg border border-green1/20 p-6 hover:border-green1 transition-colors"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground font-medium mb-1">Quiz Average</p>
-                <h3 className="text-3xl font-bold text-foreground">{analytics.averageQuizScore}%</h3>
+                <h3 className="text-3xl font-bold text-green1">{analytics.averageQuizScore}%</h3>
               </div>
-              <div className="p-2 bg-info/10 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-info" />
+              <div className="p-2 bg-green1/10 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-green1" />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">{analytics.quizzesAttempted} quizzes taken</p>
@@ -179,25 +179,25 @@ export default function AnalyticsPage() {
           {/* Top Courses */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6"
+            className="bg-white rounded-lg border border-green1/20 p-6"
           >
             <div className="flex items-center gap-2 mb-6">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-bold text-foreground">Top Courses</h2>
+              <BookOpen className="w-5 h-5 text-green1" />
+              <h2 className="text-xl font-bold text-green1">Top Courses</h2>
             </div>
             <div className="space-y-4">
               {analytics.topCourses.map((course, idx) => (
                 <div key={idx} className="border-b border-border pb-4 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium text-foreground text-sm">{course.name}</h3>
-                    <span className="text-sm font-bold text-primary">{course.score}%</span>
+                    <span className="text-sm font-bold text-green1">{course.score}%</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${course.progress}%` }}
                       transition={{ duration: 1, ease: 'easeOut' }}
-                      className="h-full bg-primary"
+                      className="h-full bg-green1"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{course.progress}% complete</p>
@@ -209,11 +209,11 @@ export default function AnalyticsPage() {
           {/* Performance by Category */}
           <motion.div
             variants={fadeInVariants}
-            className="bg-white rounded-lg border border-border p-6"
+            className="bg-white rounded-lg border border-green1/20 p-6"
           >
             <div className="flex items-center gap-2 mb-6">
-              <PieChart className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-bold text-foreground">Performance by Category</h2>
+              <PieChart className="w-5 h-5 text-green1" />
+              <h2 className="text-xl font-bold text-green1">Performance by Category</h2>
             </div>
             <div className="space-y-4">
               {analytics.performanceByCategory.map((item, idx) => (
@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
                         initial={{ width: 0 }}
                         animate={{ width: `${item.percentage}%` }}
                         transition={{ duration: 1, ease: 'easeOut', delay: idx * 0.05 }}
-                        className="h-full bg-primary"
+                        className="h-full bg-green1"
                       />
                     </div>
                     <span className="text-sm font-bold text-foreground min-w-[40px]">{item.percentage}%</span>
@@ -239,10 +239,10 @@ export default function AnalyticsPage() {
         {/* Monthly Activity */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-white rounded-lg border border-border p-6"
+          className="bg-white rounded-lg border border-green1/20 p-6"
         >
-          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-bold text-green1 mb-6 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green1" />
             Monthly Study Activity
           </h2>
           <div className="flex items-end justify-between gap-2 h-48">
