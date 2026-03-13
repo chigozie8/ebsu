@@ -29,18 +29,18 @@ export default function About() {
               <div className="bar-style" />
               About Us
             </motion.h2>
-            <motion.p
-              variants={fadeInVariants3}
-              initial="initial"
-              whileInView="animate"
-              viewport={{
-                once: true,
-              }}
-              custom={2}
-              className="text-gray-900 font-medium text-ss ss:text-sm xlg:text-xs mb-4"
-            >
-              Empowering students toward outstanding academic success through rich educational resources and personalized ai assistance.
-            </motion.p>
+              <motion.p
+                variants={fadeInVariants3}
+                initial="initial"
+                whileInView="animate"
+                viewport={{
+                  once: true,
+                }}
+                custom={2}
+                className="text-gray-900 font-medium text-ss ss:text-sm xlg:text-xs mb-4"
+              >
+                EBSUMSA is dedicated to advancing academic excellence, professional development, and community health among medical students at Ebonyi State University through innovative programs and collaborative partnerships.
+              </motion.p>
             <motion.div
               variants={fadeInVariants1}
               initial="initial"
@@ -59,8 +59,7 @@ export default function About() {
               <div>
                 <h4 className="text-green1 font-bold text-xs">Our Vision</h4>
                 <p className="text-gray-700 font-medium text-xss sm:text-sm mmd:text-ss xlg:text-sm">
-                  We envision graduates not just excelling in their chosen
-                  fields, but becoming impactful contributors to society.
+                  Medical students of EBSU positioned as leaders on the global healthcare landscape through excellence and compassion.
                 </p>
               </div>
             </motion.div>
@@ -82,8 +81,7 @@ export default function About() {
               <div>
                 <h4 className="text-green1 font-bold text-xs">Our Mission</h4>
                 <p className="text-gray-700 font-medium text-xss sm:text-sm mmd:text-ss xlg:text-sm">
-                  We fuel academic pursuits through diverse resources,
-                  interactive tools and tailored support systems.
+                  Advancing medical education through clinical skills, research, public health outreach, and connecting students with professional opportunities.
                 </p>
               </div>
             </motion.div>
