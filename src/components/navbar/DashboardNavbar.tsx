@@ -135,15 +135,6 @@ export const DashboardNavbar = () => {
                 </NavLink>{" "}
                 <NavLink
                   onClick={() => setIsNavOpen(false)}
-                  to="/u/gpa-calculator"
-                  className={
-                    "w-full p-3 hover:text-green1 hover:bg-gray-100 rounded-md transition"
-                  }
-                >
-                  GPA Calculator
-                </NavLink>{" "}
-                <NavLink
-                  onClick={() => setIsNavOpen(false)}
                   to="/u/course-outlines"
                   className={
                     "w-full p-3 hover:text-green1 hover:bg-gray-100 rounded-md transition"
