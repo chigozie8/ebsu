@@ -387,7 +387,6 @@ export default function AdminDashboard() {
       });
       
       setProjects(projectsData);
-      console.log("[v0] Admin loaded projects:", projectsData.length);
     } catch (error) {
       console.error("Error fetching projects:", error);
     }
@@ -4164,6 +4163,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
+    </div>
     </div>
   );
 }
