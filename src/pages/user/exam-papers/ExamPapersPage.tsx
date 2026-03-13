@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Upload, ArrowLeft, FileText, Brain, Zap, Download, Loader } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import * as pdfjsLib from 'pdfjs-dist';
 
 interface StudyMaterial {
   summary: string;
@@ -55,7 +54,7 @@ export default function StudyAIPage() {
 
   // Set up PDF.js worker
   useEffect(() => {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Worker setup removed - using backend API instead
   }, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,27 +69,26 @@ export default function StudyAIPage() {
     }
   };
 
-  // Extract PDF text using pdfjs-dist
+  // Extract PDF text using backend API
   const extractPDFText = async (file: File): Promise<string> => {
     try {
-      console.log("[v0] Extracting PDF text");
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      let fullText = '';
+      console.log("[v0] Sending PDF to backend for text extraction");
+      const formData = new FormData();
+      formData.append('file', file);
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        try {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
-          fullText += pageText + '\n';
-        } catch (err) {
-          console.error(`[v0] Error extracting page ${i}`, err);
-        }
+      const response = await fetch('/api/extract-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to extract PDF');
       }
 
-      console.log("[v0] Extracted text length:", fullText.length);
-      return fullText;
+      const data = await response.json();
+      console.log("[v0] Extracted text length:", data.text.length);
+      return data.text;
     } catch (error) {
       console.error("[v0] PDF extraction error:", error);
       throw new Error('Failed to extract PDF text');
