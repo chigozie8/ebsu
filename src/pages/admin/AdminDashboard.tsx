@@ -4075,8 +4075,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </motion.div>
             </div>
           )}
-
-          </div>
         )}
 
         {/* Community Tab */}
@@ -4120,7 +4118,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </div>
           </motion.div>
         )}
-      </div>
 
       {/* Delete ID Card Confirmation Modal */}
       {deleteIdCardModal.show && (
