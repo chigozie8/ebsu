@@ -1676,20 +1676,20 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                 : "bg-white text-gray-600 hover:bg-gray-100"
             }`}
           >
-Blog Posts
-                </button>
-                <button
-                  onClick={() => setActiveTab("projects")}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    activeTab === "projects"
-                      ? "bg-green2 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  Projects
-                </button>
-                <button
-                  onClick={() => setActiveTab("courses")}
+            Blog Posts
+          </button>
+          <button
+            onClick={() => setActiveTab("projects")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              activeTab === "projects"
+                ? "bg-green2 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            Projects
+          </button>
+          <button
+            onClick={() => setActiveTab("courses")}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
               activeTab === "courses"
                 ? "bg-green2 text-white"
