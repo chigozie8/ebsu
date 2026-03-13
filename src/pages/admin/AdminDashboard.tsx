@@ -4086,7 +4086,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
         )}
 
         {/* Delete ID Card Confirmation Modal */}
-      {deleteIdCardModal.show && (
+        {deleteIdCardModal.show && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -4131,7 +4131,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
-      </div>
     </div>
   );
 }
