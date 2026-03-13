@@ -161,7 +161,7 @@ export default function AdminDashboard() {
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications">(
     getInitialTab()
   );
   
@@ -342,6 +342,12 @@ export default function AdminDashboard() {
   const [notifyModal, setNotifyModal] = useState<{ show: boolean; card: IDCardRegistration | null }>({ show: false, card: null });
   const [sendingNotification, setSendingNotification] = useState(false);
 
+  // Broadcast notification composer state
+  const [broadcastForm, setBroadcastForm] = useState({ title: "", message: "", type: "info" as "info" | "success" | "warning" | "announcement" | "update", link: "" });
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [sentNotifications, setSentNotifications] = useState<any[]>([]);
+  const [loadingSentNotifications, setLoadingSentNotifications] = useState(false);
+
   // Sends a notification visible to all users by using userId "global"
   const sendGlobalNotification = async (title: string, message: string, type: "info" | "success", link: string) => {
     try {
@@ -356,6 +362,74 @@ export default function AdminDashboard() {
       });
     } catch (error) {
       console.error("Error sending global notification:", error);
+    }
+  };
+
+  // Fetch all global (broadcast) notifications sent by admin
+  const fetchSentNotifications = async () => {
+    setLoadingSentNotifications(true);
+    try {
+      const q = query(
+        collection(db, "notifications"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const list: any[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data();
+        if (data.userId === "global") {
+          list.push({
+            id: d.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+          });
+        }
+      });
+      setSentNotifications(list);
+    } catch (err) {
+      console.error("Error fetching sent notifications:", err);
+    } finally {
+      setLoadingSentNotifications(false);
+    }
+  };
+
+  // Send a broadcast notification from the compose form
+  const sendBroadcastNotification = async () => {
+    if (!broadcastForm.title.trim() || !broadcastForm.message.trim()) {
+      notifyUser("error", "Please fill in the title and message");
+      return;
+    }
+    setSendingBroadcast(true);
+    try {
+      await addDoc(collection(db, "notifications"), {
+        userId: "global",
+        title: broadcastForm.title.trim(),
+        message: broadcastForm.message.trim(),
+        type: broadcastForm.type,
+        link: broadcastForm.link.trim() || null,
+        createdAt: serverTimestamp(),
+        read: false,
+      });
+      notifyUser("success", "Notification sent to all users!");
+      setBroadcastForm({ title: "", message: "", type: "info", link: "" });
+      fetchSentNotifications();
+    } catch (err) {
+      console.error("Error sending broadcast:", err);
+      notifyUser("error", "Failed to send notification");
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
+  // Delete a sent notification
+  const deleteSentNotification = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "notifications", id));
+      setSentNotifications((prev) => prev.filter((n) => n.id !== id));
+      notifyUser("success", "Notification deleted");
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+      notifyUser("error", "Failed to delete notification");
     }
   };
 
@@ -1813,6 +1887,19 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             Team Images
+          </button>
+          <button
+            onClick={() => { setActiveTab("notifications"); fetchSentNotifications(); }}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "notifications"
+                ? "bg-orange-600 text-white shadow-md"
+                : "bg-orange-50 text-orange-600 hover:bg-orange-100 border-2 border-orange-600"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            Notifications
           </button>
         </div>
 
@@ -4183,6 +4270,188 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             transition={{ duration: 0.3 }}
           >
             <AdminQuizManager />
+          </motion.div>
+        )}
+
+      {/* Notifications Tab */}
+        {activeTab === "notifications" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid lg:grid-cols-5 gap-6"
+          >
+            {/* Compose Form */}
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 h-fit">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Broadcast Notification</h2>
+                  <p className="text-xs text-gray-500">Reaches all users in real-time</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={broadcastForm.title}
+                    onChange={(e) => setBroadcastForm((p) => ({ ...p, title: e.target.value }))}
+                    placeholder="e.g. Exam Timetable Released"
+                    maxLength={80}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{broadcastForm.title.length}/80</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Message <span className="text-red-500">*</span></label>
+                  <textarea
+                    value={broadcastForm.message}
+                    onChange={(e) => setBroadcastForm((p) => ({ ...p, message: e.target.value }))}
+                    placeholder="Write your notification message here..."
+                    rows={4}
+                    maxLength={300}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">{broadcastForm.message.length}/300</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Type</label>
+                  <select
+                    value={broadcastForm.type}
+                    onChange={(e) => setBroadcastForm((p) => ({ ...p, type: e.target.value as any }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white"
+                  >
+                    <option value="info">Info (blue)</option>
+                    <option value="success">Success (green)</option>
+                    <option value="warning">Warning (yellow)</option>
+                    <option value="announcement">Announcement (purple)</option>
+                    <option value="update">Update (teal)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Link <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <input
+                    type="text"
+                    value={broadcastForm.link}
+                    onChange={(e) => setBroadcastForm((p) => ({ ...p, link: e.target.value }))}
+                    placeholder="e.g. /u/learning-resources"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                  />
+                </div>
+
+                {(broadcastForm.title || broadcastForm.message) && (
+                  <div className={`rounded-xl p-3 border ${
+                    broadcastForm.type === "success" ? "bg-green-50 border-green-200" :
+                    broadcastForm.type === "warning" ? "bg-yellow-50 border-yellow-200" :
+                    broadcastForm.type === "announcement" ? "bg-purple-50 border-purple-200" :
+                    broadcastForm.type === "update" ? "bg-teal-50 border-teal-200" :
+                    "bg-blue-50 border-blue-200"
+                  }`}>
+                    <p className="text-xs font-semibold text-gray-500 mb-1">Preview</p>
+                    {broadcastForm.title && <p className="text-sm font-bold text-gray-900">{broadcastForm.title}</p>}
+                    {broadcastForm.message && <p className="text-xs text-gray-600 mt-1 leading-relaxed">{broadcastForm.message}</p>}
+                  </div>
+                )}
+
+                <button
+                  onClick={sendBroadcastNotification}
+                  disabled={sendingBroadcast || !broadcastForm.title.trim() || !broadcastForm.message.trim()}
+                  className="w-full py-3 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {sendingBroadcast ? (
+                    <Spinner className="w-4 h-4" />
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  )}
+                  {sendingBroadcast ? "Sending..." : "Send to All Users"}
+                </button>
+              </div>
+            </div>
+
+            {/* Sent Notifications List */}
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Sent Notifications</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">All broadcast messages sent to users</p>
+                </div>
+                <button
+                  onClick={fetchSentNotifications}
+                  className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  title="Refresh"
+                >
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+
+              {loadingSentNotifications ? (
+                <div className="flex items-center justify-center py-12"><Spinner className="w-6 h-6" /></div>
+              ) : sentNotifications.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <p className="text-sm font-medium">No notifications sent yet</p>
+                  <p className="text-xs mt-1">Use the form to broadcast your first message</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[560px] overflow-y-auto pr-1">
+                  {sentNotifications.map((notif: any) => (
+                    <div key={notif.id} className={`flex gap-3 p-4 rounded-xl border ${
+                      notif.type === "success" ? "bg-green-50 border-green-100" :
+                      notif.type === "warning" ? "bg-yellow-50 border-yellow-100" :
+                      notif.type === "announcement" ? "bg-purple-50 border-purple-100" :
+                      notif.type === "update" ? "bg-teal-50 border-teal-100" :
+                      "bg-blue-50 border-blue-100"
+                    }`}>
+                      <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${
+                        notif.type === "success" ? "bg-green-500" :
+                        notif.type === "warning" ? "bg-yellow-500" :
+                        notif.type === "announcement" ? "bg-purple-500" :
+                        notif.type === "update" ? "bg-teal-500" : "bg-blue-500"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-bold text-gray-900">{notif.title}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            notif.type === "success" ? "bg-green-100 text-green-700" :
+                            notif.type === "warning" ? "bg-yellow-100 text-yellow-700" :
+                            notif.type === "announcement" ? "bg-purple-100 text-purple-700" :
+                            notif.type === "update" ? "bg-teal-100 text-teal-700" :
+                            "bg-blue-100 text-blue-700"
+                          }`}>{notif.type}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">{notif.message}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-xs text-gray-400">
+                            {notif.createdAt ? new Date(notif.createdAt).toLocaleString() : "Just now"}
+                          </p>
+                          <button
+                            onClick={() => deleteSentNotification(notif.id)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
