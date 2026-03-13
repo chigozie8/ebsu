@@ -92,7 +92,9 @@ export default function IDCardRegistration() {
   const uploadImageToSupabase = async (file: File, bucketPath: string): Promise<string> => {
     const fileExt = file.name.split('.').pop() || 'jpg';
     const fileName = `${userID}/${bucketPath}-${Date.now()}.${fileExt}`;
-    const bucket = bucketPath === "receipt" ? "payment-receipts" : STORAGE_BUCKETS.ID_CARDS;
+    const bucket = bucketPath === "receipt"
+      ? STORAGE_BUCKETS.PAYMENT_RECEIPTS
+      : STORAGE_BUCKETS.ID_CARDS;
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -102,7 +104,7 @@ export default function IDCardRegistration() {
       });
 
     if (error) {
-      console.error("Supabase upload error:", error);
+      console.error("[v0] Supabase upload error:", error.message, "bucket:", bucket);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
 
