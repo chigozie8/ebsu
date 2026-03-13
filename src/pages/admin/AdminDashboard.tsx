@@ -54,6 +54,8 @@ interface IDCardRegistration {
   registrationNumber: string;
   classSet: string;
   phoneNumber: string;
+  paymentReceiptUrl?: string;
+  payerName?: string;
   createdAt: any;
 }
 
@@ -2221,6 +2223,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                       <th className="text-left p-3 font-medium">Reg. No.</th>
                       <th className="text-left p-3 font-medium">Level</th>
                       <th className="text-left p-3 font-medium">Class</th>
+                      <th className="text-left p-3 font-medium">Receipt</th>
                       <th className="text-left p-3 font-medium">Status</th>
                       <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
@@ -2241,6 +2244,24 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                         <td className="p-3">{card.registrationNumber || "N/A"}</td>
                         <td className="p-3">{card.level}</td>
                         <td className="p-3">{card.classSet || "N/A"}</td>
+                        <td className="p-3">
+                          {card.paymentReceiptUrl ? (
+                            <a
+                              href={card.paymentReceiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View
+                            </a>
+                          ) : (
+                            <span className="text-xs text-gray-400">No receipt</span>
+                          )}
+                        </td>
                         <td className="p-3">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
