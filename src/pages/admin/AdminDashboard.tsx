@@ -354,7 +354,7 @@ export default function AdminDashboard() {
           ? `Hi ${card.firstName}, your EBSUMSA student ID card is ready for collection. Please visit the ID card office to pick it up.`
           : `Hi ${card.firstName}, your EBSUMSA student ID card is being processed and will be ready in approximately 2 weeks. We will notify you once it is available.`,
         type: isReady ? "success" : "info",
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
         read: false,
         link: "/u/id-card-payment",
       });
