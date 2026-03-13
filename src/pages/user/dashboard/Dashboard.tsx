@@ -8,7 +8,6 @@ import profile from "../../../json/animation/avatar1.json";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { BadNetworkIcon } from "../../../components/icons/general/BadNetworkIcon";
-import { CalculatorIcon } from "../../../components/icons/dashboard/CalculatorIcon";
 import { BooksIcon } from "../../../components/icons/dashboard/BooksIcon";
 import { FilesIcon } from "../../../components/icons/dashboard/FilesIcon";
 import { ChatIcon } from "../../../components/icons/dashboard/ChatIcon";
@@ -24,7 +23,7 @@ import CommunityWidget from "../../../components/widgets/CommunityWidget";
 // Activity types with icons and colors
 interface Activity {
   id: string;
-  type: "login" | "resource" | "profile" | "calculator" | "course" | "id_card";
+  type: "login" | "resource" | "profile" | "course" | "id_card";
   title: string;
   description: string;
   timestamp: Date;
@@ -51,14 +50,6 @@ const generateActivities = (studentDetails: any): Activity[] => {
     },
     {
       id: "3",
-      type: "calculator",
-      title: "GPA Calculation",
-      description: "Calculated semester GPA",
-      timestamp: new Date(Date.now() - 7200000),
-      link: "/u/gpa-calculator",
-    },
-    {
-      id: "4",
       type: "course",
       title: "Course Outline viewed",
       description: `${studentDetails?.level || "200L"} course outlines`,
@@ -66,7 +57,7 @@ const generateActivities = (studentDetails: any): Activity[] => {
       link: "/u/course-outlines",
     },
     {
-      id: "5",
+      id: "4",
       type: "profile",
       title: "Profile updated",
       description: "Profile information updated",
@@ -121,14 +112,6 @@ export default function Dashboard() {
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
             <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-        );
-      case "calculator":
-        return (
-          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
         );
@@ -333,26 +316,6 @@ export default function Dashboard() {
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4 auto-rows-max">
-                      <NavLink to="/u/gpa-calculator">
-                        <motion.div
-                          variants={fadeInVariants5}
-                          initial="initial"
-                          whileInView="animate"
-                          viewport={{
-                            once: true,
-                          }}
-                          custom={5}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#f0abfc] bg-[#f0abfc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
-                        >
-                          <CalculatorIcon
-                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
-                            color="#a21caf"
-                          />
-                          <p className="uppercase text-[#a21caf] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
-                            GPA Calculator
-                          </p>
-                        </motion.div>
-                      </NavLink>
                       <NavLink to="/u/course-outlines">
                         <motion.div
                           variants={fadeInVariants5}
