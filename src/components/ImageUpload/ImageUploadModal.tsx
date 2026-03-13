@@ -92,25 +92,29 @@ export function ImageUploadModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-4">Upload Image</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Upload image for <span className="font-semibold">{memberName}</span>
-        </p>
+      <div className="bg-white rounded-xl max-w-md w-full p-8 shadow-2xl">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Image</h2>
+          <p className="text-sm text-gray-600">
+            Upload image for <span className="font-semibold text-gray-900">{memberName}</span>
+          </p>
+        </div>
 
         {/* Preview */}
         {preview && (
-          <div className="mb-4">
+          <div className="mb-6">
+            <p className="text-xs text-gray-500 mb-2 font-medium">Preview:</p>
             <img
               src={preview}
               alt="Preview"
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-48 object-cover rounded-lg border-2 border-green2"
             />
           </div>
         )}
 
         {/* File Input */}
-        <div className="mb-4">
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Image</label>
           <input
             ref={fileInputRef}
             type="file"
@@ -118,18 +122,20 @@ export function ImageUploadModal({
             onChange={handleFileChange}
             className="block w-full text-sm text-gray-500
               file:mr-4 file:py-2 file:px-4
-              file:rounded-md file:border-0
+              file:rounded-lg file:border-0
               file:text-sm file:font-semibold
               file:bg-green2 file:text-white
-              hover:file:bg-green1"
+              hover:file:bg-green1
+              file:cursor-pointer
+              cursor-pointer"
           />
-          <p className="text-xs text-gray-500 mt-2">Max 5MB. JPG, PNG, WebP</p>
+          <p className="text-xs text-gray-500 mt-2">Max 5MB • JPG, PNG, WebP</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg">
+            <p className="text-sm text-red-700 font-medium">{error}</p>
           </div>
         )}
 
@@ -138,14 +144,14 @@ export function ImageUploadModal({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleUpload}
             disabled={isLoading || !preview}
-            className="flex-1 px-4 py-2 bg-green2 text-white rounded-lg hover:bg-green1 disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-green2 text-white font-semibold rounded-lg hover:bg-green1 disabled:opacity-50 transition-colors"
           >
             {isLoading ? 'Uploading...' : 'Upload'}
           </button>
