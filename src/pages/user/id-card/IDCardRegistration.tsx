@@ -104,7 +104,6 @@ export default function IDCardRegistration() {
       });
 
     if (error) {
-      console.error("[v0] Supabase upload error:", error.message, "bucket:", bucket);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
 
