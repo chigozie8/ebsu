@@ -123,6 +123,61 @@ export default function LearningResources() {
               </p>
             </div>
 
+            {/* Google Drive Full Access Banner */}
+            <div className="w-full bg-green1/5 border border-green1/20 rounded-2xl p-4 sm:p-5 mb-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-green1/10 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 text-sm">Full Resource Library on Google Drive</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Click the links below for full access to all materials by year group.</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                <a
+                  href="https://drive.google.com/folderview?id=1-JZRq-aFQzkN04ViATbH2vbCt_qgTUQg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-white border border-green1/20 rounded-xl p-3 hover:border-green1 hover:shadow-sm transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-xs sm:text-sm">Preclinicals Drive</p>
+                    <p className="text-xs text-gray-400">Years 1 – 3 (100L – 300L)</p>
+                  </div>
+                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                <a
+                  href="https://drive.google.com/folderview?id=1--udSwv2mWUf39QGa2yL2wnOpENLtgxX"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-white border border-green1/20 rounded-xl p-3 hover:border-green1 hover:shadow-sm transition-all group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-xs sm:text-sm">Clinicals Drive</p>
+                    <p className="text-xs text-gray-400">Years 4 – 6 (400L – 600L)</p>
+                  </div>
+                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
             {/* Section Toggle (Preclinical / Clinical) */}
             <div className="flex gap-2 mb-4 bg-white rounded-lg p-1 shadow">
               <button
