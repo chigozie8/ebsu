@@ -7,6 +7,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { Spinner } from "../../../../../components/loaders/Spinner";
 import { useGetUserInfo } from "../../../../../hooks/auth/useGetUserInfo";
 import { Link } from "react-router-dom";
+import { trackActivity } from "../../../../../hooks/analytics/useAnalytics";
 
 interface CourseOutlineEntry {
   id: string;
@@ -44,6 +45,7 @@ export default function CourseOutlines() {
 
   // Fetch all course outlines from Firestore on mount
   useEffect(() => {
+    trackActivity("page_visit", "Course Outlines");
     const fetchAllOutlines = async () => {
       try {
         const snapshot = await getDocs(collection(db, "courseOutlines"));
@@ -83,6 +85,7 @@ export default function CourseOutlines() {
       return;
     }
 
+    trackActivity("outline_view", `${course} (${level}L, ${semester} Semester)`);
     setIsLoading(true);
 
     // Find in Firestore data only

@@ -7,6 +7,7 @@ import checkResources from "../../../../../assets/svg/illustrations/search-files
 import { FileCard } from "./FileCard";
 import { db, isFirebaseConfigured } from "../../../../../config/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { trackActivity } from "../../../../../hooks/analytics/useAnalytics";
 
 interface AdminMaterial {
   id: string;
@@ -87,9 +88,15 @@ export default function LearningResources() {
     setResourcesType(null);
   }, [section]);
 
+  // Track page visit on mount
+  useEffect(() => {
+    trackActivity("page_visit", "Learning Resources");
+  }, []);
+
   useEffect(() => {
     if (level && course && resourcesType) {
       getLearningResources(level, course, resourcesType);
+      trackActivity("resource_view", `${course} ${resourcesType} (${level}L)`);
     }
   }, [resourcesType, course]);
 
