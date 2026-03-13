@@ -5,8 +5,11 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF.js worker with fallback
+if (typeof window !== 'undefined') {
+  const pdfWorkerVersion = pdfjsLib.version;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfWorkerVersion}/pdf.worker.min.js`;
+}
 
 interface StudyMaterial {
   summary: string;
@@ -60,24 +63,40 @@ export default function StudyAIPage() {
   // Extract text from PDF file
   const extractPDFText = async (file: File): Promise<string> => {
     try {
+      console.log("[v0] Starting PDF text extraction");
       const arrayBuffer = await file.arrayBuffer();
+      console.log("[v0] PDF file loaded, size:", arrayBuffer.byteLength);
+      
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      console.log("[v0] PDF document loaded, pages:", pdf.numPages);
+      
       let fullText = '';
 
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-        fullText += pageText + '\n';
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str || '')
+            .join(' ');
+          fullText += pageText + '\n';
+          console.log(`[v0] Extracted page ${i}, text length: ${pageText.length}`);
+        } catch (pageError) {
+          console.error(`[v0] Error extracting page ${i}:`, pageError);
+          fullText += `[Page ${i} - Error extracting text]\n`;
+        }
       }
 
-      console.log("[v0] Extracted PDF text length:", fullText.length);
+      if (!fullText || fullText.trim().length === 0) {
+        throw new Error('No text could be extracted from the PDF. The document may be scanned or image-based.');
+      }
+
+      console.log("[v0] Total extracted PDF text length:", fullText.length);
       return fullText;
     } catch (error) {
       console.error("[v0] Error extracting PDF text:", error);
-      throw new Error('Failed to extract text from PDF');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`PDF extraction failed: ${errorMsg}`);
     }
   };
 
