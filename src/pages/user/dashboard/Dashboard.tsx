@@ -356,7 +356,7 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
-                      <NavLink to="/u/exam-papers">
+                      <NavLink to="/u/study-ai">
                         <motion.div
                           variants={fadeInVariants5}
                           initial="initial"
@@ -365,18 +365,19 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={10}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fdba74] bg-[#fdba74]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c7d2fe] bg-[#c7d2fe]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
-                            fill="#92400e"
+                            fill="#4338ca"
                             viewBox="0 0 24 24"
                           >
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-8-6z" />
-                            <path d="M16 13H8v2h8v-2zM16 17H8v2h8v-2zM16 9H8v2h8V9z" fill="white" opacity="0.5" />
+                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                            <path d="M12 6a1 1 0 0 0-1 1v6a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1z" fill="white" opacity="0.6" />
+                            <circle cx="12" cy="16" r="1" fill="white" opacity="0.6" />
                           </svg>
-                          <p className="uppercase text-[#92400e] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
-                            Exam Papers
+                          <p className="uppercase text-[#4338ca] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            Study AI
                           </p>
                         </motion.div>
                       </NavLink>
