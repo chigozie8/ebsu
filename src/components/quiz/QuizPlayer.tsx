@@ -99,11 +99,12 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
       // Save attempt to database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('user_attempts').insert([
+        await supabase.from('quiz_attempts').insert([
           {
             user_id: user.id,
             quiz_id: quizId,
-            score: finalScore,
+            score: Math.round((finalScore / 100) * questions.length),
+            percentage: finalScore,
             answers: userAnswers,
             completed_at: new Date().toISOString(),
           },
