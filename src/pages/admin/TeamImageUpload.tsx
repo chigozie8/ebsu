@@ -12,7 +12,7 @@ const executiveTeamData = [
     image: presidentData.image, 
     role: presidentData.title 
   },
-  ...executiveMembers.map((member, idx) => ({
+  ...executiveMembers.map((member: any, idx: number) => ({
     id: `exec-${idx}`,
     name: member.name,
     image: member.image,
@@ -20,7 +20,7 @@ const executiveTeamData = [
   })),
 ];
 
-const classRepsData = classReps.map((rep, idx) => ({
+const classRepsData = classReps.map((rep: any, idx: number) => ({
   id: `classrep-${idx}`,
   name: rep.name,
   image: rep.img,
@@ -34,7 +34,7 @@ const pressTeamData = [
     image: editorInChief.image,
     role: editorInChief.role,
   },
-  ...pressMembers.map((member, idx) => ({
+  ...pressMembers.map((member: any, idx: number) => ({
     id: `press-${idx}`,
     name: member.name,
     image: member.image,
