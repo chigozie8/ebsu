@@ -1,14 +1,22 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, ArrowLeft, MessageCircle, Lightbulb, BookOpen, Zap } from 'lucide-react';
+import { Upload, ArrowLeft, BookOpen, FileText, Brain, Zap, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+interface StudyMaterial {
+  summary: string;
+  keyPoints: string[];
+  mcqs: MCQ[];
+  shortAnswerQuestions: string[];
+  essayQuestions: string[];
+}
+
+interface MCQ {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
 }
 
 const fadeInVariants = {
@@ -19,74 +27,133 @@ const fadeInVariants = {
 
 export default function StudyAIPage() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Hello! I\'m your Study AI Assistant. I\'m here to help you learn medical concepts, explain complex topics, provide study tips, and answer your questions. What would you like to study today?',
-      timestamp: new Date()
-    }
-  ]);
-  const [inputValue, setInputValue] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [studyMaterial, setStudyMaterial] = useState<StudyMaterial | null>(null);
+  const [activeTab, setActiveTab] = useState<'summary' | 'keyPoints' | 'mcqs' | 'shortAnswer' | 'essay'>('summary');
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        setSelectedFile(file);
+        toast.success('PDF selected successfully');
+      } else {
+        toast.error('Please select a PDF file');
+      }
+    }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const handleAnalyzeDocument = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a PDF file first');
+      return;
+    }
 
-  const suggestedTopics = [
-    { icon: BookOpen, title: 'Anatomy Basics', color: 'from-blue-500 to-blue-600' },
-    { icon: Lightbulb, title: 'Physiology', color: 'from-yellow-500 to-yellow-600' },
-    { icon: Zap, title: 'Clinical Skills', color: 'from-green-500 to-green-600' },
-    { icon: MessageCircle, title: 'Ask a Question', color: 'from-purple-500 to-purple-600' }
-  ];
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
     setIsLoading(true);
-
     try {
-      // Simulate AI response delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `I understand you asked about: "${inputValue}". As a medical study assistant, I can help explain medical concepts, provide summaries, create study guides, and help you prepare for exams. This is a demo version. In a full implementation, this would connect to an AI API for comprehensive medical education support.`,
-        timestamp: new Date()
+      // Simulate document analysis
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Mock study material generation based on the document
+      const mockMaterial: StudyMaterial = {
+        summary: `This document provides a comprehensive overview of ${selectedFile.name}. The content covers essential concepts and principles that are fundamental to understanding the subject matter. Key theories, methodologies, and practical applications are discussed in detail to provide students with a thorough grasp of the material.`,
+        keyPoints: [
+          'Core concepts and foundational principles are essential for mastery',
+          'Integration of theoretical knowledge with practical applications',
+          'Understanding of key terminology and medical classifications',
+          'Recognition of important patterns and relationships',
+          'Application of principles to clinical scenarios',
+          'Critical thinking in medical decision-making',
+          'Evidence-based approaches to treatment and diagnosis',
+          'Recognition of exceptions and special cases'
+        ],
+        mcqs: [
+          {
+            question: 'Which of the following best describes the primary concept discussed in this document?',
+            options: ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctAnswer: 'Option A',
+            explanation: 'This is the most accurate definition based on the document content.'
+          },
+          {
+            question: 'According to the document, what is the significance of the key principle?',
+            options: ['To improve efficiency', 'To ensure accuracy', 'To reduce costs', 'To enhance quality'],
+            correctAnswer: 'To ensure accuracy',
+            explanation: 'The document emphasizes accuracy as a critical aspect of this principle.'
+          },
+          {
+            question: 'Which application is most relevant to clinical practice?',
+            options: ['Application 1', 'Application 2', 'Application 3', 'Application 4'],
+            correctAnswer: 'Application 2',
+            explanation: 'Application 2 demonstrates the most direct clinical relevance.'
+          }
+        ],
+        shortAnswerQuestions: [
+          'Explain the main concept and its importance in medical practice.',
+          'Describe how the principles discussed can be applied in a clinical setting.',
+          'What are the key distinctions between the different approaches mentioned?',
+          'How does this concept relate to other areas of medical knowledge?',
+          'What are the potential complications or considerations to keep in mind?'
+        ],
+        essayQuestions: [
+          'Critically analyze the theoretical framework presented in the document and discuss its implications for clinical practice.',
+          'Compare and contrast the different approaches discussed. Which is most effective and why?',
+          'Discuss how the concepts in this document have evolved over time and predict future developments in the field.'
+        ]
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setStudyMaterial(mockMaterial);
+      setActiveTab('summary');
+      toast.success('Document analyzed successfully!');
     } catch (error) {
-      toast.error('Failed to get response. Please try again.');
+      toast.error('Failed to analyze document. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSuggestedTopic = (topic: string) => {
-    setSelectedTopic(topic);
-    setInputValue(`Teach me about ${topic}`);
+  const downloadStudyGuide = () => {
+    if (!studyMaterial) return;
+    
+    const content = `
+STUDY GUIDE - Generated by Study AI
+
+SUMMARY
+${studyMaterial.summary}
+
+KEY POINTS
+${studyMaterial.keyPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}
+
+MULTIPLE CHOICE QUESTIONS
+${studyMaterial.mcqs.map((mcq, idx) => `
+Q${idx + 1}: ${mcq.question}
+A) ${mcq.options[0]}
+B) ${mcq.options[1]}
+C) ${mcq.options[2]}
+D) ${mcq.options[3]}
+Correct Answer: ${mcq.correctAnswer}
+Explanation: ${mcq.explanation}
+`).join('\n')}
+
+SHORT ANSWER QUESTIONS
+${studyMaterial.shortAnswerQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
+
+ESSAY QUESTIONS
+${studyMaterial.essayQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'study-guide.txt';
+    a.click();
+    toast.success('Study guide downloaded!');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur shadow-sm border-b border-gray-200">
         <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
@@ -99,164 +166,247 @@ export default function StudyAIPage() {
               <ArrowLeft className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
             </button>
             <div className="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg p-2 sm:p-2.5">
-              <MessageCircle className="w-5 sm:w-6 text-white" />
+              <Brain className="w-5 sm:w-6 text-white" />
             </div>
             <div>
               <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Study AI Assistant</h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Learn medical concepts with AI-powered guidance</p>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Upload documents and generate study materials</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-[600px] sm:h-[700px]">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-            {messages.length === 0 && !selectedTopic ? (
-              <motion.div
-                variants={fadeInVariants}
-                initial="initial"
-                animate="animate"
-                className="flex flex-col items-center justify-center h-full text-center"
+      <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+        {!studyMaterial ? (
+          // Upload Section
+          <motion.div
+            variants={fadeInVariants}
+            initial="initial"
+            animate="animate"
+            className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 border-2 border-dashed border-indigo-300"
+          >
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full p-6 mb-4">
+                <Upload className="w-12 h-12 text-indigo-600" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Upload Your Document</h2>
+              <p className="text-gray-600 text-sm sm:text-base max-w-md mb-6">
+                Upload a PDF document and our AI will analyze it to generate summaries, key points, and exam-style questions.
+              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold mb-4 transition-colors"
               >
-                <div className="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full p-4 mb-4">
-                  <MessageCircle className="w-8 sm:w-10 h-8 sm:h-10 text-indigo-600" />
-                </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Welcome to Study AI</h2>
-                <p className="text-gray-600 text-sm sm:text-base max-w-xs">Choose a topic or ask any medical question. I'm here to help you learn!</p>
-              </motion.div>
-            ) : (
-              <>
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={message.id}
-                    variants={fadeInVariants}
-                    initial="initial"
-                    animate="animate"
-                    custom={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-3 rounded-lg ${
-                        message.role === 'user'
-                          ? 'bg-indigo-600 text-white rounded-br-none'
-                          : 'bg-gray-100 text-gray-900 rounded-bl-none'
-                      }`}
-                    >
-                      <p className="text-sm sm:text-base leading-relaxed">{message.content}</p>
-                      <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-indigo-200' : 'text-gray-500'}`}>
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 px-4 py-3 rounded-lg rounded-bl-none">
-                      <div className="flex space-x-2">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                      </div>
+                Choose PDF File
+              </button>
+
+              {selectedFile && (
+                <div className="mt-4 text-left w-full">
+                  <div className="bg-gray-50 p-4 rounded-lg flex items-center gap-3 mb-4">
+                    <FileText className="w-5 h-5 text-indigo-600" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-sm">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-600">{(selectedFile.size / 1024).toFixed(2)} KB</p>
                     </div>
                   </div>
-                )}
-              </>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Suggested Topics */}
-          {messages.length === 1 && !selectedTopic && (
-            <div className="border-t border-gray-200 p-4 sm:p-6">
-              <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-3">Suggested Topics:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {suggestedTopics.map((topic, idx) => (
                   <button
-                    key={idx}
-                    onClick={() => handleSuggestedTopic(topic.title)}
-                    className={`bg-gradient-to-br ${topic.color} text-white p-3 sm:p-4 rounded-lg hover:shadow-lg transition-all text-xs sm:text-sm font-semibold flex flex-col items-center gap-2`}
+                    onClick={handleAnalyzeDocument}
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
                   >
-                    <topic.icon className="w-4 sm:w-5 h-4 sm:h-5" />
-                    {topic.title}
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Analyzing Document...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5" />
+                        Generate Study Materials
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-gray-200">
+              <div className="text-center">
+                <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-900 mb-1">Summaries</h3>
+                <p className="text-sm text-gray-600">Concise overviews of key content</p>
+              </div>
+              <div className="text-center">
+                <Brain className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-900 mb-1">Exam Questions</h3>
+                <p className="text-sm text-gray-600">MCQs and essay questions</p>
+              </div>
+              <div className="text-center">
+                <FileText className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
+                <h3 className="font-semibold text-gray-900 mb-1">Study Guides</h3>
+                <p className="text-sm text-gray-600">Downloadable learning materials</p>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          // Study Material Display
+          <div className="space-y-6">
+            {/* Header with Download */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Study Materials Generated</h2>
+                <p className="text-sm text-gray-600">From: {selectedFile?.name}</p>
+              </div>
+              <button
+                onClick={downloadStudyGuide}
+                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Download Guide
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="flex flex-wrap border-b border-gray-200">
+                {[
+                  { id: 'summary', label: 'Summary', icon: BookOpen },
+                  { id: 'keyPoints', label: 'Key Points', icon: Zap },
+                  { id: 'mcqs', label: 'MCQs', icon: Brain },
+                  { id: 'shortAnswer', label: 'Short Answer', icon: FileText },
+                  { id: 'essay', label: 'Essay', icon: Brain }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex-1 px-4 py-3 font-semibold text-sm transition-colors flex items-center justify-center gap-2 ${
+                      activeTab === tab.id
+                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Input Area */}
-          <div className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50">
-            <div className="flex gap-2 sm:gap-3">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask me anything about medicine and surgery..."
-                disabled={isLoading}
-                className="flex-1 px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 text-sm sm:text-base"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputValue.trim()}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white p-2 sm:p-3 rounded-lg transition-colors"
-              >
-                <Send className="w-5 h-5" />
-              </button>
+              <div className="p-6 sm:p-8">
+                {/* Summary */}
+                {activeTab === 'summary' && (
+                  <motion.div variants={fadeInVariants} initial="initial" animate="animate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Document Summary</h3>
+                    <p className="text-gray-700 leading-relaxed">{studyMaterial.summary}</p>
+                  </motion.div>
+                )}
+
+                {/* Key Points */}
+                {activeTab === 'keyPoints' && (
+                  <motion.div variants={fadeInVariants} initial="initial" animate="animate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Key Points</h3>
+                    <ul className="space-y-3">
+                      {studyMaterial.keyPoints.map((point, idx) => (
+                        <li key={idx} className="flex gap-3">
+                          <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 text-sm font-semibold">
+                            {idx + 1}
+                          </div>
+                          <p className="text-gray-700 pt-0.5">{point}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+
+                {/* MCQs */}
+                {activeTab === 'mcqs' && (
+                  <motion.div variants={fadeInVariants} initial="initial" animate="animate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Multiple Choice Questions</h3>
+                    <div className="space-y-6">
+                      {studyMaterial.mcqs.map((mcq, idx) => (
+                        <div key={idx} className="bg-gray-50 p-4 rounded-lg">
+                          <p className="font-semibold text-gray-900 mb-3">Q{idx + 1}: {mcq.question}</p>
+                          <div className="space-y-2 mb-3">
+                            {mcq.options.map((option, optIdx) => (
+                              <label key={optIdx} className="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name={`mcq-${idx}`} className="w-4 h-4 text-indigo-600" />
+                                <span className="text-gray-700">{String.fromCharCode(65 + optIdx)}) {option}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                            <p className="text-sm font-semibold text-green-900">Correct Answer: {mcq.correctAnswer}</p>
+                            <p className="text-sm text-green-800 mt-1">{mcq.explanation}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Short Answer */}
+                {activeTab === 'shortAnswer' && (
+                  <motion.div variants={fadeInVariants} initial="initial" animate="animate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Short Answer Questions</h3>
+                    <div className="space-y-4">
+                      {studyMaterial.shortAnswerQuestions.map((question, idx) => (
+                        <div key={idx} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="font-semibold text-gray-900">Q{idx + 1}: {question}</p>
+                          <textarea
+                            placeholder="Write your answer here..."
+                            className="w-full mt-3 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            rows={3}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Essay */}
+                {activeTab === 'essay' && (
+                  <motion.div variants={fadeInVariants} initial="initial" animate="animate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Essay Questions</h3>
+                    <div className="space-y-4">
+                      {studyMaterial.essayQuestions.map((question, idx) => (
+                        <div key={idx} className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                          <p className="font-semibold text-gray-900">Q{idx + 1}: {question}</p>
+                          <textarea
+                            placeholder="Write your essay answer here..."
+                            className="w-full mt-3 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            rows={4}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Press Enter to send or click the send button</p>
+
+            {/* Upload New Button */}
+            <button
+              onClick={() => {
+                setStudyMaterial(null);
+                setSelectedFile(null);
+                setActiveTab('summary');
+              }}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-lg font-semibold transition-colors"
+            >
+              Upload Another Document
+            </button>
           </div>
-        </div>
-
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 sm:mt-8">
-          <motion.div
-            variants={fadeInVariants}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <BookOpen className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">Comprehensive Learning</h3>
-            </div>
-            <p className="text-sm text-gray-600">Get detailed explanations on medical concepts, anatomy, physiology, and clinical applications.</p>
-          </motion.div>
-
-          <motion.div
-            variants={fadeInVariants}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={1}
-            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Lightbulb className="w-5 h-5 text-yellow-600" />
-              <h3 className="font-semibold text-gray-900">Study Tips</h3>
-            </div>
-            <p className="text-sm text-gray-600">Receive personalized study strategies and exam preparation guidance tailored to your needs.</p>
-          </motion.div>
-
-          <motion.div
-            variants={fadeInVariants}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            custom={2}
-            className="bg-white rounded-lg p-4 sm:p-6 shadow-sm border border-gray-200"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Zap className="w-5 h-5 text-purple-600" />
-              <h3 className="font-semibold text-gray-900">Quick Answers</h3>
-            </div>
-            <p className="text-sm text-gray-600">Get instant responses to your medical questions anytime, anywhere in the learning platform.</p>
-          </motion.div>
-        </div>
+        )}
       </div>
     </div>
   );
