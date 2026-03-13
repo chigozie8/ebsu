@@ -141,13 +141,6 @@ export const GeneralNavbar = () => {
                   }
                   theme={customDropdownTheme}
                 >
-                  <NavLink to={"/calculate-gpa"}>
-                    <Dropdown.Item className="group">
-                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
-                        GPA Calculator
-                      </p>
-                    </Dropdown.Item>
-                  </NavLink>
                   <NavLink to={"/learning-resources"}>
                     <Dropdown.Item className="group">
                       <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
@@ -363,16 +356,6 @@ export const GeneralNavbar = () => {
                   }
                   theme={customDropdownTheme}
                 >
-                  <NavLink
-                    onClick={() => setIsNavOpen(false)}
-                    to={"/calculate-gpa"}
-                  >
-                    <Dropdown.Item>
-                      <p className=" rounded-md hover:bg-gray-100 w-full text-left hover:text-green1 ">
-                        GPA Calculator
-                      </p>
-                    </Dropdown.Item>
-                  </NavLink>
                   <NavLink
                     onClick={() => setIsNavOpen(false)}
                     to={"/learning-resources"}
