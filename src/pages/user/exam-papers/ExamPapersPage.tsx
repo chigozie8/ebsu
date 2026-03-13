@@ -96,7 +96,7 @@ export default function StudyAIPage() {
 
       if (result.success && result.data) {
         setStudyMaterial(result.data);
-        toast.success('Document analyzed with Grok AI!');
+        toast.success('Document analyzed with ChatGPT!');
       } else {
         throw new Error('Invalid response format');
       }
