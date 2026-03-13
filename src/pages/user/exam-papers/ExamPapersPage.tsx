@@ -149,6 +149,7 @@ ${studyMaterial.essayQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
     a.href = url;
     a.download = 'study-guide.txt';
     a.click();
+    window.URL.revokeObjectURL(url);
     toast.success('Study guide downloaded!');
   };
 
