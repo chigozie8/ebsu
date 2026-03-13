@@ -36,8 +36,6 @@ interface AttemptStats {
 
 type View = 'dashboard' | 'playing' | 'results' | 'ai-generator';
 
-const LETTER = ['A', 'B', 'C', 'D', 'E'];
-
 const StudentQuizDashboard = () => {
   const [view, setView] = useState<View>('dashboard');
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);

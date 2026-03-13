@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Sparkles, CheckCircle, Copy, RefreshCw, BookOpen, HelpCircle, AlignLeft, Save, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Upload, Sparkles, CheckCircle, Copy, RefreshCw, BookOpen, HelpCircle, AlignLeft, Save, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQuizManagement, type QuizQuestion } from '../../hooks/useQuizManagement';
 

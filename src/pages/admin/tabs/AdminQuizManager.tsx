@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Eye, EyeOff, Trash2, Plus, Edit2, BookOpen, Clock,
-  Trophy, BarChart3, ChevronDown, ChevronUp, Save, X, FileText, Sparkles,
+  Trophy, BarChart3, ChevronDown, ChevronUp, Save, X, Sparkles,
   Users, CheckCircle, AlertCircle, RotateCcw,
 } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
