@@ -365,7 +365,7 @@ export default function AdminDashboard() {
         ...doc.data(),
       })) as BlogPost[];
       setBlogPosts(postsData);
-} catch (error) {
+    } catch (error) {
       console.error("Error fetching blog posts:", error);
     }
   };
