@@ -55,10 +55,6 @@ const AppRoutes = () => {
   const StudentProfile = lazy(
     () => import("../pages/user/profile/StudentProfile")
   );
-  const DashboardGPACalculator = lazy(
-    () =>
-      import("../pages/user/dashboard/components/gpa-calculator/GPACalculator")
-  );
   const DashboardCourseOutlines = lazy(
     () =>
       import(
@@ -148,14 +144,6 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <StudentProfile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/u/gpa-calculator"
-            element={
-              <ProtectedRoute>
-                <DashboardGPACalculator />
               </ProtectedRoute>
             }
           />
