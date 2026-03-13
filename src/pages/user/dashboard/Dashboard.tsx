@@ -443,6 +443,27 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      <NavLink to="/u/quiz">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{ once: true }}
+                          custom={14}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-teal-200 bg-teal-100 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        >
+                          <svg className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="8" y="8" width="48" height="48" rx="8" fill="#0d9488" opacity="0.15"/>
+                            <rect x="16" y="18" width="32" height="4" rx="2" fill="#0d9488"/>
+                            <rect x="16" y="28" width="24" height="4" rx="2" fill="#0d9488"/>
+                            <circle cx="46" cy="46" r="10" fill="#0d9488"/>
+                            <path d="M42 46l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          <p className="uppercase text-teal-700 text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            Quiz &amp; AI
+                          </p>
+                        </motion.div>
+                      </NavLink>
                       {/* Admin Panel Link - Only visible to admin */}
                       {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
                         <NavLink to="/admin">

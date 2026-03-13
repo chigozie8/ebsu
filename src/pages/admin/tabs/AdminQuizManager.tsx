@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Search, Edit2, Trash2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search, Eye, EyeOff, Trash2, Plus, Edit2, BookOpen, Clock,
+  Trophy, BarChart3, ChevronDown, ChevronUp, Save, X, FileText, Sparkles,
+  Users, CheckCircle, AlertCircle, RotateCcw,
+} from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
 import { supabase } from '../../../lib/supabase';
-import { initializeQuizTables, createSampleQuiz } from '../../../lib/quiz-db';
 import toast from 'react-hot-toast';
-
-// Admin Quiz Manager Tab - Manage and create quizzes
 
 interface Quiz {
   id: string;
@@ -15,413 +17,482 @@ interface Quiz {
   description: string;
   total_questions: number;
   duration_minutes: number;
+  pass_score: number;
   is_published: boolean;
+  shuffle_questions: boolean;
   created_at: string;
   course_id: string;
 }
 
+interface QuizQuestion {
+  id: string;
+  question_text: string;
+  question_type: string;
+  explanation: string;
+  order_index: number;
+  answers?: QuizAnswer[];
+}
+
+interface QuizAnswer {
+  id: string;
+  answer_text: string;
+  is_correct: boolean;
+  order_index: number;
+}
+
+interface QuizAttemptStats {
+  attempts: number;
+  avgScore: number;
+}
+
+type AdminTab = 'manage' | 'create' | 'ai-generator';
+
+const LETTER = ['A', 'B', 'C', 'D', 'E'];
+
+const fade = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
 export const AdminQuizManager = () => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'create' | 'pdf'>('manage');
+  const [activeTab, setActiveTab] = useState<AdminTab>('manage');
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [dbError, setDbError] = useState<string | null>(null);
+  const [expandedQuizId, setExpandedQuizId] = useState<string | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<Record<string, QuizQuestion[]>>({});
+  const [loadingQuestions, setLoadingQuestions] = useState<string | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [attemptStats, setAttemptStats] = useState<Record<string, QuizAttemptStats>>({});
+  const [overallStats, setOverallStats] = useState({ total: 0, published: 0, drafts: 0, totalAttempts: 0 });
 
-  useEffect(() => {
-    initializeDatabase();
-  }, []);
-
-  const initializeDatabase = async () => {
+  const fetchQuizzes = useCallback(async () => {
+    setLoading(true);
     try {
-      console.log('[v0] Checking if quiz database is initialized...');
-      const exists = await initializeQuizTables();
-      
-      if (exists) {
-        await fetchQuizzes();
-        setDbError(null);
-      } else {
-        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
-        console.log('[v0] Quiz tables do not exist - displaying setup instructions');
-      }
-    } catch (error) {
-      console.error('[v0] Database initialization error:', error);
-      setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
-    }
-  };
-
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
-      setDbError(null);
-      console.log('[v0] Fetching quizzes from Supabase...');
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
-
-      if (error) {
-        console.log('[v0] Supabase error:', error.message);
-        setDbError(error.message);
-        if (error.message.includes('relation') || error.message.includes('does not exist')) {
-          // Tables don't exist, suggest creating sample data
-          setDbError('Quiz database not initialized. Creating sample data...');
-          await createSampleQuiz();
-          // Try fetching again
-          const { data: retryData, error: retryError } = await supabase
-            .from('quizzes')
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (retryError) throw retryError;
-          setQuizzes(retryData || []);
-        } else {
-          throw error;
-        }
-      } else {
-        console.log('[v0] Quizzes fetched:', data);
-        setQuizzes(data || []);
-      }
-    } catch (err) {
-      console.error('[v0] Failed to fetch quizzes:', err);
-      
-      // Extract error message from different error types
-      let errorMsg = 'Unknown error occurred';
-      if (err instanceof Error) {
-        errorMsg = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err) {
-        errorMsg = String((err as any).message);
-      } else if (typeof err === 'string') {
-        errorMsg = err;
-      }
-      
-      console.log('[v0] Error message extracted:', errorMsg);
-      
-      // Check if it's a table not found error
-      if (errorMsg.includes('does not exist') || errorMsg.includes('not found') || errorMsg.includes('schema cache')) {
-        setDbError('Quiz system not yet initialized. Please follow the setup instructions below to create the database tables.');
-      } else {
-        setDbError(`Failed to load quizzes: ${errorMsg}`);
-        toast.error(`Failed to load quizzes: ${errorMsg}`);
-      }
+      if (error) throw error;
+      const list = data || [];
+      setQuizzes(list);
+      setOverallStats({
+        total: list.length,
+        published: list.filter((q: Quiz) => q.is_published).length,
+        drafts: list.filter((q: Quiz) => !q.is_published).length,
+        totalAttempts: 0,
+      });
+    } catch (err: any) {
+      toast.error('Failed to load quizzes');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchAttemptStats = useCallback(async (quizId: string) => {
+    try {
+      const { data } = await supabase
+        .from('quiz_attempts')
+        .select('score, percentage')
+        .eq('quiz_id', quizId);
+      if (data && data.length > 0) {
+        const avg = Math.round(data.reduce((s: number, d: any) => s + (Number(d.percentage) || 0), 0) / data.length);
+        setAttemptStats(prev => ({ ...prev, [quizId]: { attempts: data.length, avgScore: avg } }));
+      } else {
+        setAttemptStats(prev => ({ ...prev, [quizId]: { attempts: 0, avgScore: 0 } }));
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchQuizQuestions = useCallback(async (quizId: string) => {
+    if (quizQuestions[quizId]) return; // already loaded
+    setLoadingQuestions(quizId);
+    try {
+      const { data: qs, error } = await supabase
+        .from('quiz_questions')
+        .select('id, question_text, question_type, explanation, order_index')
+        .eq('quiz_id', quizId)
+        .order('order_index');
+      if (error) throw error;
+
+      const questionsWithAnswers: QuizQuestion[] = [];
+      for (const q of (qs || [])) {
+        const { data: ans } = await supabase
+          .from('quiz_answers')
+          .select('id, answer_text, is_correct, order_index')
+          .eq('question_id', q.id)
+          .order('order_index');
+        questionsWithAnswers.push({ ...q, answers: ans || [] });
+      }
+      setQuizQuestions(prev => ({ ...prev, [quizId]: questionsWithAnswers }));
+    } catch (err: any) {
+      toast.error('Failed to load questions');
+    } finally {
+      setLoadingQuestions(null);
+    }
+  }, [quizQuestions]);
+
+  useEffect(() => { fetchQuizzes(); }, [fetchQuizzes]);
+
+  const toggleExpand = (quizId: string) => {
+    if (expandedQuizId === quizId) {
+      setExpandedQuizId(null);
+    } else {
+      setExpandedQuizId(quizId);
+      fetchQuizQuestions(quizId);
+      fetchAttemptStats(quizId);
     }
   };
 
   const togglePublish = async (quiz: Quiz) => {
     try {
-      const { error } = await supabase
-        .from('quizzes')
-        .update({ is_published: !quiz.is_published })
-        .eq('id', quiz.id);
-
+      const { error } = await supabase.from('quizzes').update({ is_published: !quiz.is_published }).eq('id', quiz.id);
       if (error) throw error;
-      toast.success(quiz.is_published ? 'Quiz unpublished' : 'Quiz published');
+      toast.success(quiz.is_published ? 'Quiz unpublished' : 'Quiz published — students can now see it');
       fetchQuizzes();
-    } catch (err) {
-      console.error('Failed to toggle publish:', err);
-      toast.error('Failed to update quiz');
-    }
+    } catch { toast.error('Failed to update quiz'); }
   };
 
   const deleteQuiz = async (quizId: string) => {
-    if (!window.confirm('Are you sure you want to delete this quiz?')) return;
-
+    if (!window.confirm('Delete this quiz and all its questions? This cannot be undone.')) return;
     try {
-      const { error } = await supabase
-        .from('quizzes')
-        .delete()
-        .eq('id', quizId);
-
+      const { error } = await supabase.from('quizzes').delete().eq('id', quizId);
       if (error) throw error;
       toast.success('Quiz deleted');
       fetchQuizzes();
-    } catch (err) {
-      console.error('Failed to delete quiz:', err);
-      toast.error('Failed to delete quiz');
-    }
+      if (expandedQuizId === quizId) setExpandedQuizId(null);
+    } catch { toast.error('Failed to delete quiz'); }
   };
 
-  const filteredQuizzes = quizzes.filter(quiz =>
-    quiz.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const deleteQuestion = async (questionId: string, quizId: string) => {
+    if (!window.confirm('Delete this question?')) return;
+    try {
+      const { error } = await supabase.from('quiz_questions').delete().eq('id', questionId);
+      if (error) throw error;
+      // Remove from local state
+      setQuizQuestions(prev => ({
+        ...prev,
+        [quizId]: (prev[quizId] || []).filter(q => q.id !== questionId),
+      }));
+      // Update total_questions count
+      const remaining = (quizQuestions[quizId] || []).length - 1;
+      await supabase.from('quizzes').update({ total_questions: remaining }).eq('id', quizId);
+      toast.success('Question deleted');
+      fetchQuizzes();
+    } catch { toast.error('Failed to delete question'); }
+  };
+
+  const saveQuizSettings = async () => {
+    if (!editingQuiz) return;
+    try {
+      const { error } = await supabase.from('quizzes').update({
+        title: editingQuiz.title,
+        description: editingQuiz.description,
+        duration_minutes: editingQuiz.duration_minutes,
+        pass_score: editingQuiz.pass_score,
+        shuffle_questions: editingQuiz.shuffle_questions,
+      }).eq('id', editingQuiz.id);
+      if (error) throw error;
+      toast.success('Quiz settings saved');
+      setEditingQuiz(null);
+      fetchQuizzes();
+    } catch { toast.error('Failed to save settings'); }
+  };
+
+  const filteredQuizzes = quizzes.filter(q =>
+    q.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
-      {/* Database Error/Setup Banner */}
-      {dbError && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3"
-        >
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-blue-900">Setup Required</h3>
-              <p className="text-blue-800 text-sm">{dbError}</p>
+      {/* Overall Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Quizzes', value: overallStats.total, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Published', value: overallStats.published, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Drafts', value: overallStats.drafts, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Total Attempts', value: Object.values(attemptStats).reduce((s, v) => s + v.attempts, 0), icon: Users, color: 'text-teal-600', bg: 'bg-teal-50' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div className={`w-9 h-9 ${s.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <s.icon className={`w-4 h-4 ${s.color}`} />
+            </div>
+            <div>
+              <p className="text-xl font-bold text-gray-900">{s.value}</p>
+              <p className="text-xs text-gray-500">{s.label}</p>
             </div>
           </div>
-          
-          <div className="ml-8 space-y-2 text-sm text-blue-800">
-            <p className="font-medium">To get started, follow these steps:</p>
-            <ol className="list-decimal list-inside space-y-1 ml-2">
-              <li>Go to your Supabase dashboard at <a href="https://app.supabase.com" target="_blank" rel="noopener noreferrer" className="underline text-blue-600 hover:text-blue-700">app.supabase.com</a></li>
-              <li>Select your project and go to the SQL Editor</li>
-              <li>Copy and paste the SQL migration script below</li>
-              <li>Execute the script to create the necessary database tables</li>
-              <li>Refresh this page after the tables are created</li>
-            </ol>
-          </div>
-
-          <div className="ml-8 mt-4 bg-white p-4 rounded border border-blue-200">
-            <p className="font-medium text-blue-900 mb-2">SQL Migration Script:</p>
-            <pre className="text-xs overflow-auto max-h-80 bg-gray-900 text-gray-100 p-3 rounded font-mono leading-relaxed whitespace-pre-wrap break-words">
-{`-- Quiz System Database Schema
-CREATE TABLE IF NOT EXISTS quiz_categories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE,
-  description TEXT,
-  order_index INT DEFAULT 0,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS quiz_levels (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id UUID NOT NULL REFERENCES quiz_categories(id) ON DELETE CASCADE,
-  level_number INT NOT NULL CHECK (level_number >= 1 AND level_number <= 6),
-  title TEXT NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now(),
-  UNIQUE(category_id, level_number)
-);
-
-CREATE TABLE IF NOT EXISTS quiz_courses (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  level_id UUID NOT NULL REFERENCES quiz_levels(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  code TEXT UNIQUE,
-  instructor_id UUID REFERENCES auth.users(id),
-  is_published BOOLEAN DEFAULT false,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS quizzes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id UUID REFERENCES quiz_courses(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  total_questions INT DEFAULT 0,
-  duration_minutes INT DEFAULT 30,
-  pass_score INT DEFAULT 60,
-  is_published BOOLEAN DEFAULT false,
-  is_randomized BOOLEAN DEFAULT false,
-  shuffle_questions BOOLEAN DEFAULT true,
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS quiz_questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  quiz_id UUID NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-  question_text TEXT NOT NULL,
-  question_type TEXT DEFAULT 'multiple_choice',
-  points INT DEFAULT 1,
-  order_index INT DEFAULT 0,
-  explanation TEXT,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS quiz_answers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  question_id UUID NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
-  answer_text TEXT NOT NULL,
-  is_correct BOOLEAN DEFAULT false,
-  order_index INT DEFAULT 0,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
--- Insert default data
-INSERT INTO quiz_categories (name, description, order_index) 
-VALUES 
-  ('Preclinical', 'Foundation and basic sciences (Levels 1-3)', 1),
-  ('Clinical', 'Clinical practice and case studies (Levels 4-6)', 2)
-ON CONFLICT (name) DO NOTHING;`}
-            </pre>
-          </div>
-        </motion.div>
-      )}
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('manage')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'manage'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Manage Quizzes
-        </button>
-        <button
-          onClick={() => setActiveTab('create')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'create'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Create Quiz
-        </button>
-        <button
-          onClick={() => setActiveTab('pdf')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeTab === 'pdf'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          PDF to Questions
-        </button>
+        ))}
       </div>
 
-      {/* Manage Quizzes Tab */}
-      {activeTab === 'manage' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Search */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search quizzes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+        {[
+          { id: 'manage', icon: BookOpen, label: 'Manage Quizzes' },
+          { id: 'create', icon: Plus, label: 'Create Manually' },
+          { id: 'ai-generator', icon: Sparkles, label: 'AI Generator' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as AdminTab)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <tab.icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+          </button>
+        ))}
+      </div>
 
-          {/* Quizzes Table */}
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <AnimatePresence mode="wait">
+        {/* ---- MANAGE TAB ---- */}
+        {activeTab === 'manage' && (
+          <motion.div key="manage" {...fade} className="space-y-4">
+            {/* Search + refresh */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search quizzes..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+              </div>
+              <button onClick={fetchQuizzes} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors" title="Refresh">
+                <RotateCcw className="w-4 h-4 text-gray-600" />
+              </button>
             </div>
-          ) : filteredQuizzes.length === 0 ? (
-            <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <p className="text-gray-600">No quizzes found. Create one to get started!</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Questions</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Duration</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredQuizzes.map((quiz) => (
-                    <tr key={quiz.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 text-sm text-gray-900">{quiz.title}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.total_questions}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{quiz.duration_minutes} mins</td>
-                      <td className="px-6 py-3 text-sm">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          quiz.is_published
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {quiz.is_published ? 'Published' : 'Draft'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-sm">
-                        <div className="flex gap-2">
+
+            {loading ? (
+              <div className="py-16 text-center">
+                <div className="w-7 h-7 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Loading quizzes...</p>
+              </div>
+            ) : filteredQuizzes.length === 0 ? (
+              <div className="py-16 text-center text-gray-400">
+                <BookOpen className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-medium text-gray-600">No quizzes found</p>
+                <p className="text-xs mt-1">Create one from the tabs above</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredQuizzes.map(quiz => {
+                  const isExpanded = expandedQuizId === quiz.id;
+                  const isEditing = editingQuiz?.id === quiz.id;
+                  const stats = attemptStats[quiz.id];
+                  const questions = quizQuestions[quiz.id] || [];
+
+                  return (
+                    <motion.div key={quiz.id} layout className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                      {/* Quiz Header Row */}
+                      <div className="flex items-center gap-3 p-4">
+                        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${quiz.is_published ? 'bg-green-500' : 'bg-amber-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{quiz.title}</p>
+                          <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
+                            <span className="flex items-center gap-0.5"><BookOpen className="w-3 h-3" />{quiz.total_questions} Qs</span>
+                            {quiz.duration_minutes > 0 && <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{quiz.duration_minutes}m</span>}
+                            <span className="flex items-center gap-0.5"><Trophy className="w-3 h-3" />Pass {quiz.pass_score || 60}%</span>
+                            {stats && <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{stats.attempts} attempts</span>}
+                            {stats && stats.attempts > 0 && <span className="flex items-center gap-0.5"><BarChart3 className="w-3 h-3" />Avg {stats.avgScore}%</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {/* Publish toggle */}
                           <button
                             onClick={() => togglePublish(quiz)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title={quiz.is_published ? 'Unpublish' : 'Publish'}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${quiz.is_published ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`}
                           >
-                            {quiz.is_published ? (
-                              <Eye className="w-4 h-4 text-green-600" />
-                            ) : (
-                              <EyeOff className="w-4 h-4 text-gray-400" />
-                            )}
+                            {quiz.is_published ? <><Eye className="w-3.5 h-3.5" /> Published</> : <><EyeOff className="w-3.5 h-3.5" /> Draft</>}
                           </button>
+                          {/* Edit settings */}
                           <button
-                            onClick={() => console.log('Edit quiz:', quiz.id)}
+                            onClick={() => setEditingQuiz(isEditing ? null : { ...quiz })}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Edit"
+                            title="Edit settings"
                           >
-                            <Edit2 className="w-4 h-4 text-blue-600" />
+                            <Edit2 className="w-4 h-4 text-blue-500" />
                           </button>
+                          {/* Delete */}
                           <button
                             onClick={() => deleteQuiz(quiz.id)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Delete"
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete quiz"
                           >
-                            <Trash2 className="w-4 h-4 text-red-600" />
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
+                          {/* Expand questions */}
+                          <button
+                            onClick={() => toggleExpand(quiz.id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="View questions"
+                          >
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-600" /> : <ChevronDown className="w-4 h-4 text-gray-600" />}
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+
+                      {/* Edit Settings Panel */}
+                      <AnimatePresence>
+                        {isEditing && editingQuiz && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-gray-100 bg-blue-50 overflow-hidden"
+                          >
+                            <div className="p-4 space-y-3">
+                              <p className="text-sm font-semibold text-gray-800 mb-2">Edit Settings</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                                  <input type="text" value={editingQuiz.title} onChange={e => setEditingQuiz({ ...editingQuiz, title: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                  <input type="text" value={editingQuiz.description || ''} onChange={e => setEditingQuiz({ ...editingQuiz, description: e.target.value })}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Duration (minutes, 0 = unlimited)</label>
+                                  <input type="number" min={0} value={editingQuiz.duration_minutes} onChange={e => setEditingQuiz({ ...editingQuiz, duration_minutes: Number(e.target.value) })}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Pass Score (%)</label>
+                                  <input type="number" min={0} max={100} value={editingQuiz.pass_score || 60} onChange={e => setEditingQuiz({ ...editingQuiz, pass_score: Number(e.target.value) })}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+                                </div>
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" checked={editingQuiz.shuffle_questions} onChange={e => setEditingQuiz({ ...editingQuiz, shuffle_questions: e.target.checked })}
+                                  className="w-4 h-4 accent-teal-600" />
+                                <span className="text-sm text-gray-700">Shuffle questions for each student</span>
+                              </label>
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={saveQuizSettings} className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors">
+                                  <Save className="w-3.5 h-3.5" /> Save
+                                </button>
+                                <button onClick={() => setEditingQuiz(null)} className="flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
+                                  <X className="w-3.5 h-3.5" /> Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Questions Expansion */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-gray-100 overflow-hidden"
+                          >
+                            <div className="p-4 space-y-2">
+                              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                                Questions ({questions.length})
+                              </p>
+                              {loadingQuestions === quiz.id ? (
+                                <div className="py-6 text-center">
+                                  <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                                </div>
+                              ) : questions.length === 0 ? (
+                                <div className="py-6 text-center text-gray-400 text-sm">No questions added yet</div>
+                              ) : (
+                                questions.map((q, idx) => (
+                                  <div key={q.id} className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-start gap-2 flex-1 min-w-0">
+                                        <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{idx + 1}</span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium text-gray-800">{q.question_text}</p>
+                                          {q.answers && q.answers.length > 0 && (
+                                            <div className="mt-2 space-y-1">
+                                              {q.answers.map((a, ai) => (
+                                                <p key={a.id} className={`text-xs ${a.is_correct ? 'text-green-700 font-semibold' : 'text-gray-500'}`}>
+                                                  {LETTER[ai]}) {a.answer_text}{a.is_correct && ' ✓'}
+                                                </p>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {q.explanation && (
+                                            <p className="text-xs text-blue-600 mt-1 italic">{q.explanation}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <button onClick={() => deleteQuestion(q.id, quiz.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* ---- CREATE MANUALLY TAB ---- */}
+        {activeTab === 'create' && (
+          <motion.div key="create" {...fade} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                <Plus className="w-4 h-4 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Create Quiz Manually</h3>
+                <p className="text-xs text-gray-500">Add your own questions one by one</p>
+              </div>
             </div>
-          )}
-        </motion.div>
-      )}
-
-      {/* Create Quiz Tab */}
-      {activeTab === 'create' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Quiz</h3>
-            <AdminQuizBuilder onQuizCreated={fetchQuizzes} />
-            <AdminQuizBuilder courseId="" levelId="" />
-          </div>
-        </motion.div>
-      )}
-
-      {/* PDF to Questions Tab */}
-      {activeTab === 'pdf' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="bg-white rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate Questions from PDF</h3>
-            <PDFSummarizer
-              onSummaryComplete={(summary: string) => {
-                console.log('[v0] Summary generated:', summary);
-                toast.success('PDF processed! You can now create a quiz with these questions.');
+            <AdminQuizBuilder
+              courseId=""
+              levelId=""
+              onQuizCreated={() => {
+                fetchQuizzes();
+                setActiveTab('manage');
+                toast.success('Quiz created! Switch to Manage to publish it.');
               }}
             />
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+
+        {/* ---- AI GENERATOR TAB ---- */}
+        {activeTab === 'ai-generator' && (
+          <motion.div key="ai-generator" {...fade} className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">AI PDF Quiz Generator</h3>
+                <p className="text-xs text-gray-500">Upload a document — Puter.js AI generates questions and saves as a draft quiz</p>
+              </div>
+            </div>
+            <PDFSummarizer
+              onQuestionsReady={(qs) => {
+                toast.success(`${qs.length} questions parsed. Fill in the title and save as a draft quiz below.`);
+              }}
+              onSummaryComplete={() => {
+                // Refresh quiz list after saving
+                setTimeout(fetchQuizzes, 2000);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
