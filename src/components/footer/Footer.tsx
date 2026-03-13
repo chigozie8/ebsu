@@ -44,9 +44,7 @@ export default function Footer() {
               </h2>
               <ul className="text-white font-medium text-ss md:text-sm flex flex-col gap-2 sm:gap-4">
                 <li className="">
-                  <a href="/calculate-gpa" className="hover:underline">
-                    GPA Calculator
-                  </a>
+                  <p>Active Community</p>
                 </li>
                 <li className="">
                   <a href="/course-outlines" className="hover:underline">

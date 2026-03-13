@@ -2,9 +2,8 @@ export const services = [
   {
     icon: "icons/home/calculateGPA.svg",
     color: "dark-green",
-    title: "Calculate GPA",
-    desc: "A GPA Calculator available for students to calculate their Grade Point Average and track their academic progress.",
-    link: "/calculate-gpa"
+    title: "Active Community",
+    desc: "Join our vibrant student community, connect with peers, share knowledge, and collaborate on academic projects and initiatives across the institution.",
 },
   {
     icon: "icons/home/course-outline.svg",
