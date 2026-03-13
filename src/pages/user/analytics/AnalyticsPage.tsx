@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, BookOpen, Target, Award, BarChart3, PieChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +36,7 @@ const containerVariants = {
 
 export default function AnalyticsPage() {
   const navigate = useNavigate();
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
+  const [analytics] = useState<AnalyticsData>({
     totalCourses: 12,
     coursesCompleted: 8,
     averageGrade: 78,
