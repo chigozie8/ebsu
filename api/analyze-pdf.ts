@@ -74,13 +74,13 @@ export default async function handler(
     const documentText = await extractPDFText(buffer);
     console.log('[v0] PDF text extracted successfully');
 
-    // Initialize Puter OpenAI client with Grok model
+    // Initialize Puter OpenAI client with ChatGPT model
     const client = new OpenAI({
       baseURL: 'https://api.puter.com/puterai/openai/v1/',
       apiKey: process.env.PUTER_AUTH_TOKEN,
     });
 
-    console.log('[v0] Starting Grok AI analysis');
+    console.log('[v0] Starting ChatGPT analysis via Puter JS');
 
     // Create comprehensive analysis prompt
     const analysisPrompt = `Analyze the following medical/educational document and provide comprehensive study materials in JSON format.
@@ -115,7 +115,7 @@ Return ONLY valid JSON with this exact structure:
 Ensure all content is medically accurate, clinically relevant, and pedagogically sound. Focus on helping medical students master the material with deep understanding.`;
 
     const completion = await client.chat.completions.create({
-      model: 'grok-4',
+      model: 'gpt-4-turbo',
       messages: [
         {
           role: 'user',
@@ -126,18 +126,18 @@ Ensure all content is medically accurate, clinically relevant, and pedagogically
       max_tokens: 4000,
     });
 
-    console.log('[v0] Received Grok response');
+    console.log('[v0] Received ChatGPT response via Puter');
 
     const responseContent = completion.choices[0].message.content;
     if (!responseContent) {
-      throw new Error('Empty response from Grok AI');
+      throw new Error('Empty response from ChatGPT via Puter');
     }
 
     // Extract JSON from response
     const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.error('[v0] Response content:', responseContent);
-      throw new Error('Invalid JSON in Grok response');
+      throw new Error('Invalid JSON in ChatGPT response');
     }
 
     const studyMaterial: StudyMaterial = JSON.parse(jsonMatch[0]);
