@@ -49,41 +49,67 @@ export default function AnalyticsDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'all'>('month');
 
   useEffect(() => {
-    checkAuth();
+    console.log('[v0] Setting up auth listener');
+    
+    // Use onAuthStateChange to properly track authentication state
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[v0] Auth state changed:', event, 'Session:', !!session);
+      
+      if (session?.user) {
+        console.log('[v0] User authenticated:', session.user.id);
+        setIsAuthenticated(true);
+        setLoading(true);
+        await fetchAnalytics();
+      } else {
+        console.log('[v0] User not authenticated');
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const checkAuth = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('[v0] Auth check result:', !!user);
       if (user) {
         setIsAuthenticated(true);
-        fetchAnalytics();
       } else {
         setIsAuthenticated(false);
-        setLoading(false);
       }
     } catch (error) {
       console.error('[v0] Auth check error:', error);
       setIsAuthenticated(false);
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('[v0] Period changed, reloading analytics');
       fetchAnalytics();
     }
-  }, [selectedPeriod, isAuthenticated]);
+  }, [selectedPeriod]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      console.log('[v0] Fetching analytics data...');
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        console.log('[v0] No user found during analytics fetch');
         setIsAuthenticated(false);
+        setLoading(false);
         return;
       }
+
+      console.log('[v0] User found:', user.id, 'Fetching attempts...');
 
       // Fetch quiz attempts
       const { data: attempts, error: attemptsError } = await supabase
@@ -96,7 +122,10 @@ export default function AnalyticsDashboard() {
         throw attemptsError;
       }
 
+      console.log('[v0] Attempts fetched:', attempts?.length || 0);
+
       if (!attempts || attempts.length === 0) {
+        console.log('[v0] No attempts found, showing empty state');
         setMetrics({
           totalAttempts: 0,
           averageScore: 0,
@@ -105,6 +134,7 @@ export default function AnalyticsDashboard() {
           strongestTopic: 'No data yet',
           timeSpentHours: 0,
         });
+        setLoading(false);
         return;
       }
 
