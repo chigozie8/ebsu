@@ -4368,7 +4368,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                   className="w-full py-3 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {sendingBroadcast ? (
-                    <Spinner />
+                    <Spinner className="w-4 h-4" />
                   ) : (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -4398,7 +4398,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </div>
 
               {loadingSentNotifications ? (
-                <div className="flex items-center justify-center py-12"><Spinner /></div>
+                <div className="flex items-center justify-center py-12"><Spinner className="w-6 h-6" /></div>
               ) : sentNotifications.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
                   <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
