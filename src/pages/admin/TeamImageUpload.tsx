@@ -3,307 +3,156 @@ import { TeamUploadManager } from '../../components/ImageUpload/TeamUploadManage
 import placeholder from "../../assets/img/team/placeholder.png";
 import { db } from '../../config/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-
-// =============================================
-// Executive Team Data
-// =============================================
-interface ExecutiveMember {
-  name: string;
-  title: string;
-  image: string;
-  level?: string;
-  bio?: string;
-}
-
-const presidentData: ExecutiveMember = {
-  name: "Name Here",
-  title: "President",
-  image: placeholder,
-  level: "600 Level",
-  bio: "Leading EBSUMSA with vision and dedication to advance medical student welfare and professional development.",
-};
-
-const executiveMembers: ExecutiveMember[] = [
-  {
-    name: "Name Here",
-    title: "Vice President",
-    image: placeholder,
-    level: "500 Level",
-  },
-  {
-    name: "Name Here",
-    title: "General Secretary",
-    image: placeholder,
-    level: "500 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Financial Secretary",
-    image: placeholder,
-    level: "400 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Treasurer",
-    image: placeholder,
-    level: "400 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Public Relations Officer",
-    image: placeholder,
-    level: "500 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Socials",
-    image: placeholder,
-    level: "400 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Academics",
-    image: placeholder,
-    level: "500 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Welfare",
-    image: placeholder,
-    level: "400 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Sports",
-    image: placeholder,
-    level: "400 Level",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Health",
-    image: placeholder,
-    level: "500 Level",
-  },
-];
-
-// =============================================
-// Class Representatives Data
-// =============================================
 import { classReps } from '../../data/students/classReps';
 
 // =============================================
-// Press Team Data
-// =============================================
-interface PressMember {
-  name: string;
-  role: string;
-  level: string;
-  image: string;
-  specialty?: string;
-}
-
-const editorInChief: PressMember = {
-  name: "Name Here",
-  role: "Editor-in-Chief",
-  level: "500 Level",
-  image: placeholder,
-  specialty: "News & Editorial",
-};
-
-const pressMembers: PressMember[] = [
-  {
-    name: "Name Here",
-    role: "Deputy Editor",
-    level: "500 Level",
-    image: placeholder,
-    specialty: "Feature Articles",
-  },
-  {
-    name: "Name Here",
-    role: "News Editor",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Campus News",
-  },
-  {
-    name: "Name Here",
-    role: "Social Media Manager",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Digital Content",
-  },
-  {
-    name: "Name Here",
-    role: "Graphics Designer",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Visual Design",
-  },
-  {
-    name: "Name Here",
-    role: "Photographer",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Event Photography",
-  },
-  {
-    name: "Name Here",
-    role: "Video Editor",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Video Production",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Academic News",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Sports News",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "200 Level",
-    image: placeholder,
-    specialty: "Health News",
-  },
-  {
-    name: "Name Here",
-    role: "Content Writer",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Blog Articles",
-  },
-];
-
-// =============================================
-// Convert data to match interface
+// Static default data
 // =============================================
 const executiveTeamData = [
-  { 
-    id: 'president', 
-    name: presidentData.name, 
-    image: presidentData.image, 
-    role: presidentData.title 
-  },
-  ...executiveMembers.map((member: any, idx: number) => ({
-    id: `exec-${idx}`,
-    name: member.name,
-    image: member.image,
-    role: member.title,
-  })),
+  { id: 'president',  name: 'Name Here', image: placeholder, role: 'President',               extra: '600 Level' },
+  { id: 'exec-0',     name: 'Name Here', image: placeholder, role: 'Vice President',           extra: '500 Level' },
+  { id: 'exec-1',     name: 'Name Here', image: placeholder, role: 'General Secretary',        extra: '500 Level' },
+  { id: 'exec-2',     name: 'Name Here', image: placeholder, role: 'Financial Secretary',      extra: '400 Level' },
+  { id: 'exec-3',     name: 'Name Here', image: placeholder, role: 'Treasurer',                extra: '400 Level' },
+  { id: 'exec-4',     name: 'Name Here', image: placeholder, role: 'Public Relations Officer', extra: '500 Level' },
+  { id: 'exec-5',     name: 'Name Here', image: placeholder, role: 'Director of Socials',      extra: '400 Level' },
+  { id: 'exec-6',     name: 'Name Here', image: placeholder, role: 'Director of Academics',    extra: '500 Level' },
+  { id: 'exec-7',     name: 'Name Here', image: placeholder, role: 'Director of Welfare',      extra: '400 Level' },
+  { id: 'exec-8',     name: 'Name Here', image: placeholder, role: 'Director of Sports',       extra: '400 Level' },
+  { id: 'exec-9',     name: 'Name Here', image: placeholder, role: 'Director of Health',       extra: '500 Level' },
 ];
 
-const classRepsData = classReps.map((rep: any, idx: number) => ({
+const classRepsData = classReps.map((rep, idx) => ({
   id: `classrep-${idx}`,
   name: rep.name,
   image: rep.img,
   role: rep.title,
+  extra: rep.work,
 }));
 
 const pressTeamData = [
-  {
-    id: 'editor-in-chief',
-    name: editorInChief.name,
-    image: editorInChief.image,
-    role: editorInChief.role,
-  },
-  ...pressMembers.map((member: any, idx: number) => ({
-    id: `press-${idx}`,
-    name: member.name,
-    image: member.image,
-    role: member.role,
-  })),
+  { id: 'editor-in-chief', name: 'Name Here', image: placeholder, role: 'Editor-in-Chief',      extra: '500 Level' },
+  { id: 'press-0',         name: 'Name Here', image: placeholder, role: 'Deputy Editor',         extra: '500 Level' },
+  { id: 'press-1',         name: 'Name Here', image: placeholder, role: 'News Editor',           extra: '400 Level' },
+  { id: 'press-2',         name: 'Name Here', image: placeholder, role: 'Social Media Manager',  extra: '400 Level' },
+  { id: 'press-3',         name: 'Name Here', image: placeholder, role: 'Graphics Designer',     extra: '400 Level' },
+  { id: 'press-4',         name: 'Name Here', image: placeholder, role: 'Photographer',          extra: '300 Level' },
+  { id: 'press-5',         name: 'Name Here', image: placeholder, role: 'Video Editor',          extra: '400 Level' },
+  { id: 'press-6',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
+  { id: 'press-7',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
+  { id: 'press-8',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '200 Level' },
+  { id: 'press-9',         name: 'Name Here', image: placeholder, role: 'Content Writer',        extra: '400 Level' },
 ];
 
+type TeamType = 'executive' | 'classRep' | 'press';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  image: string;
+  role: string;
+  extra?: string;
+}
+
 export default function AdminTeamUpload() {
-  const [teams, setTeams] = useState({
+  const [teams, setTeams] = useState<Record<TeamType, TeamMember[]>>({
     executive: executiveTeamData,
     classRep: classRepsData,
     press: pressTeamData,
   });
 
-  // Load persisted images from Firestore so the admin panel reflects live state
+  // Load all persisted data (image + name + role + extra) from Firestore
   useEffect(() => {
     getDocs(collection(db, 'teamImages')).then((snap) => {
-      const updates: Record<string, Record<string, string>> = { executive: {}, classRep: {}, press: {} };
+      const updates: Record<string, Partial<TeamMember>> = {};
       snap.forEach((d) => {
         const data = d.data();
-        if (data.teamType && data.memberId && data.imageUrl) {
-          updates[data.teamType][data.memberId] = data.imageUrl;
+        if (data.teamType && data.memberId) {
+          const key = `${data.teamType}_${data.memberId}`;
+          updates[key] = {
+            ...(data.imageUrl && { image: data.imageUrl }),
+            ...(data.name    && { name:  data.name }),
+            ...(data.role    && { role:  data.role }),
+            ...(data.extra   && { extra: data.extra }),
+          };
         }
       });
-      setTeams((prev) => ({
-        executive: prev.executive.map((m) => updates.executive[m.id] ? { ...m, image: updates.executive[m.id] } : m),
-        classRep: prev.classRep.map((m) => updates.classRep[m.id] ? { ...m, image: updates.classRep[m.id] } : m),
-        press: prev.press.map((m) => updates.press[m.id] ? { ...m, image: updates.press[m.id] } : m),
-      }));
+
+      setTeams((prev) => {
+        const merged: Record<TeamType, TeamMember[]> = { executive: [], classRep: [], press: [] };
+        (Object.keys(prev) as TeamType[]).forEach((teamType) => {
+          merged[teamType] = prev[teamType].map((m) => {
+            const patch = updates[`${teamType}_${m.id}`];
+            return patch ? { ...m, ...patch } : m;
+          });
+        });
+        return merged;
+      });
     }).catch(() => { /* silently ignore */ });
   }, []);
 
-  const handleImageUpdate = (
-    teamType: 'executive' | 'classRep' | 'press',
-    memberId: string,
-    newImageUrl: string
-  ) => {
-    setTeams(prev => ({
+  const handleImageUpdate = (teamType: TeamType, memberId: string, newImageUrl: string) => {
+    setTeams((prev) => ({
       ...prev,
-      [teamType]: prev[teamType].map(member =>
-        member.id === memberId ? { ...member, image: newImageUrl } : member
+      [teamType]: prev[teamType].map((m) =>
+        m.id === memberId ? { ...m, image: newImageUrl } : m
+      ),
+    }));
+  };
+
+  const handleMemberUpdate = (
+    teamType: TeamType,
+    memberId: string,
+    fields: { name?: string; role?: string; extra?: string }
+  ) => {
+    setTeams((prev) => ({
+      ...prev,
+      [teamType]: prev[teamType].map((m) =>
+        m.id === memberId ? { ...m, ...fields } : m
       ),
     }));
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Team Image Management</h1>
-          <p className="text-gray-600">
-            Upload and manage images for executive team, class representatives, and press team
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Team Management</h1>
+          <p className="text-sm text-gray-500">
+            Click any photo to upload a new one. Click any name, title, or info field to edit it inline — changes save instantly.
           </p>
         </div>
 
         {/* Executive Team */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <TeamUploadManager
             members={teams.executive}
             teamType="executive"
-            teamName="EBSUMSA Executive"
-            onImageUpdate={(memberId, imageUrl) =>
-              handleImageUpdate('executive', memberId, imageUrl)
-            }
+            teamName="EBSUMSA Executive Team"
+            onImageUpdate={(id, url) => handleImageUpdate('executive', id, url)}
+            onMemberUpdate={(id, fields) => handleMemberUpdate('executive', id, fields)}
           />
         </div>
 
         {/* Class Representatives */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <TeamUploadManager
             members={teams.classRep}
             teamType="classRep"
             teamName="Class Representatives"
-            onImageUpdate={(memberId, imageUrl) =>
-              handleImageUpdate('classRep', memberId, imageUrl)
-            }
+            onImageUpdate={(id, url) => handleImageUpdate('classRep', id, url)}
+            onMemberUpdate={(id, fields) => handleMemberUpdate('classRep', id, fields)}
           />
         </div>
 
         {/* Press Team */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <TeamUploadManager
             members={teams.press}
             teamType="press"
             teamName="Press Team"
-            onImageUpdate={(memberId, imageUrl) =>
-              handleImageUpdate('press', memberId, imageUrl)
-            }
+            onImageUpdate={(id, url) => handleImageUpdate('press', id, url)}
+            onMemberUpdate={(id, fields) => handleMemberUpdate('press', id, fields)}
           />
         </div>
       </div>
