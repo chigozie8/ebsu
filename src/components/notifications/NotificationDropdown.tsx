@@ -63,8 +63,6 @@ export const NotificationDropdown = () => {
     formatRelativeTime,
   } = useNotifications();
   
-  console.log("[v0] NotificationDropdown - loading:", loading, "notifications count:", notifications.length, "unreadCount:", unreadCount);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

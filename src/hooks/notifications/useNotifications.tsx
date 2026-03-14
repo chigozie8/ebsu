@@ -12,41 +12,10 @@ import {
 import { db, isFirebaseConfigured } from "../../config/firebase";
 import { useGetUserInfo } from "../auth/useGetUserInfo";
 import { INotification } from "../../models/notifications";
+import { playSound } from "../useSound";
 
-// Play a notification chime using Web Audio API (no external file needed)
-const playNotificationSound = () => {
-  try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-
-    const playTone = (freq: number, startTime: number, duration: number, gain: number) => {
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(freq, startTime);
-      gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(gain, startTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + duration);
-    };
-
-    const now = ctx.currentTime;
-    playTone(880, now, 0.18, 0.4);
-    playTone(1100, now + 0.12, 0.18, 0.35);
-    playTone(1320, now + 0.24, 0.28, 0.3);
-
-    // Vibrate on mobile (200ms buzz)
-    if ("vibrate" in navigator) {
-      navigator.vibrate(200);
-    }
-  } catch {
-    // Silently fail if audio is blocked
-  }
-};
+// Play a notification chime using the shared useSound hook
+const playNotificationSound = () => playSound("notify");
 
 // Sample notifications for when Firebase is not configured or empty
 const sampleNotifications: INotification[] = [

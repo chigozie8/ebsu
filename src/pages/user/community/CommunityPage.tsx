@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
@@ -8,6 +8,7 @@ import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
 import { Send, Search, MessageSquare, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { playSound } from '../../../hooks/useSound';
 
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,20 @@ const CommunityPage: React.FC = () => {
   const { postMessage, posting } = usePostMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
+
+  // Track message count to detect new incoming messages from others
+  const prevMessageCountRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    if (prevMessageCountRef.current !== null && messages.length > prevMessageCountRef.current) {
+      // Only play if the latest message is NOT from the current user
+      const latest = messages[0];
+      if (latest && latest.user_id !== userId) {
+        playSound("message");
+      }
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages, loading, userId]);
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
