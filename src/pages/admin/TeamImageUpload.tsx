@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { TeamUploadManager } from '../../components/ImageUpload/TeamUploadManager';
 import placeholder from "../../assets/img/team/placeholder.png";
