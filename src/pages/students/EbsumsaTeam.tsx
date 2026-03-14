@@ -170,25 +170,29 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
 // Main Component
 // =============================================
 export default function EbsumsaTeam() {
-  // imageMap: key = "executive_president" | "executive_exec-0" etc → url
-  const [imageMap, setImageMap] = useState<Record<string, string>>({});
+  type ExecOverride = { image?: string; name?: string; role?: string };
+  const [overrides, setOverrides] = useState<Record<string, ExecOverride>>({});
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    // Load persisted images from Firestore
     getDocs(collection(db, 'teamImages')).then((snap) => {
-      const map: Record<string, string> = {};
+      const map: Record<string, ExecOverride> = {};
       snap.forEach((d) => {
         const data = d.data();
-        if (data.teamType === 'executive') {
-          map[data.memberId] = data.imageUrl;
+        if (data.teamType === 'executive' && data.memberId) {
+          map[data.memberId] = {
+            ...(data.imageUrl && { image: data.imageUrl }),
+            ...(data.name    && { name:  data.name }),
+            ...(data.role    && { role:  data.role }),
+          };
         }
       });
-      setImageMap(map);
+      setOverrides(map);
     }).catch(() => { /* silently fall back to placeholder */ });
   }, []);
 
-  const execImg = (id: string) => imageMap[id] || placeholder;
+  const execField = (id: string, field: 'image' | 'name' | 'role', fallback: string) =>
+    (overrides[id] as any)?.[field] || fallback;
 
   return (
     <div className="min-h-screen bg-white">
@@ -228,7 +232,12 @@ export default function EbsumsaTeam() {
 
           {/* President Section */}
           <div className="mb-12">
-            <PresidentCard member={{ ...presidentData, image: execImg('president') }} />
+            <PresidentCard member={{
+              ...presidentData,
+              image: execField('president', 'image', presidentData.image),
+              name:  execField('president', 'name',  presidentData.name),
+              title: execField('president', 'role',  presidentData.title),
+            }} />
           </div>
 
           {/* Other Executives */}
@@ -240,7 +249,12 @@ export default function EbsumsaTeam() {
               {executiveMembers.map((member, index) => (
                 <ExecutiveCard
                   key={member.title}
-                  member={{ ...member, image: execImg(`exec-${index}`) }}
+                  member={{
+                    ...member,
+                    image: execField(`exec-${index}`, 'image', member.image),
+                    name:  execField(`exec-${index}`, 'name',  member.name),
+                    title: execField(`exec-${index}`, 'role',  member.title),
+                  }}
                   index={index + 2}
                 />
               ))}

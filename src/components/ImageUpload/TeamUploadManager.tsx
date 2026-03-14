@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { ImageUploadModal } from './ImageUploadModal';
+import { db } from '../../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface TeamMember {
   id: string;
   name: string;
   image: string;
   role: string;
+  extra?: string; // e.g. regNo or level for class reps
 }
 
 interface TeamUploadManagerProps {
@@ -13,6 +16,83 @@ interface TeamUploadManagerProps {
   teamType: 'executive' | 'classRep' | 'press';
   teamName: string;
   onImageUpdate: (memberId: string, newImageUrl: string) => void;
+  onMemberUpdate: (memberId: string, fields: { name?: string; role?: string; extra?: string }) => void;
+}
+
+function EditableField({
+  value,
+  onSave,
+  label,
+  mono,
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  label: string;
+  mono?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  const commit = async () => {
+    if (draft.trim() === value) { setEditing(false); return; }
+    setSaving(true);
+    await onSave(draft.trim());
+    setSaving(false);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 w-full">
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value); setEditing(false); } }}
+          className={`flex-1 border border-[#00875a] rounded-lg px-2 py-1 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 ${mono ? 'font-mono' : ''}`}
+          placeholder={label}
+        />
+        <button
+          onClick={commit}
+          disabled={saving}
+          className="w-7 h-7 rounded-lg bg-[#00875a] text-white flex items-center justify-center flex-shrink-0 hover:bg-[#00875a]/90 disabled:opacity-50 transition-colors"
+        >
+          {saving ? (
+            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </button>
+        <button
+          onClick={() => { setDraft(value); setEditing(false); }}
+          className="w-7 h-7 rounded-lg border border-gray-200 text-gray-500 flex items-center justify-center flex-shrink-0 hover:bg-gray-50 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => { setDraft(value); setEditing(true); }}
+      className="group flex items-center gap-1.5 w-full text-left hover:bg-gray-50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors"
+      title={`Edit ${label}`}
+    >
+      <span className={`text-sm text-gray-800 truncate ${mono ? 'font-mono' : 'font-medium'}`}>{value || <span className="text-gray-400 italic">Click to edit {label.toLowerCase()}</span>}</span>
+      <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 flex-shrink-0 transition-opacity" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+      </svg>
+    </button>
+  );
 }
 
 export function TeamUploadManager({
@@ -20,11 +100,12 @@ export function TeamUploadManager({
   teamType,
   teamName,
   onImageUpdate,
+  onMemberUpdate,
 }: TeamUploadManagerProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const selectedMember = members.find(m => m.id === selectedMemberId);
+  const selectedMember = members.find((m) => m.id === selectedMemberId);
 
   const openUploadModal = (memberId: string) => {
     setSelectedMemberId(memberId);
@@ -32,51 +113,93 @@ export function TeamUploadManager({
   };
 
   const handleUploadSuccess = (imageUrl: string) => {
-    if (selectedMemberId) {
-      onImageUpdate(selectedMemberId, imageUrl);
-    }
+    if (selectedMemberId) onImageUpdate(selectedMemberId, imageUrl);
+  };
+
+  const persistField = async (memberId: string, field: string, value: string) => {
+    await setDoc(
+      doc(db, 'teamImages', `${teamType}_${memberId}`),
+      { teamType, memberId, [field]: value, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
   };
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">{teamName} Image Management</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {members.map(member => (
+      <h2 className="text-xl font-bold mb-6 text-gray-900">{teamName}</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {members.map((member) => (
           <div
             key={member.id}
-            className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-md p-5 hover:shadow-xl transition-all duration-300 border border-gray-200"
+            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
           >
-            <div className="relative mb-4 bg-gray-200 rounded-lg overflow-hidden h-48 flex items-center justify-center">
-              {member.image ? (
-                <img
-                  src={member.image}
-                  alt={member.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22sans-serif%22 font-size=%2216%22 fill=%22%239ca3af%22%3ENo Image%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-              ) : (
-                <div className="text-center">
-                  <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-gray-500 text-sm">No image</p>
-                </div>
-              )}
+            {/* Image area */}
+            <div className="relative h-44 bg-gray-100">
+              <img
+                src={member.image}
+                alt={member.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
               <button
                 onClick={() => openUploadModal(member.id)}
-                className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 hover:opacity-100"
+                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm"
               >
-                <span className="bg-green2 hover:bg-green1 text-white px-4 py-2 rounded-lg font-semibold transition-colors">
-                  Change Photo
-                </span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
+                Change Photo
               </button>
             </div>
-            <div className="space-y-2">
-              <h3 className="font-bold text-gray-900 text-lg text-balance">{member.name}</h3>
-              <p className="text-sm text-gray-600 font-medium">{member.role}</p>
+
+            {/* Editable fields */}
+            <div className="p-4 space-y-2">
+              {/* Name */}
+              <div>
+                <p className="text-xss font-bold text-gray-400 uppercase tracking-wide mb-0.5">Name</p>
+                <EditableField
+                  value={member.name}
+                  label="Name"
+                  onSave={async (v) => {
+                    await persistField(member.id, 'name', v);
+                    onMemberUpdate(member.id, { name: v });
+                  }}
+                />
+              </div>
+
+              {/* Role / Title */}
+              <div>
+                <p className="text-xss font-bold text-gray-400 uppercase tracking-wide mb-0.5">Title / Role</p>
+                <EditableField
+                  value={member.role}
+                  label="Role"
+                  onSave={async (v) => {
+                    await persistField(member.id, 'role', v);
+                    onMemberUpdate(member.id, { role: v });
+                  }}
+                />
+              </div>
+
+              {/* Extra field (reg no / work / level) */}
+              {member.extra !== undefined && (
+                <div>
+                  <p className="text-xss font-bold text-gray-400 uppercase tracking-wide mb-0.5">
+                    {teamType === 'classRep' ? 'Work / Description' : 'Level / Info'}
+                  </p>
+                  <EditableField
+                    value={member.extra}
+                    label="Extra info"
+                    onSave={async (v) => {
+                      await persistField(member.id, 'extra', v);
+                      onMemberUpdate(member.id, { extra: v });
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}

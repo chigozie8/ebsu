@@ -11,20 +11,26 @@ import { db } from "../../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function ClassReps() {
-  const [imageMap, setImageMap] = useState<Record<string, string>>({});
+  type RepOverride = { image?: string; name?: string; role?: string; extra?: string };
+  const [overrides, setOverrides] = useState<Record<string, RepOverride>>({});
 
   useEffect(() => {
     window.scroll(0, 0);
     getDocs(collection(db, 'teamImages')).then((snap) => {
-      const map: Record<string, string> = {};
+      const map: Record<string, RepOverride> = {};
       snap.forEach((d) => {
         const data = d.data();
-        if (data.teamType === 'classRep') {
-          map[data.memberId] = data.imageUrl;
+        if (data.teamType === 'classRep' && data.memberId) {
+          map[data.memberId] = {
+            ...(data.imageUrl && { image: data.imageUrl }),
+            ...(data.name    && { name:  data.name }),
+            ...(data.role    && { role:  data.role }),
+            ...(data.extra   && { extra: data.extra }),
+          };
         }
       });
-      setImageMap(map);
-    }).catch(() => { /* fall back to static images */ });
+      setOverrides(map);
+    }).catch(() => { /* fall back to static data */ });
   }, []);
   return (
     <div className="min-h-screen bg-white">
@@ -41,36 +47,39 @@ export default function ClassReps() {
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8 ">
             {classReps.map(({ img, name, regNo, title, work }, i) => {
-              const resolvedImg = imageMap[`classrep-${i}`] || img;
+              const id = `classrep-${i}`;
+              const ov = overrides[id] || {};
+              const resolvedImg  = ov.image || img;
+              const resolvedName = ov.name  || name;
+              const resolvedTitle = ov.role || title;
+              const resolvedWork  = ov.extra || work;
               return (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"
                 whileInView="animate"
-                viewport={{
-                  once: true,
-                }}
+                viewport={{ once: true }}
                 custom={i}
                 key={i}
                 className="w-full h-[400px] sss:h-[420px] shadow-4 transition-shadow duration-200 ease-in-out rounded-lg overflow-hidden bg-white"
               >
                 <img
                   src={resolvedImg}
-                  alt={name}
+                  alt={resolvedName}
                   className="w-full h-2/3 object-cover"
                 />
                 <div className="h-1/3 p-3 flex flex-col justify-between">
                   <p className="font-bold text-sm md:text-xs uppercase flex gap-1.5 items-center text-gray-900">
-                    <ProfileIcon className="w-6 h-6" /> {name}
+                    <ProfileIcon className="w-6 h-6" /> {resolvedName}
                   </p>
                   <p className="font-semibold text-ss flex gap-1.5 items-center text-gray-900">
                     <RegisterIcon className="w-6 h-6 fill-green1" /> {regNo}
                   </p>
                   <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
-                    <GraduateCapIcon className="w-6 h-6 fill-green1" /> {title}
+                    <GraduateCapIcon className="w-6 h-6 fill-green1" /> {resolvedTitle}
                   </p>
                   <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
-                    <SuitcaseIcon className="w-6 h-6" /> {work}
+                    <SuitcaseIcon className="w-6 h-6" /> {resolvedWork}
                   </p>
                 </div>
               </motion.div>
