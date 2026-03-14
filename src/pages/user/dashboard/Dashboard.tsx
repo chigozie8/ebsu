@@ -652,7 +652,7 @@ export default function Dashboard() {
                       </NavLink>
 
                       {/* Admin Panel Link - Only visible to admin */}
-                      {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
+                      {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email === "kenronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
                         <NavLink to="/admin">
                           <motion.div
                             variants={fadeInVariants5}
