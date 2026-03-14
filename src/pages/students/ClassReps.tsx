@@ -5,7 +5,6 @@ import { classReps } from "../../data/students/classReps";
 import { motion } from "framer-motion";
 import { GraduateCapIcon } from "../../components/icons/general/GraduateCapIcon";
 import { RegisterIcon } from "../../components/icons/general/RegisterIcon";
-import { SuitcaseIcon } from "../../components/icons/general/SuitcaseIcon";
 import { ProfileIcon } from "../../components/icons/general/ProfileIcon";
 import { db } from "../../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -46,13 +45,12 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8 ">
-            {classReps.map(({ img, name, regNo, title, work }, i) => {
+            {classReps.map(({ img, name, regNo, title }, i) => {
               const id = `classrep-${i}`;
               const ov = overrides[id] || {};
-              const resolvedImg  = ov.image || img;
-              const resolvedName = ov.name  || name;
-              const resolvedTitle = ov.role || title;
-              const resolvedWork  = ov.extra || work;
+              const resolvedImg   = ov.image || img;
+              const resolvedName  = ov.name  || name;
+              const resolvedTitle = ov.role  || title;
               return (
               <motion.div
                 variants={fadeInVariants3}
@@ -78,9 +76,7 @@ export default function ClassReps() {
                   <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
                     <GraduateCapIcon className="w-6 h-6 fill-green1" /> {resolvedTitle}
                   </p>
-                  <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
-                    <SuitcaseIcon className="w-6 h-6" /> {resolvedWork}
-                  </p>
+
                 </div>
               </motion.div>
               );
