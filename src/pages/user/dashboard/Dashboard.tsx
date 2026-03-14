@@ -13,7 +13,6 @@ import { FilesIcon } from "../../../components/icons/dashboard/FilesIcon";
 import { ChatIcon } from "../../../components/icons/dashboard/ChatIcon";
 import { IDCardIcon } from "../../../components/icons/dashboard/IDCardIcon";
 import { ResourcesIcon } from "../../../components/icons/dashboard/ResourcesIcon";
-import { TextAnalyticsIcon } from "../../../components/icons/dashboard/TextAnalyticsIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
@@ -370,12 +369,22 @@ export default function Dashboard() {
                           custom={10}
                           className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c7d2fe] bg-[#c7d2fe]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
-                          <TextAnalyticsIcon
+                          <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
-                            color="#4338ca"
-                          />
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#4338ca"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                            <line x1="2" y1="20" x2="22" y2="20" />
+                          </svg>
                           <p className="uppercase text-[#4338ca] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
-                            Text Analytics
+                            Analytics
                           </p>
                         </motion.div>
                       </NavLink>
