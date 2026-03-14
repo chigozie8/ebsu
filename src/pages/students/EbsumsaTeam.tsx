@@ -1,8 +1,10 @@
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import placeholder from "../../assets/img/team/placeholder.png";
+import { db } from "../../config/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 // =============================================
 // TypeScript Interfaces
@@ -168,9 +170,25 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
 // Main Component
 // =============================================
 export default function EbsumsaTeam() {
+  // imageMap: key = "executive_president" | "executive_exec-0" etc → url
+  const [imageMap, setImageMap] = useState<Record<string, string>>({});
+
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Load persisted images from Firestore
+    getDocs(collection(db, 'teamImages')).then((snap) => {
+      const map: Record<string, string> = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        if (data.teamType === 'executive') {
+          map[data.memberId] = data.imageUrl;
+        }
+      });
+      setImageMap(map);
+    }).catch(() => { /* silently fall back to placeholder */ });
   }, []);
+
+  const execImg = (id: string) => imageMap[id] || placeholder;
 
   return (
     <div className="min-h-screen bg-white">
@@ -210,7 +228,7 @@ export default function EbsumsaTeam() {
 
           {/* President Section */}
           <div className="mb-12">
-            <PresidentCard member={presidentData} />
+            <PresidentCard member={{ ...presidentData, image: execImg('president') }} />
           </div>
 
           {/* Other Executives */}
@@ -220,7 +238,11 @@ export default function EbsumsaTeam() {
             </h4>
             <div className="grid grid-cols-2 ss:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {executiveMembers.map((member, index) => (
-                <ExecutiveCard key={member.title} member={member} index={index + 2} />
+                <ExecutiveCard
+                  key={member.title}
+                  member={{ ...member, image: execImg(`exec-${index}`) }}
+                  index={index + 2}
+                />
               ))}
             </div>
           </div>
