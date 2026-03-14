@@ -79,13 +79,13 @@ const buildPrompt = (mode: OutputMode, text: string): string => {
 [{"term":"...","definition":"..."}]
 No extra text, no markdown code blocks.\n\nDOCUMENT:\n${text}`;
     case "mcq":
-      return `${base}generate 8 multiple-choice questions. Return ONLY valid JSON array:
+      return `${base}generate as many multiple-choice questions as the document content supports, up to a maximum of 35. Cover every major topic, subtopic, and clinical point in the document. Each question must have 4 options (A, B, C, D), a correct answer letter, and a detailed explanation. Return ONLY a valid JSON array with no extra text and no markdown code blocks:
 [{"question":"...","options":["A. ...","B. ...","C. ...","D. ..."],"answer":"A","explanation":"..."}]
-No extra text, no markdown code blocks.\n\nDOCUMENT:\n${text}`;
+\n\nDOCUMENT:\n${text}`;
     case "theory":
-      return `${base}generate 6 theory exam questions with model answers. Return ONLY valid JSON array:
+      return `${base}generate as many theory exam questions as the document content supports, up to a maximum of 25. Cover every major topic and clinical concept in the document. Each question must have a comprehensive model answer of at least 3 sentences. Return ONLY a valid JSON array with no extra text and no markdown code blocks:
 [{"question":"...","answer":"..."}]
-No extra text, no markdown code blocks.\n\nDOCUMENT:\n${text}`;
+\n\nDOCUMENT:\n${text}`;
     case "keypoints":
       return `${base}extract the 10 most important key points. Return ONLY valid JSON array:
 [{"point":"...","detail":"..."}]
@@ -295,7 +295,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ─── Main Page ───────�����────────────────────────────────────────────────────────
+// ─── Main Page ───────�������────────────────────────────────────────────────────────
 
 export default function AiNotesPage() {
   const [rawText, setRawText] = useState("");
@@ -417,7 +417,7 @@ export default function AiNotesPage() {
 
     try {
       const puter = await waitForPuter();
-      const prompt = buildPrompt(mode, rawText.slice(0, 6000));
+      const prompt = buildPrompt(mode, rawText.slice(0, 12000));
       // puter.ai.chat(messages, testMode, options) — pass false for testMode
       const response = await puter.ai.chat(prompt, false, { model: "gpt-4o" });
       let content = typeof response === "string" ? response
