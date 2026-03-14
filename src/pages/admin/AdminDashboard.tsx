@@ -643,12 +643,15 @@ export default function AdminDashboard() {
       });
 
       notifyUser("success", "Material uploaded successfully!");
-      await sendGlobalNotification(
-        "New Learning Resource",
-        `A new ${formData.resourceType} has been uploaded for ${formData.courseTitle} (${formData.level}). Access it in your Learning Resources.`,
-        "success",
-        "/u/learning-resources"
-      );
+      await addDoc(collection(db, "notifications"), {
+        userId: "global",
+        title: "New Learning Resource",
+        message: `A new ${formData.resourceType} has been uploaded for ${formData.courseTitle} (${formData.level}). Access it in your Learning Resources.`,
+        type: "success",
+        link: "/u/learning-resources",
+        createdAt: serverTimestamp(),
+        read: false,
+      });
 
       resetMaterialForm();
       fetchMaterials();
@@ -1000,12 +1003,15 @@ export default function AdminDashboard() {
           createdAt: serverTimestamp(),
         });
         notifyUser("success", "Blog post created successfully!");
-        await sendGlobalNotification(
-          "New Blog Post",
-          `A new blog post has been published: "${blogFormData.title}". Check it out now!`,
-          "info",
-          "/blog"
-        );
+        await addDoc(collection(db, "notifications"), {
+          userId: "global",
+          title: "New Blog Post",
+          message: `A new blog post has been published: "${blogFormData.title}". Check it out now!`,
+          type: "info",
+          link: "/blog",
+          createdAt: serverTimestamp(),
+          read: false,
+        });
       }
 
       // Reset form
