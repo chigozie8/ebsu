@@ -209,7 +209,8 @@ function MCQViewer({ items }: { items: MCQItem[] }) {
               </button>
             ) : (
               <div className="text-xss text-blue-700 bg-blue-50 rounded-lg px-3 py-2 text-left w-full">
-                <span className="font-semibold">Explanation: </span>{item.explanation}
+                <span className="font-semibold block mb-1">Explanation:</span>
+                <div className="text-blue-800">{renderMarkdown(item.explanation)}</div>
               </div>
             )}
           </div>
@@ -239,7 +240,7 @@ function TheoryViewer({ items }: { items: TheoryItem[] }) {
               <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                 <div className="p-4 bg-blue-50 border-t border-blue-100">
                   <p className="text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wide">Model Answer</p>
-                  <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{item.answer}</p>
+                  <div className="text-sm text-gray-800 leading-relaxed">{renderMarkdown(item.answer)}</div>
                 </div>
               </motion.div>
             )}
@@ -260,7 +261,7 @@ function KeyPointsViewer({ items }: { items: KeyPoint[] }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">{kp.point}</p>
-            <p className="text-xs text-gray-600 mt-1 leading-relaxed">{kp.detail}</p>
+            <div className="text-xs text-gray-600 mt-1 leading-relaxed">{renderMarkdown(kp.detail)}</div>
           </div>
         </div>
       ))}
@@ -268,10 +269,66 @@ function KeyPointsViewer({ items }: { items: KeyPoint[] }) {
   );
 }
 
+// ─── Markdown renderer ────────────────────────────────────────────────────────
+function renderMarkdown(text: string): JSX.Element {
+  const lines = text.split("\n");
+  const elements: JSX.Element[] = [];
+
+  const inlineFormat = (line: string, key: string): JSX.Element => {
+    // Split on bold (**text**), italic (*text*), and inline code (`text`)
+    const parts = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    return (
+      <span key={key}>
+        {parts.map((part, pi) => {
+          if (part.startsWith("**") && part.endsWith("**"))
+            return <strong key={pi} className="font-bold text-gray-900">{part.slice(2, -2)}</strong>;
+          if (part.startsWith("*") && part.endsWith("*"))
+            return <em key={pi} className="italic">{part.slice(1, -1)}</em>;
+          if (part.startsWith("`") && part.endsWith("`"))
+            return <code key={pi} className="bg-gray-100 text-[#00875a] px-1 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
+          return <span key={pi}>{part}</span>;
+        })}
+      </span>
+    );
+  };
+
+  lines.forEach((line, idx) => {
+    const key = `line-${idx}`;
+    if (/^### (.+)/.test(line)) {
+      elements.push(<h3 key={key} className="text-sm font-bold text-gray-900 mt-4 mb-1">{line.replace(/^### /, "")}</h3>);
+    } else if (/^## (.+)/.test(line)) {
+      elements.push(<h2 key={key} className="text-base font-bold text-gray-900 mt-5 mb-2 border-b border-gray-100 pb-1">{line.replace(/^## /, "")}</h2>);
+    } else if (/^# (.+)/.test(line)) {
+      elements.push(<h1 key={key} className="text-lg font-extrabold text-gray-900 mt-5 mb-2">{line.replace(/^# /, "")}</h1>);
+    } else if (/^[-*•] (.+)/.test(line)) {
+      elements.push(
+        <li key={key} className="flex gap-2 text-sm text-gray-800 leading-relaxed">
+          <span className="text-[#00875a] font-bold mt-0.5 flex-shrink-0">•</span>
+          <span>{inlineFormat(line.replace(/^[-*•] /, ""), key + "c")}</span>
+        </li>
+      );
+    } else if (/^\d+\. (.+)/.test(line)) {
+      const num = line.match(/^(\d+)\./)?.[1];
+      elements.push(
+        <li key={key} className="flex gap-2 text-sm text-gray-800 leading-relaxed">
+          <span className="text-[#00875a] font-bold flex-shrink-0 min-w-[18px]">{num}.</span>
+          <span>{inlineFormat(line.replace(/^\d+\. /, ""), key + "c")}</span>
+        </li>
+      );
+    } else if (line.trim() === "") {
+      elements.push(<div key={key} className="h-2" />);
+    } else {
+      elements.push(<p key={key} className="text-sm text-gray-800 leading-relaxed">{inlineFormat(line, key + "c")}</p>);
+    }
+  });
+
+  return <div className="space-y-1">{elements}</div>;
+}
+
 function TextViewer({ content }: { content: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-xl p-5">
-      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{content}</p>
+    <div className="bg-white rounded-xl p-1">
+      {renderMarkdown(content)}
     </div>
   );
 }
