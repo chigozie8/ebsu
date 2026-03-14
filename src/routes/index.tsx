@@ -87,6 +87,12 @@ const AppRoutes = () => {
   const StudentQuizDashboard = lazy(
     () => import("../pages/user/quiz/StudentQuizDashboard")
   );
+  const QuizCardPage = lazy(
+    () => import("../pages/user/quiz-card/QuizCardPage")
+  );
+  const AiNotesPage = lazy(
+    () => import("../pages/user/ai-notes/AiNotesPage")
+  );
 
   return (
     <>
@@ -220,6 +226,22 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <StudentQuizDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/quiz-card"
+            element={
+              <ProtectedRoute>
+                <QuizCardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/ai-notes"
+            element={
+              <ProtectedRoute>
+                <AiNotesPage />
               </ProtectedRoute>
             }
           />

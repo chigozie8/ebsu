@@ -399,6 +399,65 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      {/* Quiz Card */}
+                      <NavLink to="/u/quiz-card">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{ once: true }}
+                          custom={14}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fde68a] bg-[#fde68a]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        >
+                          <svg
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#b45309"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M9 11l3 3L22 4" />
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                          </svg>
+                          <p className="uppercase text-[#b45309] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            Quiz Card
+                          </p>
+                        </motion.div>
+                      </NavLink>
+                      {/* AI Note Summarizer Card */}
+                      <NavLink to="/u/ai-notes">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{ once: true }}
+                          custom={15}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#a5f3fc] bg-[#a5f3fc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        >
+                          <svg
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#0e7490"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                            <circle cx="18" cy="20" r="3" fill="#0e7490" stroke="none" />
+                            <path d="M17.5 19.5l.5.5 1-1" stroke="white" strokeWidth="1.2" />
+                          </svg>
+                          <p className="uppercase text-[#0e7490] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            AI Notes
+                          </p>
+                        </motion.div>
+                      </NavLink>
                     </div>
                   </div>
                   <div className="mb-3 sm:mb-4">
