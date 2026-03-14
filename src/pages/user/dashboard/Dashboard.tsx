@@ -19,6 +19,7 @@ import { useLoadImage } from "../../../hooks/user-profile/useLoadImage";
 import { useNotifications } from "../../../hooks/notifications/useNotifications";
 import WeatherWidget from "../../../components/widgets/WeatherWidget";
 import CommunityWidget from "../../../components/widgets/CommunityWidget";
+import EventsWidget from "../../../components/widgets/EventsWidget";
 import { trackActivity } from "../../../hooks/analytics/useAnalytics";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -346,6 +347,10 @@ export default function Dashboard() {
                   >
                     <CommunityWidget />
                   </motion.div>
+                  {/* Events & Calendar Widget */}
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <EventsWidget customIndex={7} />
+                  </div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">
