@@ -81,10 +81,10 @@ export default function SignUp() {
                     Matric No.
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     id="regNo"
                     className="bg-transparent font-medium text-gray-700 border border-gray-300 text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 ss:p-2"
-                    placeholder="eg. 91141"
+                    placeholder="eg. EBSU/2019/24567"
                     {...register("regNo")}
                   />
                   {errors.regNo && <p className="form-error-message">{errors.regNo.message}</p>}

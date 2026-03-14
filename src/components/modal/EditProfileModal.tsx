@@ -263,9 +263,9 @@ export const EditProfileModal = () => {
                       Matric No.
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       id=""
-                      placeholder="eg. 20191129201"
+                      placeholder="eg. EBSU/2019/24567"
                       className="bg-transparent border border-gray-300 text-gray-900 text-xss ss:text-ss sm:text-sm rounded-lg focus:ring-green1 focus:border-green1 block w-full p-1.5 sm:p-2.5"
                       {...register("regNo")}
                     />
