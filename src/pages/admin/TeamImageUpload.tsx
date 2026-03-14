@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TeamUploadManager } from '../../components/ImageUpload/TeamUploadManager';
 import placeholder from "../../assets/img/team/placeholder.png";
+import { db } from '../../config/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 // =============================================
 // Executive Team Data
@@ -229,6 +231,24 @@ export default function AdminTeamUpload() {
     classRep: classRepsData,
     press: pressTeamData,
   });
+
+  // Load persisted images from Firestore so the admin panel reflects live state
+  useEffect(() => {
+    getDocs(collection(db, 'teamImages')).then((snap) => {
+      const updates: Record<string, Record<string, string>> = { executive: {}, classRep: {}, press: {} };
+      snap.forEach((d) => {
+        const data = d.data();
+        if (data.teamType && data.memberId && data.imageUrl) {
+          updates[data.teamType][data.memberId] = data.imageUrl;
+        }
+      });
+      setTeams((prev) => ({
+        executive: prev.executive.map((m) => updates.executive[m.id] ? { ...m, image: updates.executive[m.id] } : m),
+        classRep: prev.classRep.map((m) => updates.classRep[m.id] ? { ...m, image: updates.classRep[m.id] } : m),
+        press: prev.press.map((m) => updates.press[m.id] ? { ...m, image: updates.press[m.id] } : m),
+      }));
+    }).catch(() => { /* silently ignore */ });
+  }, []);
 
   const handleImageUpdate = (
     teamType: 'executive' | 'classRep' | 'press',

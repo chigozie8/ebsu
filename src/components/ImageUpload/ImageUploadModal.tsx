@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../config/supabase';
+import { db } from '../../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -23,22 +25,14 @@ export function ImageUploadModal({
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please select an image file');
       return;
     }
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('File size must be less than 5MB');
       return;
@@ -46,9 +40,7 @@ export function ImageUploadModal({
 
     setError('');
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
+    reader.onloadend = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
@@ -64,96 +56,133 @@ export function ImageUploadModal({
     try {
       const file = fileInputRef.current.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${teamType}/${memberId}_${Date.now()}.${fileExt}`;
+      const fileName = `team-images/${teamType}/${memberId}_${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage using the shared client
       const { error: uploadError } = await supabase.storage
-        .from('team-images')
+        .from('profile-pictures')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
-        .from('team-images')
+        .from('profile-pictures')
         .getPublicUrl(fileName);
 
-      onUploadSuccess(urlData.publicUrl);
+      const publicUrl = urlData.publicUrl;
+
+      // Persist to Firestore so image survives page reloads
+      await setDoc(
+        doc(db, 'teamImages', `${teamType}_${memberId}`),
+        { teamType, memberId, imageUrl: publicUrl, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+
+      onUploadSuccess(publicUrl);
       setPreview(null);
       setIsLoading(false);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
       setIsLoading(false);
     }
+  };
+
+  const handleClose = () => {
+    setPreview(null);
+    setError('');
+    onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full p-8 shadow-2xl">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Image</h2>
-          <p className="text-sm text-gray-600">
-            Upload image for <span className="font-semibold text-gray-900">{memberName}</span>
-          </p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Upload Photo</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              For <span className="font-semibold text-gray-700">{memberName}</span>
+            </p>
+          </div>
+          <button
+            onClick={handleClose}
+            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
 
         {/* Preview */}
-        {preview && (
-          <div className="mb-6">
-            <p className="text-xs text-gray-500 mb-2 font-medium">Preview:</p>
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-48 object-cover rounded-lg border-2 border-green2"
-            />
+        {preview ? (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Preview</p>
+            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green2 mx-auto">
+              <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+            </div>
+          </div>
+        ) : (
+          <div className="mb-5 w-32 h-32 rounded-full bg-gray-100 border-4 border-dashed border-gray-200 mx-auto flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            </svg>
           </div>
         )}
 
-        {/* File Input */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Image</label>
+        {/* File input */}
+        <div className="mb-4">
+          <label
+            htmlFor="team-image-input"
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-4 border-2 border-dashed border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:border-green2 hover:text-green2 transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            {preview ? 'Choose different photo' : 'Choose photo'}
+          </label>
           <input
+            id="team-image-input"
             ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-lg file:border-0
-              file:text-sm file:font-semibold
-              file:bg-green2 file:text-white
-              hover:file:bg-green1
-              file:cursor-pointer
-              cursor-pointer"
+            className="sr-only"
           />
-          <p className="text-xs text-gray-500 mt-2">Max 5MB • JPG, PNG, WebP</p>
+          <p className="text-xs text-gray-400 text-center mt-1.5">JPG, PNG, WebP — max 5MB</p>
         </div>
 
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-xl">
+            <p className="text-xs text-red-700 font-medium">{error}</p>
           </div>
         )}
 
-        {/* Buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2.5">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isLoading}
-            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleUpload}
             disabled={isLoading || !preview}
-            className="flex-1 px-4 py-3 bg-green2 text-white font-semibold rounded-lg hover:bg-green1 disabled:opacity-50 transition-colors"
+            className="flex-1 py-2.5 bg-green2 text-white text-sm font-semibold rounded-xl hover:bg-green1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            {isLoading ? 'Uploading...' : 'Upload'}
+            {isLoading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Uploading...
+              </>
+            ) : 'Save Photo'}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fadeInVariants3 } from "../../animation/variants";
 import Footer from "../../components/footer/Footer";
 import { classReps } from "../../data/students/classReps";
@@ -7,10 +7,24 @@ import { GraduateCapIcon } from "../../components/icons/general/GraduateCapIcon"
 import { RegisterIcon } from "../../components/icons/general/RegisterIcon";
 import { SuitcaseIcon } from "../../components/icons/general/SuitcaseIcon";
 import { ProfileIcon } from "../../components/icons/general/ProfileIcon";
+import { db } from "../../config/firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function ClassReps() {
+  const [imageMap, setImageMap] = useState<Record<string, string>>({});
+
   useEffect(() => {
     window.scroll(0, 0);
+    getDocs(collection(db, 'teamImages')).then((snap) => {
+      const map: Record<string, string> = {};
+      snap.forEach((d) => {
+        const data = d.data();
+        if (data.teamType === 'classRep') {
+          map[data.memberId] = data.imageUrl;
+        }
+      });
+      setImageMap(map);
+    }).catch(() => { /* fall back to static images */ });
   }, []);
   return (
     <div className="min-h-screen bg-white">
@@ -26,7 +40,9 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8 ">
-            {classReps.map(({ img, name, regNo, title, work }, i) => (
+            {classReps.map(({ img, name, regNo, title, work }, i) => {
+              const resolvedImg = imageMap[`classrep-${i}`] || img;
+              return (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"
@@ -39,7 +55,7 @@ export default function ClassReps() {
                 className="w-full h-[400px] sss:h-[420px] shadow-4 transition-shadow duration-200 ease-in-out rounded-lg overflow-hidden bg-white"
               >
                 <img
-                  src={img}
+                  src={resolvedImg}
                   alt={name}
                   className="w-full h-2/3 object-cover"
                 />
@@ -58,7 +74,8 @@ export default function ClassReps() {
                   </p>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
