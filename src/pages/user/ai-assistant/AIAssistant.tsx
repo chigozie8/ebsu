@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { NavLink } from "react-router-dom";
+import { playSound } from "../../../hooks/useSound";
 
 interface Message {
   id: string;
@@ -102,6 +103,7 @@ export default function AIAssistant() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
+        playSound("ai-done");
       } else if (activeTab === "image") {
         // Image generation - txt2img returns an HTMLImageElement
         const imageResult = await window.puter.ai.txt2img(inputValue, {
@@ -130,6 +132,7 @@ export default function AIAssistant() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
+        playSound("ai-done");
       } else if (activeTab === "vision" && uploadedImage) {
         // Image analysis/vision - pass image as second argument
         // Use a vision-capable model (gpt-4o or claude-3)
@@ -163,6 +166,7 @@ export default function AIAssistant() {
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, assistantMessage]);
+        playSound("ai-done");
         setUploadedImage(null);
       }
     } catch (error: any) {
@@ -175,6 +179,7 @@ export default function AIAssistant() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+      playSound("ai-done");
     } finally {
       setIsLoading(false);
     }
