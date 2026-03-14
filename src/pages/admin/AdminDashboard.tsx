@@ -23,6 +23,7 @@ import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
 import CommunityMonitor from "./tabs/CommunityMonitor";
 import { AdminQuizManager } from "./tabs/AdminQuizManager";
+import AdminTeamUpload from "./TeamImageUpload";
 
 interface Material {
   id: string;
@@ -4552,15 +4553,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Team Image Management</h1>
-              <p className="text-gray-600 mb-6">Manage profile images for team members across all teams</p>
-              <iframe 
-                src="/admin/team-image-upload" 
-                title="Team Image Upload"
-                className="w-full h-screen border-0 rounded-lg"
-              />
-            </div>
+            <AdminTeamUpload />
           </motion.div>
         )}
 
@@ -4732,29 +4725,31 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                   )}
                 </div>
                 <div className="px-5 py-4 border-t border-gray-100">
-                  {selectedMsg.reply ? (
-                    <p className="text-xs text-gray-500 text-center">Already replied. The student has been notified.</p>
-                  ) : (
-                    <div className="flex gap-3 items-end">
-                      <textarea
-                        rows={3}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        placeholder="Type your reply..."
-                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
-                      />
-                      <button
-                        onClick={sendReply}
-                        disabled={sendingReply || !replyText.trim()}
-                        className="px-4 py-2.5 rounded-xl bg-[#00875a] text-white text-sm font-semibold hover:bg-[#00875a]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
-                      >
-                        {sendingReply ? <Spinner className="w-4 h-4 text-white" /> : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                        )}
-                        {sendingReply ? "Sending..." : "Reply"}
-                      </button>
-                    </div>
+                  {selectedMsg.reply && (
+                    <p className="text-xs text-green-600 font-medium mb-2 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      Previous reply sent — you can send another below.
+                    </p>
                   )}
+                  <div className="flex gap-3 items-end">
+                    <textarea
+                      rows={3}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder={selectedMsg.reply ? "Type a follow-up reply..." : "Type your reply..."}
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
+                    />
+                    <button
+                      onClick={sendReply}
+                      disabled={sendingReply || !replyText.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-[#00875a] text-white text-sm font-semibold hover:bg-[#00875a]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                    >
+                      {sendingReply ? <Spinner className="w-4 h-4 text-white" /> : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                      )}
+                      {sendingReply ? "Sending..." : "Reply"}
+                    </button>
+                  </div>
                 </div>
               </>
             )}
