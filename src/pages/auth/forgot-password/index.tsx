@@ -21,7 +21,7 @@ export default function ForgotPassword() {
         handleCodeInApp: false,
       });
       setSent(true);
-      notifyUser("success", "Password reset email sent! Check your inbox.");
+          notifyUser("success", "Reset link sent! Check your inbox — also check your spam/junk folder.");
     } catch (error: any) {
       console.log("[v0] Password reset error:", error.code, error.message);
       if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
@@ -31,7 +31,7 @@ export default function ForgotPassword() {
         try {
           await sendPasswordResetEmail(auth, email.trim());
           setSent(true);
-          notifyUser("success", "Password reset email sent! Check your inbox.");
+      notifyUser("success", "Reset link sent! Check your inbox — also check your spam/junk folder.");
         } catch (fallbackErr: any) {
           console.log("[v0] Fallback error:", fallbackErr.code, fallbackErr.message);
           notifyUser("error", `Error: ${fallbackErr.message}`);
@@ -69,7 +69,7 @@ export default function ForgotPassword() {
                 </div>
                 <p className="text-sm font-semibold text-gray-900 text-center">Check your email</p>
                 <p className="text-xs text-gray-500 text-center text-balance">
-                  A password reset link has been sent to <span className="font-semibold text-gray-700">{email}</span>. Follow the instructions in the email to reset your password.
+                  A password reset link has been sent to <span className="font-semibold text-gray-700">{email}</span>. Follow the instructions in the email to reset your password. If you do not see it, <span className="font-semibold text-gray-700">check your spam or junk folder.</span>
                 </p>
                 <button
                   onClick={() => { setSent(false); setEmail(""); }}
