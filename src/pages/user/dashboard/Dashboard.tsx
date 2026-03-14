@@ -200,6 +200,7 @@ export default function Dashboard() {
   return (
     <>
       {studentDetails ? (
+        <>
         <div className="bg-white min-h-screen overflow-x-auto">
           <div className="max-w-[1720px] w-full mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 lg:pr-12">
             <div className="pt-[70px] xxss:pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-4">
@@ -746,7 +747,6 @@ export default function Dashboard() {
                 transition={{ type: "spring", stiffness: 300, damping: 28 }}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
               >
-                {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-[#bbf7d0] flex items-center justify-center">
@@ -768,8 +768,6 @@ export default function Dashboard() {
                     </svg>
                   </button>
                 </div>
-
-                {/* Body */}
                 <div className="px-5 py-5">
                   {messageSent ? (
                     <div className="flex flex-col items-center justify-center py-8 gap-3">
@@ -789,7 +787,6 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <form onSubmit={handleSendMessage} className="flex flex-col gap-4">
-                      {/* Sender info pill */}
                       <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
                         <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -799,7 +796,6 @@ export default function Dashboard() {
                           <p className="text-xss text-gray-500">{studentDetails?.email} &bull; {studentDetails?.level}</p>
                         </div>
                       </div>
-
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1.5">Subject</label>
                         <input
@@ -811,7 +807,6 @@ export default function Dashboard() {
                           className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
                         />
                       </div>
-
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1.5">Message</label>
                         <textarea
@@ -824,7 +819,6 @@ export default function Dashboard() {
                         />
                         <p className="text-xss text-gray-400 text-right mt-0.5">{contactForm.message.length} chars</p>
                       </div>
-
                       <div className="flex gap-2 pt-1">
                         <button
                           type="button"
@@ -863,7 +857,7 @@ export default function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
-
+        </>
       ) : gettingStudentDetails ? (
         <div className="w-full h-screen flex items-center justify-center flex-col gap-3">
           <Spinner className="w-8 sm:w-10" />
