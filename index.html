@@ -45,7 +45,7 @@
     <meta name="googlebot" content="index, follow" />
 
     <!-- Canonical URL (prevents duplicate content penalties) -->
-    <link rel="canonical" href="https://ebsumsa.vercel.app/" />
+    <link rel="canonical" href="https://www.ebsumsa.com.ng/" />
 
     <!-- Language & Region -->
     <meta name="language" content="English" />
@@ -61,11 +61,11 @@
       property="og:description"
       content="Access course materials, textbooks, past questions, an active student community and more — built exclusively for Medicine and Surgery students at Ebonyi State University."
     />
-    <meta property="og:image" content="https://ebsumsa.vercel.app/og-image.png" />
+    <meta property="og:image" content="https://www.ebsumsa.com.ng/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="EBSUMSA E-Learning Platform for EBSU Medical Students" />
-    <meta property="og:url" content="https://ebsumsa.vercel.app/" />
+    <meta property="og:url" content="https://www.ebsumsa.com.ng/" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_NG" />
 
@@ -80,7 +80,7 @@
       name="twitter:description"
       content="Centralized study resources — past questions, textbooks, active student community & more — for Medicine and Surgery students at EBSU."
     />
-    <meta name="twitter:image" content="https://ebsumsa.vercel.app/og-image.png" />
+    <meta name="twitter:image" content="https://www.ebsumsa.com.ng/og-image.png" />
     <meta name="twitter:image:alt" content="EBSUMSA E-Learning Platform" />
 
     <!-- ============================================================
@@ -94,9 +94,10 @@
       "@type": "Organization",
       "name": "Ebonyi State University Medical Student Association",
       "alternateName": "EBSUMSA",
-      "url": "https://ebsumsa.vercel.app/",
-      "logo": "https://ebsumsa.vercel.app/logo.png",
+      "url": "https://www.ebsumsa.com.ng/",
+      "logo": "https://www.ebsumsa.com.ng/logo.png",
       "description": "The official student association for Medicine and Surgery students at Ebonyi State University (EBSU), Nigeria.",
+      "email": "ebsumsaleadership@gmail.com",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Abakaliki",
@@ -108,7 +109,10 @@
         "name": "Ebonyi State University",
         "alternateName": "EBSU",
         "url": "https://ebsu.edu.ng"
-      }
+      },
+      "sameAs": [
+        "https://x.com/Ebsumsaofficial"
+      ]
     }
     </script>
 
@@ -117,32 +121,84 @@
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "EBSUMSA E-Learning Platform",
-      "url": "https://ebsumsa.vercel.app/",
+      "name": "EBSUMSA",
+      "url": "https://www.ebsumsa.com.ng/",
       "description": "Official e-learning platform of the Ebonyi State University Medical Student Association — course materials, past questions, active student community and more.",
       "inLanguage": "en",
       "publisher": {
         "@type": "Organization",
-        "name": "EBSUMSA"
+        "name": "EBSUMSA",
+        "logo": "https://www.ebsumsa.com.ng/logo.png"
       },
       "potentialAction": {
         "@type": "SearchAction",
         "target": {
           "@type": "EntryPoint",
-          "urlTemplate": "https://ebsumsa.vercel.app/?q={search_term_string}"
+          "urlTemplate": "https://www.ebsumsa.com.ng/?q={search_term_string}"
         },
         "query-input": "required name=search_term_string"
       }
     }
     </script>
 
-    <!-- EducationalOrganization / LearningResource Schema -->
+    <!-- ItemList Schema — tells Google about key pages (helps trigger sitelinks) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "EBSUMSA Key Pages",
+      "itemListElement": [
+        {
+          "@type": "SiteLinksSearchBox",
+          "url": "https://www.ebsumsa.com.ng/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Login",
+          "url": "https://www.ebsumsa.com.ng/login"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Register",
+          "url": "https://www.ebsumsa.com.ng/signup"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Study Resources",
+          "url": "https://www.ebsumsa.com.ng/resources"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Student Community",
+          "url": "https://www.ebsumsa.com.ng/community"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Exam Timetable",
+          "url": "https://www.ebsumsa.com.ng/exam-timetable"
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "EBSUMSA Team",
+          "url": "https://www.ebsumsa.com.ng/students/ebsumsa-team"
+        }
+      ]
+    }
+    </script>
+
+    <!-- EducationalOrganization Schema -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "EducationalOrganization",
       "name": "EBSUMSA E-Learning Platform",
-      "url": "https://ebsumsa.vercel.app/",
+      "url": "https://www.ebsumsa.com.ng/",
       "description": "A centralized digital study hub providing course materials, past questions, textbooks, and an active student community for Medicine and Surgery students at EBSU.",
       "audience": {
         "@type": "EducationalAudience",
@@ -183,7 +239,7 @@
           "@type": "ListItem",
           "position": 1,
           "name": "Home",
-          "item": "https://ebsumsa.vercel.app/"
+          "item": "https://www.ebsumsa.com.ng/"
         }
       ]
     }
