@@ -39,13 +39,6 @@ const EVENT_TYPES: { value: EventType; label: string; color: string }[] = [
   { value: "deadline", label: "Deadline", color: "bg-orange-100 text-orange-700 border-orange-200"},
 ];
 
-const TYPE_DOT: Record<EventType, string> = {
-  exam:     "bg-red-500",
-  lecture:  "bg-blue-500",
-  meeting:  "bg-amber-500",
-  social:   "bg-green-500",
-  deadline: "bg-orange-500",
-};
 
 const EMPTY_FORM = {
   title: "",
