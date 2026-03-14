@@ -912,27 +912,26 @@ export default function QuizCardPage() {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Top nav bar */}
-      <div className="fixed top-0 inset-x-0 z-30 bg-white border-b border-gray-200 h-14 flex items-center px-4 sm:px-8 gap-3">
-        <NavLink
-          to="/dashboard"
-          className="flex items-center gap-1.5 text-gray-500 hover:text-[#00875a] text-sm transition-colors"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-          Dashboard
-        </NavLink>
-        <span className="text-gray-300">/</span>
-        <span className="font-semibold text-gray-800 text-sm">Quiz Card</span>
-        {mode === "quiz" && timeLimit > 0 && (
-          <div className="ml-auto">
-            <Timer seconds={timeLeft} />
-          </div>
-        )}
-      </div>
-
-      <div className="pt-14 min-h-screen flex flex-col">
+      <div className="pt-[70px] xxss:pt-[80px] ss:pt-[90px] sm:pt-[105px] min-h-screen flex flex-col">
+        {/* Breadcrumb / timer bar */}
+        <div className="flex items-center gap-2 px-4 sm:px-8 py-3 bg-white border-b border-gray-200">
+          <NavLink
+            to="/dashboard"
+            className="flex items-center gap-1.5 text-gray-500 hover:text-[#00875a] text-sm transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Dashboard
+          </NavLink>
+          <span className="text-gray-300">/</span>
+          <span className="font-semibold text-gray-800 text-sm">Quiz Card</span>
+          {mode === "quiz" && timeLimit > 0 && (
+            <div className="ml-auto">
+              <Timer seconds={timeLeft} />
+            </div>
+          )}
+        </div>
         <AnimatePresence mode="wait">
 
           {/* ── SETUP SCREEN ── */}
