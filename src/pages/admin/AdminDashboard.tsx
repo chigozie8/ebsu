@@ -24,6 +24,7 @@ import { getCoursesForLevelAndSemester } from "../../data/academics/learning-res
 import CommunityMonitor from "./tabs/CommunityMonitor";
 import { AdminQuizManager } from "./tabs/AdminQuizManager";
 import AdminTeamUpload from "./TeamImageUpload";
+import AdminEventsManager from "./tabs/AdminEventsManager";
 
 interface Material {
   id: string;
@@ -153,16 +154,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages" | "events" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "messages"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "messages", "events"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages" | "events";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events">(
     getInitialTab()
   );
   
@@ -1991,6 +1992,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                 {adminMessages.filter((m) => m.status === "unread").length}
               </span>
             )}
+          </button>
+          {/* Events & Calendar Tab */}
+          <button
+            onClick={() => setActiveTab("events")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "events"
+                ? "bg-[#00875a] text-white shadow-md"
+                : "bg-green-50 text-[#00875a] hover:bg-green-100 border-2 border-[#00875a]"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth={2} />
+              <line x1="16" y1="2" x2="16" y2="6" strokeWidth={2} />
+              <line x1="8" y1="2" x2="8" y2="6" strokeWidth={2} />
+              <line x1="3" y1="10" x2="21" y2="10" strokeWidth={2} />
+            </svg>
+            Events
           </button>
         </div>
 
@@ -4754,6 +4772,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </>
             )}
           </div>
+        </motion.div>
+      )}
+
+      {/* Events & Calendar Tab */}
+      {activeTab === "events" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Events & Calendar</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Create, edit, and manage all events visible to students on their dashboard calendar.
+            </p>
+          </div>
+          <AdminEventsManager />
         </motion.div>
       )}
 
