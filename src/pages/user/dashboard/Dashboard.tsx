@@ -84,6 +84,16 @@ export default function Dashboard() {
   const [contactForm, setContactForm] = useState({ subject: "", message: "" });
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    return localStorage.getItem("dashboard-dark") === "true";
+  });
+
+  const toggleDark = () => {
+    setIsDark((prev) => {
+      localStorage.setItem("dashboard-dark", String(!prev));
+      return !prev;
+    });
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,9 +212,37 @@ export default function Dashboard() {
     <>
       {studentDetails ? (
         <>
-        <div className="bg-white min-h-screen overflow-x-auto">
+        <div className={`min-h-screen overflow-x-auto transition-colors duration-300 ${isDark ? "dashboard-dark bg-[#0f172a]" : "bg-white"}`}>
           <div className="max-w-[1720px] w-full mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 lg:pr-12">
             <div className="pt-[70px] xxss:pt-[80px] ss:pt-[90px] sm:pt-[105px] pb-4">
+              {/* Dark / Light mode toggle */}
+              <div className="flex justify-end mb-3">
+                <button
+                  onClick={toggleDark}
+                  aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300 ${
+                    isDark
+                      ? "bg-[#1e293b] border-[#334155] text-slate-200 hover:bg-[#334155]"
+                      : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {isDark ? (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2a1 1 0 011 1v1a1 1 0 01-2 0V3a1 1 0 011-1zm7.07 2.93a1 1 0 010 1.41l-.71.71a1 1 0 01-1.41-1.41l.71-.71a1 1 0 011.41 0zM21 11h-1a1 1 0 010-2h1a1 1 0 010 2zm-2.93 7.07a1 1 0 01-1.41 0l-.71-.71a1 1 0 011.41-1.41l.71.71a1 1 0 010 1.41zM12 18a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1zm-7.07-1.93a1 1 0 010-1.41l.71-.71a1 1 0 011.41 1.41l-.71.71a1 1 0 01-1.41 0zM4 11H3a1 1 0 010-2h1a1 1 0 010 2zm1.64-6.36a1 1 0 011.41 0l.71.71A1 1 0 016.35 6.76l-.71-.71a1 1 0 010-1.41zM12 7a5 5 0 110 10A5 5 0 0112 7z" />
+                      </svg>
+                      Light Mode
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+                      </svg>
+                      Dark Mode
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="grid lg:grid-cols-7 gap-3 sm:gap-4">
                 <div className="w-full lg:col-span-2 px-0 sm:px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-rows-3 lg:grid-cols-none gap-3 sm:gap-4 mb-4 lg:mb-0">
                   <motion.div
@@ -779,7 +817,7 @@ export default function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm ${isDark ? "dashboard-dark-modal" : ""}`}
               onClick={(e) => { if (e.target === e.currentTarget) setContactModal(false); }}
             >
               <motion.div

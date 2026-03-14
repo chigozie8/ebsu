@@ -301,3 +301,84 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* =============================================
+   Dashboard Dark Mode — scoped to .dashboard-dark
+   Does NOT affect any other page
+   ============================================= */
+.dashboard-dark {
+  background-color: #0f172a !important;
+  color: #e2e8f0;
+}
+.dashboard-dark .bg-white {
+  background-color: #1e293b !important;
+  color: #e2e8f0;
+}
+.dashboard-dark .shadow,
+.dashboard-dark .shadow-lg,
+.dashboard-dark .shadow-md {
+  box-shadow: 0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px 0 rgba(0,0,0,0.3) !important;
+}
+.dashboard-dark .text-gray-900 { color: #f1f5f9 !important; }
+.dashboard-dark .text-gray-800 { color: #e2e8f0 !important; }
+.dashboard-dark .text-gray-700 { color: #cbd5e1 !important; }
+.dashboard-dark .text-gray-600 { color: #94a3b8 !important; }
+.dashboard-dark .text-gray-500 { color: #64748b !important; }
+.dashboard-dark .text-gray-400 { color: #475569 !important; }
+.dashboard-dark .border-gray-300 { border-color: #334155 !important; }
+.dashboard-dark .border-gray-200 { border-color: #1e293b !important; }
+.dashboard-dark .border-gray-100 { border-color: #1e293b !important; }
+.dashboard-dark .divide-gray-100 > * + * { border-color: #1e293b !important; }
+.dashboard-dark .bg-gray-50 { background-color: #0f172a !important; }
+.dashboard-dark .bg-gray-100 { background-color: #1e293b !important; }
+.dashboard-dark .hover\:bg-gray-50:hover { background-color: #1e293b !important; }
+.dashboard-dark .bg-blue-50\/50 { background-color: rgba(30,41,59,0.5) !important; }
+.dashboard-dark .details { background-color: #1e293b !important; }
+
+/* Dark mode widget overrides */
+.dashboard-dark .rounded-lg.bg-white,
+.dashboard-dark .rounded-xl.bg-white {
+  background-color: #1e293b !important;
+}
+.dashboard-dark .rounded-2xl.bg-white {
+  background-color: #1e293b !important;
+}
+
+/* Card grid hover overrides in dark mode */
+.dashboard-dark .hover\:bg-\[\#bef264\]:hover { background-color: #4d7c0f !important; }
+.dashboard-dark .hover\:bg-\[\#93c5fd\]:hover { background-color: #1d4ed8 !important; }
+.dashboard-dark .hover\:bg-\[\#c7d2fe\]:hover { background-color: #4338ca !important; }
+.dashboard-dark .hover\:bg-\[\#6ee7b7\]:hover { background-color: #047857 !important; }
+.dashboard-dark .hover\:bg-\[\#fde68a\]:hover { background-color: #b45309 !important; }
+.dashboard-dark .hover\:bg-\[\#a5f3fc\]:hover { background-color: #0e7490 !important; }
+.dashboard-dark .hover\:bg-\[\#fcd34d\]:hover { background-color: #b45309 !important; }
+.dashboard-dark .hover\:bg-\[\#c4b5fd\]:hover { background-color: #7c3aed !important; }
+.dashboard-dark .hover\:bg-\[\#bbf7d0\]:hover { background-color: #15803d !important; }
+.dashboard-dark .hover\:bg-\[\#d1fae5\]:hover { background-color: #065f46 !important; }
+.dashboard-dark .hover\:bg-\[\#fca5a5\]:hover { background-color: #dc2626 !important; }
+
+/* Modal in dark mode */
+.dashboard-dark-modal .bg-white {
+  background-color: #1e293b !important;
+  color: #e2e8f0;
+}
+.dashboard-dark-modal .text-gray-900 { color: #f1f5f9 !important; }
+.dashboard-dark-modal .text-gray-700 { color: #cbd5e1 !important; }
+.dashboard-dark-modal .text-gray-600 { color: #94a3b8 !important; }
+.dashboard-dark-modal .text-gray-500 { color: #64748b !important; }
+.dashboard-dark-modal .text-gray-400 { color: #475569 !important; }
+.dashboard-dark-modal .border-gray-100 { border-color: #334155 !important; }
+.dashboard-dark-modal .border-gray-200 { border-color: #334155 !important; }
+.dashboard-dark-modal .bg-gray-50 { background-color: #0f172a !important; }
+.dashboard-dark-modal .hover\:bg-gray-50:hover { background-color: #0f172a !important; }
+.dashboard-dark-modal .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+.dashboard-dark-modal input,
+.dashboard-dark-modal textarea {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+.dashboard-dark-modal input::placeholder,
+.dashboard-dark-modal textarea::placeholder {
+  color: #475569 !important;
+}
