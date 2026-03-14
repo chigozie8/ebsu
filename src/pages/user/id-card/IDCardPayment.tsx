@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 
 const PAYMENT_DETAILS = {
-  accountNumber: "0123456789",
-  bankName: "First Bank of Nigeria",
-  accountName: "EBSU Medical Student Association",
+  accountNumber: "8022854664",
+  bankName: "Palmpay",
+  accountName: "Eze Happiness Ajah",
   amount: "2,000",
   description: "EBSUMSA ID Card Registration Fee",
 };
@@ -148,12 +148,12 @@ export default function IDCardPayment() {
             <div>
               <p className="text-xs font-semibold text-green-800">Need help with payment?</p>
               <p className="text-xs text-green-700 mt-0.5">
-                Contact the ID card officer:{" "}
+                  Contact the ID card officer:{" "}
                 <a
-                  href="tel:07082039150"
+                  href="tel:07025336321"
                   className="font-bold underline underline-offset-2"
                 >
-                  07082039150
+                  07025336321
                 </a>
               </p>
             </div>
