@@ -2,6 +2,61 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// ── Inline markdown renderer ──────────────────────────────────────────────────
+function renderMarkdown(text: string): JSX.Element {
+  const lines = text.split("\n");
+  const elements: JSX.Element[] = [];
+
+  const inlineFormat = (line: string, key: string): JSX.Element => {
+    const parts = line.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+    return (
+      <span key={key}>
+        {parts.map((part, pi) => {
+          if (part.startsWith("**") && part.endsWith("**"))
+            return <strong key={pi} className="font-bold">{part.slice(2, -2)}</strong>;
+          if (part.startsWith("*") && part.endsWith("*"))
+            return <em key={pi} className="italic">{part.slice(1, -1)}</em>;
+          if (part.startsWith("`") && part.endsWith("`"))
+            return <code key={pi} className="bg-black/10 px-1 py-0.5 rounded text-xs font-mono">{part.slice(1, -1)}</code>;
+          return <span key={pi}>{part}</span>;
+        })}
+      </span>
+    );
+  };
+
+  lines.forEach((line, idx) => {
+    const key = `md-${idx}`;
+    if (/^### (.+)/.test(line)) {
+      elements.push(<h3 key={key} className="text-xs font-bold mt-3 mb-0.5">{line.replace(/^### /, "")}</h3>);
+    } else if (/^## (.+)/.test(line)) {
+      elements.push(<h2 key={key} className="text-sm font-bold mt-3 mb-1 border-b border-current/20 pb-0.5">{line.replace(/^## /, "")}</h2>);
+    } else if (/^# (.+)/.test(line)) {
+      elements.push(<h1 key={key} className="text-sm font-extrabold mt-3 mb-1">{line.replace(/^# /, "")}</h1>);
+    } else if (/^[-*•] (.+)/.test(line)) {
+      elements.push(
+        <li key={key} className="flex gap-1.5 text-sm leading-relaxed">
+          <span className="font-bold flex-shrink-0 mt-0.5">•</span>
+          <span>{inlineFormat(line.replace(/^[-*•] /, ""), key + "i")}</span>
+        </li>
+      );
+    } else if (/^\d+\. (.+)/.test(line)) {
+      const num = line.match(/^(\d+)\./)?.[1];
+      elements.push(
+        <li key={key} className="flex gap-1.5 text-sm leading-relaxed">
+          <span className="font-bold flex-shrink-0 min-w-[16px]">{num}.</span>
+          <span>{inlineFormat(line.replace(/^\d+\. /, ""), key + "i")}</span>
+        </li>
+      );
+    } else if (line.trim() === "") {
+      elements.push(<div key={key} className="h-1.5" />);
+    } else {
+      elements.push(<p key={key} className="text-sm leading-relaxed">{inlineFormat(line, key + "i")}</p>);
+    }
+  });
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
 // Declare puter as a global variable
 declare global {
   interface Window {
@@ -249,21 +304,23 @@ export const AIChatbot = () => {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] p-3 rounded-2xl text-sm whitespace-pre-wrap ${
+                    className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                       message.role === "user"
-                        ? "bg-green2 text-white rounded-br-md"
+                        ? "bg-green2 text-white rounded-br-md whitespace-pre-wrap"
                         : "bg-gray-100 text-gray-800 rounded-bl-md"
                     }`}
                   >
-                    {message.content}
+                    {message.role === "user"
+                      ? message.content
+                      : renderMarkdown(message.content)}
                   </div>
                 </div>
               ))}
               {/* Streaming response */}
               {streamingContent && (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] p-3 rounded-2xl rounded-bl-md bg-gray-100 text-gray-800 text-sm whitespace-pre-wrap">
-                    {streamingContent}
+                  <div className="max-w-[80%] p-3 rounded-2xl rounded-bl-md bg-gray-100 text-gray-800 text-sm">
+                    {renderMarkdown(streamingContent)}
                     <span className="inline-block w-1 h-4 bg-gray-400 ml-1 animate-pulse" />
                   </div>
                 </div>
