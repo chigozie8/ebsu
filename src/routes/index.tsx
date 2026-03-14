@@ -9,6 +9,7 @@ import ProtectedRoute from "./ProtectedRoute";
 const AppRoutes = () => {
   const Login = lazy(() => import("../pages/auth/login"));
   const SignUp = lazy(() => import("../pages/auth/signup"));
+  const ForgotPassword = lazy(() => import("../pages/auth/forgot-password"));
   const Home = lazy(() => import("../pages/home/Home"));
   const CourseOutline = lazy(
     () => import("../pages/academics/course-outlines/CourseOutline")
@@ -102,6 +103,7 @@ const AppRoutes = () => {
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/course-outlines" element={<CourseOutline />} />
           <Route path="/course-outlines/:level" element={<CoursesOutline />} />
           <Route path="/course-outlines/:level/:id" element={<CourseInfo />} />

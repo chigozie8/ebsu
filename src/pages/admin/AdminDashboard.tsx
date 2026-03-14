@@ -145,8 +145,8 @@ interface ProjectEntry {
   updatedAt?: any;
 }
 
-// Admin email - add your admin email here
-const ADMIN_EMAIL = "patronkwo@gmail.com";
+// Admin emails
+const ADMIN_EMAILS = ["patronkwo@gmail.com", "kenronkwo@gmail.com"];
 
 export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
 
   // Check if user is admin
   const isAdmin =
-    studentDetails?.email === ADMIN_EMAIL ||
+      ADMIN_EMAILS.includes(studentDetails?.email || '') ||
     studentDetails?.email?.includes("admin");
 
   useEffect(() => {
