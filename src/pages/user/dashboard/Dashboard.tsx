@@ -90,7 +90,7 @@ export default function Dashboard() {
     setSendingMessage(true);
     try {
       await addDoc(collection(db, "adminMessages"), {
-        userId: studentDetails?.userId || "",
+        userId: studentDetails?.userID || "",
         name: `${studentDetails?.firstName || ""} ${studentDetails?.lastName || ""}`.trim(),
         email: studentDetails?.email || "",
         level: studentDetails?.level || "",
