@@ -16,14 +16,28 @@ export default function ForgotPassword() {
     if (!email.trim()) return;
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await sendPasswordResetEmail(auth, email.trim(), {
+        url: `${window.location.origin}/login`,
+        handleCodeInApp: false,
+      });
       setSent(true);
       notifyUser("success", "Password reset email sent! Check your inbox.");
     } catch (error: any) {
+      console.log("[v0] Password reset error:", error.code, error.message);
       if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
         notifyUser("error", "No account found with that email address.");
+      } else if (error.code === "auth/unauthorized-continue-uri" || error.code === "auth/invalid-continue-uri") {
+        // Domain not authorized in Firebase console — still send without continueUrl
+        try {
+          await sendPasswordResetEmail(auth, email.trim());
+          setSent(true);
+          notifyUser("success", "Password reset email sent! Check your inbox.");
+        } catch (fallbackErr: any) {
+          console.log("[v0] Fallback error:", fallbackErr.code, fallbackErr.message);
+          notifyUser("error", `Error: ${fallbackErr.message}`);
+        }
       } else {
-        notifyUser("error", "Something went wrong. Please try again.");
+        notifyUser("error", `Error (${error.code}): ${error.message}`);
       }
     } finally {
       setLoading(false);
