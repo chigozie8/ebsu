@@ -295,7 +295,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ───────���────────────────────────────────────────────────────────
 
 export default function AiNotesPage() {
   const [rawText, setRawText] = useState("");
@@ -308,44 +308,67 @@ export default function AiNotesPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── PDF text extraction via Puter.js or FileReader fallback ──
+  // ── PDF text extraction using pdf.js CDN + FileReader for .txt ──
   const extractTextFromPDF = useCallback(async (file: File) => {
     setIsExtracting(true);
     setError(null);
+    setRawText("");
+    setResults({});
     setPdfName(file.name);
+
     try {
-      // Use puter.js to read the PDF as text by uploading and asking AI to extract
-      // For PDF text extraction we use FileReader to get base64, then ask puter AI to extract text
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = (reader.result as string).split(",")[1];
-        try {
-          // Ask puter.js vision to extract text from PDF (treated as image/document)
-          // We use a prompt to extract the raw text content
-          const response = await (window as any).puter.ai.chat(
-            "Extract ALL text content from this document verbatim. Return only the plain text, no formatting, no commentary.",
-            `data:application/pdf;base64,${base64}`,
-            { model: "gpt-4o" }
-          );
-          let extracted = "";
-          if (typeof response === "string") extracted = response;
-          else if (response?.message?.content) extracted = response.message.content;
-          else extracted = JSON.stringify(response);
-          setRawText(extracted);
-        } catch {
-          // Fallback: read as plain text (works for .txt files)
-          const textReader = new FileReader();
-          textReader.onloadend = () => {
-            setRawText((textReader.result as string).slice(0, 8000));
-          };
-          textReader.readAsText(file);
-        } finally {
-          setIsExtracting(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        // Plain text: just read directly
+        const text = await file.text();
+        setRawText(text.slice(0, 12000));
+        setIsExtracting(false);
+        return;
+      }
+
+      // PDF: use pdf.js loaded from CDN via script tag
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Dynamically load pdfjs if not already loaded
+      if (!(window as any).pdfjsLib) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load pdf.js"));
+          document.head.appendChild(script);
+        });
+        (window as any).pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      }
+
+      const pdfjs = (window as any).pdfjsLib;
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+      const pdf = await loadingTask.promise;
+
+      let allText = "";
+      const maxPages = Math.min(pdf.numPages, 30); // limit to first 30 pages
+      for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+        allText += pageText + "\n";
+      }
+
+      const trimmed = allText.trim();
+      if (!trimmed || trimmed.length < 30) {
+        setError(
+          "Could not extract readable text from this PDF. It may be a scanned image. Please paste your notes manually in the text box below."
+        );
+      } else {
+        setRawText(trimmed.slice(0, 12000));
+      }
     } catch (e: any) {
-      setError("Failed to read file. Please try a .txt file or paste your notes below.");
+      setError(
+        "Failed to read the file. If this is a scanned PDF, please paste your notes manually in the text box below."
+      );
+    } finally {
       setIsExtracting(false);
     }
   }, []);
@@ -510,7 +533,14 @@ export default function AiNotesPage() {
                 placeholder="Paste lecture notes, textbook content, or any medical text here..."
                 className="w-full border border-gray-200 rounded-xl p-3 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors placeholder-gray-400"
               />
-              <p className="text-xss text-gray-400 mt-1 text-right">{rawText.length.toLocaleString()} chars</p>
+              <div className="flex items-center justify-between mt-1">
+                {rawText.length > 0 && (
+                  <span className="text-xss text-[#00875a] font-medium">
+                    Ready — {rawText.length.toLocaleString()} characters extracted
+                  </span>
+                )}
+                <span className="text-xss text-gray-400 ml-auto">{rawText.length.toLocaleString()} / 12,000 chars</span>
+              </div>
             </motion.div>
 
             {error && (
