@@ -576,6 +576,43 @@ export default function Dashboard() {
                         </p>
                       </motion.div>
 
+                      {/* Events & Calendar Card */}
+                      <NavLink to="/dashboard#events">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{ once: true }}
+                          custom={17}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#d1fae5] bg-[#d1fae5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        >
+                          <svg
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#065f46"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                            <circle cx="8" cy="15" r="1" fill="#065f46" />
+                            <circle cx="12" cy="15" r="1" fill="#065f46" />
+                            <circle cx="16" cy="15" r="1" fill="#065f46" />
+                          </svg>
+                          <p className="uppercase text-[#065f46] text-sss xxss:text-xss sm:text-xs lg:text-base font-semibold text-center">
+                            Events & Calendar
+                          </p>
+                        </motion.div>
+                      </NavLink>
+
                       {/* Admin Panel Link - Only visible to admin */}
                       {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
                         <NavLink to="/admin">
