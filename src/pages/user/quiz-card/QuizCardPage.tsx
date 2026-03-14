@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "react-router-dom";
 
@@ -464,14 +464,16 @@ export default function QuizCardPage() {
 
                   {/* Toggles */}
                   <div className="space-y-3">
-                    {[
-                      { label: "Shuffle answer options", val: shuffleOptions, set: setShuffleOptions },
-                      { label: "Show explanations after answer", val: showExplanations, set: setShowExplanations },
-                    ].map(({ label, val, set }) => (
+                    {(
+                      [
+                        { label: "Shuffle answer options", val: shuffleOptions, set: setShuffleOptions },
+                        { label: "Show explanations after answer", val: showExplanations, set: setShowExplanations },
+                      ] as { label: string; val: boolean; set: React.Dispatch<React.SetStateAction<boolean>> }[]
+                    ).map(({ label, val, set }) => (
                       <div key={label} className="flex items-center justify-between">
                         <span className="text-sm text-gray-700">{label}</span>
                         <button
-                          onClick={() => set((v: boolean) => !v)}
+                          onClick={() => set((v) => !v)}
                           className={`w-11 h-6 rounded-full transition-colors relative ${val ? "bg-[#00875a]" : "bg-gray-200"}`}
                         >
                           <span
