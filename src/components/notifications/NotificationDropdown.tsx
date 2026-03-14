@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotifications } from "../../hooks/notifications/useNotifications";
 import { BellIcon } from "../icons/nav/BellIcon";
@@ -140,11 +139,10 @@ export const NotificationDropdown = () => {
               ) : (
                 <div className="divide-y divide-gray-50">
                   {notifications.map((notification) => (
-                    <Link
+                    <div
                       key={notification.id}
-                      to={notification.link || "#"}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
+                      className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${
                         !notification.read ? "bg-green-50/50" : ""
                       }`}
                     >
@@ -169,24 +167,13 @@ export const NotificationDropdown = () => {
                           {formatRelativeTime(notification.createdAt)}
                         </p>
                       </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
-                <Link
-                  to="/u/notifications"
-                  onClick={() => setIsOpen(false)}
-                  className="text-xs text-green1 hover:text-green5 font-medium transition-colors block text-center"
-                >
-                  View all notifications
-                </Link>
-              </div>
-            )}
+
           </motion.div>
         )}
       </AnimatePresence>
