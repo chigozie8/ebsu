@@ -152,16 +152,16 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" => {
+  const getInitialTab = (): "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages" => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages"];
+    const validTabs = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "messages"];
     if (tabParam && validTabs.includes(tabParam)) {
-      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages";
+      return tabParam as "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "messages";
     }
     return "materials";
   };
   
-  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications">(
+  const [activeTab, setActiveTab] = useState<"materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages">(
     getInitialTab()
   );
   
@@ -341,6 +341,78 @@ export default function AdminDashboard() {
 
   const [notifyModal, setNotifyModal] = useState<{ show: boolean; card: IDCardRegistration | null }>({ show: false, card: null });
   const [sendingNotification, setSendingNotification] = useState(false);
+
+  // Admin Messages state
+  const [adminMessages, setAdminMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [selectedMsg, setSelectedMsg] = useState<any | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [msgFilter, setMsgFilter] = useState<"all" | "unread" | "replied">("all");
+
+  const fetchAdminMessages = async () => {
+    setLoadingMessages(true);
+    try {
+      const snapshot = await getDocs(collection(db, "adminMessages"));
+      const msgs: any[] = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      msgs.sort((a, b) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
+      setAdminMessages(msgs);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const sendReply = async () => {
+    if (!selectedMsg || !replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      const msgRef = doc(db, "adminMessages", selectedMsg.id);
+      await updateDoc(msgRef, { reply: replyText.trim(), status: "replied" });
+      // Send a notification to the student
+      await addDoc(collection(db, "notifications"), {
+        userId: selectedMsg.userId,
+        title: `Admin replied: ${selectedMsg.subject}`,
+        message: replyText.trim(),
+        type: "info",
+        createdAt: serverTimestamp(),
+        read: false,
+        link: "/dashboard",
+      });
+      setAdminMessages((prev) => prev.map((m) => m.id === selectedMsg.id ? { ...m, reply: replyText.trim(), status: "replied" } : m));
+      setSelectedMsg((prev: any) => prev ? { ...prev, reply: replyText.trim(), status: "replied" } : null);
+      setReplyText("");
+      notifyUser("success", "Reply sent and student notified!");
+    } catch (err) {
+      console.error("Error sending reply:", err);
+      notifyUser("error", "Failed to send reply");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const markMsgRead = async (msgId: string) => {
+    try {
+      await updateDoc(doc(db, "adminMessages", msgId), { status: "read" });
+      setAdminMessages((prev) => prev.map((m) => m.id === msgId && m.status === "unread" ? { ...m, status: "read" } : m));
+    } catch { /* silent */ }
+  };
+
+  const deleteMsg = async (msgId: string) => {
+    try {
+      await deleteDoc(doc(db, "adminMessages", msgId));
+      setAdminMessages((prev) => prev.filter((m) => m.id !== msgId));
+      if (selectedMsg?.id === msgId) setSelectedMsg(null);
+      notifyUser("success", "Message deleted");
+    } catch {
+      notifyUser("error", "Failed to delete message");
+    }
+  };
 
   // Broadcast notification composer state
   const [broadcastForm, setBroadcastForm] = useState({ title: "", message: "", type: "info" as "info" | "success" | "warning" | "announcement" | "update", link: "" });
@@ -1900,6 +1972,24 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             Notifications
+          </button>
+          <button
+            onClick={() => { setActiveTab("messages"); fetchAdminMessages(); }}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 relative ${
+              activeTab === "messages"
+                ? "bg-[#00875a] text-white shadow-md"
+                : "bg-green-50 text-[#00875a] hover:bg-green-100 border-2 border-[#00875a]"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+            Messages
+            {adminMessages.filter((m) => m.status === "unread").length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xss w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {adminMessages.filter((m) => m.status === "unread").length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -4534,6 +4624,143 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </div>
           </div>
         )}
+
+      {/* Messages Tab */}
+      {activeTab === "messages" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="grid lg:grid-cols-5 gap-6"
+        >
+          {/* Messages List */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col" style={{ minHeight: 520 }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#00875a]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900">Student Messages</h2>
+                  <p className="text-xs text-gray-500">{adminMessages.length} total &bull; {adminMessages.filter(m => m.status === "unread").length} unread</p>
+                </div>
+              </div>
+              <button onClick={fetchAdminMessages} className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Refresh">
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex gap-1 px-4 pt-3 pb-2">
+              {(["all", "unread", "replied"] as const).map((f) => (
+                <button key={f} onClick={() => setMsgFilter(f)} className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors capitalize ${msgFilter === f ? "bg-[#00875a] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                  {f}
+                </button>
+              ))}
+            </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-40"><Spinner className="w-6 h-6" /></div>
+              ) : adminMessages.filter((m) => msgFilter === "all" || m.status === msgFilter).length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 gap-2 text-gray-400">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                  <p className="text-sm">No messages</p>
+                </div>
+              ) : (
+                adminMessages.filter((m) => msgFilter === "all" || m.status === msgFilter).map((msg) => (
+                  <div
+                    key={msg.id}
+                    onClick={() => { setSelectedMsg(msg); setReplyText(""); if (msg.status === "unread") markMsgRead(msg.id); }}
+                    className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${selectedMsg?.id === msg.id ? "bg-green-50 border-l-4 border-[#00875a]" : ""} ${msg.status === "unread" ? "bg-blue-50/40" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {msg.status === "unread" && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />}
+                          <p className={`text-xs truncate ${msg.status === "unread" ? "font-bold text-gray-900" : "font-semibold text-gray-800"}`}>{msg.name}</p>
+                        </div>
+                        <p className="text-xs text-gray-600 truncate font-medium">{msg.subject}</p>
+                        <p className="text-xs text-gray-400 truncate">{msg.level} &bull; {msg.email}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${msg.status === "unread" ? "bg-blue-100 text-blue-700" : msg.status === "replied" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{msg.status}</span>
+                        <span className="text-xs text-gray-400">{msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleDateString() : ""}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Message Detail & Reply */}
+          <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col" style={{ minHeight: 520 }}>
+            {!selectedMsg ? (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 p-8">
+                <svg className="w-16 h-16" fill="none" stroke="currentColor" strokeWidth="1.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                <p className="text-sm font-medium">Select a message to read and reply</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{selectedMsg.subject}</p>
+                    <p className="text-xs text-gray-500">{selectedMsg.name} &bull; {selectedMsg.email} &bull; {selectedMsg.level}</p>
+                  </div>
+                  <button onClick={() => deleteMsg(selectedMsg.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors" title="Delete message">
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-xs font-bold text-gray-600">{selectedMsg.name?.charAt(0) || "S"}</div>
+                    <div className="flex-1">
+                      <div className="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-3 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{selectedMsg.message}</div>
+                      <p className="text-xs text-gray-400 mt-1 ml-1">{selectedMsg.createdAt?.toDate ? new Date(selectedMsg.createdAt.toDate()).toLocaleString() : ""}</p>
+                    </div>
+                  </div>
+                  {selectedMsg.reply && (
+                    <div className="flex gap-3 justify-end">
+                      <div className="flex-1 flex flex-col items-end">
+                        <div className="bg-[#00875a] rounded-2xl rounded-tr-none px-4 py-3 text-sm text-white leading-relaxed max-w-sm whitespace-pre-wrap">{selectedMsg.reply}</div>
+                        <p className="text-xs text-gray-400 mt-1 mr-1">You (Admin)</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-[#00875a] flex items-center justify-center flex-shrink-0 text-xs font-bold text-white">A</div>
+                    </div>
+                  )}
+                </div>
+                <div className="px-5 py-4 border-t border-gray-100">
+                  {selectedMsg.reply ? (
+                    <p className="text-xs text-gray-500 text-center">Already replied. The student has been notified.</p>
+                  ) : (
+                    <div className="flex gap-3 items-end">
+                      <textarea
+                        rows={3}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Type your reply..."
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
+                      />
+                      <button
+                        onClick={sendReply}
+                        disabled={sendingReply || !replyText.trim()}
+                        className="px-4 py-2.5 rounded-xl bg-[#00875a] text-white text-sm font-semibold hover:bg-[#00875a]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                      >
+                        {sendingReply ? <Spinner className="w-4 h-4 text-white" /> : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                        )}
+                        {sendingReply ? "Sending..." : "Reply"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Delete ID Card Confirmation Modal */}
       {deleteIdCardModal.show && (
