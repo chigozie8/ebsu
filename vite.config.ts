@@ -9,6 +9,13 @@ const cherryPickedKeys = [
   "REACT_APP_FIREBASE_MESSAGING_SENDER_ID",
   "REACT_APP_FIREBASE_APP_ID",
   "REACT_APP_MEASUREMENT_ID",
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_STORAGE_BUCKET",
+  "VITE_FIREBASE_MESSAGING_SENDER_ID",
+  "VITE_FIREBASE_APP_ID",
+  "VITE_FIREBASE_MEASUREMENT_ID",
   "VITE_IMAGEKIT_PUBLIC_KEY",
   "VITE_IMAGEKIT_URL_ENDPOINT",
   "VITE_SUPABASE_URL",
@@ -18,7 +25,7 @@ const cherryPickedKeys = [
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const processEnv = {};
+  const processEnv: Record<string, string> = {};
   cherryPickedKeys.forEach(key => processEnv[key] = env[key]);
 
   return {
