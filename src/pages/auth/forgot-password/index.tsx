@@ -23,17 +23,14 @@ export default function ForgotPassword() {
       setSent(true);
       notifyUser("success", "Password reset email sent! Check your inbox.");
     } catch (error: any) {
-      console.log("[v0] Password reset error:", error.code, error.message);
       if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
         notifyUser("error", "No account found with that email address.");
       } else if (error.code === "auth/unauthorized-continue-uri" || error.code === "auth/invalid-continue-uri") {
-        // Domain not authorized in Firebase console — still send without continueUrl
         try {
           await sendPasswordResetEmail(auth, email.trim());
           setSent(true);
           notifyUser("success", "Password reset email sent! Check your inbox.");
         } catch (fallbackErr: any) {
-          console.log("[v0] Fallback error:", fallbackErr.code, fallbackErr.message);
           notifyUser("error", `Error: ${fallbackErr.message}`);
         }
       } else {
@@ -71,6 +68,15 @@ export default function ForgotPassword() {
                 <p className="text-xs text-gray-500 text-center text-balance">
                   A password reset link has been sent to <span className="font-semibold text-gray-700">{email}</span>. Follow the instructions in the email to reset your password.
                 </p>
+                <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2.5 w-full">
+                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <p className="text-xs text-yellow-700">
+                    <span className="font-semibold">Can't find the email?</span> Please check your <span className="font-semibold">spam or junk folder</span> — reset emails sometimes get filtered automatically.
+                  </p>
+                </div>
                 <button
                   onClick={() => { setSent(false); setEmail(""); }}
                   className="text-xs font-semibold text-green1 hover:underline"
