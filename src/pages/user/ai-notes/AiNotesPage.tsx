@@ -295,7 +295,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ─── Main Page ───────���────────────────────────────────────────────────────────
+// ─── Main Page ───────�����────────────────────────────────────────────────────────
 
 export default function AiNotesPage() {
   const [rawText, setRawText] = useState("");
@@ -390,6 +390,24 @@ export default function AiNotesPage() {
     if (file) extractTextFromPDF(file);
   };
 
+  // ── Wait for puter.js to be ready ──
+  const waitForPuter = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      if ((window as any).puter?.ai) { resolve((window as any).puter); return; }
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if ((window as any).puter?.ai) {
+          clearInterval(interval);
+          resolve((window as any).puter);
+        } else if (attempts > 40) {
+          clearInterval(interval);
+          reject(new Error("Puter.js failed to load. Please refresh the page and try again."));
+        }
+      }, 250);
+    });
+  };
+
   // ── Generate output for selected mode ──
   const generate = async (mode: OutputMode) => {
     if (!rawText.trim()) { setError("Please upload a document or paste your notes first."); return; }
@@ -398,9 +416,14 @@ export default function AiNotesPage() {
     setError(null);
 
     try {
+      const puter = await waitForPuter();
       const prompt = buildPrompt(mode, rawText.slice(0, 6000));
-      const response = await (window as any).puter.ai.chat(prompt, { model: "gpt-4o" });
-      let content = typeof response === "string" ? response : response?.message?.content || "";
+      // puter.ai.chat(messages, testMode, options) — pass false for testMode
+      const response = await puter.ai.chat(prompt, false, { model: "gpt-4o" });
+      let content = typeof response === "string" ? response
+        : response?.message?.content
+        ?? response?.toString()
+        ?? "";
 
       let result: OutputResult;
       if (mode === "flashcards") {
