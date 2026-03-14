@@ -161,7 +161,7 @@ export const DashboardNavbar = () => {
                   Profile
                 </NavLink>
                 {/* Admin Link - Only visible to admin users */}
-                {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
+                {(studentDetails?.email === "patronkwo@gmail.com" || studentDetails?.email === "kenronkwo@gmail.com" || studentDetails?.email?.includes("admin")) && (
                   <NavLink
                     onClick={() => setIsNavOpen(false)}
                     to="/admin"
