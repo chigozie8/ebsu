@@ -276,10 +276,10 @@ export default function EbsumsaTeam() {
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               <a 
-                href="mailto:ebsumsa@example.com" 
+                href="mailto:ebsumsaleadership@gmail.com" 
                 className="bg-white text-green2 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
               >
-                Email Us
+                ebsumsaleadership@gmail.com
               </a>
             </div>
           </motion.div>
