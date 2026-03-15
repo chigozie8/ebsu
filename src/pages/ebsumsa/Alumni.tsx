@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from "react";
-import { db } from "../../config/firebase";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import placeholder from "../../assets/img/team/placeholder.png";
@@ -15,8 +12,25 @@ export interface AlumniMember {
   yearServed: string;
   imageUrl?: string;
   bio?: string;
-  createdAt?: any;
 }
+
+// ─── Add alumni directly here ───────────────────────────────────────────────
+// To add a new member: copy a block below and fill in the details.
+// For imageUrl, place the photo in /public/img/alumni/ and use the path:
+//   imageUrl: "/img/alumni/john-doe.jpg"
+// Leave imageUrl blank to show the placeholder photo.
+const alumniData: AlumniMember[] = [
+  // Example (uncomment and fill in to add a member):
+  // {
+  //   id: "1",
+  //   fullName: "John Doe",
+  //   role: "President",
+  //   yearServed: "2023/2024",
+  //   imageUrl: "/img/alumni/john-doe.jpg",
+  //   bio: "Led EBSUMSA with dedication and vision.",
+  // },
+];
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AlumniCard({ member, index }: { member: AlumniMember; index: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -31,19 +45,19 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
       className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-green2 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-center gap-4 p-4 sm:p-5">
-        {/* Photo */}
         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-gray-100 flex-shrink-0">
           <img
             src={member.imageUrl || placeholder}
             alt={member.fullName}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = placeholder;
             }}
           />
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <h3 className="text-sm sm:text-base font-bold text-gray-900 leading-tight truncate">
             {member.fullName}
@@ -56,7 +70,6 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
           </span>
         </div>
 
-        {/* Expand button — only if bio exists */}
         {member.bio && (
           <button
             onClick={() => setExpanded((v) => !v)}
@@ -76,7 +89,6 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
         )}
       </div>
 
-      {/* Bio — collapsible */}
       {member.bio && expanded && (
         <div className="px-4 sm:px-5 pb-4 pt-0 border-t border-gray-100">
           <p className="text-xs sm:text-sm text-gray-600 leading-relaxed pt-3">
@@ -89,29 +101,17 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
 }
 
 export default function AlumniPage() {
-  const [alumni, setAlumni] = useState<AlumniMember[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    getDocs(query(collection(db, "alumni"), orderBy("yearServed", "desc")))
-      .then((snap) => {
-        setAlumni(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlumniMember)));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
   const years = [
     "all",
-    ...Array.from(new Set(alumni.map((a) => a.yearServed))).sort((a, b) =>
+    ...Array.from(new Set(alumniData.map((a) => a.yearServed))).sort((a, b) =>
       b.localeCompare(a)
     ),
   ];
 
-  const filtered = alumni.filter((a) => {
+  const filtered = alumniData.filter((a) => {
     const matchSearch =
       a.fullName.toLowerCase().includes(search.toLowerCase()) ||
       a.role.toLowerCase().includes(search.toLowerCase());
@@ -177,59 +177,45 @@ export default function AlumniPage() {
       </section>
 
       {/* Filters */}
-      <section className="max-w-5xl mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
+      {alumniData.length > 0 && (
+        <section className="max-w-5xl mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by name or role..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors"
+              />
+            </div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by name or role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 bg-white focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors"
-            />
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y === "all" ? "All Administrations" : `${y} Administration`}
+                </option>
+              ))}
+            </select>
           </div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y === "all" ? "All Administrations" : `${y} Administration`}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 pb-20">
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="animate-pulse bg-white border border-gray-200 rounded-xl p-5 flex items-center gap-4"
-              >
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-gray-100 rounded w-1/3" />
-                  <div className="h-3 bg-gray-100 rounded w-1/4" />
-                  <div className="h-2.5 bg-gray-100 rounded w-1/5" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : alumni.length === 0 ? (
+        {alumniData.length === 0 ? (
           <div className="text-center py-24 bg-white border border-gray-200 rounded-xl">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,7 +223,7 @@ export default function AlumniPage() {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-gray-700 mb-1">No alumni added yet</h3>
-            <p className="text-sm text-gray-400">Alumni will appear here once added by the admin.</p>
+            <p className="text-sm text-gray-400">Alumni will appear here once added to the data file.</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
@@ -246,7 +232,6 @@ export default function AlumniPage() {
         ) : (
           sortedYears.map((year) => (
             <div key={year} className="mb-10">
-              {/* Year header */}
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest whitespace-nowrap">
                   {year} Administration
@@ -256,7 +241,6 @@ export default function AlumniPage() {
                   {grouped[year].length} {grouped[year].length === 1 ? "member" : "members"}
                 </span>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {grouped[year].map((member, i) => (
                   <AlumniCard key={member.id} member={member} index={i + 1} />
