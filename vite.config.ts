@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => {
       'process.env': processEnv
     },
     plugins: [react()],
-    assetsInclude: ['**/*.heic', '**/*.HEIC', '**/*.heif', '**/*.HEIF'],
     build: {
       // Increase the warning limit slightly for large deps like Firebase
       chunkSizeWarningLimit: 1000,
