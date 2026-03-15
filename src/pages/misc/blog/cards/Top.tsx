@@ -34,6 +34,8 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                         className="object-cover rounded-t-lg h-3/5 w-full"
                         src={sampleImg}
                         alt={title}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="p-5 h-2/5 w-full flex flex-col justify-between">
                         <div>

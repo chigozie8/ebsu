@@ -1,11 +1,12 @@
-// EBSUMSA Service Worker v2
+// EBSUMSA Service Worker v3
 // Strategies:
-//   • App shell (HTML/JS/CSS)  → Cache-first (served instantly, updated in background)
-//   • Images / fonts           → Stale-while-revalidate (instant + stays fresh)
-//   • Firebase / API calls     → Network-only (never cache dynamic data)
+//   • App shell (HTML/JS/CSS)        → Cache-first (served instantly, updated in background)
+//   • Local images / fonts           → Stale-while-revalidate (instant + stays fresh)
+//   • Firebase Storage images        → Stale-while-revalidate (cached after first load)
+//   • Firebase Auth / Firestore API  → Network-only (never cache dynamic data)
 
-const CACHE_VERSION = "ebsumsa-v2";
-const IMAGE_CACHE   = "ebsumsa-images-v2";
+const CACHE_VERSION = "ebsumsa-v3";
+const IMAGE_CACHE   = "ebsumsa-images-v3";
 
 const APP_SHELL = [
   "/",
@@ -37,24 +38,33 @@ self.addEventListener("activate", (event) => {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Domains we must never intercept — let them go straight to the network. */
+/** Domains we must never intercept — let them go straight to the network.
+ *  NOTE: firebasestorage.googleapis.com is intentionally NOT in this list
+ *  so that Firebase Storage images can be cached (stale-while-revalidate). */
 const BYPASS_DOMAINS = [
   "firebaseapp.com",
-  "googleapis.com",
+  "googleapis.com/identitytoolkit",
+  "googleapis.com/robot",
   "firestore.googleapis.com",
   "identitytoolkit.googleapis.com",
   "firebase.google.com",
-  "firebasestorage.googleapis.com",
   "supabase.co",
   "puter.com",
 ];
 
 function isBypass(url) {
-  return BYPASS_DOMAINS.some((d) => url.hostname.includes(d));
+  // Always bypass Firestore, Auth, and other Google API calls
+  // but allow firebasestorage.googleapis.com through so images get cached
+  if (url.hostname === "firebasestorage.googleapis.com") return false;
+  return BYPASS_DOMAINS.some((d) => url.href.includes(d));
 }
 
 function isImage(url) {
-  return /\.(png|jpe?g|gif|svg|ico|webp|avif)$/i.test(url.pathname);
+  // Local images by extension
+  if (/\.(png|jpe?g|gif|svg|ico|webp|avif)$/i.test(url.pathname)) return true;
+  // Firebase Storage image URLs (firebasestorage.googleapis.com/v0/b/.../o/...)
+  if (url.hostname === "firebasestorage.googleapis.com") return true;
+  return false;
 }
 
 function isStaticAsset(url) {
@@ -104,14 +114,17 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request);
 
   // Kick off a background network fetch regardless
-  const networkFetch = fetch(request)
+  const networkFetch = fetch(request, { credentials: "omit" })
     .then((response) => {
-      if (response.ok) cache.put(request, response.clone());
+      // Only cache valid, complete responses
+      if (response.ok && response.status === 200) {
+        cache.put(request, response.clone());
+      }
       return response;
     })
-    .catch(() => null);
+    .catch(() => cached || new Response("", { status: 503 }));
 
-  // Return cached version immediately; network response updates the cache
+  // Return cached version immediately if available — no loading delay
   return cached || networkFetch;
 }
 
