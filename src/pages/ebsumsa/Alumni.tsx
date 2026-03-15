@@ -4,7 +4,7 @@ import { db } from "../../config/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
-import placeholder from "../../assets/images/placeholder.jpg";
+import placeholder from "../../assets/img/team/placeholder.png";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
 
