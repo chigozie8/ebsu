@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { Dropdown } from "flowbite-react";
 import { customDropdownTheme } from "../../themes/customDropdown";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import logo from "../../assets/logo/logo.png";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { useModalContext } from "../../context/Modal";
@@ -27,15 +27,25 @@ export const GeneralNavbar = () => {
 
   const { setOpenSignOutModal } = useModalContext();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const location = useLocation();
+
+  // Close the mobile menu and restore scroll whenever the route changes
+  useEffect(() => {
+    setIsNavOpen(false);
+    document.body.style.overflow = "";
+  }, [location.pathname]);
+
   useEffect(() => {
     if (isNavOpen) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "visible";
+      document.body.style.overflow = "";
     }
+    // Always restore scroll on unmount
+    return () => { document.body.style.overflow = ""; };
   }, [isNavOpen]);
 
-  const toggleMenu = () => setIsNavOpen(!isNavOpen);
+  const toggleMenu = () => setIsNavOpen((prev) => !prev);
   return (
     <>
       <nav className="w-full fixed top-0 left-0 px-2 py-4 xsm:p-4 bg-white shadow-sm z-10">
