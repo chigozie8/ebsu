@@ -4,11 +4,16 @@ import {
   collection,
   query,
   onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 import { IBlogPost, TBlogPost } from "../../../../models/misc/blog/blogPosts";
 import { db, isFirebaseConfigured } from "../../../../config/firebase";
 import { notifyUser } from "../../../../helpers/notifyUser";
 import { localBlogPosts } from "../../../../data/misc/blog/posts";
+import { cachedFetch } from "../../../../lib/cache";
+
+const BLOG_HOME_TTL = 10 * 60 * 1000; // 10 minutes
+const BLOG_ALL_TTL  = 10 * 60 * 1000;
 
 export const useFetchBlogPosts = () => {
   const [blogPosts, setBlogPosts] = useState<IBlogPost[] | null>(null);
@@ -23,49 +28,36 @@ export const useFetchBlogPosts = () => {
 
   const fetchBlogPosts = async () => {
     setBlogPostsLoading(true);
-    
-    // If Firebase is not configured, use local data
+
     if (!isFirebaseConfigured) {
       setBlogPosts(localBlogPosts);
       setBlogPostsLoading(false);
       return;
     }
 
-    const postsRef = collection(db, "blogPosts");
-    const postsQuery = query(postsRef);
     try {
-      onSnapshot(
-        postsQuery,
-        (querySnapshot) => {
-          const firebasePosts: IBlogPost[] = [];
-          querySnapshot.forEach((docSnap) => {
+      const firebasePosts = await cachedFetch<IBlogPost[]>(
+        "blog:all",
+        async () => {
+          const snap = await getDocs(query(collection(db, "blogPosts")));
+          const posts: IBlogPost[] = [];
+          snap.forEach((docSnap) => {
             const data = docSnap.data();
-            // Ensure the post has valid contents array
             if (data.contents && Array.isArray(data.contents)) {
-              firebasePosts.push({ ...data, id: docSnap.id } as IBlogPost);
+              posts.push({ ...data, id: docSnap.id } as IBlogPost);
             }
           });
-          
-          // Merge Firebase posts with local posts, avoiding duplicates
-          // Firebase posts take priority (newer content from admin)
-          const firebasePostNos = new Set(firebasePosts.map(p => p.no));
-          const localPostsFiltered = localBlogPosts.filter(p => !firebasePostNos.has(p.no));
-          
-          // Combine and sort by date/no (newest first)
-          const allPosts = [...firebasePosts, ...localPostsFiltered].sort((a, b) => b.no - a.no);
-          
-          setBlogPosts(allPosts);
-          setBlogPostsLoading(false);
+          return posts;
         },
-        () => {
-          // Use local fallback on error
-          setBlogPosts(localBlogPosts);
-          setBlogPostsLoading(false);
-          setBlogPostsError(false);
-        }
+        BLOG_ALL_TTL
       );
+
+      const firebasePostNos = new Set(firebasePosts.map((p) => p.no));
+      const localFiltered   = localBlogPosts.filter((p) => !firebasePostNos.has(p.no));
+      const allPosts        = [...firebasePosts, ...localFiltered].sort((a, b) => b.no - a.no);
+      setBlogPosts(allPosts);
+      setBlogPostsLoading(false);
     } catch {
-      // Use local fallback on catch
       setBlogPosts(localBlogPosts);
       setBlogPostsLoading(false);
       setBlogPostsError(false);
@@ -73,50 +65,37 @@ export const useFetchBlogPosts = () => {
   };
   const fetchHomeBlogPosts = async () => {
     setHomeBlogPostsLoading(true);
-    
-    // If Firebase is not configured, use local data
+
     if (!isFirebaseConfigured) {
-      const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
-      setHomeBlogPosts(shuffled);
+      setHomeBlogPosts([...localBlogPosts]);
       setHomeBlogPostsLoading(false);
       return;
     }
 
-    const postsRef = collection(db, "blogPosts");
-    const postsQuery = query(postsRef);
     try {
-      onSnapshot(
-        postsQuery,
-        (querySnapshot) => {
-          const firebasePosts: IBlogPost[] = [];
-          querySnapshot.forEach((docSnap) => {
+      const firebasePosts = await cachedFetch<IBlogPost[]>(
+        "blog:home",
+        async () => {
+          const snap = await getDocs(query(collection(db, "blogPosts")));
+          const posts: IBlogPost[] = [];
+          snap.forEach((docSnap) => {
             const data = docSnap.data();
             if (data.contents && Array.isArray(data.contents)) {
-              firebasePosts.push({ ...data, id: docSnap.id } as IBlogPost);
+              posts.push({ ...data, id: docSnap.id } as IBlogPost);
             }
           });
-          
-          // Merge Firebase posts with local posts
-          const firebasePostNos = new Set(firebasePosts.map(p => p.no));
-          const localPostsFiltered = localBlogPosts.filter(p => !firebasePostNos.has(p.no));
-          const allPosts = [...firebasePosts, ...localPostsFiltered];
-          
-          const shuffled = allPosts.sort(() => 0.5 - Math.random());
-          setHomeBlogPosts(shuffled);
-          setHomeBlogPostsLoading(false);
+          return posts;
         },
-        () => {
-          // Use local fallback on error
-          const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
-          setHomeBlogPosts(shuffled);
-          setHomeBlogPostsLoading(false);
-          setHomeBlogPostsError(false);
-        }
+        BLOG_HOME_TTL
       );
+
+      const firebasePostNos = new Set(firebasePosts.map((p) => p.no));
+      const localFiltered   = localBlogPosts.filter((p) => !firebasePostNos.has(p.no));
+      const allPosts        = [...firebasePosts, ...localFiltered];
+      setHomeBlogPosts(allPosts);
+      setHomeBlogPostsLoading(false);
     } catch {
-      // Use local fallback on catch
-      const shuffled = [...localBlogPosts].sort(() => 0.5 - Math.random());
-      setHomeBlogPosts(shuffled);
+      setHomeBlogPosts([...localBlogPosts]);
       setHomeBlogPostsLoading(false);
       setHomeBlogPostsError(false);
     }

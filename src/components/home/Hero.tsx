@@ -2,11 +2,19 @@
 import { Button } from "flowbite-react";
 import { customButtonTheme } from "../../themes/customButtton";
 import { Link } from "react-router-dom";
-import heroAnimation from "../../json/animation/read.json";
-import Lottie from "lottie-react";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
+import { lazy, Suspense } from "react";
+
+// Lazy-load the Lottie animation so the hero text renders immediately
+const HeroLottie = lazy(() =>
+  import("lottie-react").then((mod) =>
+    import("../../json/animation/read.json").then((data) => ({
+      default: () => <mod.default loop={false} animationData={data.default} />,
+    }))
+  )
+);
 
 export default function Hero() {
   const { user, studentDetails } = useGetUserInfo();
@@ -71,7 +79,9 @@ export default function Hero() {
             </motion.div>
          </div>
           <div className="max-w-[500px] mmd:max-w-[700px] xlg:w-[800px]">
-            <Lottie loop={false} animationData={heroAnimation} />
+            <Suspense fallback={<div className="w-full aspect-square" />}>
+              <HeroLottie />
+            </Suspense>
           </div>
         </div>
       </div>
