@@ -84,39 +84,38 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <hr className="my-6 border-gray-200 sm:mx-auto lg:my-8" />
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div className="flex flex-col justify-start items-start">
-            <span className="text-xss ss:text-ss md:text-sm text-white sm:text-center">
-              © 2026{" "}
-              <a href="/" className="hover:underline text-white">
-                EBSUMSA-EBSU.
-              </a>
+        <hr className="my-6 border-white/20 sm:mx-auto lg:my-8" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-xss ss:text-ss md:text-sm font-semibold text-white">
+              &copy; EBSUMSA 2025/2026 Administration
             </span>
-            <span className="text-ss md:text-sm text-white sm:text-center">
-              Built by EBSUMSA Tech Team. All Rights Reserved.
+            <span className="text-xss ss:text-ss text-white/70">
+              Built by the EBSUMSA Tech Team (Pioneers, 2025/2026). All rights reserved.
             </span>
           </div>
 
-          <div className="flex mt-4 sm:justify-center sm:mt-0">
+          <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <a
               href="https://www.instagram.com/ebsumsaofficial?igsh=Z2JxMGtpMTJkOXYx"
-              className="text-white hover:text-white/80"
+              className="text-white/80 hover:text-white transition-colors"
+              aria-label="Instagram"
             >
-              <InstagramIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 fill-white" />
+              <InstagramIcon className="w-4 h-4 md:w-5 md:h-5 fill-white" />
             </a>
-
             <a
               href="https://x.com/Ebsumsaofficial"
-              className="text-white hover:text-white/80 ms-2"
+              className="text-white/80 hover:text-white transition-colors"
+              aria-label="X (Twitter)"
             >
-              <XIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
+              <XIcon className="w-4 h-4 md:w-5 md:h-5" />
             </a>
             <a
               href="https://ebsu.edu.ng/"
-              className="text-white hover:text-white/80 ms-2"
+              className="text-white/80 hover:text-white transition-colors"
+              aria-label="EBSU Website"
             >
-              <WebIcon className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
+              <WebIcon className="w-4 h-4 md:w-5 md:h-5" />
             </a>
           </div>
         </div>
