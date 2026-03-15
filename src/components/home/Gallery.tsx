@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from "react";
-import useSWR from "swr";
 import Lottie from "lottie-react";
 import galleryAnim from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
@@ -167,12 +166,16 @@ function EmptyGallery() {
 
 // ---------- Main Gallery ----------
 export default function Gallery() {
-  // SWR caches the gallery for 5 min (configured in AppProvider).
-  // On repeat visits the data is served instantly from memory.
-  const { data: items = [], isLoading: loading } = useSWR<GalleryItem[]>(
-    "galleryImages",
-    fetchGalleryItems
-  );
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGalleryItems()
+      .then((data) => { if (!cancelled) { setItems(data); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);

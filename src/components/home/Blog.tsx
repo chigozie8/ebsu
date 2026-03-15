@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import useSWR from "swr";
+import { useState, useEffect } from "react";
 import { Button } from "flowbite-react";
 import { customButtonTheme } from "../../themes/customButtton";
 import { Link } from "react-router-dom";
@@ -7,18 +6,40 @@ import { fetchBlogPostsOnce } from "../../lib/fetchers";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import noBlog from "../../assets/svg/illustrations/no-blog2.svg";
-import { fadeInVariants1 } from "../../animation/variants";
-import { fadeInVariants3 } from "../../animation/variants";
+import { fadeInVariants1, fadeInVariants3 } from "../../animation/variants";
 import { motion } from "framer-motion";
 import { IBlogPost } from "../../models/misc/blog/blogPosts";
 
 export default function Blog() {
-  const {
-    data: allPosts,
-    isLoading,
-    error,
-    mutate,
-  } = useSWR<IBlogPost[]>("blogPosts", fetchBlogPostsOnce);
+  const [allPosts, setAllPosts] = useState<IBlogPost[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchBlogPostsOnce()
+      .then((posts) => {
+        if (!cancelled) {
+          setAllPosts(posts);
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+          setIsLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const retry = () => {
+    setError(false);
+    setIsLoading(true);
+    fetchBlogPostsOnce()
+      .then((posts) => { setAllPosts(posts); setIsLoading(false); })
+      .catch(() => { setError(true); setIsLoading(false); });
+  };
 
   // Pick 3 random non-featured posts from the cached list
   const homeBlogPosts = allPosts
@@ -74,7 +95,7 @@ export default function Blog() {
                 Sorry, could not load posts at the moment.{" "}
                 <button
                   className="underline hover:no-underline text-green1"
-                  onClick={() => mutate()}
+                  onClick={retry}
                 >
                   Retry
                 </button>
@@ -140,7 +161,7 @@ export default function Blog() {
                 No posts available yet.{" "}
                 <button
                   className="underline hover:no-underline text-green1"
-                  onClick={() => mutate()}
+                  onClick={retry}
                 >
                   Retry
                 </button>
