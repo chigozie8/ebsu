@@ -162,11 +162,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events" | "alumni";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events", "alumni"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
