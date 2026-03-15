@@ -1,8 +1,9 @@
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import placeholder from "../../assets/img/team/placeholder.png";
+import { supabase } from "../../config/supabase";
 
 // =============================================
 // TypeScript Interfaces
@@ -22,9 +23,9 @@ interface ExecutiveCardProps {
 }
 
 // =============================================
-// EBSUMSA Executive Team Data
+// Static default data (used as fallback until Supabase data loads)
 // =============================================
-const presidentData: ExecutiveMember = {
+const defaultPresidentData: ExecutiveMember = {
   name: "Name Here",
   title: "President",
   image: placeholder,
@@ -32,67 +33,17 @@ const presidentData: ExecutiveMember = {
   bio: "Leading EBSUMSA with vision and dedication to advance medical student welfare and professional development.",
 };
 
-const executiveMembers: ExecutiveMember[] = [
-  {
-    name: "Name Here",
-    title: "Vice President",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "General Secretary",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Financial Secretary",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Treasurer",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Public Relations Officer",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Socials",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Academics",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Welfare",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Sports",
-    image: placeholder,
-    phone: "",
-  },
-  {
-    name: "Name Here",
-    title: "Director of Health",
-    image: placeholder,
-    phone: "",
-  },
+const defaultExecutiveMembers: ExecutiveMember[] = [
+  { name: "Name Here", title: "Vice President",           image: placeholder, phone: "" },
+  { name: "Name Here", title: "General Secretary",        image: placeholder, phone: "" },
+  { name: "Name Here", title: "Financial Secretary",      image: placeholder, phone: "" },
+  { name: "Name Here", title: "Treasurer",                image: placeholder, phone: "" },
+  { name: "Name Here", title: "Public Relations Officer", image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Socials",      image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Academics",    image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Welfare",      image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Sports",       image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Health",       image: placeholder, phone: "" },
 ];
 
 // =============================================
@@ -183,8 +134,46 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
 // Main Component
 // =============================================
 export default function EbsumsaTeam() {
+  const [presidentData, setPresidentData] = useState<ExecutiveMember>(defaultPresidentData);
+  const [executiveMembers, setExecutiveMembers] = useState<ExecutiveMember[]>(defaultExecutiveMembers);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Load executive overrides from Supabase team_images
+    supabase
+      .from("team_images")
+      .select("member_id, image_url, name, role, extra")
+      .eq("team_type", "executive")
+      .then(({ data, error }) => {
+        if (error || !data || data.length === 0) return;
+        const map: Record<string, { image_url?: string; name?: string; role?: string; extra?: string }> = {};
+        data.forEach((row) => { map[row.member_id] = row; });
+
+        // Update president
+        const presRow = map["president"];
+        if (presRow) {
+          setPresidentData((prev) => ({
+            ...prev,
+            name:  presRow.name  || prev.name,
+            image: presRow.image_url || prev.image,
+            phone: presRow.extra || prev.phone || "",
+          }));
+        }
+
+        // Update other executives
+        setExecutiveMembers((prev) =>
+          prev.map((m, idx) => {
+            const patch = map[`exec-${idx}`];
+            if (!patch) return m;
+            return {
+              ...m,
+              name:  patch.name  || m.name,
+              image: patch.image_url || m.image,
+              phone: patch.extra || m.phone,
+            };
+          })
+        );
+      });
   }, []);
 
   return (

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import placeholder from "../../assets/img/team/placeholder.png";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
+import { supabase } from "../../config/supabase";
 
 export interface AlumniMember {
   id: string;
@@ -14,19 +15,15 @@ export interface AlumniMember {
   bio?: string;
 }
 
-// ─── Add alumni directly here ───────────────────────────────────────────────
-// To add a new member: copy a block below and fill in the details.
-// For imageUrl, place the photo in /public/img/alumni/ and use the path:
-//   imageUrl: "/img/alumni/john-doe.jpg"
-// Leave imageUrl blank to show the placeholder photo.
-const alumniData: AlumniMember[] = [
+// ─── Static fallback data (shown until Supabase data loads) ─────────────────
+const staticAlumniData: AlumniMember[] = [
   {
     id: "1",
-    fullName: "Alumni Member",      // <-- update with real full name
-    role: "President",              // <-- update with real role/position
-    yearServed: "2025/2026",        // <-- update with correct year e.g. "2024/2025"
+    fullName: "Alumni Member",
+    role: "President",
+    yearServed: "2025/2026",
     imageUrl: "/img/alumni/IMG-20260309-WA0048.jpg",
-    bio: "",                        // <-- optional: add a short bio or leave blank
+    bio: "",
   },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,6 +99,30 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
 export default function AlumniPage() {
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [alumniData, setAlumniData] = useState<AlumniMember[]>(staticAlumniData);
+  const [loadingAlumni, setLoadingAlumni] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("alumni")
+      .select("id, full_name, role, year_served, image_url, bio")
+      .order("year_served", { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setAlumniData(
+            data.map((row) => ({
+              id: row.id,
+              fullName: row.full_name,
+              role: row.role,
+              yearServed: row.year_served,
+              imageUrl: row.image_url ?? undefined,
+              bio: row.bio ?? undefined,
+            }))
+          );
+        }
+        setLoadingAlumni(false);
+      });
+  }, []);
 
   const years = [
     "all",
@@ -214,7 +235,14 @@ export default function AlumniPage() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 pb-20">
-        {alumniData.length === 0 ? (
+        {loadingAlumni ? (
+          <div className="flex items-center justify-center py-24">
+            <svg className="w-8 h-8 animate-spin text-green2" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+          </div>
+        ) : alumniData.length === 0 ? (
           <div className="text-center py-24 bg-white border border-gray-200 rounded-xl">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

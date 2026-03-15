@@ -1,15 +1,53 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fadeInVariants3 } from "../../animation/variants";
 import Footer from "../../components/footer/Footer";
-import { classReps } from "../../data/students/classReps";
+import { classReps as staticClassReps } from "../../data/students/classReps";
 import { motion } from "framer-motion";
 import { GraduateCapIcon } from "../../components/icons/general/GraduateCapIcon";
 import { RegisterIcon } from "../../components/icons/general/RegisterIcon";
 import { ProfileIcon } from "../../components/icons/general/ProfileIcon";
+import { supabase } from "../../config/supabase";
+
+interface ClassRepDisplay {
+  img: string;
+  name: string;
+  regNo: string | number;
+  title: string;
+  work?: string;
+}
 
 export default function ClassReps() {
+  const [reps, setReps] = useState<ClassRepDisplay[]>(
+    staticClassReps.map((r) => ({ ...r, regNo: r.regNo }))
+  );
+
   useEffect(() => {
     window.scroll(0, 0);
+    // Load overrides from Supabase team_images (classRep type)
+    supabase
+      .from("team_images")
+      .select("member_id, image_url, name, role, extra")
+      .eq("team_type", "classRep")
+      .then(({ data, error }) => {
+        if (error || !data || data.length === 0) return;
+        const overrides: Record<string, { image_url?: string; name?: string; role?: string; extra?: string }> = {};
+        data.forEach((row) => {
+          overrides[row.member_id] = row;
+        });
+        setReps((prev) =>
+          prev.map((rep, idx) => {
+            const patch = overrides[`classrep-${idx}`];
+            if (!patch) return rep;
+            return {
+              img: patch.image_url || rep.img,
+              name: patch.name || rep.name,
+              regNo: patch.extra || rep.regNo,
+              title: patch.role || rep.title,
+              work: rep.work,
+            };
+          })
+        );
+      });
   }, []);
 
   return (
@@ -26,7 +64,7 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8">
-            {classReps.map(({ img, name, regNo, title }, i) => (
+            {reps.map(({ img, name, regNo, title }, i) => (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"

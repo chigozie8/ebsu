@@ -1,17 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
-import { db } from "../../../config/firebase";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  query,
-  orderBy,
-  serverTimestamp,
-} from "firebase/firestore";
 import { supabase } from "../../../config/supabase";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -62,8 +50,22 @@ export default function AdminAlumniManager() {
 
   const fetchAlumni = async () => {
     setLoading(true);
-    const snap = await getDocs(query(collection(db, "alumni"), orderBy("yearServed", "desc")));
-    setAlumni(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlumniMember)));
+    const { data, error } = await supabase
+      .from("alumni")
+      .select("id, full_name, role, year_served, image_url, bio, created_at")
+      .order("year_served", { ascending: false });
+    if (!error && data) {
+      setAlumni(
+        data.map((row) => ({
+          id: row.id,
+          fullName: row.full_name,
+          role: row.role,
+          yearServed: row.year_served,
+          imageUrl: row.image_url ?? undefined,
+          bio: row.bio ?? undefined,
+        }))
+      );
+    }
     setLoading(false);
   };
 
@@ -91,7 +93,7 @@ export default function AdminAlumniManager() {
       if (error) throw error;
       const { data } = supabase.storage.from("profile-pictures").getPublicUrl(path);
       return data.publicUrl;
-    } catch (err) {
+    } catch {
       notifyUser("error", "Image upload failed");
       return null;
     } finally {
@@ -113,27 +115,41 @@ export default function AdminAlumniManager() {
           const url = await uploadImage(editingId);
           if (url) imageUrl = url;
         }
-        await updateDoc(doc(db, "alumni", editingId), {
-          fullName: form.fullName.trim(),
-          role: form.role.trim(),
-          yearServed: form.yearServed.trim(),
-          bio: form.bio.trim() || null,
-          ...(imageUrl && { imageUrl }),
-          updatedAt: serverTimestamp(),
-        });
+        const { error } = await supabase
+          .from("alumni")
+          .update({
+            full_name: form.fullName.trim(),
+            role: form.role.trim(),
+            year_served: form.yearServed.trim(),
+            bio: form.bio.trim() || null,
+            ...(imageUrl && { image_url: imageUrl }),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingId);
+        if (error) throw error;
         notifyUser("success", "Alumni updated");
       } else {
-        const ref = await addDoc(collection(db, "alumni"), {
-          fullName: form.fullName.trim(),
-          role: form.role.trim(),
-          yearServed: form.yearServed.trim(),
-          bio: form.bio.trim() || null,
-          imageUrl: null,
-          createdAt: serverTimestamp(),
-        });
-        if (imageFile) {
-          const url = await uploadImage(ref.id);
-          if (url) await updateDoc(doc(db, "alumni", ref.id), { imageUrl: url });
+        // Insert first to get the id, then upload image
+        const { data: inserted, error: insertError } = await supabase
+          .from("alumni")
+          .insert({
+            full_name: form.fullName.trim(),
+            role: form.role.trim(),
+            year_served: form.yearServed.trim(),
+            bio: form.bio.trim() || null,
+            image_url: null,
+          })
+          .select("id")
+          .single();
+        if (insertError) throw insertError;
+        if (imageFile && inserted?.id) {
+          const url = await uploadImage(inserted.id);
+          if (url) {
+            await supabase
+              .from("alumni")
+              .update({ image_url: url })
+              .eq("id", inserted.id);
+          }
         }
         notifyUser("success", "Alumni added");
       }
@@ -160,7 +176,8 @@ export default function AdminAlumniManager() {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      await deleteDoc(doc(db, "alumni", id));
+      const { error } = await supabase.from("alumni").delete().eq("id", id);
+      if (error) throw error;
       setAlumni((prev) => prev.filter((a) => a.id !== id));
       notifyUser("success", "Alumni removed");
     } catch {
