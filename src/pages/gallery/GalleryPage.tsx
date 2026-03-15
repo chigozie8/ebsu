@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
 import type { GalleryItem } from "../admin/tabs/AdminGalleryManager";
+import { listGalleryItems } from "../../lib/cloudinary";
 import {
   IoClose,
   IoChevronBack,
@@ -59,16 +60,9 @@ export default function GalleryPage() {
   const loadGallery = () => {
     setError(null);
     setLoading(true);
-    fetch("/api/gallery-list")
-      .then((r) => {
-        if (!r.ok) throw new Error(`Server error ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setItems(data.items || []);
-      })
-      .catch((err) => setError(err.message || "Failed to load gallery"))
+    listGalleryItems()
+      .then((items) => setItems(items))
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load gallery"))
       .finally(() => setLoading(false));
   };
 
