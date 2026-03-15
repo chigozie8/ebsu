@@ -27,6 +27,7 @@ export interface CalendarEvent {
   time?: string;
   type: EventType;
   description?: string;
+  lumaUrl?: string; // optional Luma event link for registration
   createdAt?: any;
   updatedAt?: any;
 }
@@ -46,6 +47,7 @@ const EMPTY_FORM = {
   time: "",
   type: "exam" as EventType,
   description: "",
+  lumaUrl: "",
 };
 
 export default function AdminEventsManager() {
@@ -98,6 +100,7 @@ export default function AdminEventsManager() {
           time: form.time.trim() || null,
           type: form.type,
           description: form.description.trim() || null,
+          lumaUrl: form.lumaUrl.trim() || null,
           updatedAt: serverTimestamp(),
         });
         notifyUser("success", "Event updated successfully");
@@ -108,6 +111,7 @@ export default function AdminEventsManager() {
           time: form.time.trim() || null,
           type: form.type,
           description: form.description.trim() || null,
+          lumaUrl: form.lumaUrl.trim() || null,
           createdAt: serverTimestamp(),
         });
         notifyUser("success", "Event created successfully");
@@ -129,6 +133,7 @@ export default function AdminEventsManager() {
       time: event.time || "",
       type: event.type,
       description: event.description || "",
+      lumaUrl: event.lumaUrl || "",
     });
     setEditingId(event.id);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -290,9 +295,22 @@ export default function AdminEventsManager() {
                 />
               </div>
 
+              {/* Luma URL */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Luma Event Link <span className="text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  value={form.lumaUrl}
+                  onChange={(e) => setForm((p) => ({ ...p, lumaUrl: e.target.value }))}
+                  placeholder="https://lu.ma/your-event"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
+                />
+                <p className="text-xss text-gray-400 mt-1">Students will see a Register button linking to this Luma page.</p>
+              </div>
+
               <button
-                type="submit"
-                disabled={saving}
                 className="w-full py-2.5 rounded-xl bg-[#00875a] text-white text-sm font-semibold hover:bg-[#00875a]/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {saving ? (
@@ -414,6 +432,19 @@ export default function AdminEventsManager() {
                       )}
                       {event.description && (
                         <p className="text-xs text-gray-500 line-clamp-2">{event.description}</p>
+                      )}
+                      {event.lumaUrl && (
+                        <a
+                          href={event.lumaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xss text-[#00875a] font-semibold hover:underline mt-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Luma link set
+                        </a>
                       )}
                     </div>
 

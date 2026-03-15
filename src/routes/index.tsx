@@ -38,6 +38,7 @@ const AppRoutes = () => {
   const BlogPost = lazy(() => import("../pages/misc/blog/post/BlogPost"));
   const ProjectTeam = lazy(() => import("../pages/students/ProjectTeam"));
   const ClassReps = lazy(() => import("../pages/students/ClassReps"));
+  const EventsPage = lazy(() => import("../pages/user/events/EventsPage"));
   
   // New EBSUMSA pages
   const EbsumsaTeam = lazy(() => import("../pages/students/EbsumsaTeam"));
@@ -244,6 +245,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <AiNotesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/events"
+            element={
+              <ProtectedRoute>
+                <EventsPage />
               </ProtectedRoute>
             }
           />
