@@ -8,7 +8,7 @@ interface EngagementStatsProps {
 
 export const EngagementStats = ({ likes = 0, commentCount, className = "" }: EngagementStatsProps) => {
   return (
-    <div className={`flex items-center gap-3 text-gray-500 ${className}`}>
+    <div className={`flex items-center gap-3 text-gray-500 flex-shrink-0 ${className}`}>
       {/* Likes */}
       <span className="flex items-center gap-1 text-xs">
         <IoHeartOutline className="w-3.5 h-3.5" />

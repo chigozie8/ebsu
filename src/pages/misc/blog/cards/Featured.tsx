@@ -55,11 +55,11 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                           ...
                         </p>{" "}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-gray-700 text-sss sm:text-xss lg:text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium text-gray-700 text-sss sm:text-xss lg:text-sm flex-1 min-w-0 truncate">
                           {author} on {date}
                         </p>
-                        <EngagementStats likes={likes} />
+                        <EngagementStats likes={likes} className="flex-shrink-0" />
                       </div>
                     </div>
                   </motion.div>
