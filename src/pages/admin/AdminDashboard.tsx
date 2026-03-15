@@ -154,6 +154,7 @@ const ADMIN_EMAILS = [
   "kenronkwo@gmail.com",
   "ebsumsapresident2526@gmail.com",
   "ebsumsa102@gmail.com",
+  "oohveeyuu070@gmail.com",
 ];
 
 export default function AdminDashboard() {
