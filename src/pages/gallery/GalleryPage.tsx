@@ -67,7 +67,9 @@ export default function GalleryPage() {
   // Filtered list
   const filtered = items.filter((item) => {
     const matchCat = activeCategory === "all" || item.category === activeCategory;
-    return matchCat;
+    const q = search.trim().toLowerCase();
+    const matchSearch = !q || item.caption?.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
+    return matchCat && matchSearch;
   });
 
   const columns = splitIntoColumns(filtered, cols);
@@ -146,7 +148,21 @@ export default function GalleryPage() {
 
       {/* Sticky filter bar */}
       <div className="sticky top-14 z-20 bg-[#f7f8f6]/90 backdrop-blur-md border-b border-gray-200/60 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center gap-3 overflow-x-auto scrollbar-hide">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Search box */}
+          <div className="relative flex-shrink-0 sm:w-52">
+            <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base pointer-events-none" />
+            <input
+              ref={searchRef}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search photos…"
+              className="w-full pl-8 pr-3 py-1.5 rounded-full text-sm border border-gray-200 bg-white focus:outline-none focus:border-green2/60 focus:ring-1 focus:ring-green2/30 placeholder-gray-400 transition"
+            />
+          </div>
+          {/* Category pills */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1">
           {CATEGORIES.map((cat) => {
             const count = categoryCount(cat.value);
             if (cat.value !== "all" && count === 0) return null;
@@ -167,6 +183,7 @@ export default function GalleryPage() {
               </button>
             );
           })}
+          </div>
         </div>
       </div>
 
