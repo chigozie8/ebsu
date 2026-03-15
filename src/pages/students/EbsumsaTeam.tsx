@@ -13,7 +13,7 @@ interface ExecutiveMember {
   name: string;
   title: string;
   image: string;
-  level?: string;
+  phone?: string;
   bio?: string;
 }
 
@@ -30,7 +30,7 @@ const presidentData: ExecutiveMember = {
   name: "Name Here",
   title: "President",
   image: placeholder,
-  level: "600 Level",
+  phone: "",
   bio: "Leading EBSUMSA with vision and dedication to advance medical student welfare and professional development.",
 };
 
@@ -39,61 +39,61 @@ const executiveMembers: ExecutiveMember[] = [
     name: "Name Here",
     title: "Vice President",
     image: placeholder,
-    level: "500 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "General Secretary",
     image: placeholder,
-    level: "500 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Financial Secretary",
     image: placeholder,
-    level: "400 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Treasurer",
     image: placeholder,
-    level: "400 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Public Relations Officer",
     image: placeholder,
-    level: "500 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Director of Socials",
     image: placeholder,
-    level: "400 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Director of Academics",
     image: placeholder,
-    level: "500 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Director of Welfare",
     image: placeholder,
-    level: "400 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Director of Sports",
     image: placeholder,
-    level: "400 Level",
+    phone: "",
   },
   {
     name: "Name Here",
     title: "Director of Health",
     image: placeholder,
-    level: "500 Level",
+    phone: "",
   },
 ];
 
@@ -125,7 +125,17 @@ const PresidentCard = ({ member }: { member: ExecutiveMember }) => (
       <h4 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
         {member.name}
       </h4>
-      <p className="text-green2 font-semibold mb-2">{member.level}</p>
+      {member.phone && (
+        <a
+          href={`tel:${member.phone}`}
+          className="text-green2 font-semibold text-sm mb-2 hover:underline"
+        >
+          {member.phone}
+        </a>
+      )}
+      {!member.phone && (
+        <p className="text-gray-400 text-sm mb-2 italic">Phone not set</p>
+      )}
       {member.bio && (
         <p className="text-gray-600 text-sm text-center leading-relaxed">
           {member.bio}
@@ -159,8 +169,13 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
         {member.name}
       </h4>
       <p className="text-green2 font-semibold text-xs sm:text-sm">{member.title}</p>
-      {member.level && (
-        <p className="text-gray-500 text-xs mt-1">{member.level}</p>
+      {member.phone && (
+        <a
+          href={`tel:${member.phone}`}
+          className="text-gray-500 text-xs mt-1 hover:text-green2 hover:underline transition-colors"
+        >
+          {member.phone}
+        </a>
       )}
     </div>
   </motion.div>
@@ -170,7 +185,7 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
 // Main Component
 // =============================================
 export default function EbsumsaTeam() {
-  type ExecOverride = { image?: string; name?: string; role?: string };
+  type ExecOverride = { image?: string; name?: string; role?: string; phone?: string };
   const [overrides, setOverrides] = useState<Record<string, ExecOverride>>({});
 
   useEffect(() => {
@@ -184,6 +199,7 @@ export default function EbsumsaTeam() {
             ...(data.imageUrl && { image: data.imageUrl }),
             ...(data.name    && { name:  data.name }),
             ...(data.role    && { role:  data.role }),
+            ...(data.extra   && { phone: data.extra }),
           };
         }
       });
@@ -191,8 +207,8 @@ export default function EbsumsaTeam() {
     }).catch(() => { /* silently fall back to placeholder */ });
   }, []);
 
-  const execField = (id: string, field: 'image' | 'name' | 'role', fallback: string) =>
-    (overrides[id] as any)?.[field] || fallback;
+  const execField = (id: string, field: 'image' | 'name' | 'role' | 'phone', fallback: string) =>
+    (overrides[id] as any)?.[field] ?? fallback;
 
   return (
     <div className="min-h-screen bg-white">
@@ -237,6 +253,7 @@ export default function EbsumsaTeam() {
               image: execField('president', 'image', presidentData.image),
               name:  execField('president', 'name',  presidentData.name),
               title: execField('president', 'role',  presidentData.title),
+              phone: execField('president', 'phone', presidentData.phone || ''),
             }} />
           </div>
 
@@ -254,6 +271,7 @@ export default function EbsumsaTeam() {
                     image: execField(`exec-${index}`, 'image', member.image),
                     name:  execField(`exec-${index}`, 'name',  member.name),
                     title: execField(`exec-${index}`, 'role',  member.title),
+                    phone: execField(`exec-${index}`, 'phone', member.phone || ''),
                   }}
                   index={index + 2}
                 />
