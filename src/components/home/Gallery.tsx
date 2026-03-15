@@ -12,7 +12,23 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
-import { fetchGalleryItems, type GalleryItem } from "../../lib/fetchers";
+
+// ─── Add gallery items directly here ────────────────────────────────────────
+// To add a photo: place it in /public/img/gallery/ then add an entry below.
+// type: "image" for photos, "video" for video files.
+// Example:
+//   { id: "1", url: "/img/gallery/event1.jpg", type: "image", caption: "Annual dinner 2024" },
+export interface GalleryItem {
+  id: string;
+  url: string;
+  type: "image" | "video";
+  caption?: string;
+}
+
+const galleryItems: GalleryItem[] = [
+  // Add your images here, e.g.:
+  // { id: "1", url: "/img/gallery/photo1.jpg", type: "image", caption: "Caption here" },
+];
 
 // ---------- animation variants ----------
 const fadeInVariants1 = {
@@ -166,16 +182,8 @@ function EmptyGallery() {
 
 // ---------- Main Gallery ----------
 export default function Gallery() {
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchGalleryItems()
-      .then((data) => { if (!cancelled) { setItems(data); setLoading(false); } })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+  const items = galleryItems;
+  const loading = false;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);

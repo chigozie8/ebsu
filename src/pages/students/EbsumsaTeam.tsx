@@ -1,10 +1,8 @@
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import placeholder from "../../assets/img/team/placeholder.png";
-import { db } from "../../config/firebase";
-import { collection, getDocs } from "firebase/firestore";
 
 // =============================================
 // TypeScript Interfaces
@@ -185,30 +183,9 @@ const ExecutiveCard = ({ member, index }: ExecutiveCardProps) => (
 // Main Component
 // =============================================
 export default function EbsumsaTeam() {
-  type ExecOverride = { image?: string; name?: string; role?: string; phone?: string };
-  const [overrides, setOverrides] = useState<Record<string, ExecOverride>>({});
-
   useEffect(() => {
     window.scrollTo(0, 0);
-    getDocs(collection(db, 'teamImages')).then((snap) => {
-      const map: Record<string, ExecOverride> = {};
-      snap.forEach((d) => {
-        const data = d.data();
-        if (data.teamType === 'executive' && data.memberId) {
-          map[data.memberId] = {
-            ...(data.imageUrl && { image: data.imageUrl }),
-            ...(data.name    && { name:  data.name }),
-            ...(data.role    && { role:  data.role }),
-            ...(data.extra   && { phone: data.extra }),
-          };
-        }
-      });
-      setOverrides(map);
-    }).catch(() => { /* silently fall back to placeholder */ });
   }, []);
-
-  const execField = (id: string, field: 'image' | 'name' | 'role' | 'phone', fallback: string) =>
-    (overrides[id] as any)?.[field] ?? fallback;
 
   return (
     <div className="min-h-screen bg-white">
@@ -248,13 +225,7 @@ export default function EbsumsaTeam() {
 
           {/* President Section */}
           <div className="mb-12">
-            <PresidentCard member={{
-              ...presidentData,
-              image: execField('president', 'image', presidentData.image),
-              name:  execField('president', 'name',  presidentData.name),
-              title: execField('president', 'role',  presidentData.title),
-              phone: execField('president', 'phone', presidentData.phone || ''),
-            }} />
+            <PresidentCard member={presidentData} />
           </div>
 
           {/* Other Executives */}
@@ -266,13 +237,7 @@ export default function EbsumsaTeam() {
               {executiveMembers.map((member, index) => (
                 <ExecutiveCard
                   key={member.title}
-                  member={{
-                    ...member,
-                    image: execField(`exec-${index}`, 'image', member.image),
-                    name:  execField(`exec-${index}`, 'name',  member.name),
-                    title: execField(`exec-${index}`, 'role',  member.title),
-                    phone: execField(`exec-${index}`, 'phone', member.phone || ''),
-                  }}
+                  member={member}
                   index={index + 2}
                 />
               ))}
