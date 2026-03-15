@@ -20,15 +20,14 @@ export interface AlumniMember {
 //   imageUrl: "/img/alumni/john-doe.jpg"
 // Leave imageUrl blank to show the placeholder photo.
 const alumniData: AlumniMember[] = [
-  // Example (uncomment and fill in to add a member):
-  // {
-  //   id: "1",
-  //   fullName: "John Doe",
-  //   role: "President",
-  //   yearServed: "2023/2024",
-  //   imageUrl: "/img/alumni/john-doe.jpg",
-  //   bio: "Led EBSUMSA with dedication and vision.",
-  // },
+  {
+    id: "1",
+    fullName: "Alumni Member",      // <-- update with real full name
+    role: "President",              // <-- update with real role/position
+    yearServed: "2025/2026",        // <-- update with correct year e.g. "2024/2025"
+    imageUrl: "/img/alumni/IMG-20260309-WA0048.jpg",
+    bio: "",                        // <-- optional: add a short bio or leave blank
+  },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
