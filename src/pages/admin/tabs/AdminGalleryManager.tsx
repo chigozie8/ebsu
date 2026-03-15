@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { IoTrash, IoImages, IoVideocam, IoClose, IoCloudUpload, IoRefresh } from "react-icons/io5";
 import { notifyUser } from "../../../helpers/notifyUser";
-import { listGalleryItems, deleteGalleryItem, uploadPreset, getCloudName } from "../../../lib/cloudinary";
+import { listGalleryItems, deleteGalleryItem, saveGalleryItem, uploadPreset, getCloudName } from "../../../lib/cloudinary";
 
 export interface GalleryItem {
   url:        string;
@@ -131,10 +131,10 @@ export default function AdminGalleryManager() {
             setUploadProgress(25 + Math.round((e.loaded / e.total) * 70));
           }
         };
-        xhr.onload = () => {
+        xhr.onload = async () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             const d = JSON.parse(xhr.responseText);
-            resolve({
+            const newItem: GalleryItem = {
               url:        d.secure_url,
               publicId:   d.public_id,
               category,
@@ -142,7 +142,10 @@ export default function AdminGalleryManager() {
               type:       isVideo ? "video" : "image",
               uploadedAt: d.created_at,
               size:       d.bytes,
-            });
+            };
+            // Save metadata to Firestore so listGalleryItems() works everywhere
+            await saveGalleryItem(newItem);
+            resolve(newItem);
           } else {
             try {
               const e = JSON.parse(xhr.responseText);
