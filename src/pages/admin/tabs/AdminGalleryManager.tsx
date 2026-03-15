@@ -100,21 +100,30 @@ export default function AdminGalleryManager() {
     setUploading(true);
     setUploadProgress(10);
     try {
-      let blob: Blob = selectedFile;
+      let fileToSend: Blob = selectedFile;
       if (preview.type === "image") {
-        try { blob = await compressImage(selectedFile); } catch { /* use original */ }
+        try { fileToSend = await compressImage(selectedFile); } catch { /* use original */ }
       }
       setUploadProgress(40);
-      const formData = new FormData();
-      formData.append("file", blob, selectedFile.name);
-      formData.append("caption", caption.trim());
-      formData.append("category", category);
-      setUploadProgress(60);
-      const res = await fetch("/api/gallery-upload", { method: "POST", body: formData });
+
+      // Send raw file bytes — metadata goes in custom headers (avoids multipart parsing issues)
+      const res = await fetch("/api/gallery-upload", {
+        method: "POST",
+        headers: {
+          "Content-Type": fileToSend.type || selectedFile.type || "application/octet-stream",
+          "X-Category":   category,
+          "X-Caption":    caption.trim(),
+          "X-Filename":   selectedFile.name,
+        },
+        body: fileToSend,
+      });
+
+      setUploadProgress(80);
       const text = await res.text();
       let json: { error?: string; url?: string } = {};
-      try { json = JSON.parse(text); } catch { throw new Error(`Server returned: ${text.slice(0, 200)}`); }
+      try { json = JSON.parse(text); } catch { throw new Error(`Server error: ${text.slice(0, 300)}`); }
       if (!res.ok) throw new Error(json.error || "Upload failed");
+
       setUploadProgress(100);
       notifyUser("success", "Uploaded to gallery!");
       clearSelection();
