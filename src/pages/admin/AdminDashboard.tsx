@@ -27,6 +27,7 @@ import AdminTeamUpload from "./TeamImageUpload";
 import AdminEventsManager from "./tabs/AdminEventsManager";
 import AdminNotificationsTab from "./tabs/AdminNotificationsTab";
 import AdminAlumniManager from "./tabs/AdminAlumniManager";
+import AdminNewsletterTab from "./tabs/AdminNewsletterTab";
 
 interface Material {
   id: string;
@@ -162,11 +163,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events" | "alumni";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events" | "alumni" | "newsletter";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events", "alumni"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events", "alumni", "newsletter"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1914,6 +1915,19 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             Alumni
+          </button>
+          <button
+            onClick={() => setActiveTab("newsletter")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "newsletter"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-blue-50 text-blue-600 hover:bg-blue-100 border-2 border-blue-600"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Newsletter
           </button>
           <button
             onClick={() => { setActiveTab("messages"); fetchAdminMessages(); }}
@@ -4569,6 +4583,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </p>
           </div>
           <AdminAlumniManager />
+        </motion.div>
+      )}
+
+      {/* Newsletter Tab */}
+      {activeTab === "newsletter" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Newsletter</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              View all subscribers and send weekly email updates directly to their inboxes via EmailJS.
+            </p>
+          </div>
+          <AdminNewsletterTab />
         </motion.div>
       )}
 
