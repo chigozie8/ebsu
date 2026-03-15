@@ -75,7 +75,6 @@ function ExecutiveSkeleton() {
 // President Card Component
 // =============================================
 const PresidentCard = ({ member }: { member: ExecutiveMember }) => {
-  const [loaded, setLoaded] = useState(false);
   return (
     <motion.div
       variants={fadeInVariants3}
@@ -97,12 +96,10 @@ const PresidentCard = ({ member }: { member: ExecutiveMember }) => {
             alt={member.name}
             loading="lazy"
             decoding="async"
-            onLoad={() => setLoaded(true)}
             onError={(e) => {
               (e.target as HTMLImageElement).src = placeholder;
-              setLoaded(true);
             }}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className="w-full h-full object-cover"
           />
         </div>
         <h4 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
@@ -132,7 +129,6 @@ const PresidentCard = ({ member }: { member: ExecutiveMember }) => {
 // Executive Card Component
 // =============================================
 const ExecutiveCard = ({ member, index }: { member: ExecutiveMember; index: number }) => {
-  const [loaded, setLoaded] = useState(false);
   return (
     <motion.div
       variants={fadeInVariants3}
@@ -149,12 +145,10 @@ const ExecutiveCard = ({ member, index }: { member: ExecutiveMember; index: numb
             alt={member.name}
             loading="lazy"
             decoding="async"
-            onLoad={() => setLoaded(true)}
             onError={(e) => {
               (e.target as HTMLImageElement).src = placeholder;
-              setLoaded(true);
             }}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className="w-full h-full object-cover"
           />
         </div>
         <h4 className="text-sm sm:text-base font-bold text-gray-900 text-center">

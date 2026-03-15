@@ -34,7 +34,6 @@ function AlumniCardSkeleton() {
 
 function AlumniCard({ member, index }: { member: AlumniMember; index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
   return (
     <motion.div
@@ -52,12 +51,10 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
             alt={member.fullName}
             loading="lazy"
             decoding="async"
-            onLoad={() => setLoaded(true)}
             onError={(e) => {
               (e.target as HTMLImageElement).src = placeholder;
-              setLoaded(true);
             }}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className="w-full h-full object-cover"
           />
         </div>
 

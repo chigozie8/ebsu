@@ -42,8 +42,6 @@ function ClassRepCardSkeleton() {
 }
 
 function ClassRepCard({ rep, index }: { rep: ClassRep; index: number }) {
-  const [loaded, setLoaded] = useState(false);
-
   return (
     <motion.div
       variants={fadeInVariants3}
@@ -59,12 +57,10 @@ function ClassRepCard({ rep, index }: { rep: ClassRep; index: number }) {
           alt={rep.name}
           loading="lazy"
           decoding="async"
-          onLoad={() => setLoaded(true)}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = "/img/class-reps/placeholder.jpg";
-            setLoaded(true);
+            (e.target as HTMLImageElement).src = "/img/class-reps/CR_100(2).jpg";
           }}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+          className="w-full h-full object-cover"
         />
       </div>
       <div className="h-1/3 p-3 flex flex-col justify-between">
