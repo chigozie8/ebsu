@@ -32,6 +32,8 @@ export const FeaturedPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                       className="object-cover rounded-none rounded-l-lg md:rounded-t-lg md:rounded-none h-full w-1/3 md:h-3/5 md:w-full duration-300 ease-in-out transform group-hover:scale-105"
                       src={sampleImg}
                       alt={title}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="p-2 sm:p-3 h-full w-2/3 md:h-2/5 md:w-full flex flex-col justify-between">
                       <div>

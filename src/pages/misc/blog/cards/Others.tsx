@@ -47,6 +47,8 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                     className="object-cover h-full w-full transition-all duration-300 ease-in-out transform group-hover:scale-105  overflow-hidden rounded-t-lg md:h-full md:rounded-none md:rounded-r-lg md:w-1/3"
                     src={sampleImg}
                     alt={title}
+                    loading="lazy"
+                    decoding="async"
                   />
                 </motion.div>
               </Link>

@@ -28,6 +28,8 @@ export const PopularPosts: FC<BlogPostProp> = ({ blogPosts, postID, postType }) 
                     className="object-cover transition-all duration-300 ease-in-out transform group-hover:scale-105 overflow-hidden h-full w-1/3"
                     src={sampleImg}
                     alt={title}
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
