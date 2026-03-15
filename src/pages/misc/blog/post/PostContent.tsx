@@ -49,13 +49,17 @@ export const PostContent: FC<ContentBlockProp> = ({ contents }) => {
       );
     } else if (type === "img" && typeof content === "string") {
       return (
-        <div className="w-full flex items-center justify-center">
-          <img
-            key={i}
-            src={content}
-            alt="no-img"
-            className="my-4 w-full sm:w-[400px] rounded-md"
-          />
+        <div key={i} className="w-full my-4">
+          <div className="w-full sm:w-[400px] mx-auto aspect-video overflow-hidden rounded-md bg-gray-100">
+            <img
+              src={content}
+              alt="post-image"
+              loading="lazy"
+              decoding="async"
+              onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
       );
     } else if (type === "list") {
@@ -89,13 +93,18 @@ export const PostContent: FC<ContentBlockProp> = ({ contents }) => {
                     </p>
                   ) : (
                     type === "img" && (
-                      <div className="w-full flex items-center justify-center">
-                        <img
-                          key={j}
-                          src={content}
-                          alt="no-img"
-                          className="my-4 w-full sm:w-[400px] rounded-md"
-                        />
+                      <div className="w-full my-4">
+                        <div className="w-full sm:w-[400px] mx-auto aspect-video overflow-hidden rounded-md bg-gray-100">
+                          <img
+                            key={j}
+                            src={content}
+                            alt="post-image"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                       </div>
                     )
                   )}

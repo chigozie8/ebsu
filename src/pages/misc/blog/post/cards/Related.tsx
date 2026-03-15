@@ -27,11 +27,16 @@ export const RelatedPosts: FC<BlogPostProp> = ({
                       {author} on {date}
                     </p>
                   </div>
-                  <img
-                    className="object-cover transition-all duration-300 ease-in-out transform group-hover:scale-105 overflow-hidden h-full w-1/3"
-                    src={sampleImg}
-                    alt={title}
-                  />
+                  <div className="flex-shrink-0 w-1/3 h-full overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      className="object-cover w-full h-full transition-all duration-300 ease-in-out transform group-hover:scale-105"
+                      src={sampleImg}
+                      alt={title}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
+                    />
+                  </div>
                 </div>
               </div>
             </Link>

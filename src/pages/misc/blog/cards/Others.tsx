@@ -43,13 +43,16 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                       <EngagementStats likes={likes} className="flex-shrink-0" />
                     </div>
                   </div>
-                  <img
-                    className="object-cover h-full w-full transition-all duration-300 ease-in-out transform group-hover:scale-105  overflow-hidden rounded-t-lg md:h-full md:rounded-none md:rounded-r-lg md:w-1/3"
-                    src={sampleImg}
-                    alt={title}
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <div className="flex-shrink-0 w-full md:w-1/3 h-[160px] md:h-full overflow-hidden bg-gray-100 rounded-t-lg md:rounded-none md:rounded-r-lg">
+                    <img
+                      className="object-cover w-full h-full transition-all duration-300 ease-in-out transform group-hover:scale-105"
+                      src={sampleImg}
+                      alt={title}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0"; }}
+                    />
+                  </div>
                 </motion.div>
               </Link>
             )
