@@ -12,16 +12,7 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
-import { db } from "../../config/firebase";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-
-interface GalleryItem {
-  id: string;
-  url: string;
-  type: "image" | "video";
-  caption?: string;
-  createdAt?: number;
-}
+import { fetchGalleryItems, type GalleryItem } from "../../lib/fetchers";
 
 // ---------- animation variants ----------
 const fadeInVariants1 = {
@@ -177,30 +168,20 @@ function EmptyGallery() {
 export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGalleryItems()
+      .then((data) => { if (!cancelled) { setItems(data); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20);
-
-  useEffect(() => {
-    const fetchGallery = async () => {
-      try {
-        const q = query(collection(db, "galleryImages"), orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        const data: GalleryItem[] = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<GalleryItem, "id">),
-        }));
-        setItems(data);
-      } catch {
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGallery();
-  }, []);
 
   const previewItems = items.slice(0, PREVIEW_COUNT);
   const imageCount = items.filter((i) => i.type === "image").length;
