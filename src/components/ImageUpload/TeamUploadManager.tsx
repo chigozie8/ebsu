@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ImageUploadModal } from './ImageUploadModal';
-import { db } from '../../config/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { supabase } from '../../config/supabase';
 
 interface TeamMember {
   id: string;
@@ -117,11 +116,18 @@ export function TeamUploadManager({
   };
 
   const persistField = async (memberId: string, field: string, value: string) => {
-    await setDoc(
-      doc(db, 'teamImages', `${teamType}_${memberId}`),
-      { teamType, memberId, [field]: value, updatedAt: new Date().toISOString() },
-      { merge: true }
-    );
+    await supabase
+      .from('team_images')
+      .upsert(
+        {
+          id: `${teamType}_${memberId}`,
+          team_type: teamType,
+          member_id: memberId,
+          [field]: value,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
   };
 
   return (

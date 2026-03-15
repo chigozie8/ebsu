@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TeamUploadManager } from '../../components/ImageUpload/TeamUploadManager';
 import placeholder from "../../assets/img/team/placeholder.png";
-import { db } from '../../config/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { supabase } from '../../config/supabase';
 import { classReps } from '../../data/students/classReps';
 
 // =============================================
@@ -61,34 +60,37 @@ export default function AdminTeamUpload() {
     press: pressTeamData,
   });
 
-  // Load all persisted data (image + name + role + extra) from Firestore
+  // Load all persisted data (image + name + role + extra) from Supabase
   useEffect(() => {
-    getDocs(collection(db, 'teamImages')).then((snap) => {
-      const updates: Record<string, Partial<TeamMember>> = {};
-      snap.forEach((d) => {
-        const data = d.data();
-        if (data.teamType && data.memberId) {
-          const key = `${data.teamType}_${data.memberId}`;
-          updates[key] = {
-            ...(data.imageUrl && { image: data.imageUrl }),
-            ...(data.name    && { name:  data.name }),
-            ...(data.role    && { role:  data.role }),
-            ...(data.extra   && { extra: data.extra }),
-          };
-        }
-      });
-
-      setTeams((prev) => {
-        const merged: Record<TeamType, TeamMember[]> = { executive: [], classRep: [], press: [] };
-        (Object.keys(prev) as TeamType[]).forEach((teamType) => {
-          merged[teamType] = prev[teamType].map((m) => {
-            const patch = updates[`${teamType}_${m.id}`];
-            return patch ? { ...m, ...patch } : m;
-          });
+    supabase
+      .from('team_images')
+      .select('id, team_type, member_id, image_url, name, role, extra')
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const updates: Record<string, Partial<TeamMember>> = {};
+        data.forEach((row) => {
+          if (row.team_type && row.member_id) {
+            const key = `${row.team_type}_${row.member_id}`;
+            updates[key] = {
+              ...(row.image_url && { image: row.image_url }),
+              ...(row.name      && { name:  row.name }),
+              ...(row.role      && { role:  row.role }),
+              ...(row.extra     && { extra: row.extra }),
+            };
+          }
         });
-        return merged;
+
+        setTeams((prev) => {
+          const merged: Record<TeamType, TeamMember[]> = { executive: [], classRep: [], press: [] };
+          (Object.keys(prev) as TeamType[]).forEach((teamType) => {
+            merged[teamType] = prev[teamType].map((m) => {
+              const patch = updates[`${teamType}_${m.id}`];
+              return patch ? { ...m, ...patch } : m;
+            });
+          });
+          return merged;
+        });
       });
-    }).catch(() => { /* silently ignore */ });
   }, []);
 
   const handleImageUpdate = (teamType: TeamType, memberId: string, newImageUrl: string) => {

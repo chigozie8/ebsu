@@ -1,7 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { supabase } from '../../config/supabase';
-import { db } from '../../config/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 
 interface ImageUploadModalProps {
   isOpen: boolean;
@@ -130,11 +128,19 @@ export function ImageUploadModal({
 
       const publicUrl = urlData.publicUrl;
 
-      await setDoc(
-        doc(db, 'teamImages', `${teamType}_${memberId}`),
-        { teamType, memberId, imageUrl: publicUrl, updatedAt: new Date().toISOString() },
-        { merge: true }
-      );
+      // Persist image URL to Supabase team_images table
+      await supabase
+        .from('team_images')
+        .upsert(
+          {
+            id: `${teamType}_${memberId}`,
+            team_type: teamType,
+            member_id: memberId,
+            image_url: publicUrl,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' }
+        );
 
       onUploadSuccess(publicUrl);
       setPreview(null);
