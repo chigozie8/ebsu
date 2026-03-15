@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@emailjs/browser':
+        specifier: ^4.4.1
+        version: 4.4.1
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.10.0(react-hook-form@7.71.2(react@18.3.1))
@@ -283,6 +286,10 @@ packages:
   '@edge-runtime/vm@3.2.0':
     resolution: {integrity: sha512-0dEVyRLM/lG4gp1R/Ik5bfPl/1wX00xFwd5KcNH602tzBa09oF7pbTKETEhR1GjZ75K6OJnYFu8II2dyMhONMw==}
     engines: {node: '>=16'}
+
+  '@emailjs/browser@4.4.1':
+    resolution: {integrity: sha512-DGSlP9sPvyFba3to2A50kDtZ+pXVp/0rhmqs2LmbMS3I5J8FSOgLwzY2Xb4qfKlOVHh29EAutLYwe5yuEZmEFg==}
+    engines: {node: '>=14.0.0'}
 
   '@emotion/is-prop-valid@0.8.8':
     resolution: {integrity: sha512-u5WtneEAr5IDG2Wv65yhunPSMLIpuKsbuOktRojfrEiEvRyC85LgPMZI63cr7NUqT8ZIGdSVg8ZKGxIug4lXcA==}
@@ -3266,6 +3273,8 @@ snapshots:
   '@edge-runtime/vm@3.2.0':
     dependencies:
       '@edge-runtime/primitives': 4.1.0
+
+  '@emailjs/browser@4.4.1': {}
 
   '@emotion/is-prop-valid@0.8.8':
     dependencies:
