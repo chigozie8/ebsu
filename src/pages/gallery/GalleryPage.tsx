@@ -282,7 +282,7 @@ export default function GalleryPage() {
 
                   return (
                     <motion.div
-                      key={item.url}
+                      key={item.publicId || item.url}
                       initial={{ opacity: 0, scale: 0.96 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: Math.min(globalIndex * 0.04, 0.4) }}
@@ -374,7 +374,7 @@ export default function GalleryPage() {
 
             {/* Media */}
             <motion.div
-              key={currentItem.url}
+              key={currentItem.publicId || currentItem.url}
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
@@ -423,7 +423,7 @@ export default function GalleryPage() {
                     const realIdx = Math.max(0, lightboxIndex - 4) + idx;
                     return (
                       <button
-                        key={thumb.url}
+                        key={thumb.publicId || thumb.url}
                         onClick={(e) => { e.stopPropagation(); openLightbox(realIdx); }}
                         className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 ${realIdx === lightboxIndex ? "ring-2 ring-white scale-110" : "opacity-50 hover:opacity-80"}`}
                       >

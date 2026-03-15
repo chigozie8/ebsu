@@ -3,31 +3,30 @@ import { IoTrash, IoImages, IoVideocam, IoClose, IoCloudUpload, IoRefresh } from
 import { notifyUser } from "../../../helpers/notifyUser";
 
 export interface GalleryItem {
-  url: string;
-  pathname: string;
-  category: string;
-  type: "image" | "video";
+  url:        string;
+  publicId:   string;
+  category:   string;
+  caption:    string;
+  type:       "image" | "video";
   uploadedAt: string;
-  size?: number;
-  caption?: string;
+  size?:      number;
 }
 
 const CATEGORIES = [
-  { value: "general",      label: "General" },
-  { value: "events",       label: "Events" },
-  { value: "activities",   label: "Activities" },
-  { value: "convocation",  label: "Convocation" },
-  { value: "outreach",     label: "Outreach" },
-  { value: "executives",   label: "Executives" },
+  { value: "general",     label: "General" },
+  { value: "events",      label: "Events" },
+  { value: "activities",  label: "Activities" },
+  { value: "convocation", label: "Convocation" },
+  { value: "outreach",    label: "Outreach" },
+  { value: "executives",  label: "Executives" },
 ];
 
-/** Compress image client-side to max 1400px, JPEG 0.85 */
 function compressImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const objectUrl = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
+      URL.revokeObjectURL(url);
       const MAX = 1400;
       let { width, height } = img;
       if (width > MAX || height > MAX) {
@@ -36,49 +35,57 @@ function compressImage(file: File): Promise<Blob> {
       }
       const canvas = document.createElement("canvas");
       canvas.width = width; canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { reject(new Error("Canvas not supported")); return; }
-      ctx.drawImage(img, 0, 0, width, height);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
-        (blob) => { blob ? resolve(blob) : reject(new Error("Compression failed")); },
+        (b) => (b ? resolve(b) : reject(new Error("Compression failed"))),
         "image/jpeg", 0.85
       );
     };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Load failed")); };
-    img.src = objectUrl;
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Load failed")); };
+    img.src = url;
   });
 }
 
 export default function AdminGalleryManager() {
-  const [items, setItems]           = useState<GalleryItem[]>([]);
-  const [manifestUrl, setManifestUrl] = useState<string | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [uploading, setUploading]   = useState(false);
-  const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
-  const [caption, setCaption]       = useState("");
-  const [category, setCategory]     = useState("general");
-  const [preview, setPreview]       = useState<{ url: string; type: "image" | "video" } | null>(null);
+  const [items, setItems]               = useState<GalleryItem[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [uploading, setUploading]       = useState(false);
+  const [deletingId, setDeletingId]     = useState<string | null>(null);
+  const [caption, setCaption]           = useState("");
+  const [category, setCategory]         = useState("general");
+  const [preview, setPreview]           = useState<{ url: string; type: "image" | "video" } | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterCategory, setFilterCategory] = useState("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const cloudName    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string;
+
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/gallery-list");
-      if (!res.ok) throw new Error("Failed to fetch");
+      const res  = await fetch("/api/gallery-list");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load");
       setItems(data.items || []);
-      setManifestUrl(data.manifestUrl || null);
-    } catch {
-      notifyUser("error", "Failed to load gallery");
+    } catch (err) {
+      notifyUser("error", err instanceof Error ? err.message : "Failed to load gallery");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { fetchItems(); }, []);
+
+  const clearSelection = () => {
+    if (preview) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+    setSelectedFile(null);
+    setCaption("");
+    setUploadProgress(0);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,48 +98,69 @@ export default function AdminGalleryManager() {
     setPreview({ url: URL.createObjectURL(file), type: isVideo ? "video" : "image" });
   };
 
-  const clearSelection = () => {
-    if (preview) URL.revokeObjectURL(preview.url);
-    setPreview(null); setSelectedFile(null); setCaption(""); setUploadProgress(0);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
   const handleUpload = async () => {
     if (!selectedFile || !preview) return;
+    if (!cloudName || !uploadPreset) {
+      notifyUser("error", "Cloudinary not configured. Check VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your env vars.");
+      return;
+    }
     setUploading(true);
     setUploadProgress(10);
     try {
+      const isVideo = preview.type === "video";
       let fileToSend: Blob = selectedFile;
-      if (preview.type === "image") {
+      if (!isVideo) {
         try { fileToSend = await compressImage(selectedFile); } catch { /* use original */ }
       }
-      setUploadProgress(40);
+      setUploadProgress(25);
 
-      // Send raw file bytes — metadata goes in custom headers
-      const res = await fetch("/api/gallery-upload", {
-        method: "POST",
-        headers: {
-          "Content-Type":    fileToSend.type || selectedFile.type || "application/octet-stream",
-          "X-Category":      category,
-          "X-Caption":       caption.trim(),
-          "X-Filename":      selectedFile.name,
-          "X-Manifest-Url":  manifestUrl || "",
-        },
-        body: fileToSend,
+      const formData = new FormData();
+      formData.append("file", fileToSend, selectedFile.name);
+      formData.append("upload_preset", uploadPreset);
+      formData.append("folder", "ebsu_gallery");
+      // Store category + caption as Cloudinary context metadata
+      formData.append("context", `category=${category}|caption=${caption.trim()}`);
+
+      const resourceType = isVideo ? "video" : "image";
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+
+      // Use XHR so we get real upload progress
+      const newItem = await new Promise<GalleryItem>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(25 + Math.round((e.loaded / e.total) * 70));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const d = JSON.parse(xhr.responseText);
+            resolve({
+              url:        d.secure_url,
+              publicId:   d.public_id,
+              category,
+              caption:    caption.trim(),
+              type:       isVideo ? "video" : "image",
+              uploadedAt: d.created_at,
+              size:       d.bytes,
+            });
+          } else {
+            try {
+              const e = JSON.parse(xhr.responseText);
+              reject(new Error(e.error?.message || `Upload failed: ${xhr.status}`));
+            } catch {
+              reject(new Error(`Upload failed: ${xhr.status}`));
+            }
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.open("POST", uploadUrl);
+        xhr.send(formData);
       });
 
-      setUploadProgress(80);
-      const text = await res.text();
-      let json: { error?: string; item?: GalleryItem; manifestUrl?: string } = {};
-      try { json = JSON.parse(text); } catch { throw new Error(`Server error: ${text.slice(0, 300)}`); }
-      if (!res.ok) throw new Error(json.error || "Upload failed");
-
-      // Update manifestUrl for next upload
-      if (json.manifestUrl) setManifestUrl(json.manifestUrl);
-      if (json.item) setItems((prev) => [json.item!, ...prev]);
-
       setUploadProgress(100);
-      notifyUser("success", "Uploaded to gallery!");
+      setItems((prev) => [newItem, ...prev]);
+      notifyUser("success", "Image uploaded to gallery!");
       clearSelection();
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Upload failed");
@@ -144,28 +172,25 @@ export default function AdminGalleryManager() {
 
   const handleDelete = async (item: GalleryItem) => {
     if (!confirm(`Delete this ${item.type}? This cannot be undone.`)) return;
-    setDeletingUrl(item.url);
+    setDeletingId(item.publicId);
     try {
-      const res = await fetch("/api/gallery-upload", {
+      const res  = await fetch("/api/gallery-upload", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: item.url, manifestUrl }),
+        body: JSON.stringify({ publicId: item.publicId, resourceType: item.type }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Delete failed");
-      if (data.manifestUrl) setManifestUrl(data.manifestUrl);
-      setItems((prev) => prev.filter((i) => i.url !== item.url));
+      setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
       notifyUser("success", "Deleted successfully");
     } catch {
       notifyUser("error", "Failed to delete item");
     } finally {
-      setDeletingUrl(null);
+      setDeletingId(null);
     }
   };
 
   const filtered = filterCategory === "all" ? items : items.filter((i) => i.category === filterCategory);
-  const totalSize = items.reduce((acc, i) => acc + (i.size || 0), 0);
-  const formatSize = (bytes: number) => bytes > 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : `${(bytes / 1e3).toFixed(0)} KB`;
 
   return (
     <div className="space-y-8">
@@ -173,16 +198,10 @@ export default function AdminGalleryManager() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Gallery Manager</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {items.length} items &middot; {formatSize(totalSize)} total &mdash; stored on Vercel Blob
-          </p>
+          <p className="text-sm text-gray-500 mt-1">{items.length} item{items.length !== 1 ? "s" : ""} — powered by Cloudinary</p>
         </div>
-        <button
-          onClick={fetchItems}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-green2 transition-colors"
-        >
-          <IoRefresh className={loading ? "animate-spin" : ""} />
-          Refresh
+        <button onClick={fetchItems} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-green2 transition-colors">
+          <IoRefresh className={loading ? "animate-spin" : ""} /> Refresh
         </button>
       </div>
 
@@ -190,47 +209,42 @@ export default function AdminGalleryManager() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
         <h3 className="font-semibold text-gray-800 text-base">Upload New Media</h3>
 
-        {/* Category + Caption row */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors bg-white"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green2/30 bg-white"
             >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
+              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Caption (optional)</label>
             <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="E.g. EBSUMSA Week 2025"
-              maxLength={120}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green2/30 focus:border-green2 transition-colors"
+              type="text" value={caption} onChange={(e) => setCaption(e.target.value)}
+              placeholder="E.g. EBSUMSA Week 2025" maxLength={120}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green2/30"
             />
           </div>
         </div>
 
         {/* Drop zone / preview */}
         {preview ? (
-          <div className="relative rounded-xl overflow-hidden bg-gray-100 aspect-video max-w-md">
-            {preview.type === "video" ? (
-              <video src={preview.url} controls className="w-full h-full object-contain" />
-            ) : (
-              <img src={preview.url} alt="Preview" className="w-full h-full object-contain" />
-            )}
-            <button onClick={clearSelection} className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors" aria-label="Remove selection">
+          <div className="relative rounded-xl overflow-hidden bg-gray-100 max-h-64 flex items-center justify-center">
+            {preview.type === "video"
+              ? <video src={preview.url} controls className="max-h-64 w-full object-contain" />
+              : <img src={preview.url} alt="Preview" className="max-h-64 w-full object-contain" />
+            }
+            <button onClick={clearSelection} className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors">
               <IoClose />
             </button>
           </div>
         ) : (
-          <label htmlFor="gallery-upload-input" className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-10 cursor-pointer hover:border-green2 hover:bg-green2/5 transition-colors">
+          <label htmlFor="gallery-file-input"
+            className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-200 rounded-xl p-10 cursor-pointer hover:border-green2 hover:bg-green2/5 transition-colors"
+          >
             <div className="flex gap-4">
               <IoImages className="text-4xl text-gray-300" />
               <IoVideocam className="text-4xl text-gray-300" />
@@ -239,8 +253,7 @@ export default function AdminGalleryManager() {
             <p className="text-xs text-gray-400">JPG, PNG, WebP, MP4, MOV — max 100 MB</p>
           </label>
         )}
-
-        <input id="gallery-upload-input" ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFileChange} className="sr-only" />
+        <input id="gallery-file-input" ref={fileRef} type="file" accept="image/*,video/*" onChange={handleFileChange} className="sr-only" />
 
         {/* Progress bar */}
         {uploading && uploadProgress > 0 && (
@@ -261,7 +274,7 @@ export default function AdminGalleryManager() {
             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-green2 text-white text-sm font-semibold rounded-xl hover:bg-green1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {uploading ? (
-              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg> Uploading...</>
+              <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg> Uploading {uploadProgress}%</>
             ) : (
               <><IoCloudUpload className="text-base" />{preview ? "Upload to Gallery" : "Choose File"}</>
             )}
@@ -271,21 +284,16 @@ export default function AdminGalleryManager() {
 
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilterCategory("all")}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filterCategory === "all" ? "bg-green2 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-        >
+        <button onClick={() => setFilterCategory("all")}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filterCategory === "all" ? "bg-green2 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
           All ({items.length})
         </button>
         {CATEGORIES.map((c) => {
           const count = items.filter((i) => i.category === c.value).length;
           if (count === 0) return null;
           return (
-            <button
-              key={c.value}
-              onClick={() => setFilterCategory(c.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filterCategory === c.value ? "bg-green2 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-            >
+            <button key={c.value} onClick={() => setFilterCategory(c.value)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filterCategory === c.value ? "bg-green2 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               {c.label} ({count})
             </button>
           );
@@ -294,10 +302,8 @@ export default function AdminGalleryManager() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl bg-gray-200 animate-pulse" />
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => <div key={i} className="aspect-square rounded-xl bg-gray-200 animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-3 bg-white rounded-2xl border border-gray-100">
@@ -305,9 +311,9 @@ export default function AdminGalleryManager() {
           <p className="text-sm text-gray-500">No gallery items yet. Upload your first one above.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {filtered.map((item) => (
-            <div key={item.url} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+            <div key={item.publicId} className="group relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-100">
               {item.type === "video" ? (
                 <>
                   <video src={item.url} muted playsInline preload="metadata" className="w-full h-full object-cover" />
@@ -316,27 +322,20 @@ export default function AdminGalleryManager() {
                   </div>
                 </>
               ) : (
-                <img src={item.url} alt="Gallery" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                <img src={item.url} alt={item.caption || item.category} loading="lazy" decoding="async" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
               )}
-              {/* Category badge */}
-              <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 flex items-start justify-between p-2">
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize">
                   {item.category}
                 </span>
+                <button onClick={() => handleDelete(item)} disabled={deletingId === item.publicId}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md disabled:opacity-50"
+                  aria-label="Delete">
+                  {deletingId === item.publicId
+                    ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                    : <IoTrash className="text-xs" />}
+                </button>
               </div>
-              {/* Delete */}
-              <button
-                onClick={() => handleDelete(item)}
-                disabled={deletingUrl === item.url}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-all shadow-md disabled:opacity-50"
-                aria-label="Delete"
-              >
-                {deletingUrl === item.url ? (
-                  <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
-                ) : (
-                  <IoTrash className="text-xs" />
-                )}
-              </button>
             </div>
           ))}
         </div>
