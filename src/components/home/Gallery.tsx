@@ -1,38 +1,46 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import Lottie from "lottie-react";
-import gallery from "../../json/animation/gallery.json";
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages, IoPlay, IoVideocam } from "react-icons/io5";
 import heic2any from "heic2any";
 
+// Lazy-load the decorative Lottie so it never blocks gallery images
+const GalleryLottie = lazy(() =>
+  import("lottie-react").then((mod) =>
+    import("../../json/animation/gallery.json").then((data) => ({
+      default: () => <mod.default animationData={data.default} className="md:w-[80%] w-full" />,
+    }))
+  )
+);
+
 // Dynamically import all standard images from the gallery folder
 const imageModules = import.meta.glob("../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}", {
-  eager: true,
+  eager: false,
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 // Dynamically import HEIC/HEIF images (iPhone format) - these need conversion
 const heicModules = import.meta.glob("../../assets/img/gallery/*.{heic,HEIC,heif,HEIF}", {
-  eager: true,
+  eager: false,
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 // Dynamically import all videos from the gallery folder
 const videoModules = import.meta.glob("../../assets/img/gallery/*.{mp4,webm,mov,avi,mkv}", {
-  eager: true,
+  eager: false,
   import: "default",
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
 interface MediaItem {
   src: string;
   alt: string;
   type: "image" | "video" | "heic";
-  originalSrc?: string; // For HEIC files, store original for conversion
+  originalSrc?: string;
+  loader?: () => Promise<string>;
 }
 
-// Create standard image array
-const standardImageItems: MediaItem[] = Object.entries(imageModules).map(([path, src]) => {
+// Create standard image array — resolved lazily on first access
+const standardImageItems: MediaItem[] = Object.keys(imageModules).map((path) => {
   const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
   const alt = filename
     .replace(/[-_]/g, " ")
@@ -40,11 +48,11 @@ const standardImageItems: MediaItem[] = Object.entries(imageModules).map(([path,
     .replace(/IMG.*WA/i, "Campus")
     .replace(/\d+/g, "")
     .trim() || "Campus View";
-  return { src: src as string, alt, type: "image" as const };
+  return { src: path, alt, type: "image" as const, loader: imageModules[path] };
 });
 
 // Create HEIC image array (needs client-side conversion)
-const heicImageItems: MediaItem[] = Object.entries(heicModules).map(([path, src]) => {
+const heicImageItems: MediaItem[] = Object.keys(heicModules).map((path) => {
   const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
   const alt = filename
     .replace(/[-_]/g, " ")
@@ -52,14 +60,14 @@ const heicImageItems: MediaItem[] = Object.entries(heicModules).map(([path, src]
     .replace(/IMG.*WA/i, "Campus")
     .replace(/\d+/g, "")
     .trim() || "Campus View";
-  return { src: src as string, alt, type: "heic" as const, originalSrc: src as string };
+  return { src: path, alt, type: "heic" as const, originalSrc: path, loader: heicModules[path] };
 });
 
 // Combine all image items
 const imageItems: MediaItem[] = [...standardImageItems, ...heicImageItems];
 
 // Create video array
-const videoItems: MediaItem[] = Object.entries(videoModules).map(([path, src]) => {
+const videoItems: MediaItem[] = Object.keys(videoModules).map((path) => {
   const filename = path.split("/").pop()?.split(".")[0] || "Campus Video";
   const alt = filename
     .replace(/[-_]/g, " ")
@@ -67,7 +75,7 @@ const videoItems: MediaItem[] = Object.entries(videoModules).map(([path, src]) =
     .replace(/IMG.*WA/i, "Campus")
     .replace(/\d+/g, "")
     .trim() || "Campus Video";
-  return { src: src as string, alt, type: "video" as const };
+  return { src: path, alt, type: "video" as const, loader: videoModules[path] };
 });
 
 // Combine images and videos (videos first for prominence, then images)
@@ -123,22 +131,31 @@ const gridItemVariants = {
   }),
 };
 
-// Image component with loading state
+// Image component with lazy loader support
 function GalleryImage({
   src,
+  loader,
   alt,
   onClick,
   className = "",
   loading = "lazy",
 }: {
   src: string;
+  loader?: () => Promise<string>;
   alt: string;
   onClick?: () => void;
   className?: string;
   loading?: "lazy" | "eager";
 }) {
+  const [resolvedSrc, setResolvedSrc] = useState<string>(loader ? "" : src);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (loader) {
+      loader().then((url) => setResolvedSrc(url)).catch(() => setHasError(true));
+    }
+  }, [loader]);
 
   if (hasError) {
     return (
@@ -150,18 +167,20 @@ function GalleryImage({
 
   return (
     <div className="relative">
-      {!isLoaded && (
+      {(!isLoaded || !resolvedSrc) && (
         <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg ${className}`} />
       )}
-      <img
-        src={src}
-        alt={alt}
-        onClick={onClick}
-        loading={loading}
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setHasError(true)}
-        className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
-      />
+      {resolvedSrc && (
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          onClick={onClick}
+          loading={loading}
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+          className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+        />
+      )}
     </div>
   );
 }
@@ -169,11 +188,13 @@ function GalleryImage({
 // HEIC Image component with client-side conversion
 function GalleryHeicImage({
   src,
+  loader,
   alt,
   onClick,
   className = "",
 }: {
   src: string;
+  loader?: () => Promise<string>;
   alt: string;
   onClick?: () => void;
   className?: string;
@@ -184,43 +205,27 @@ function GalleryHeicImage({
 
   useEffect(() => {
     let isMounted = true;
-    
     const convertHeic = async () => {
       try {
-        // Fetch the HEIC file
-        const response = await fetch(src);
+        const resolvedUrl = loader ? await loader() : src;
+        const response = await fetch(resolvedUrl);
         const blob = await response.blob();
-        
-        // Convert to JPEG using heic2any
-        const convertedBlob = await heic2any({
-          blob,
-          toType: "image/jpeg",
-          quality: 0.85,
-        });
-        
+        const convertedBlob = await heic2any({ blob, toType: "image/jpeg", quality: 0.85 });
         if (!isMounted) return;
-        
-        // Handle both single blob and array of blobs
         const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
         const url = URL.createObjectURL(finalBlob);
         setConvertedSrc(url);
         setIsConverting(false);
-      } catch (error) {
+      } catch {
         if (!isMounted) return;
-        console.error("Failed to convert HEIC image:", error);
         setHasError(true);
         setIsConverting(false);
       }
     };
-    
     convertHeic();
-    
     return () => {
       isMounted = false;
-      // Clean up object URL when component unmounts
-      if (convertedSrc) {
-        URL.revokeObjectURL(convertedSrc);
-      }
+      if (convertedSrc) URL.revokeObjectURL(convertedSrc);
     };
   }, [src]);
 
@@ -395,6 +400,7 @@ export default function Gallery() {
                       ) : media.type === "heic" ? (
                         <GalleryHeicImage
                           src={media.src}
+                          loader={media.loader}
                           alt={media.alt}
                           onClick={() => openModal(index, "lightbox")}
                           className="w-full h-full object-cover cursor-pointer rounded-xl"
@@ -402,9 +408,10 @@ export default function Gallery() {
                       ) : (
                         <GalleryImage
                           src={media.src}
+                          loader={media.loader}
                           alt={media.alt}
                           onClick={() => openModal(index, "lightbox")}
-                          loading="eager"
+                          loading="lazy"
                           className="w-full h-full object-cover cursor-pointer rounded-xl"
                         />
                       )}
@@ -467,7 +474,9 @@ export default function Gallery() {
               >
                 Explore the view
               </motion.h3>
-              <Lottie animationData={gallery} className="md:w-[80%] w-full" />
+              <Suspense fallback={<div className="md:w-[80%] w-full aspect-square" />}>
+                <GalleryLottie />
+              </Suspense>
             </div>
           </div>
         </div>

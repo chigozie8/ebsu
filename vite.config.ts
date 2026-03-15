@@ -35,16 +35,17 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     assetsInclude: ['**/*.heic', '**/*.HEIC', '**/*.heif', '**/*.HEIF'],
     build: {
-      // Increase the warning limit slightly for large deps like Firebase
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {
-            // Each chunk gets its own long-lived browser cache entry
             'vendor-react':    ['react', 'react-dom', 'react-router-dom'],
             'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/analytics'],
             'vendor-supabase': ['@supabase/supabase-js'],
-            'vendor-ui':       ['framer-motion', 'lottie-react', 'react-helmet-async'],
+            'vendor-motion':   ['framer-motion'],
+            'vendor-lottie':   ['lottie-react'],
+            'vendor-ui':       ['react-helmet-async', 'flowbite-react'],
+            'vendor-emailjs':  ['@emailjs/browser'],
           },
         },
       },
