@@ -148,7 +148,12 @@ interface ProjectEntry {
 }
 
 // Admin emails
-const ADMIN_EMAILS = ["patronkwo@gmail.com", "kenronkwo@gmail.com"];
+const ADMIN_EMAILS = [
+  "patronkwo@gmail.com",
+  "kenronkwo@gmail.com",
+  "ebsumsapresident2526@gmail.com",
+  "ebsumsa102@gmail.com",
+];
 
 export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
