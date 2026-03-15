@@ -3,19 +3,26 @@ import Lottie from "lottie-react";
 import gallery from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { IoClose, IoChevronBack, IoChevronForward, IoGrid, IoImages, IoPlay, IoVideocam } from "react-icons/io5";
+import {
+  IoClose,
+  IoChevronBack,
+  IoChevronForward,
+  IoGrid,
+  IoImages,
+  IoPlay,
+  IoVideocam,
+} from "react-icons/io5";
 
-// Dynamically import all standard images from the gallery folder
-const imageModules = import.meta.glob("../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}", {
-  eager: true,
-  import: "default",
-}) as Record<string, string>;
+// Lazy glob — modules are NOT bundled eagerly; each file is only fetched when called
+const imageModules = import.meta.glob(
+  "../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}",
+  { eager: false, import: "default" }
+) as Record<string, () => Promise<string>>;
 
-// Dynamically import all videos from the gallery folder
-const videoModules = import.meta.glob("../../assets/img/gallery/*.{mp4,webm,mov,avi,mkv}", {
-  eager: true,
-  import: "default",
-}) as Record<string, string>;
+const videoModules = import.meta.glob(
+  "../../assets/img/gallery/*.{mp4,webm,mov,avi,mkv}",
+  { eager: false, import: "default" }
+) as Record<string, () => Promise<string>>;
 
 interface MediaItem {
   src: string;
@@ -23,49 +30,54 @@ interface MediaItem {
   type: "image" | "video";
 }
 
-// Create standard image array
-const imageItems: MediaItem[] = Object.entries(imageModules).map(([path, src]) => {
-  const filename = path.split("/").pop()?.split(".")[0] || "Campus View";
-  const alt =
-    filename
-      .replace(/[-_]/g, " ")
+function buildLabel(path: string, fallback: string) {
+  return (
+    path
+      .split("/")
+      .pop()
+      ?.split(".")[0]
+      ?.replace(/[-_]/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase())
       .replace(/IMG.*WA/i, "Campus")
       .replace(/\d+/g, "")
-      .trim() || "Campus View";
-  return { src: src as string, alt, type: "image" as const };
-});
+      .trim() || fallback
+  );
+}
 
-// Create video array
-const videoItems: MediaItem[] = Object.entries(videoModules).map(([path, src]) => {
-  const filename = path.split("/").pop()?.split(".")[0] || "Campus Video";
-  const alt =
-    filename
-      .replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/IMG.*WA/i, "Campus")
-      .replace(/\d+/g, "")
-      .trim() || "Campus Video";
-  return { src: src as string, alt, type: "video" as const };
-});
+// Build a stable list of items with their loader functions (no URLs loaded yet)
+interface LazyMediaItem {
+  load: () => Promise<string>;
+  alt: string;
+  type: "image" | "video";
+}
 
-// Combine images and videos (videos first for prominence, then images)
-const allMedia: MediaItem[] = [...videoItems, ...imageItems];
+const lazyImageItems: LazyMediaItem[] = Object.entries(imageModules).map(
+  ([path, loader]) => ({
+    load: loader,
+    alt: buildLabel(path, "Campus View"),
+    type: "image" as const,
+  })
+);
 
-const PREVIEW_COUNT = 8; // Number of images to show on home page
+const lazyVideoItems: LazyMediaItem[] = Object.entries(videoModules).map(
+  ([path, loader]) => ({
+    load: loader,
+    alt: buildLabel(path, "Campus Video"),
+    type: "video" as const,
+  })
+);
 
+const allLazyMedia: LazyMediaItem[] = [...lazyVideoItems, ...lazyImageItems];
+
+const PREVIEW_COUNT = 8;
+
+// ---------- animation variants ----------
 const fadeInVariants1 = {
-  initial: {
-    opacity: 0,
-    y: 100,
-  },
+  initial: { opacity: 0, y: 100 },
   animate: (index: number) => ({
     opacity: 1,
     y: 0,
-    transition: {
-      delay: 0.05 * index,
-      duration: 0.4,
-    },
+    transition: { delay: 0.05 * index, duration: 0.4 },
   }),
 };
 
@@ -76,18 +88,9 @@ const modalVariants = {
 };
 
 const imageVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? 300 : -300,
-    opacity: 0,
-  }),
+  enter: (direction: number) => ({ x: direction > 0 ? 300 : -300, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction < 0 ? 300 : -300, opacity: 0 }),
 };
 
 const gridItemVariants = {
@@ -95,29 +98,35 @@ const gridItemVariants = {
   visible: (index: number) => ({
     opacity: 1,
     scale: 1,
-    transition: {
-      delay: Math.min(index * 0.02, 0.5),
-      duration: 0.3,
-    },
+    transition: { delay: Math.min(index * 0.02, 0.5), duration: 0.3 },
   }),
 };
 
-// Image component with loading state
-function GalleryImage({
-  src,
-  alt,
+// ---------- LazyImage ----------
+// Resolves the module URL on first render, then shows the image lazily
+function LazyImage({
+  item,
   onClick,
   className = "",
-  loading = "lazy",
+  eager = false,
 }: {
-  src: string;
-  alt: string;
+  item: LazyMediaItem;
   onClick?: () => void;
   className?: string;
-  loading?: "lazy" | "eager";
+  eager?: boolean;
 }) {
+  const [src, setSrc] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    item.load().then((url) => {
+      if (mountedRef.current) setSrc(url as string);
+    });
+    return () => { mountedRef.current = false; };
+  }, [item]);
 
   if (hasError) {
     return (
@@ -128,64 +137,78 @@ function GalleryImage({
   }
 
   return (
-    <div className="relative">
-      {!isLoaded && (
-        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg ${className}`} />
+    <div className="relative w-full h-full">
+      {(!isLoaded || !src) && (
+        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg`} />
       )}
-      <img
-        src={src}
-        alt={alt}
-        onClick={onClick}
-        loading={loading}
-        onLoad={() => setIsLoaded(true)}
-        onError={() => setHasError(true)}
-        className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
-      />
+      {src && (
+        <img
+          src={src}
+          alt={item.alt}
+          onClick={onClick}
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+          className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+        />
+      )}
     </div>
   );
 }
 
-// Video thumbnail component
-function GalleryVideoThumbnail({
-  src,
-  alt: _alt,
+// ---------- LazyVideoThumbnail ----------
+// Only loads video metadata once the src has been resolved
+function LazyVideoThumbnail({
+  item,
   onClick,
   className = "",
 }: {
-  src: string;
-  alt: string;
+  item: LazyMediaItem;
   onClick?: () => void;
   className?: string;
 }) {
+  const [src, setSrc] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    item.load().then((url) => {
+      if (mountedRef.current) setSrc(url as string);
+    });
+    return () => { mountedRef.current = false; };
+  }, [item]);
 
   if (hasError) {
     return (
-      <div className={`bg-gray-200 flex items-center justify-center ${className}`} onClick={onClick}>
+      <div
+        className={`bg-gray-200 flex items-center justify-center ${className}`}
+        onClick={onClick}
+      >
         <IoVideocam className="text-gray-400 text-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="relative cursor-pointer" onClick={onClick}>
-      {!isLoaded && (
-        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg ${className}`} />
+    <div className="relative cursor-pointer w-full h-full" onClick={onClick}>
+      {(!isLoaded || !src) && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
       )}
-      <video
-        ref={videoRef}
-        src={src}
-        muted
-        playsInline
-        preload="metadata"
-        onLoadedData={() => setIsLoaded(true)}
-        onError={() => setHasError(true)}
-        className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
-      />
-      {/* Play icon overlay */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {src && (
+        <video
+          src={src}
+          muted
+          playsInline
+          preload="none"
+          onLoadedData={() => setIsLoaded(true)}
+          onError={() => setHasError(true)}
+          className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+        />
+      )}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="bg-black/50 rounded-full p-3 backdrop-blur-sm">
           <IoPlay className="text-white text-xl ml-0.5" />
         </div>
@@ -194,24 +217,183 @@ function GalleryVideoThumbnail({
   );
 }
 
+// ---------- ResolvedMedia ----------
+// Used in the lightbox — resolves src on demand and caches in a map
+const srcCache = new Map<number, string>();
+
+function ResolvedMedia({
+  index,
+  direction,
+}: {
+  index: number;
+  direction: number;
+}) {
+  const item = allLazyMedia[index];
+  const [src, setSrc] = useState<string | null>(srcCache.get(index) ?? null);
+
+  useEffect(() => {
+    if (srcCache.has(index)) {
+      setSrc(srcCache.get(index)!);
+      return;
+    }
+    item.load().then((url) => {
+      srcCache.set(index, url as string);
+      setSrc(url as string);
+    });
+  }, [index, item]);
+
+  if (!src) {
+    return (
+      <div className="flex items-center justify-center w-full h-[calc(100vh-180px)]">
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return item.type === "video" ? (
+    <motion.video
+      key={index}
+      src={src}
+      variants={imageVariants}
+      custom={direction}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.3 }}
+      controls
+      autoPlay
+      className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+    />
+  ) : (
+    <motion.img
+      key={index}
+      src={src}
+      alt={item.alt}
+      variants={imageVariants}
+      custom={direction}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={{ duration: 0.3 }}
+      decoding="async"
+      className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+    />
+  );
+}
+
+// ---------- ThumbnailStrip ----------
+function ThumbnailStrip({
+  selectedMediaIndex,
+  onSelect,
+}: {
+  selectedMediaIndex: number;
+  onSelect: (index: number) => void;
+}) {
+  const start = Math.max(0, selectedMediaIndex - 4);
+  const end = Math.min(allLazyMedia.length, selectedMediaIndex + 5);
+  const slice = allLazyMedia.slice(start, end);
+
+  return (
+    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 hidden md:flex gap-1 bg-black/40 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto">
+      {slice.map((item, i) => {
+        const actualIndex = start + i;
+        return (
+          <ThumbnailButton
+            key={actualIndex}
+            item={item}
+            actualIndex={actualIndex}
+            isActive={actualIndex === selectedMediaIndex}
+            onSelect={onSelect}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function ThumbnailButton({
+  item,
+  actualIndex,
+  isActive,
+  onSelect,
+}: {
+  item: LazyMediaItem;
+  actualIndex: number;
+  isActive: boolean;
+  onSelect: (index: number) => void;
+}) {
+  const [src, setSrc] = useState<string | null>(srcCache.get(actualIndex) ?? null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    if (!srcCache.has(actualIndex)) {
+      item.load().then((url) => {
+        if (mountedRef.current) {
+          srcCache.set(actualIndex, url as string);
+          setSrc(url as string);
+        }
+      });
+    }
+    return () => { mountedRef.current = false; };
+  }, [actualIndex, item]);
+
+  return (
+    <button
+      onClick={() => onSelect(actualIndex)}
+      className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all relative bg-gray-700 ${
+        isActive ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"
+      }`}
+    >
+      {src ? (
+        item.type === "video" ? (
+          <>
+            <video
+              src={src}
+              muted
+              playsInline
+              preload="none"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <IoPlay className="text-white text-xs" />
+            </div>
+          </>
+        ) : (
+          <img
+            src={src}
+            alt={item.alt}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
+        )
+      ) : (
+        <div className="w-full h-full animate-pulse bg-gray-600" />
+      )}
+    </button>
+  );
+}
+
+// ---------- Main Gallery ----------
 export default function Gallery() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
-  const [visibleCount, setVisibleCount] = useState(20); // For infinite scroll in modal
+  const [visibleCount, setVisibleCount] = useState(20);
 
-  const previewMedia = allMedia.slice(0, PREVIEW_COUNT);
-  const imageCount = imageItems.length;
-  const videoCount = videoItems.length;
+  const previewMedia = allLazyMedia.slice(0, PREVIEW_COUNT);
+  const imageCount = lazyImageItems.length;
+  const videoCount = lazyVideoItems.length;
 
-  // Load more media when scrolling in grid view
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.target as HTMLDivElement;
-      const bottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
-      if (bottom && visibleCount < allMedia.length) {
-        setVisibleCount((prev) => Math.min(prev + 20, allMedia.length));
+      const bottom =
+        target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
+      if (bottom && visibleCount < allLazyMedia.length) {
+        setVisibleCount((prev) => Math.min(prev + 20, allLazyMedia.length));
       }
     },
     [visibleCount]
@@ -235,11 +417,19 @@ export default function Gallery() {
     setDirection(newDirection);
     setSelectedMediaIndex((prev) => {
       const newIndex = prev + newDirection;
-      if (newIndex < 0) return allMedia.length - 1;
-      if (newIndex >= allMedia.length) return 0;
+      if (newIndex < 0) return allLazyMedia.length - 1;
+      if (newIndex >= allLazyMedia.length) return 0;
       return newIndex;
     });
   }, []);
+
+  const handleThumbnailSelect = useCallback(
+    (index: number) => {
+      setDirection(index > selectedMediaIndex ? 1 : -1);
+      setSelectedMediaIndex(index);
+    },
+    [selectedMediaIndex]
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -264,7 +454,7 @@ export default function Gallery() {
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {previewMedia.map((media, index) => (
+                  {previewMedia.map((item, index) => (
                     <motion.div
                       key={index}
                       variants={fadeInVariants1}
@@ -276,19 +466,17 @@ export default function Gallery() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {media.type === "video" ? (
-                        <GalleryVideoThumbnail
-                          src={media.src}
-                          alt={media.alt}
+                      {item.type === "video" ? (
+                        <LazyVideoThumbnail
+                          item={item}
                           onClick={() => openModal(index, "lightbox")}
                           className="w-full h-full object-cover cursor-pointer rounded-xl"
                         />
                       ) : (
-                        <GalleryImage
-                          src={media.src}
-                          alt={media.alt}
+                        <LazyImage
+                          item={item}
                           onClick={() => openModal(index, "lightbox")}
-                          loading="eager"
+                          eager={index < 4}
                           className="w-full h-full object-cover cursor-pointer rounded-xl"
                         />
                       )}
@@ -300,8 +488,7 @@ export default function Gallery() {
                   ))}
                 </div>
 
-                {/* View All Button */}
-                {allMedia.length > PREVIEW_COUNT && (
+                {allLazyMedia.length > PREVIEW_COUNT && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -313,10 +500,7 @@ export default function Gallery() {
                       onClick={() => openModal(0, "grid")}
                       className="group relative overflow-hidden bg-white border-2 border-green1 rounded-xl px-6 py-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-green1/20 hover:border-green2"
                     >
-                      {/* Background hover effect */}
                       <span className="absolute inset-0 bg-gradient-to-r from-green1 to-green2 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-
-                      {/* Button content */}
                       <span className="relative flex items-center gap-3">
                         <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green1 group-hover:bg-white/20 transition-colors duration-300">
                           <IoImages className="text-xl text-white group-hover:text-white" />
@@ -333,6 +517,7 @@ export default function Gallery() {
                 )}
               </div>
             </div>
+
             <div className="basis-1/2">
               <motion.h2
                 variants={fadeInVariants3}
@@ -375,7 +560,8 @@ export default function Gallery() {
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-4">
                 <h3 className="text-white font-medium">
-                  Gallery ({imageCount} photos{videoCount > 0 ? `, ${videoCount} videos` : ""})
+                  Gallery ({imageCount} photos
+                  {videoCount > 0 ? `, ${videoCount} videos` : ""})
                 </h3>
                 <div className="flex gap-1">
                   <button
@@ -402,16 +588,15 @@ export default function Gallery() {
 
             {/* Modal Content */}
             {viewMode === "grid" ? (
-              /* Grid View with Infinite Scroll */
               <div className="flex-1 overflow-y-auto p-4" onScroll={handleScroll}>
                 <div className="max-w-7xl mx-auto">
-                  {/* Media count indicator */}
                   <div className="text-white/60 text-sm mb-4 text-center">
-                    Showing {Math.min(visibleCount, allMedia.length)} of {allMedia.length} items (
-                    {imageCount} photos{videoCount > 0 ? `, ${videoCount} videos` : ""})
+                    Showing {Math.min(visibleCount, allLazyMedia.length)} of{" "}
+                    {allLazyMedia.length} items ({imageCount} photos
+                    {videoCount > 0 ? `, ${videoCount} videos` : ""})
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {allMedia.slice(0, visibleCount).map((media, index) => (
+                    {allLazyMedia.slice(0, visibleCount).map((item, index) => (
                       <motion.div
                         key={index}
                         variants={gridItemVariants}
@@ -420,10 +605,9 @@ export default function Gallery() {
                         custom={index % 20}
                         className="relative group aspect-square overflow-hidden rounded-lg"
                       >
-                        {media.type === "video" ? (
-                          <GalleryVideoThumbnail
-                            src={media.src}
-                            alt={media.alt}
+                        {item.type === "video" ? (
+                          <LazyVideoThumbnail
+                            item={item}
                             onClick={() => {
                               setSelectedMediaIndex(index);
                               setViewMode("lightbox");
@@ -432,9 +616,8 @@ export default function Gallery() {
                           />
                         ) : (
                           <>
-                            <GalleryImage
-                              src={media.src}
-                              alt={media.alt}
+                            <LazyImage
+                              item={item}
                               onClick={() => {
                                 setSelectedMediaIndex(index);
                                 setViewMode("lightbox");
@@ -457,8 +640,7 @@ export default function Gallery() {
                       </motion.div>
                     ))}
                   </div>
-                  {/* Load more indicator */}
-                  {visibleCount < allMedia.length && (
+                  {visibleCount < allLazyMedia.length && (
                     <div className="text-center py-6">
                       <div className="inline-flex items-center gap-2 text-white/60 text-sm">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
@@ -471,7 +653,6 @@ export default function Gallery() {
             ) : (
               /* Lightbox View */
               <div className="flex-1 flex items-center justify-center relative">
-                {/* Navigation Buttons */}
                 <button
                   onClick={() => navigateMedia(-1)}
                   className="absolute left-2 sm:left-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
@@ -488,48 +669,26 @@ export default function Gallery() {
                   <IoChevronForward className="text-xl sm:text-2xl" />
                 </button>
 
-                {/* Media (Image or Video) */}
                 <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
                   <AnimatePresence initial={false} custom={direction} mode="wait">
-                    {allMedia[selectedMediaIndex]?.type === "video" ? (
-                      <motion.video
-                        key={selectedMediaIndex}
-                        src={allMedia[selectedMediaIndex]?.src}
-                        variants={imageVariants}
-                        custom={direction}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ duration: 0.3 }}
-                        controls
-                        autoPlay
-                        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
-                      />
-                    ) : (
-                      <motion.img
-                        key={selectedMediaIndex}
-                        src={allMedia[selectedMediaIndex]?.src}
-                        alt={allMedia[selectedMediaIndex]?.alt || "Gallery image"}
-                        variants={imageVariants}
-                        custom={direction}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        transition={{ duration: 0.3 }}
-                        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
-                      />
-                    )}
+                    <ResolvedMedia
+                      key={selectedMediaIndex}
+                      index={selectedMediaIndex}
+                      direction={direction}
+                    />
                   </AnimatePresence>
                 </div>
 
                 {/* Media Info & Counter */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
                   <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium flex items-center gap-2">
-                    {allMedia[selectedMediaIndex]?.type === "video" && <IoVideocam className="text-sm" />}
-                    {selectedMediaIndex + 1} / {allMedia.length}
+                    {allLazyMedia[selectedMediaIndex]?.type === "video" && (
+                      <IoVideocam className="text-sm" />
+                    )}
+                    {selectedMediaIndex + 1} / {allLazyMedia.length}
                   </div>
                   <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/80 text-xs max-w-[200px] truncate">
-                    {allMedia[selectedMediaIndex]?.alt}
+                    {allLazyMedia[selectedMediaIndex]?.alt}
                   </div>
                 </div>
 
@@ -542,48 +701,11 @@ export default function Gallery() {
                   <span className="hidden sm:inline">View All</span>
                 </button>
 
-                {/* Thumbnail strip for quick navigation */}
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 hidden md:flex gap-1 bg-black/40 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto">
-                  {allMedia
-                    .slice(
-                      Math.max(0, selectedMediaIndex - 4),
-                      Math.min(allMedia.length, selectedMediaIndex + 5)
-                    )
-                    .map((media, i) => {
-                      const actualIndex = Math.max(0, selectedMediaIndex - 4) + i;
-                      return (
-                        <button
-                          key={actualIndex}
-                          onClick={() => {
-                            setDirection(actualIndex > selectedMediaIndex ? 1 : -1);
-                            setSelectedMediaIndex(actualIndex);
-                          }}
-                          className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all relative ${
-                            actualIndex === selectedMediaIndex
-                              ? "ring-2 ring-white scale-110"
-                              : "opacity-60 hover:opacity-100"
-                          }`}
-                        >
-                          {media.type === "video" ? (
-                            <>
-                              <video
-                                src={media.src}
-                                muted
-                                playsInline
-                                preload="metadata"
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <IoPlay className="text-white text-xs" />
-                              </div>
-                            </>
-                          ) : (
-                            <img src={media.src} alt={media.alt} className="w-full h-full object-cover" />
-                          )}
-                        </button>
-                      );
-                    })}
-                </div>
+                {/* Thumbnail strip */}
+                <ThumbnailStrip
+                  selectedMediaIndex={selectedMediaIndex}
+                  onSelect={handleThumbnailSelect}
+                />
               </div>
             )}
           </motion.div>
