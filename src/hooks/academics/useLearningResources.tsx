@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { FileMetadata } from "../../models/academics/learning-resources";
 import { db, isFirebaseConfigured } from "../../config/firebase";
 import { collection, getDocs, query, where, and } from "firebase/firestore";
+import { cachedFetch } from "../../lib/cache";
 
 interface AdminMaterial {
   id: string;
@@ -31,81 +30,89 @@ export const useLearningResources = () => {
     resourcesType: string
   ) => {
     const folderPath = `levels/${level}/${course}/${resourcesType}`;
-    
+    const cacheKey = `resources:${level}:${course}:${resourcesType}`;
+
     try {
       setError(false);
       setGettingResources(true);
-      
-      let fileList: FileMetadata[] = [];
 
-      // 1. First fetch from Firestore (admin-uploaded materials with metadata)
-      if (isFirebaseConfigured) {
-        try {
-          const q = query(
-            collection(db, "learningMaterials"),
-            and(
-              where("level", "==", level),
-              where("courseCode", "==", course),
-              where("resourceType", "==", resourcesType)
-            )
-          );
-          const snapshot = await getDocs(q);
-          const adminMaterials = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as AdminMaterial[];
+      // Return instantly from cache if available (TTL: 10 minutes)
+      const cached = await cachedFetch<FileMetadata[]>(
+        cacheKey,
+        async () => {
+          let fileList: FileMetadata[] = [];
 
-          // Add admin materials to file list
-          adminMaterials.forEach(material => {
-            fileList.push({
-              name: material.title || material.fileName,
-              path: material.filePath,
-              size: material.fileSize || 0,
-              url: material.fileUrl,
-              description: material.description,
-            });
-          });
-        } catch (firestoreError) {
-          console.error("Error fetching from Firestore:", firestoreError);
-        }
-      }
+          // 1. Fetch from Firestore (admin-uploaded materials)
+          if (isFirebaseConfigured) {
+            try {
+              const q = query(
+                collection(db, "learningMaterials"),
+                and(
+                  where("level", "==", level),
+                  where("courseCode", "==", course),
+                  where("resourceType", "==", resourcesType)
+                )
+              );
+              const snapshot = await getDocs(q);
+              const adminMaterials = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })) as AdminMaterial[];
 
-      // 2. Also fetch directly from Supabase Storage (for backwards compatibility)
-      try {
-        const { data, error: listError } = await supabase.storage
-          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-          .list(folderPath, {
-            limit: 100,
-            sortBy: { column: 'name', order: 'asc' },
-          });
-
-        if (!listError && data) {
-          // Map files to FileMetadata format
-          const storageFiles: FileMetadata[] = data
-            .filter(item => item.name && !item.name.startsWith('.'))
-            .map((item) => ({
-              name: item.name,
-              path: `${folderPath}/${item.name}`,
-              size: item.metadata?.size || 0,
-              url: getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, `${folderPath}/${item.name}`),
-            }));
-
-          // Add storage files that aren't already in the list (avoid duplicates)
-          const existingUrls = new Set(fileList.map(f => f.url));
-          storageFiles.forEach(file => {
-            if (!existingUrls.has(file.url)) {
-              fileList.push(file);
+              adminMaterials.forEach((material) => {
+                fileList.push({
+                  name: material.title || material.fileName,
+                  path: material.filePath,
+                  size: material.fileSize || 0,
+                  url: material.fileUrl,
+                  description: material.description,
+                });
+              });
+            } catch (firestoreError) {
+              console.error("Error fetching from Firestore:", firestoreError);
             }
-          });
-        }
-      } catch (storageError) {
-        console.error("Error fetching from Supabase Storage:", storageError);
-      }
+          }
 
-      setFiles(fileList);
+          // 2. Fetch from Supabase Storage (backwards compatibility)
+          try {
+            const { data, error: listError } = await supabase.storage
+              .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
+              .list(folderPath, {
+                limit: 100,
+                sortBy: { column: "name", order: "asc" },
+              });
+
+            if (!listError && data) {
+              const storageFiles: FileMetadata[] = data
+                .filter((item) => item.name && !item.name.startsWith("."))
+                .map((item) => ({
+                  name: item.name,
+                  path: `${folderPath}/${item.name}`,
+                  size: item.metadata?.size || 0,
+                  url: getPublicUrl(
+                    STORAGE_BUCKETS.LEARNING_RESOURCES,
+                    `${folderPath}/${item.name}`
+                  ),
+                }));
+
+              const existingUrls = new Set(fileList.map((f) => f.url));
+              storageFiles.forEach((file) => {
+                if (!existingUrls.has(file.url)) fileList.push(file);
+              });
+            }
+          } catch (storageError) {
+            console.error("Error fetching from Supabase Storage:", storageError);
+          }
+
+          return fileList;
+        },
+        10 * 60 * 1000 // 10 minute TTL
+      );
+
+      setFiles(cached);
       setGettingResources(false);
-    } catch (error: any) {
-      setError(error);
+    } catch (error: unknown) {
+      setError(error as boolean);
       setGettingResources(false);
       console.error("Error fetching files:", error);
     }
