@@ -191,6 +191,13 @@ export const GeneralNavbar = () => {
                       </p>
                     </Dropdown.Item>
                   </NavLink>
+                  <NavLink to={"/ebsumsa/alumni"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Alumni
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
                 </Dropdown>
 
                 <Dropdown
@@ -399,6 +406,16 @@ export const GeneralNavbar = () => {
                     <Dropdown.Item>
                       <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
                         Executive Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/alumni"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Alumni
                       </p>
                     </Dropdown.Item>
                   </NavLink>

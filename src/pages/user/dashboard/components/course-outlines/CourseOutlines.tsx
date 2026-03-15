@@ -41,7 +41,7 @@ export default function CourseOutlines() {
   const [allOutlines, setAllOutlines] = useState<CourseOutlineEntry[]>([]);
   
   // Check if user is admin
-  const ADMIN_EMAILS = ["patronkwo@gmail.com", "kenronkwo@gmail.com", "ebsumsapresident2526@gmail.com", "ebsumsa102@gmail.com"];
+  const ADMIN_EMAILS = ["patronkwo@gmail.com", "kenronkwo@gmail.com", "ebsumsapresident2526@gmail.com", "ebsumsa102@gmail.com", "oohveeyuu070@gmail.com"];
   const isAdmin = ADMIN_EMAILS.includes(studentDetails?.email || '') || studentDetails?.email?.includes("admin");
 
   // Fetch all course outlines from Firestore on mount

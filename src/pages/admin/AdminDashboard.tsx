@@ -26,6 +26,7 @@ import { AdminQuizManager } from "./tabs/AdminQuizManager";
 import AdminTeamUpload from "./TeamImageUpload";
 import AdminEventsManager from "./tabs/AdminEventsManager";
 import AdminNotificationsTab from "./tabs/AdminNotificationsTab";
+import AdminAlumniManager from "./tabs/AdminAlumniManager";
 
 interface Material {
   id: string;
@@ -153,6 +154,7 @@ const ADMIN_EMAILS = [
   "kenronkwo@gmail.com",
   "ebsumsapresident2526@gmail.com",
   "ebsumsa102@gmail.com",
+  "oohveeyuu070@gmail.com",
 ];
 
 export default function AdminDashboard() {
@@ -160,11 +162,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events" | "alumni";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events", "alumni"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1899,6 +1901,19 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             Notifications
+          </button>
+          <button
+            onClick={() => setActiveTab("alumni")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "alumni"
+                ? "bg-green2 text-white shadow-md"
+                : "bg-green-50 text-green2 hover:bg-green-100 border-2 border-green2"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Alumni
           </button>
           <button
             onClick={() => { setActiveTab("messages"); fetchAdminMessages(); }}
@@ -4537,6 +4552,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </p>
           </div>
           <AdminEventsManager />
+        </motion.div>
+      )}
+
+      {/* Alumni Tab */}
+      {activeTab === "alumni" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Alumni Management</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Add, edit, and remove past EBSUMSA executives. Each entry appears on the public Alumni page grouped by year served.
+            </p>
+          </div>
+          <AdminAlumniManager />
         </motion.div>
       )}
 
