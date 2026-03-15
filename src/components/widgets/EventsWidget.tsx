@@ -220,9 +220,20 @@ export default function EventsWidget({ customIndex = 7 }: { customIndex?: number
                       <p className="text-sss xxss:text-xss text-gray-500">{event.time}</p>
                     )}
                   </div>
-                  <span className={`text-xss xxss:text-xs font-medium capitalize flex-shrink-0 ${color.text}`}>
-                    {event.type}
-                  </span>
+                  {event.lumaUrl ? (
+                    <a
+                      href={event.lumaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-xss font-semibold px-2 py-0.5 rounded-full bg-[#00875a] text-white hover:bg-[#006644] transition-colors"
+                    >
+                      Register
+                    </a>
+                  ) : (
+                    <span className={`text-xss xxss:text-xs font-medium capitalize flex-shrink-0 ${color.text}`}>
+                      {event.type}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -247,25 +258,39 @@ export default function EventsWidget({ customIndex = 7 }: { customIndex?: number
             {upcomingEvents.map((event) => {
               const color = EVENT_COLORS[event.type];
               return (
-                <button
+                <div
                   key={event.id}
-                  onClick={() => {
-                    setSelectedDate(event.date);
-                    const [y, m] = event.date.split("-").map(Number);
-                    setViewYear(y);
-                    setViewMonth(m - 1);
-                  }}
                   className="w-full flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors text-left"
                 >
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xss xxss:text-xs font-semibold text-gray-800 truncate">{event.title}</p>
-                    {event.time && <p className="text-sss xxss:text-xss text-gray-400">{event.time}</p>}
-                  </div>
-                  <span className={`text-sss xxss:text-xss font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${color.bg} ${color.text}`}>
-                    {getDaysUntil(event.date)}
-                  </span>
-                </button>
+                  <button
+                    onClick={() => {
+                      setSelectedDate(event.date);
+                      const [y, m] = event.date.split("-").map(Number);
+                      setViewYear(y);
+                      setViewMonth(m - 1);
+                    }}
+                    className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                  >
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xss xxss:text-xs font-semibold text-gray-800 truncate">{event.title}</p>
+                      {event.time && <p className="text-sss xxss:text-xss text-gray-400">{event.time}</p>}
+                    </div>
+                    <span className={`text-sss xxss:text-xss font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${color.bg} ${color.text}`}>
+                      {getDaysUntil(event.date)}
+                    </span>
+                  </button>
+                  {event.lumaUrl && (
+                    <a
+                      href={event.lumaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-xss font-semibold px-2 py-0.5 rounded-full bg-[#00875a] text-white hover:bg-[#006644] transition-colors"
+                    >
+                      Register
+                    </a>
+                  )}
+                </div>
               );
             })}
           </div>

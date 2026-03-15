@@ -615,17 +615,13 @@ export default function Dashboard() {
                       </motion.div>
 
                       {/* Events & Calendar Card */}
-                      <NavLink to="/dashboard#events">
+                      <NavLink to="/u/events">
                         <motion.div
                           variants={fadeInVariants5}
                           initial="initial"
                           whileInView="animate"
                           viewport={{ once: true }}
                           custom={17}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
                           className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#d1fae5] bg-[#d1fae5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
                         >
                           <svg
