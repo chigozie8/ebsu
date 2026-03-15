@@ -46,6 +46,7 @@ const AppRoutes = () => {
   const Alumni = lazy(() => import("../pages/ebsumsa/Alumni"));
   const ProjectsShowcase = lazy(() => import("../pages/projects/ProjectsShowcase"));
   const ProjectDetails = lazy(() => import("../pages/projects/ProjectDetails"));
+  const GalleryPage = lazy(() => import("../pages/gallery/GalleryPage"));
   
   const AboutUs = lazy(() => import("../pages/about/AboutUs"));
   const PhilosophyAndObjectives = lazy(() => import("../pages/about/P&A"));
@@ -139,6 +140,7 @@ const AppRoutes = () => {
           <Route path="/ebsumsa/alumni" element={<Alumni />} />
           <Route path="/projects" element={<ProjectsShowcase />} />
           <Route path="/projects/:projectId" element={<ProjectDetails />} />
+          <Route path="/gallery" element={<GalleryPage />} />
           
           <Route path="/about/about-us" element={<AboutUs />} />
           <Route
