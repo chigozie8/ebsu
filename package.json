@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.3.4",
+    "@emailjs/browser": "^4.4.1",
     "@material-tailwind/react": "^2.1.8",
     "@supabase/supabase-js": "^2.39.3",
     "ai": "^6.0.116",
