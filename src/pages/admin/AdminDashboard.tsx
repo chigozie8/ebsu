@@ -28,6 +28,7 @@ import AdminEventsManager from "./tabs/AdminEventsManager";
 import AdminNotificationsTab from "./tabs/AdminNotificationsTab";
 import AdminAlumniManager from "./tabs/AdminAlumniManager";
 import AdminNewsletterTab from "./tabs/AdminNewsletterTab";
+import AdminGalleryManager from "./tabs/AdminGalleryManager";
 
 interface Material {
   id: string;
@@ -163,11 +164,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "notifications" | "messages" | "events" | "alumni" | "newsletter";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "notifications", "messages", "events", "alumni", "newsletter"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1889,6 +1890,20 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             Team Images
+          </button>
+          <button
+            onClick={() => setActiveTab("gallery")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "gallery"
+                ? "bg-teal-600 text-white shadow-md"
+                : "bg-teal-50 text-teal-600 hover:bg-teal-100 border-2 border-teal-600"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Gallery
           </button>
           <button
             onClick={() => setActiveTab("notifications")}
@@ -4600,6 +4615,17 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </p>
           </div>
           <AdminNewsletterTab />
+        </motion.div>
+      )}
+
+      {/* Gallery Tab */}
+      {activeTab === "gallery" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <AdminGalleryManager />
         </motion.div>
       )}
 

@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Lottie from "lottie-react";
-import gallery from "../../json/animation/gallery.json";
+import galleryAnim from "../../json/animation/gallery.json";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import {
@@ -12,64 +12,16 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
+import { db } from "../../config/firebase";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
-// Lazy glob — modules are NOT bundled eagerly; each file is only fetched when called
-const imageModules = import.meta.glob(
-  "../../assets/img/gallery/*.{jpg,jpeg,png,webp,gif}",
-  { eager: false, import: "default" }
-) as Record<string, () => Promise<string>>;
-
-const videoModules = import.meta.glob(
-  "../../assets/img/gallery/*.{mp4,webm,mov,avi,mkv}",
-  { eager: false, import: "default" }
-) as Record<string, () => Promise<string>>;
-
-interface MediaItem {
-  src: string;
-  alt: string;
+interface GalleryItem {
+  id: string;
+  url: string;
   type: "image" | "video";
+  caption?: string;
+  createdAt?: number;
 }
-
-function buildLabel(path: string, fallback: string) {
-  return (
-    path
-      .split("/")
-      .pop()
-      ?.split(".")[0]
-      ?.replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-      .replace(/IMG.*WA/i, "Campus")
-      .replace(/\d+/g, "")
-      .trim() || fallback
-  );
-}
-
-// Build a stable list of items with their loader functions (no URLs loaded yet)
-interface LazyMediaItem {
-  load: () => Promise<string>;
-  alt: string;
-  type: "image" | "video";
-}
-
-const lazyImageItems: LazyMediaItem[] = Object.entries(imageModules).map(
-  ([path, loader]) => ({
-    load: loader,
-    alt: buildLabel(path, "Campus View"),
-    type: "image" as const,
-  })
-);
-
-const lazyVideoItems: LazyMediaItem[] = Object.entries(videoModules).map(
-  ([path, loader]) => ({
-    load: loader,
-    alt: buildLabel(path, "Campus Video"),
-    type: "video" as const,
-  })
-);
-
-const allLazyMedia: LazyMediaItem[] = [...lazyVideoItems, ...lazyImageItems];
-
-const PREVIEW_COUNT = 8;
 
 // ---------- animation variants ----------
 const fadeInVariants1 = {
@@ -102,173 +54,98 @@ const gridItemVariants = {
   }),
 };
 
-// ---------- LazyImage ----------
-// Resolves the module URL on first render, then shows the image lazily
-function LazyImage({
+const PREVIEW_COUNT = 8;
+
+// ---------- MediaCard ----------
+function MediaCard({
   item,
   onClick,
-  className = "",
   eager = false,
 }: {
-  item: LazyMediaItem;
-  onClick?: () => void;
-  className?: string;
+  item: GalleryItem;
+  onClick: () => void;
   eager?: boolean;
 }) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const mountedRef = useRef(true);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    mountedRef.current = true;
-    item.load().then((url) => {
-      if (mountedRef.current) setSrc(url as string);
-    });
-    return () => { mountedRef.current = false; };
-  }, [item]);
-
-  if (hasError) {
+  if (item.type === "video") {
     return (
-      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
-        <IoImages className="text-gray-400 text-2xl" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full">
-      {(!isLoaded || !src) && (
-        <div className={`absolute inset-0 bg-gray-200 animate-pulse rounded-lg`} />
-      )}
-      {src && (
-        <img
-          src={src}
-          alt={item.alt}
-          onClick={onClick}
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          onLoad={() => setIsLoaded(true)}
-          onError={() => setHasError(true)}
-          className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
-        />
-      )}
-    </div>
-  );
-}
-
-// ---------- LazyVideoThumbnail ----------
-// Only loads video metadata once the src has been resolved
-function LazyVideoThumbnail({
-  item,
-  onClick,
-  className = "",
-}: {
-  item: LazyMediaItem;
-  onClick?: () => void;
-  className?: string;
-}) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    item.load().then((url) => {
-      if (mountedRef.current) setSrc(url as string);
-    });
-    return () => { mountedRef.current = false; };
-  }, [item]);
-
-  if (hasError) {
-    return (
-      <div
-        className={`bg-gray-200 flex items-center justify-center ${className}`}
-        onClick={onClick}
-      >
-        <IoVideocam className="text-gray-400 text-2xl" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative cursor-pointer w-full h-full" onClick={onClick}>
-      {(!isLoaded || !src) && (
-        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
-      )}
-      {src && (
+      <div className="relative w-full h-full cursor-pointer" onClick={onClick}>
+        {!loaded && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl" />
+        )}
         <video
-          src={src}
+          src={item.url}
           muted
           playsInline
-          preload="none"
-          onLoadedData={() => setIsLoaded(true)}
-          onError={() => setHasError(true)}
-          className={`${className} ${isLoaded ? "opacity-100" : "opacity-0"} transition-opacity duration-300`}
+          preload="metadata"
+          onLoadedData={() => setLoaded(true)}
+          onError={() => setError(true)}
+          className={`w-full h-full object-cover rounded-xl transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         />
-      )}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="bg-black/50 rounded-full p-3 backdrop-blur-sm">
-          <IoPlay className="text-white text-xl ml-0.5" />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-black/50 rounded-full p-3 backdrop-blur-sm">
+            <IoPlay className="text-white text-xl ml-0.5" />
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------- ResolvedMedia ----------
-// Used in the lightbox — resolves src on demand and caches in a map
-const srcCache = new Map<number, string>();
-
-function ResolvedMedia({
-  index,
-  direction,
-}: {
-  index: number;
-  direction: number;
-}) {
-  const item = allLazyMedia[index];
-  const [src, setSrc] = useState<string | null>(srcCache.get(index) ?? null);
-
-  useEffect(() => {
-    if (srcCache.has(index)) {
-      setSrc(srcCache.get(index)!);
-      return;
-    }
-    item.load().then((url) => {
-      srcCache.set(index, url as string);
-      setSrc(url as string);
-    });
-  }, [index, item]);
-
-  if (!src) {
-    return (
-      <div className="flex items-center justify-center w-full h-[calc(100vh-180px)]">
-        <div className="w-8 h-8 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-xl">
+            <IoVideocam className="text-gray-400 text-2xl" />
+          </div>
+        )}
       </div>
     );
   }
 
-  return item.type === "video" ? (
-    <motion.video
-      key={index}
-      src={src}
-      variants={imageVariants}
-      custom={direction}
-      initial="enter"
-      animate="center"
-      exit="exit"
-      transition={{ duration: 0.3 }}
-      controls
-      autoPlay
-      className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
-    />
-  ) : (
+  return (
+    <div className="relative w-full h-full cursor-pointer" onClick={onClick}>
+      {!loaded && !error && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl" />
+      )}
+      {error ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-xl">
+          <IoImages className="text-gray-400 text-2xl" />
+        </div>
+      ) : (
+        <img
+          src={item.url}
+          alt={item.caption || "Gallery image"}
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          className={`w-full h-full object-cover rounded-xl transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------- LightboxMedia ----------
+function LightboxMedia({ item, direction }: { item: GalleryItem; direction: number }) {
+  if (item.type === "video") {
+    return (
+      <motion.video
+        key={item.id}
+        src={item.url}
+        variants={imageVariants}
+        custom={direction}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        transition={{ duration: 0.3 }}
+        controls
+        autoPlay
+        className="max-w-full max-h-[calc(100vh-160px)] sm:max-h-[calc(100vh-180px)] object-contain rounded-lg shadow-2xl"
+      />
+    );
+  }
+  return (
     <motion.img
-      key={index}
-      src={src}
-      alt={item.alt}
+      key={item.id}
+      src={item.url}
+      alt={item.caption || "Gallery image"}
       variants={imageVariants}
       custom={direction}
       initial="enter"
@@ -281,126 +158,68 @@ function ResolvedMedia({
   );
 }
 
-// ---------- ThumbnailStrip ----------
-function ThumbnailStrip({
-  selectedMediaIndex,
-  onSelect,
-}: {
-  selectedMediaIndex: number;
-  onSelect: (index: number) => void;
-}) {
-  const start = Math.max(0, selectedMediaIndex - 4);
-  const end = Math.min(allLazyMedia.length, selectedMediaIndex + 5);
-  const slice = allLazyMedia.slice(start, end);
-
+// ---------- Empty State ----------
+function EmptyGallery() {
   return (
-    <div className="absolute bottom-20 left-1/2 -translate-x-1/2 hidden md:flex gap-1 bg-black/40 backdrop-blur-sm p-2 rounded-xl max-w-[90vw] overflow-x-auto">
-      {slice.map((item, i) => {
-        const actualIndex = start + i;
-        return (
-          <ThumbnailButton
-            key={actualIndex}
-            item={item}
-            actualIndex={actualIndex}
-            isActive={actualIndex === selectedMediaIndex}
-            onSelect={onSelect}
-          />
-        );
-      })}
+    <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
+      <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
+        <IoImages className="text-4xl text-gray-300" />
+      </div>
+      <div>
+        <p className="text-gray-500 font-medium text-sm">No gallery images yet</p>
+        <p className="text-gray-400 text-xs mt-1">Check back soon for campus photos and videos.</p>
+      </div>
     </div>
-  );
-}
-
-function ThumbnailButton({
-  item,
-  actualIndex,
-  isActive,
-  onSelect,
-}: {
-  item: LazyMediaItem;
-  actualIndex: number;
-  isActive: boolean;
-  onSelect: (index: number) => void;
-}) {
-  const [src, setSrc] = useState<string | null>(srcCache.get(actualIndex) ?? null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    if (!srcCache.has(actualIndex)) {
-      item.load().then((url) => {
-        if (mountedRef.current) {
-          srcCache.set(actualIndex, url as string);
-          setSrc(url as string);
-        }
-      });
-    }
-    return () => { mountedRef.current = false; };
-  }, [actualIndex, item]);
-
-  return (
-    <button
-      onClick={() => onSelect(actualIndex)}
-      className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all relative bg-gray-700 ${
-        isActive ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"
-      }`}
-    >
-      {src ? (
-        item.type === "video" ? (
-          <>
-            <video
-              src={src}
-              muted
-              playsInline
-              preload="none"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <IoPlay className="text-white text-xs" />
-            </div>
-          </>
-        ) : (
-          <img
-            src={src}
-            alt={item.alt}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover"
-          />
-        )
-      ) : (
-        <div className="w-full h-full animate-pulse bg-gray-600" />
-      )}
-    </button>
   );
 }
 
 // ---------- Main Gallery ----------
 export default function Gallery() {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20);
 
-  const previewMedia = allLazyMedia.slice(0, PREVIEW_COUNT);
-  const imageCount = lazyImageItems.length;
-  const videoCount = lazyVideoItems.length;
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const q = query(collection(db, "galleryImages"), orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        const data: GalleryItem[] = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<GalleryItem, "id">),
+        }));
+        setItems(data);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGallery();
+  }, []);
+
+  const previewItems = items.slice(0, PREVIEW_COUNT);
+  const imageCount = items.filter((i) => i.type === "image").length;
+  const videoCount = items.filter((i) => i.type === "video").length;
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.target as HTMLDivElement;
-      const bottom =
+      const nearBottom =
         target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
-      if (bottom && visibleCount < allLazyMedia.length) {
-        setVisibleCount((prev) => Math.min(prev + 20, allLazyMedia.length));
+      if (nearBottom && visibleCount < items.length) {
+        setVisibleCount((prev) => Math.min(prev + 20, items.length));
       }
     },
-    [visibleCount]
+    [visibleCount, items.length]
   );
 
   const openModal = (index: number, mode: "lightbox" | "grid" = "grid") => {
-    setSelectedMediaIndex(index);
+    setSelectedIndex(index);
     setViewMode(mode);
     setIsModalOpen(true);
     setVisibleCount(20);
@@ -415,21 +234,13 @@ export default function Gallery() {
 
   const navigateMedia = useCallback((newDirection: number) => {
     setDirection(newDirection);
-    setSelectedMediaIndex((prev) => {
-      const newIndex = prev + newDirection;
-      if (newIndex < 0) return allLazyMedia.length - 1;
-      if (newIndex >= allLazyMedia.length) return 0;
-      return newIndex;
+    setSelectedIndex((prev) => {
+      const next = prev + newDirection;
+      if (next < 0) return items.length - 1;
+      if (next >= items.length) return 0;
+      return next;
     });
-  }, []);
-
-  const handleThumbnailSelect = useCallback(
-    (index: number) => {
-      setDirection(index > selectedMediaIndex ? 1 : -1);
-      setSelectedMediaIndex(index);
-    },
-    [selectedMediaIndex]
-  );
+  }, [items.length]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -451,73 +262,78 @@ export default function Gallery() {
       <div className="box-width">
         <div className="section">
           <div className="flex justify-between items-center flex-col-reverse md:flex-row gap-6">
+            {/* Grid preview */}
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {previewMedia.map((item, index) => (
-                    <motion.div
-                      key={index}
-                      variants={fadeInVariants1}
-                      initial="initial"
-                      whileInView="animate"
-                      viewport={{ once: true }}
-                      custom={index + 1}
-                      className="relative group overflow-hidden rounded-xl aspect-square"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {item.type === "video" ? (
-                        <LazyVideoThumbnail
-                          item={item}
-                          onClick={() => openModal(index, "lightbox")}
-                          className="w-full h-full object-cover cursor-pointer rounded-xl"
-                        />
-                      ) : (
-                        <LazyImage
-                          item={item}
-                          onClick={() => openModal(index, "lightbox")}
-                          eager={index < 4}
-                          className="w-full h-full object-cover cursor-pointer rounded-xl"
-                        />
-                      )}
-                      <div
-                        className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 rounded-xl cursor-pointer"
-                        onClick={() => openModal(index, "lightbox")}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
+                {loading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {Array.from({ length: PREVIEW_COUNT }).map((_, i) => (
+                      <div key={i} className="aspect-square rounded-xl bg-gray-200 animate-pulse" />
+                    ))}
+                  </div>
+                ) : items.length === 0 ? (
+                  <EmptyGallery />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                      {previewItems.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          variants={fadeInVariants1}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{ once: true }}
+                          custom={index + 1}
+                          className="relative group overflow-hidden rounded-xl aspect-square"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <MediaCard
+                            item={item}
+                            onClick={() => openModal(index, "lightbox")}
+                            eager={index < 4}
+                          />
+                          <div
+                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 rounded-xl cursor-pointer"
+                            onClick={() => openModal(index, "lightbox")}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
 
-                {allLazyMedia.length > PREVIEW_COUNT && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                    className="mt-8 flex justify-center"
-                  >
-                    <button
-                      onClick={() => openModal(0, "grid")}
-                      className="group relative overflow-hidden bg-white border-2 border-green1 rounded-xl px-6 py-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-green1/20 hover:border-green2"
-                    >
-                      <span className="absolute inset-0 bg-gradient-to-r from-green1 to-green2 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                      <span className="relative flex items-center gap-3">
-                        <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green1 group-hover:bg-white/20 transition-colors duration-300">
-                          <IoImages className="text-xl text-white group-hover:text-white" />
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
-                          View All Media
-                        </span>
-                        <span className="flex items-center justify-center ml-2 w-8 h-8 rounded-full bg-green1/10 group-hover:bg-white/20 transition-colors duration-300">
-                          <IoChevronForward className="text-green1 group-hover:text-white transition-colors duration-300" />
-                        </span>
-                      </span>
-                    </button>
-                  </motion.div>
+                    {items.length > PREVIEW_COUNT && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.4, duration: 0.5 }}
+                        className="mt-8 flex justify-center"
+                      >
+                        <button
+                          onClick={() => openModal(0, "grid")}
+                          className="group relative overflow-hidden bg-white border-2 border-green1 rounded-xl px-6 py-3.5 transition-all duration-300 hover:shadow-lg hover:shadow-green1/20 hover:border-green2"
+                        >
+                          <span className="absolute inset-0 bg-gradient-to-r from-green1 to-green2 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                          <span className="relative flex items-center gap-3">
+                            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green1 group-hover:bg-white/20 transition-colors duration-300">
+                              <IoImages className="text-xl text-white group-hover:text-white" />
+                            </span>
+                            <span className="text-sm font-semibold text-gray-900 group-hover:text-white transition-colors duration-300">
+                              View All Media
+                            </span>
+                            <span className="flex items-center justify-center ml-2 w-8 h-8 rounded-full bg-green1/10 group-hover:bg-white/20 transition-colors duration-300">
+                              <IoChevronForward className="text-green1 group-hover:text-white transition-colors duration-300" />
+                            </span>
+                          </span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
 
+            {/* Heading + animation */}
             <div className="basis-1/2">
               <motion.h2
                 variants={fadeInVariants3}
@@ -539,13 +355,13 @@ export default function Gallery() {
               >
                 Explore the view
               </motion.h3>
-              <Lottie animationData={gallery} className="md:w-[80%] w-full" />
+              <Lottie animationData={galleryAnim} className="md:w-[80%] w-full" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Full Screen Gallery Modal */}
+      {/* Full-screen modal */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
@@ -560,22 +376,20 @@ export default function Gallery() {
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-4">
                 <h3 className="text-white font-medium">
-                  Gallery ({imageCount} photos
-                  {videoCount > 0 ? `, ${videoCount} videos` : ""})
+                  Gallery ({imageCount} photo{imageCount !== 1 ? "s" : ""}
+                  {videoCount > 0 ? `, ${videoCount} video${videoCount !== 1 ? "s" : ""}` : ""})
                 </h3>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === "grid"
-                        ? "bg-white/20 text-white"
-                        : "text-white/60 hover:text-white hover:bg-white/10"
-                    }`}
-                    aria-label="Grid view"
-                  >
-                    <IoGrid className="text-xl" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-white/20 text-white"
+                      : "text-white/60 hover:text-white hover:bg-white/10"
+                  }`}
+                  aria-label="Grid view"
+                >
+                  <IoGrid className="text-xl" />
+                </button>
               </div>
               <button
                 onClick={closeModal}
@@ -590,122 +404,79 @@ export default function Gallery() {
             {viewMode === "grid" ? (
               <div className="flex-1 overflow-y-auto p-4" onScroll={handleScroll}>
                 <div className="max-w-7xl mx-auto">
-                  <div className="text-white/60 text-sm mb-4 text-center">
-                    Showing {Math.min(visibleCount, allLazyMedia.length)} of{" "}
-                    {allLazyMedia.length} items ({imageCount} photos
-                    {videoCount > 0 ? `, ${videoCount} videos` : ""})
-                  </div>
+                  <p className="text-white/60 text-sm mb-4 text-center">
+                    Showing {Math.min(visibleCount, items.length)} of {items.length} items
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {allLazyMedia.slice(0, visibleCount).map((item, index) => (
+                    {items.slice(0, visibleCount).map((item, index) => (
                       <motion.div
-                        key={index}
+                        key={item.id}
                         variants={gridItemVariants}
                         initial="hidden"
                         animate="visible"
                         custom={index % 20}
                         className="relative group aspect-square overflow-hidden rounded-lg"
                       >
-                        {item.type === "video" ? (
-                          <LazyVideoThumbnail
-                            item={item}
-                            onClick={() => {
-                              setSelectedMediaIndex(index);
-                              setViewMode("lightbox");
-                            }}
-                            className="w-full h-full object-cover cursor-pointer"
-                          />
-                        ) : (
-                          <>
-                            <LazyImage
-                              item={item}
-                              onClick={() => {
-                                setSelectedMediaIndex(index);
-                                setViewMode("lightbox");
-                              }}
-                              className="w-full h-full object-cover cursor-pointer"
-                            />
-                            <div
-                              className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 cursor-pointer flex items-center justify-center"
-                              onClick={() => {
-                                setSelectedMediaIndex(index);
-                                setViewMode("lightbox");
-                              }}
-                            >
-                              <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                                View
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        <MediaCard
+                          item={item}
+                          onClick={() => {
+                            setSelectedIndex(index);
+                            setDirection(0);
+                            setViewMode("lightbox");
+                          }}
+                        />
                       </motion.div>
                     ))}
                   </div>
-                  {visibleCount < allLazyMedia.length && (
-                    <div className="text-center py-6">
-                      <div className="inline-flex items-center gap-2 text-white/60 text-sm">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
-                        Scroll for more...
-                      </div>
-                    </div>
+                  {visibleCount < items.length && (
+                    <p className="text-white/40 text-sm text-center mt-6">
+                      Scroll down to load more...
+                    </p>
                   )}
                 </div>
               </div>
             ) : (
-              /* Lightbox View */
-              <div className="flex-1 flex items-center justify-center relative">
-                <button
-                  onClick={() => navigateMedia(-1)}
-                  className="absolute left-2 sm:left-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
-                  aria-label="Previous media"
-                >
-                  <IoChevronBack className="text-xl sm:text-2xl" />
-                </button>
+              /* Lightbox */
+              <div className="flex-1 flex flex-col items-center justify-center relative px-4 py-6">
+                <AnimatePresence mode="wait" custom={direction}>
+                  <LightboxMedia
+                    key={items[selectedIndex]?.id}
+                    item={items[selectedIndex]}
+                    direction={direction}
+                  />
+                </AnimatePresence>
 
-                <button
-                  onClick={() => navigateMedia(1)}
-                  className="absolute right-2 sm:right-4 z-10 p-2 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm"
-                  aria-label="Next media"
-                >
-                  <IoChevronForward className="text-xl sm:text-2xl" />
-                </button>
+                {/* Navigation */}
+                {items.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => navigateMedia(-1)}
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-black/40 hover:bg-black/60 text-white transition-all backdrop-blur-sm"
+                      aria-label="Previous"
+                    >
+                      <IoChevronBack className="text-xl sm:text-2xl" />
+                    </button>
+                    <button
+                      onClick={() => navigateMedia(1)}
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-3 rounded-full bg-black/40 hover:bg-black/60 text-white transition-all backdrop-blur-sm"
+                      aria-label="Next"
+                    >
+                      <IoChevronForward className="text-xl sm:text-2xl" />
+                    </button>
+                  </>
+                )}
 
-                <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-hidden">
-                  <AnimatePresence initial={false} custom={direction} mode="wait">
-                    <ResolvedMedia
-                      key={selectedMediaIndex}
-                      index={selectedMediaIndex}
-                      direction={direction}
-                    />
-                  </AnimatePresence>
+                {/* Caption */}
+                {items[selectedIndex]?.caption && (
+                  <p className="mt-4 text-white/70 text-sm text-center max-w-lg">
+                    {items[selectedIndex].caption}
+                  </p>
+                )}
+
+                {/* Counter */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-sm rounded-full px-4 py-1.5 text-white/70 text-xs">
+                  {selectedIndex + 1} / {items.length}
                 </div>
-
-                {/* Media Info & Counter */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-                  <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium flex items-center gap-2">
-                    {allLazyMedia[selectedMediaIndex]?.type === "video" && (
-                      <IoVideocam className="text-sm" />
-                    )}
-                    {selectedMediaIndex + 1} / {allLazyMedia.length}
-                  </div>
-                  <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white/80 text-xs max-w-[200px] truncate">
-                    {allLazyMedia[selectedMediaIndex]?.alt}
-                  </div>
-                </div>
-
-                {/* Back to Grid Button */}
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className="absolute top-4 left-4 flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-xs sm:text-sm transition-colors backdrop-blur-sm"
-                >
-                  <IoGrid />
-                  <span className="hidden sm:inline">View All</span>
-                </button>
-
-                {/* Thumbnail strip */}
-                <ThumbnailStrip
-                  selectedMediaIndex={selectedMediaIndex}
-                  onSelect={handleThumbnailSelect}
-                />
               </div>
             )}
           </motion.div>
