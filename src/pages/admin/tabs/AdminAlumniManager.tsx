@@ -19,7 +19,7 @@ import { TrashIcon } from "../../../components/icons/general/TrashIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import type { AlumniMember } from "../../ebsumsa/Alumni";
-import placeholder from "../../../assets/images/placeholder.jpg";
+import placeholder from "../../../assets/img/team/placeholder.png";
 
 /** Compress image to max 800px / JPEG 0.8 before upload */
 function compressImage(file: File): Promise<Blob> {
