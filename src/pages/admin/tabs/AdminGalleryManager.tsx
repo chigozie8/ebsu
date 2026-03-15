@@ -51,6 +51,7 @@ function compressImage(file: File): Promise<Blob> {
 
 export default function AdminGalleryManager() {
   const [items, setItems]           = useState<GalleryItem[]>([]);
+  const [manifestUrl, setManifestUrl] = useState<string | null>(null);
   const [loading, setLoading]       = useState(true);
   const [uploading, setUploading]   = useState(false);
   const [deletingUrl, setDeletingUrl] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export default function AdminGalleryManager() {
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setItems(data.items || []);
+      setManifestUrl(data.manifestUrl || null);
     } catch {
       notifyUser("error", "Failed to load gallery");
     } finally {
@@ -106,28 +108,32 @@ export default function AdminGalleryManager() {
       }
       setUploadProgress(40);
 
-      // Send raw file bytes — metadata goes in custom headers (avoids multipart parsing issues)
+      // Send raw file bytes — metadata goes in custom headers
       const res = await fetch("/api/gallery-upload", {
         method: "POST",
         headers: {
-          "Content-Type": fileToSend.type || selectedFile.type || "application/octet-stream",
-          "X-Category":   category,
-          "X-Caption":    caption.trim(),
-          "X-Filename":   selectedFile.name,
+          "Content-Type":    fileToSend.type || selectedFile.type || "application/octet-stream",
+          "X-Category":      category,
+          "X-Caption":       caption.trim(),
+          "X-Filename":      selectedFile.name,
+          "X-Manifest-Url":  manifestUrl || "",
         },
         body: fileToSend,
       });
 
       setUploadProgress(80);
       const text = await res.text();
-      let json: { error?: string; url?: string } = {};
+      let json: { error?: string; item?: GalleryItem; manifestUrl?: string } = {};
       try { json = JSON.parse(text); } catch { throw new Error(`Server error: ${text.slice(0, 300)}`); }
       if (!res.ok) throw new Error(json.error || "Upload failed");
+
+      // Update manifestUrl for next upload
+      if (json.manifestUrl) setManifestUrl(json.manifestUrl);
+      if (json.item) setItems((prev) => [json.item!, ...prev]);
 
       setUploadProgress(100);
       notifyUser("success", "Uploaded to gallery!");
       clearSelection();
-      await fetchItems();
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -140,12 +146,14 @@ export default function AdminGalleryManager() {
     if (!confirm(`Delete this ${item.type}? This cannot be undone.`)) return;
     setDeletingUrl(item.url);
     try {
-      const res = await fetch("/api/gallery-delete", {
+      const res = await fetch("/api/gallery-upload", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: item.url }),
+        body: JSON.stringify({ url: item.url, manifestUrl }),
       });
-      if (!res.ok) throw new Error("Delete failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      if (data.manifestUrl) setManifestUrl(data.manifestUrl);
       setItems((prev) => prev.filter((i) => i.url !== item.url));
       notifyUser("success", "Deleted successfully");
     } catch {

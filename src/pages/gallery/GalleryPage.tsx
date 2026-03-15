@@ -56,11 +56,12 @@ export default function GalleryPage() {
   const cols = useColumns();
   const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
+  const loadGallery = () => {
+    setError(null);
+    setLoading(true);
     fetch("/api/gallery-list")
       .then((r) => {
-        if (!r.ok) throw new Error(`Server error: ${r.status}`);
+        if (!r.ok) throw new Error(`Server error ${r.status}`);
         return r.json();
       })
       .then((data) => {
@@ -69,6 +70,11 @@ export default function GalleryPage() {
       })
       .catch((err) => setError(err.message || "Failed to load gallery"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    loadGallery();
   }, []);
 
   // Filtered list
@@ -222,7 +228,7 @@ export default function GalleryPage() {
             <h3 className="text-lg font-semibold text-gray-700">Could not load gallery</h3>
             <p className="text-sm text-gray-400 max-w-xs">{error}</p>
             <button
-              onClick={() => { setError(null); setLoading(true); fetch("/api/gallery-list").then(r => r.json()).then(d => setItems(d.items || [])).catch(e => setError(e.message)).finally(() => setLoading(false)); }}
+              onClick={loadGallery}
               className="mt-2 px-5 py-2 rounded-full bg-green2 text-white text-sm font-semibold hover:bg-green1 transition"
             >
               Try again
