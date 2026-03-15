@@ -9,6 +9,7 @@ export interface GalleryItem {
   type: "image" | "video";
   uploadedAt: string;
   size?: number;
+  caption?: string;
 }
 
 const CATEGORIES = [
