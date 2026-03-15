@@ -9,8 +9,8 @@ function setCors(res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-/** Collect all chunks from the IncomingMessage into a single Buffer */
-async function readBody(req: VercelRequest): Promise<Buffer> {
+/** Read the entire request body into a Buffer */
+function readBody(req: VercelRequest): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -19,54 +19,95 @@ async function readBody(req: VercelRequest): Promise<Buffer> {
   });
 }
 
-/** Parse a multipart/form-data body manually using the boundary */
-function parseMultipart(
-  body: Buffer,
-  boundary: string
-): { fields: Record<string, string>; file?: { buffer: Buffer; filename: string; mimeType: string } } {
-  const fields: Record<string, string> = {};
-  let file: { buffer: Buffer; filename: string; mimeType: string } | undefined;
+interface ParsedPart {
+  name: string;
+  filename?: string;
+  mimeType?: string;
+  data: Buffer;
+}
 
-  const sep = Buffer.from(`--${boundary}`);
-  const parts: Buffer[] = [];
-  let start = 0;
+/**
+ * Robust multipart/form-data parser.
+ * Handles CRLF (\r\n) and LF-only (\n) line endings.
+ */
+function parseMultipart(body: Buffer, boundary: string): ParsedPart[] {
+  const parts: ParsedPart[] = [];
+  const CRLF = Buffer.from("\r\n");
+  const boundaryBuf = Buffer.from("--" + boundary);
+  const endBoundaryBuf = Buffer.from("--" + boundary + "--");
 
-  while (start < body.length) {
-    const idx = body.indexOf(sep, start);
-    if (idx === -1) break;
-    const end = body.indexOf(sep, idx + sep.length);
-    const chunk = end === -1 ? body.slice(idx + sep.length) : body.slice(idx + sep.length, end);
-    parts.push(chunk);
-    start = end === -1 ? body.length : end;
-  }
+  let offset = 0;
 
-  for (const part of parts) {
-    const headerEnd = part.indexOf("\r\n\r\n");
-    if (headerEnd === -1) continue;
-    const headerStr = part.slice(0, headerEnd).toString();
-    const body = part.slice(headerEnd + 4);
-    // Strip trailing \r\n--
-    const data = body.slice(0, body.lastIndexOf("\r\n"));
+  const indexOf = (haystack: Buffer, needle: Buffer, start: number): number => {
+    for (let i = start; i <= haystack.length - needle.length; i++) {
+      if (haystack.slice(i, i + needle.length).equals(needle)) return i;
+    }
+    return -1;
+  };
 
-    const nameMatch = headerStr.match(/name="([^"]+)"/);
-    const filenameMatch = headerStr.match(/filename="([^"]+)"/);
-    const mimeMatch = headerStr.match(/Content-Type:\s*([^\r\n]+)/i);
+  while (offset < body.length) {
+    // Find boundary
+    const boundaryIdx = indexOf(body, boundaryBuf, offset);
+    if (boundaryIdx === -1) break;
+
+    // Skip past boundary + CRLF
+    let pos = boundaryIdx + boundaryBuf.length;
+
+    // Check if end boundary
+    if (body.slice(pos, pos + 2).toString() === "--") break;
+
+    // Skip CRLF after boundary
+    if (body.slice(pos, pos + 2).toString() === "\r\n") pos += 2;
+    else if (body[pos] === 0x0a) pos += 1; // LF only
+
+    // Parse headers until empty line
+    const headerLines: string[] = [];
+    while (pos < body.length) {
+      const lineEnd = indexOf(body, CRLF, pos);
+      if (lineEnd === -1 || lineEnd === pos) {
+        // Empty line = end of headers
+        pos = lineEnd === pos ? pos + 2 : body.length;
+        break;
+      }
+      headerLines.push(body.slice(pos, lineEnd).toString());
+      pos = lineEnd + 2;
+    }
+
+    // Find next boundary (data ends just before it)
+    const nextBoundaryIdx = indexOf(body, boundaryBuf, pos);
+    if (nextBoundaryIdx === -1) break;
+
+    // Data is between pos and (nextBoundaryIdx - CRLF)
+    let dataEnd = nextBoundaryIdx;
+    // Strip trailing CRLF before boundary
+    if (dataEnd >= 2 && body.slice(dataEnd - 2, dataEnd).toString() === "\r\n") {
+      dataEnd -= 2;
+    } else if (dataEnd >= 1 && body[dataEnd - 1] === 0x0a) {
+      dataEnd -= 1;
+    }
+
+    const data = body.slice(pos, dataEnd);
+    offset = nextBoundaryIdx;
+
+    // Parse Content-Disposition
+    const dispHeader = headerLines.find((l) => /content-disposition/i.test(l)) || "";
+    const ctHeader   = headerLines.find((l) => /content-type/i.test(l))        || "";
+
+    const nameMatch     = dispHeader.match(/name="([^"]+)"/i);
+    const filenameMatch = dispHeader.match(/filename="([^"]+)"/i);
+    const mimeMatch     = ctHeader.match(/:\s*(.+)/);
 
     if (!nameMatch) continue;
-    const name = nameMatch[1];
 
-    if (filenameMatch) {
-      file = {
-        buffer: data,
-        filename: filenameMatch[1],
-        mimeType: mimeMatch ? mimeMatch[1].trim() : "application/octet-stream",
-      };
-    } else {
-      fields[name] = data.toString().trim();
-    }
+    parts.push({
+      name:     nameMatch[1],
+      filename: filenameMatch?.[1],
+      mimeType: mimeMatch ? mimeMatch[1].trim().split(";")[0].trim() : undefined,
+      data,
+    });
   }
 
-  return { fields, file };
+  return parts;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -75,40 +116,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const contentType = req.headers["content-type"] || "";
-    const boundaryMatch = contentType.match(/boundary=(.+)/);
-    if (!boundaryMatch) return res.status(400).json({ error: "Missing multipart boundary" });
+    const contentType = (req.headers["content-type"] || "").toString();
+    if (!contentType.includes("multipart/form-data")) {
+      return res.status(400).json({ error: "Expected multipart/form-data" });
+    }
 
-    const body = await readBody(req);
-    const { fields, file } = parseMultipart(body, boundaryMatch[1].trim());
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^\s;]+))/);
+    if (!boundaryMatch) {
+      return res.status(400).json({ error: "Missing multipart boundary" });
+    }
+    const boundary = (boundaryMatch[1] || boundaryMatch[2]).trim();
 
-    if (!file) return res.status(400).json({ error: "No file provided" });
+    const body  = await readBody(req);
+    const parts = parseMultipart(body, boundary);
 
-    const caption  = fields.caption  || "";
-    const category = fields.category || "general";
-    const isVideo  = file.mimeType.startsWith("video/");
-    const ext      = file.filename.split(".").pop() || (isVideo ? "mp4" : "jpg");
-    const pathname = `gallery/${category}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    console.log("[gallery-upload] parsed parts:", parts.map((p) => ({ name: p.name, filename: p.filename, mime: p.mimeType, size: p.data.length })));
 
-    const blob = await put(pathname, file.buffer, {
+    const filePart    = parts.find((p) => p.filename);
+    const captionPart = parts.find((p) => p.name === "caption");
+    const catPart     = parts.find((p) => p.name === "category");
+
+    if (!filePart || filePart.data.length === 0) {
+      console.error("[gallery-upload] no file part found in:", parts.map((p) => p.name));
+      return res.status(400).json({ error: "No file found in upload" });
+    }
+
+    const caption  = captionPart  ? captionPart.data.toString().trim()  : "";
+    const category = catPart      ? catPart.data.toString().trim()      : "general";
+    const mimeType = filePart.mimeType || "application/octet-stream";
+    const isVideo  = mimeType.startsWith("video/");
+    const rawExt   = (filePart.filename || "file").split(".").pop() || (isVideo ? "mp4" : "jpg");
+    const ext      = rawExt.toLowerCase();
+    const safeFilename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const blobPath = `gallery/${category}/${safeFilename}`;
+
+    console.log("[gallery-upload] uploading to blob:", blobPath, "size:", filePart.data.length, "mime:", mimeType);
+
+    const blob = await put(blobPath, filePart.data, {
       access: "public",
-      contentType: file.mimeType,
+      contentType: mimeType,
       addRandomSuffix: false,
     });
 
-    console.log("[gallery-upload] stored blob at:", blob.pathname, "url:", blob.url);
+    console.log("[gallery-upload] success:", blob.url);
 
     return res.status(200).json({
-      url: blob.url,
-      pathname: blob.pathname,
+      url:        blob.url,
+      pathname:   blob.pathname,
       caption,
       category,
-      type: isVideo ? "video" : "image",
+      type:       isVideo ? "video" : "image",
       uploadedAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.error("[gallery-upload]", err);
-    return res.status(500).json({ error: err instanceof Error ? err.message : "Upload failed" });
+    console.error("[gallery-upload] error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: message || "Upload failed" });
   }
 }
-

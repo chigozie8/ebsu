@@ -111,7 +111,10 @@ export default function AdminGalleryManager() {
       formData.append("category", category);
       setUploadProgress(60);
       const res = await fetch("/api/gallery-upload", { method: "POST", body: formData });
-      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "Upload failed"); }
+      const text = await res.text();
+      let json: { error?: string; url?: string } = {};
+      try { json = JSON.parse(text); } catch { throw new Error(`Server returned: ${text.slice(0, 200)}`); }
+      if (!res.ok) throw new Error(json.error || "Upload failed");
       setUploadProgress(100);
       notifyUser("success", "Uploaded to gallery!");
       clearSelection();
