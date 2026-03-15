@@ -96,6 +96,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       addRandomSuffix: false,
     });
 
+    console.log("[gallery-upload] stored blob at:", blob.pathname, "url:", blob.url);
+
     return res.status(200).json({
       url: blob.url,
       pathname: blob.pathname,

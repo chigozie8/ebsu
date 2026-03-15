@@ -13,17 +13,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { blobs } = await list({ prefix: "gallery/", limit: 1000 });
+    // List ALL blobs in the store (no prefix filter) and paginate through all pages
+    const allBlobs: Awaited<ReturnType<typeof list>>["blobs"] = [];
+    let cursor: string | undefined;
 
-    const items = blobs.map((blob) => {
+    do {
+      const result = await list({ limit: 1000, cursor });
+      allBlobs.push(...result.blobs);
+      cursor = result.cursor;
+    } while (cursor);
+
+    console.log("[gallery-list] total blobs in store:", allBlobs.length);
+    console.log("[gallery-list] all pathnames:", allBlobs.map((b) => b.pathname).join(", "));
+
+    // Only keep blobs under the gallery/ prefix
+    const galleryBlobs = allBlobs.filter((b) => b.pathname.startsWith("gallery/"));
+
+    console.log("[gallery-list] gallery blobs found:", galleryBlobs.length);
+
+    const items = galleryBlobs.map((blob) => {
       const parts = blob.pathname.split("/");
       // pathname: gallery/{category}/{filename}
       const category = parts.length >= 3 ? parts[1] : "general";
       const filename = parts[parts.length - 1];
       const isVideo = /\.(mp4|mov|webm|avi|mkv)$/i.test(filename);
 
-      // caption is encoded in the content-type metadata — we use URL search params instead
-      // For now caption defaults to empty; metadata is stored in the blob token
       return {
         url: blob.url,
         pathname: blob.pathname,
@@ -31,6 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         type: isVideo ? "video" : "image",
         uploadedAt: blob.uploadedAt,
         size: blob.size,
+        caption: "",
       };
     });
 
@@ -40,6 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ items });
   } catch (err) {
     console.error("[gallery-list]", err);
-    return res.status(500).json({ error: "Failed to list gallery items" });
+    return res.status(500).json({ error: err instanceof Error ? err.message : "Failed to list gallery items" });
   }
 }
