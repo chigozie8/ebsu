@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import placeholder from "../../assets/img/team/placeholder.png";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
+import { db } from "../../config/firebase";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
 export interface AlumniMember {
   id: string;
@@ -14,22 +16,21 @@ export interface AlumniMember {
   bio?: string;
 }
 
-// ─── Add alumni directly here ───────────────────────────────────────────────
-// To add a new member: copy a block below and fill in the details.
-// For imageUrl, place the photo in /public/img/alumni/ and use the path:
-//   imageUrl: "/img/alumni/john-doe.jpg"
-// Leave imageUrl blank to show the placeholder photo.
-const alumniData: AlumniMember[] = [
-  {
-    id: "1",
-    fullName: "Alumni Member",      // <-- update with real full name
-    role: "President",              // <-- update with real role/position
-    yearServed: "2025/2026",        // <-- update with correct year e.g. "2024/2025"
-    imageUrl: "/img/alumni/IMG-20260309-WA0048.jpg",
-    bio: "",                        // <-- optional: add a short bio or leave blank
-  },
-];
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Skeleton card for loading state ──────────────────────────────────────────
+function AlumniCardSkeleton() {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden animate-pulse">
+      <div className="flex items-center gap-4 p-4 sm:p-5">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-3/4" />
+          <div className="h-3 bg-gray-200 rounded w-1/2" />
+          <div className="h-5 bg-gray-200 rounded-full w-28" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AlumniCard({ member, index }: { member: AlumniMember; index: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -44,16 +45,16 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
       className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:border-green2 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-center gap-4 p-4 sm:p-5">
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-gray-100 flex-shrink-0">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-gray-100 flex-shrink-0 bg-gray-100">
           <img
             src={member.imageUrl || placeholder}
             alt={member.fullName}
-            className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = placeholder;
             }}
+            className="w-full h-full object-cover"
           />
         </div>
 
@@ -100,8 +101,29 @@ function AlumniCard({ member, index }: { member: AlumniMember; index: number }) 
 }
 
 export default function AlumniPage() {
+  const [alumniData, setAlumniData] = useState<AlumniMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const fetchAlumni = async () => {
+      try {
+        const snap = await getDocs(
+          query(collection(db, "alumni"), orderBy("yearServed", "desc"))
+        );
+        setAlumniData(
+          snap.docs.map((d) => ({ id: d.id, ...d.data() } as AlumniMember))
+        );
+      } catch {
+        // silently fail — empty state shown below
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAlumni();
+  }, []);
 
   const years = [
     "all",
@@ -175,8 +197,8 @@ export default function AlumniPage() {
         </svg>
       </section>
 
-      {/* Filters */}
-      {alumniData.length > 0 && (
+      {/* Filters — only shown once data is loaded and non-empty */}
+      {!loading && alumniData.length > 0 && (
         <section className="max-w-5xl mx-auto px-4 py-6">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -214,7 +236,13 @@ export default function AlumniPage() {
 
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 pb-20">
-        {alumniData.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <AlumniCardSkeleton key={i} />
+            ))}
+          </div>
+        ) : alumniData.length === 0 ? (
           <div className="text-center py-24 bg-white border border-gray-200 rounded-xl">
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +250,7 @@ export default function AlumniPage() {
               </svg>
             </div>
             <h3 className="text-base font-semibold text-gray-700 mb-1">No alumni added yet</h3>
-            <p className="text-sm text-gray-400">Alumni will appear here once added to the data file.</p>
+            <p className="text-sm text-gray-400">Alumni records will appear here once added by an admin.</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">

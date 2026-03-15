@@ -247,11 +247,14 @@ export default function BlogPost() {
                     </div>
                   )}
                   
-                  <div className="w-full flex items-center justify-center">
+                  <div className="w-full aspect-video overflow-hidden rounded-lg mb-3 bg-gray-100">
                     <img
                       src={blogPost?.sampleImg}
                       alt={blogPost?.title}
-                      className="w-full mb-3 rounded-lg"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   
