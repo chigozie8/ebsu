@@ -184,15 +184,15 @@ export function TeamUploadManager({
                 />
               </div>
 
-              {/* Extra field (reg no / work / level) */}
+              {/* Extra field (phone / reg no / work) */}
               {member.extra !== undefined && (
                 <div>
                   <p className="text-xss font-bold text-gray-400 uppercase tracking-wide mb-0.5">
-                    {teamType === 'classRep' ? 'Work / Description' : 'Level / Info'}
+                    {teamType === 'executive' ? 'Phone Number' : teamType === 'classRep' ? 'Work / Description' : 'Level / Info'}
                   </p>
                   <EditableField
                     value={member.extra}
-                    label="Extra info"
+                    label={teamType === 'executive' ? 'Phone Number' : 'Extra info'}
                     onSave={async (v) => {
                       await persistField(member.id, 'extra', v);
                       onMemberUpdate(member.id, { extra: v });

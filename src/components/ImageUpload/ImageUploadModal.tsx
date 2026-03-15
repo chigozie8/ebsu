@@ -12,6 +12,45 @@ interface ImageUploadModalProps {
   memberName: string;
 }
 
+/** Compress + resize an image to max 800x800, JPEG quality 0.8 */
+function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX = 800;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) {
+          height = Math.round((height * MAX) / width);
+          width = MAX;
+        } else {
+          width = Math.round((width * MAX) / height);
+          height = MAX;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not supported')); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Compression failed'));
+        },
+        'image/jpeg',
+        0.8
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Image load failed')); };
+    img.src = objectUrl;
+  });
+}
+
 export function ImageUploadModal({
   isOpen,
   onClose,
@@ -23,9 +62,10 @@ export function ImageUploadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
+  const [compressedSize, setCompressedSize] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -33,15 +73,28 @@ export function ImageUploadModal({
       setError('Please select an image file');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File size must be less than 5MB');
+    if (file.size > 20 * 1024 * 1024) {
+      setError('File size must be less than 20MB');
       return;
     }
 
     setError('');
-    const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    setCompressedSize(null);
+
+    try {
+      const compressed = await compressImage(file);
+      const sizeKB = Math.round(compressed.size / 1024);
+      setCompressedSize(
+        `Compressed to ${sizeKB < 1024 ? `${sizeKB} KB` : `${(sizeKB / 1024).toFixed(1)} MB`}`
+      );
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleUpload = async () => {
@@ -55,13 +108,19 @@ export function ImageUploadModal({
 
     try {
       const file = fileInputRef.current.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `team-images/${teamType}/${memberId}_${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase Storage using the shared client
+      let uploadBlob: Blob;
+      try {
+        uploadBlob = await compressImage(file);
+      } catch {
+        uploadBlob = file;
+      }
+
+      const fileName = `team-images/${teamType}/${memberId}_${Date.now()}.jpg`;
+
       const { error: uploadError } = await supabase.storage
         .from('profile-pictures')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, uploadBlob, { upsert: true, contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
@@ -71,7 +130,6 @@ export function ImageUploadModal({
 
       const publicUrl = urlData.publicUrl;
 
-      // Persist to Firestore so image survives page reloads
       await setDoc(
         doc(db, 'teamImages', `${teamType}_${memberId}`),
         { teamType, memberId, imageUrl: publicUrl, updatedAt: new Date().toISOString() },
@@ -80,6 +138,7 @@ export function ImageUploadModal({
 
       onUploadSuccess(publicUrl);
       setPreview(null);
+      setCompressedSize(null);
       setIsLoading(false);
       onClose();
     } catch (err) {
@@ -90,6 +149,7 @@ export function ImageUploadModal({
 
   const handleClose = () => {
     setPreview(null);
+    setCompressedSize(null);
     setError('');
     onClose();
   };
@@ -124,6 +184,11 @@ export function ImageUploadModal({
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green2 mx-auto">
               <img src={preview} alt="Preview" className="w-full h-full object-cover" />
             </div>
+            {compressedSize && (
+              <p className="text-xs text-green2 text-center mt-2 font-medium">
+                {compressedSize} — ready to upload
+              </p>
+            )}
           </div>
         ) : (
           <div className="mb-5 w-32 h-32 rounded-full bg-gray-100 border-4 border-dashed border-gray-200 mx-auto flex items-center justify-center">
@@ -152,7 +217,9 @@ export function ImageUploadModal({
             onChange={handleFileChange}
             className="sr-only"
           />
-          <p className="text-xs text-gray-400 text-center mt-1.5">JPG, PNG, WebP — max 5MB</p>
+          <p className="text-xs text-gray-400 text-center mt-1.5">
+            JPG, PNG, WebP — auto-compressed before upload
+          </p>
         </div>
 
         {error && (
