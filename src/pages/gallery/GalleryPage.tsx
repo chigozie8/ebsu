@@ -48,6 +48,7 @@ function useColumns() {
 export default function GalleryPage() {
   const [items, setItems]             = useState<GalleryItem[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch]           = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -58,9 +59,15 @@ export default function GalleryPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
     fetch("/api/gallery-list")
-      .then((r) => r.json())
-      .then((data) => setItems(data.items || []))
-      .catch(() => {})
+      .then((r) => {
+        if (!r.ok) throw new Error(`Server error: ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setItems(data.items || []);
+      })
+      .catch((err) => setError(err.message || "Failed to load gallery"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -202,8 +209,29 @@ export default function GalleryPage() {
           </div>
         )}
 
+        {/* Error state */}
+        {!loading && error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-28 text-center gap-4"
+          >
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+              <IoImages className="text-3xl text-red-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700">Could not load gallery</h3>
+            <p className="text-sm text-gray-400 max-w-xs">{error}</p>
+            <button
+              onClick={() => { setError(null); setLoading(true); fetch("/api/gallery-list").then(r => r.json()).then(d => setItems(d.items || [])).catch(e => setError(e.message)).finally(() => setLoading(false)); }}
+              className="mt-2 px-5 py-2 rounded-full bg-green2 text-white text-sm font-semibold hover:bg-green1 transition"
+            >
+              Try again
+            </button>
+          </motion.div>
+        )}
+
         {/* Empty state */}
-        {!loading && filtered.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -227,7 +255,7 @@ export default function GalleryPage() {
         )}
 
         {/* Masonry grid */}
-        {!loading && filtered.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <motion.div
             layout
             className="flex gap-4"
