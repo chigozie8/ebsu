@@ -212,6 +212,7 @@ export const GeneralNavbar = () => {
                   }
                   theme={customDropdownTheme}
                 >
+                  {/* TODO: re-enable class representatives when ready
                   <NavLink to={"/students/class-representatives"}>
                     <Dropdown.Item className="group">
                       <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
@@ -219,6 +220,7 @@ export const GeneralNavbar = () => {
                       </p>
                     </Dropdown.Item>
                   </NavLink>
+                  */}
                   <NavLink to={"/students/project-team"}>
                     <Dropdown.Item className="group">
                       <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
@@ -414,6 +416,7 @@ export const GeneralNavbar = () => {
                   }
                   theme={customDropdownTheme}
                 >
+                  {/* TODO: re-enable class representatives when ready
                   <NavLink
                     onClick={() => setIsNavOpen(false)}
                     to={"/students/class-representatives"}
@@ -424,6 +427,7 @@ export const GeneralNavbar = () => {
                       </p>
                     </Dropdown.Item>
                   </NavLink>
+                  */}
                   <NavLink
                     onClick={() => setIsNavOpen(false)}
                     to={"/students/project-team"}

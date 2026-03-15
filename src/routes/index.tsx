@@ -37,7 +37,7 @@ const AppRoutes = () => {
   const Blog = lazy(() => import("../pages/misc/blog/Blog"));
   const BlogPost = lazy(() => import("../pages/misc/blog/post/BlogPost"));
   const ProjectTeam = lazy(() => import("../pages/students/ProjectTeam"));
-  const ClassReps = lazy(() => import("../pages/students/ClassReps"));
+  // const ClassReps = lazy(() => import("../pages/students/ClassReps")); // TODO: re-enable when class reps section is ready
   
   // New EBSUMSA pages
   const EbsumsaTeam = lazy(() => import("../pages/students/EbsumsaTeam"));
@@ -126,10 +126,11 @@ const AppRoutes = () => {
             element={<BlogPost />}
           />
           <Route path="/students/project-team" element={<ProjectTeam />} />
-          <Route
+          {/* <Route
             path="/students/class-representatives"
             element={<ClassReps />}
-          />
+          /> */}
+          {/* TODO: re-enable class representatives route when ready */}
           
           {/* New EBSUMSA routes */}
           <Route path="/ebsumsa/team" element={<EbsumsaTeam />} />
