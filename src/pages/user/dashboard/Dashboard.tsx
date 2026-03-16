@@ -515,7 +515,7 @@ export default function Dashboard() {
                         </motion.div>
                       </NavLink>
                       {/* Wallet Card */}
-                      <WalletCard userID={userID} userEmail={user?.email || ""} />
+                      <WalletCard userID={studentDetails?.userID || ""} userEmail={studentDetails?.email || ""} />
 
                       {/* AI Note Summarizer Card */}
                       <NavLink to="/u/ai-notes">
