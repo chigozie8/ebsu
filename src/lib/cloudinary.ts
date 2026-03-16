@@ -32,21 +32,28 @@ export const uploadPreset   = () => (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRES
 // ─── List ────────────────────────────────────────────────────────────────────
 /** Fetch all gallery items from Firestore, newest first. */
 export async function listGalleryItems(): Promise<GalleryItem[]> {
-  const q = query(collection(db, COLLECTION), orderBy("uploadedAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      url:        data.url        as string,
-      publicId:   data.publicId   as string,
-      category:   data.category   as string,
-      caption:    (data.caption   as string) || "",
-      type:       (data.type      as "image" | "video") || "image",
-      uploadedAt: data.uploadedAt?.toDate?.()?.toISOString?.() ?? (data.uploadedAt as string) ?? "",
-      size:       (data.size      as number) | 0,
-      firestoreId: d.id,
-    } as GalleryItem & { firestoreId: string };
-  });
+  console.log("[v0] listGalleryItems: starting Firestore fetch");
+  try {
+    const q = query(collection(db, COLLECTION), orderBy("uploadedAt", "desc"));
+    const snap = await getDocs(q);
+    console.log("[v0] listGalleryItems: got", snap.docs.length, "docs");
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        url:        data.url        as string,
+        publicId:   data.publicId   as string,
+        category:   data.category   as string,
+        caption:    (data.caption   as string) || "",
+        type:       (data.type      as "image" | "video") || "image",
+        uploadedAt: data.uploadedAt?.toDate?.()?.toISOString?.() ?? (data.uploadedAt as string) ?? "",
+        size:       (data.size      as number) | 0,
+        firestoreId: d.id,
+      } as GalleryItem & { firestoreId: string };
+    });
+  } catch (err) {
+    console.log("[v0] listGalleryItems ERROR:", err);
+    throw err;
+  }
 }
 
 // ─── Save to Firestore after upload ──────────────────────────────────────────
@@ -54,15 +61,18 @@ export async function listGalleryItems(): Promise<GalleryItem[]> {
 export async function saveGalleryItem(
   item: Omit<GalleryItem, "uploadedAt">
 ): Promise<GalleryItem> {
-  const ref = await addDoc(collection(db, COLLECTION), {
-    ...item,
-    uploadedAt: serverTimestamp(),
-  });
-  return {
-    ...item,
-    uploadedAt: new Date().toISOString(),
-  } as GalleryItem & { firestoreId: string; } & { firestoreId: string };
-  void ref; // ref id not needed but saved in Firestore
+  console.log("[v0] saveGalleryItem: saving to Firestore", item.publicId);
+  try {
+    const ref = await addDoc(collection(db, COLLECTION), {
+      ...item,
+      uploadedAt: serverTimestamp(),
+    });
+    console.log("[v0] saveGalleryItem: saved with id", ref.id);
+    return { ...item, uploadedAt: new Date().toISOString() } as GalleryItem;
+  } catch (err) {
+    console.log("[v0] saveGalleryItem ERROR:", err);
+    throw err;
+  }
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
