@@ -442,14 +442,19 @@ export default function WalletPage() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fullName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim() : (user?.displayName ?? "");
-  const email = studentDetails?.email ?? user?.email ?? "";
+  const fullName = studentDetails
+    ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim()
+    : (user?.displayName ?? "EBSUMSA Student");
+  const email =
+    studentDetails?.email ?? user?.email ?? "";
 
   const loadWallet = useCallback(async () => {
-    if (!user?.uid || !email) return;
+    if (!user?.uid) return;
+    const resolvedEmail = email || `${user.uid}@ebsumsa.edu.ng`;
+    const resolvedName = fullName || "EBSUMSA Student";
     setWalletLoading(true);
     try {
-      const w = await getOrCreateWallet(user.uid, fullName || "EBSUMSA Student", email);
+      const w = await getOrCreateWallet(user.uid, resolvedName, resolvedEmail);
       setWallet(w);
       const [txs, banks] = await Promise.all([
         getTransactions(user.uid),
@@ -457,6 +462,8 @@ export default function WalletPage() {
       ]);
       setTransactions(txs);
       setBankAccounts(banks);
+    } catch (err) {
+      console.error("[v0] Wallet load error:", err);
     } finally {
       setWalletLoading(false);
     }
@@ -467,8 +474,8 @@ export default function WalletPage() {
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    if (user?.uid && email) loadWallet();
-  }, [user?.uid, email]);
+    if (user?.uid && !authLoading) loadWallet();
+  }, [user?.uid, authLoading]);
 
   const refreshBanks = async () => {
     if (!user?.uid) return;
@@ -503,7 +510,25 @@ export default function WalletPage() {
     );
   }
 
-  if (!wallet) return null;
+  if (!wallet) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+            <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="font-semibold text-gray-800">Could not load wallet</p>
+          <p className="text-sm text-gray-500">Please check your connection and try again.</p>
+          <button onClick={loadWallet}
+            className="mt-2 px-5 py-2.5 bg-green1 text-white text-sm font-semibold rounded-xl hover:bg-green2 transition-colors">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const totalIn  = transactions.filter((t) => isCredit(t.type)).reduce((s, t) => s + t.amount, 0);
   const totalOut = transactions.filter((t) => !isCredit(t.type)).reduce((s, t) => s + t.amount, 0);
