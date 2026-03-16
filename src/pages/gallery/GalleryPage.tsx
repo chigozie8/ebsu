@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
-import type { GalleryItem } from "../admin/tabs/AdminGalleryManager";
-import { listGalleryItems } from "../../lib/cloudinary";
+import { galleryItems } from "../../data/galleryData";
+import type { GalleryItem } from "../../data/galleryData";
 import {
   IoClose,
   IoChevronBack,
@@ -47,9 +47,7 @@ function useColumns() {
 }
 
 export default function GalleryPage() {
-  const [items, setItems]             = useState<GalleryItem[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
+  const items = galleryItems;
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch]           = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -57,25 +55,13 @@ export default function GalleryPage() {
   const cols = useColumns();
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const loadGallery = () => {
-    setError(null);
-    setLoading(true);
-    listGalleryItems()
-      .then((items) => setItems(items))
-      .catch((err: unknown) => setError(err instanceof Error ? err.message : "Failed to load gallery"))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    loadGallery();
-  }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // Filtered list
   const filtered = items.filter((item) => {
     const matchCat = activeCategory === "all" || item.category === activeCategory;
     const q = search.trim().toLowerCase();
-    const matchSearch = !q || item.caption?.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
+    const matchSearch = !q || item.caption?.toLowerCase().includes(q) || item.category?.toLowerCase().includes(q);
     return matchCat && matchSearch;
   });
 
@@ -133,7 +119,7 @@ export default function GalleryPage() {
         </motion.div>
 
         {/* Stats row */}
-        {!loading && items.length > 0 && (
+        {items.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -197,41 +183,11 @@ export default function GalleryPage() {
       {/* Main content */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         {/* Loading skeleton */}
-        {loading && (
-          <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={i}
-                className="break-inside-avoid mb-4 rounded-2xl bg-gray-200 animate-pulse"
-                style={{ height: `${160 + (i % 3) * 80}px` }}
-              />
-            ))}
-          </div>
-        )}
 
         {/* Error state */}
-        {!loading && error && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-28 text-center gap-4"
-          >
-            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
-              <IoImages className="text-3xl text-red-300" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-700">Could not load gallery</h3>
-            <p className="text-sm text-gray-400 max-w-xs">{error}</p>
-            <button
-              onClick={loadGallery}
-              className="mt-2 px-5 py-2 rounded-full bg-green2 text-white text-sm font-semibold hover:bg-green1 transition"
-            >
-              Try again
-            </button>
-          </motion.div>
-        )}
 
         {/* Empty state */}
-        {!loading && !error && filtered.length === 0 && (
+        {filtered.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -255,7 +211,7 @@ export default function GalleryPage() {
         )}
 
         {/* Masonry grid */}
-        {!loading && !error && filtered.length > 0 && (
+        {filtered.length > 0 && (
           <motion.div
             layout
             className="flex gap-4"
@@ -276,7 +232,7 @@ export default function GalleryPage() {
 
                   return (
                     <motion.div
-                      key={item.publicId || item.url}
+                      key={item.id}
                       initial={{ opacity: 0, scale: 0.96 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: Math.min(globalIndex * 0.04, 0.4) }}
@@ -368,7 +324,7 @@ export default function GalleryPage() {
 
             {/* Media */}
             <motion.div
-              key={currentItem.publicId || currentItem.url}
+              key={currentItem.id || currentItem.url}
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
@@ -417,7 +373,7 @@ export default function GalleryPage() {
                     const realIdx = Math.max(0, lightboxIndex - 4) + idx;
                     return (
                       <button
-                        key={thumb.publicId || thumb.url}
+                        key={thumb.id || thumb.url}
                         onClick={(e) => { e.stopPropagation(); openLightbox(realIdx); }}
                         className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 ${realIdx === lightboxIndex ? "ring-2 ring-white scale-110" : "opacity-50 hover:opacity-80"}`}
                       >
