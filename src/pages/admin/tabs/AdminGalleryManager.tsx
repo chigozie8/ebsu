@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { IoTrash, IoImages, IoVideocam, IoClose, IoCloudUpload, IoRefresh } from "react-icons/io5";
 import { notifyUser } from "../../../helpers/notifyUser";
-import { listGalleryItems, deleteGalleryItem, saveGalleryItem, uploadPreset, getCloudName } from "../../../lib/cloudinary";
+import { listGalleryItems, deleteGalleryItem, uploadPreset, getCloudName } from "../../../lib/cloudinary";
 
 export interface GalleryItem {
   url:        string;
@@ -131,7 +131,7 @@ export default function AdminGalleryManager() {
             setUploadProgress(25 + Math.round((e.loaded / e.total) * 70));
           }
         };
-        xhr.onload = async () => {
+        xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             const d = JSON.parse(xhr.responseText);
             const newItem: GalleryItem = {
@@ -143,8 +143,6 @@ export default function AdminGalleryManager() {
               uploadedAt: d.created_at,
               size:       d.bytes,
             };
-            // Save metadata to Firestore so listGalleryItems() works everywhere
-            await saveGalleryItem(newItem);
             resolve(newItem);
           } else {
             try {
