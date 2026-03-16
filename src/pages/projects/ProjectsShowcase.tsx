@@ -313,58 +313,6 @@ const StatsSection = () => {
     </div>
   );
 };
-    
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasAnimated) {
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    
-    const element = document.getElementById(`stat-${label.replace(/\s+/g, '-')}`);
-    if (element) observer.observe(element);
-    
-    return () => observer.disconnect();
-  }, [targetCount, label, duration, hasAnimated]);
-
-  return (
-    <div id={`stat-${label.replace(/\s+/g, '-')}`} className="bg-white rounded-xl p-4 text-center shadow-md">
-      <p className="text-2xl sm:text-3xl font-bold text-green2">
-        {count.toLocaleString()}+
-      </p>
-      <p className="text-sm text-gray-600 mt-1">{label}</p>
-    </div>
-  );
-};
-
-// =============================================
-// Stats Component with Countdown
-// =============================================
-const StatsSection = () => {
-  const stats = [
-    { label: "Projects Completed", value: 200 },
-    { label: "Lives Impacted",     value: 20000 },
-    { label: "NGO Collaborations", value: 40 },
-    { label: "Team Members",       value: 50 },
-  ];
-
-  return (
-    <motion.div
-      variants={fadeInVariants3}
-      initial="initial"
-      whileInView="animate"
-      viewport={{ once: true }}
-      custom={1}
-      className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
-    >
-      {stats.map((stat) => (
-        <CountdownTimer key={stat.label} targetCount={stat.value} label={stat.label} />
-      ))}
-    </motion.div>
-  );
-};
 
 // =============================================
 // Main Component
