@@ -5,10 +5,19 @@ import { supabase } from '../../config/supabase';
 import { classReps } from '../../data/students/classReps';
 import { IoLink, IoCheckmark, IoPencil } from 'react-icons/io5';
 
-// =============================================
-// Static default data
-// =============================================
-const executiveTeamData = [
+// ─── Types ────────────────────────────────────────────────────────────────────
+type TeamType = 'executive' | 'classRep' | 'press';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  image: string;
+  role: string;
+  extra?: string;
+}
+
+// ─── Static default data ─────────────────────────────────────────────────────
+const executiveTeamData: TeamMember[] = [
   { id: 'president',  name: 'Name Here', image: placeholder, role: 'President',               extra: '' },
   { id: 'exec-0',     name: 'Name Here', image: placeholder, role: 'Vice President',           extra: '' },
   { id: 'exec-1',     name: 'Name Here', image: placeholder, role: 'General Secretary',        extra: '' },
@@ -30,7 +39,7 @@ const executiveTeamData = [
   { id: 'exec-17',    name: 'Name Here', image: placeholder, role: 'Year Two Representative',  extra: '' },
 ];
 
-const classRepsData = classReps.map((rep, idx) => ({
+const classRepsData: TeamMember[] = classReps.map((rep, idx) => ({
   id: `classrep-${idx}`,
   name: rep.name,
   image: rep.img,
@@ -38,58 +47,47 @@ const classRepsData = classReps.map((rep, idx) => ({
   extra: rep.work,
 }));
 
-const pressTeamData = [
-  { id: 'editor-in-chief', name: 'Name Here', image: placeholder, role: 'Editor-in-Chief',      extra: '500 Level' },
-  { id: 'press-0',         name: 'Name Here', image: placeholder, role: 'Deputy Editor',         extra: '500 Level' },
-  { id: 'press-1',         name: 'Name Here', image: placeholder, role: 'News Editor',           extra: '400 Level' },
-  { id: 'press-2',         name: 'Name Here', image: placeholder, role: 'Social Media Manager',  extra: '400 Level' },
-  { id: 'press-3',         name: 'Name Here', image: placeholder, role: 'Graphics Designer',     extra: '400 Level' },
-  { id: 'press-4',         name: 'Name Here', image: placeholder, role: 'Photographer',          extra: '300 Level' },
-  { id: 'press-5',         name: 'Name Here', image: placeholder, role: 'Video Editor',          extra: '400 Level' },
-  { id: 'press-6',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
-  { id: 'press-7',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
-  { id: 'press-8',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '200 Level' },
-  { id: 'press-9',         name: 'Name Here', image: placeholder, role: 'Content Writer',        extra: '400 Level' },
+const pressTeamData: TeamMember[] = [
+  { id: 'editor-in-chief', name: 'Name Here', image: placeholder, role: 'Editor-in-Chief',     extra: '500 Level' },
+  { id: 'press-0',         name: 'Name Here', image: placeholder, role: 'Deputy Editor',        extra: '500 Level' },
+  { id: 'press-1',         name: 'Name Here', image: placeholder, role: 'News Editor',          extra: '400 Level' },
+  { id: 'press-2',         name: 'Name Here', image: placeholder, role: 'Social Media Manager', extra: '400 Level' },
+  { id: 'press-3',         name: 'Name Here', image: placeholder, role: 'Graphics Designer',    extra: '400 Level' },
+  { id: 'press-4',         name: 'Name Here', image: placeholder, role: 'Photographer',         extra: '300 Level' },
+  { id: 'press-5',         name: 'Name Here', image: placeholder, role: 'Video Editor',         extra: '400 Level' },
+  { id: 'press-6',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '300 Level' },
+  { id: 'press-7',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '300 Level' },
+  { id: 'press-8',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '200 Level' },
+  { id: 'press-9',         name: 'Name Here', image: placeholder, role: 'Content Writer',       extra: '400 Level' },
 ];
-
-type TeamType = 'executive' | 'classRep' | 'press';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  image: string;
-  role: string;
-  extra?: string;
-}
 
 const DEFAULT_DRIVE_URL = 'https://drive.google.com/file/d/1Vv_k_nvjAZ1Wi8QnpFa5wlsWCsns7918/view?usp=drivesdk';
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminTeamUpload() {
   const [teams, setTeams] = useState<Record<TeamType, TeamMember[]>>({
     executive: executiveTeamData,
-    classRep: classRepsData,
-    press: pressTeamData,
+    classRep:  classRepsData,
+    press:     pressTeamData,
   });
 
-  const [driveUrl, setDriveUrl]       = useState(DEFAULT_DRIVE_URL);
-  const [driveDraft, setDriveDraft]   = useState(DEFAULT_DRIVE_URL);
-  const [editingDrive, setEditingDrive] = useState(false);
-  const [savingDrive, setSavingDrive] = useState(false);
-  const [driveSaved, setDriveSaved]   = useState(false);
+  const [driveUrl,      setDriveUrl]      = useState(DEFAULT_DRIVE_URL);
+  const [driveDraft,    setDriveDraft]    = useState(DEFAULT_DRIVE_URL);
+  const [editingDrive,  setEditingDrive]  = useState(false);
+  const [savingDrive,   setSavingDrive]   = useState(false);
+  const [driveSaved,    setDriveSaved]    = useState(false);
 
-  // Load all persisted data from Supabase
   useEffect(() => {
-    // Load team images/names
+    // Load team member overrides from Supabase
     supabase
       .from('team_images')
-      .select('id, team_type, member_id, image_url, name, role, extra')
+      .select('team_type, member_id, image_url, name, role, extra')
       .then(({ data, error }) => {
         if (error || !data) return;
         const updates: Record<string, Partial<TeamMember>> = {};
         data.forEach((row) => {
           if (row.team_type && row.member_id) {
-            const key = `${row.team_type}_${row.member_id}`;
-            updates[key] = {
+            updates[`${row.team_type}_${row.member_id}`] = {
               ...(row.image_url && { image: row.image_url }),
               ...(row.name      && { name:  row.name }),
               ...(row.role      && { role:  row.role }),
@@ -98,10 +96,10 @@ export default function AdminTeamUpload() {
           }
         });
         setTeams((prev) => {
-          const merged: Record<TeamType, TeamMember[]> = { executive: [], classRep: [], press: [] };
-          (Object.keys(prev) as TeamType[]).forEach((teamType) => {
-            merged[teamType] = prev[teamType].map((m) => {
-              const patch = updates[`${teamType}_${m.id}`];
+          const merged = {} as Record<TeamType, TeamMember[]>;
+          (Object.keys(prev) as TeamType[]).forEach((t) => {
+            merged[t] = prev[t].map((m) => {
+              const patch = updates[`${t}_${m.id}`];
               return patch ? { ...m, ...patch } : m;
             });
           });
@@ -109,7 +107,7 @@ export default function AdminTeamUpload() {
         });
       });
 
-    // Load drive URL from site_settings table
+    // Load Drive URL from site_settings
     supabase
       .from('site_settings')
       .select('value')
@@ -160,42 +158,46 @@ export default function AdminTeamUpload() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-7xl mx-auto space-y-8">
+
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Team Management</h1>
           <p className="text-sm text-gray-500">
-            Click any photo to upload a new one. Click any name, title, or info field to edit it inline — changes save instantly.
+            Click any photo to upload a new one. Click any name or title to edit inline — changes save instantly.
           </p>
         </div>
 
         {/* Google Drive Link Manager */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-green2/10 flex items-center justify-center flex-shrink-0">
-              <IoLink className="text-green2 text-xl" />
+            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+              <IoLink className="text-green-600 text-xl" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">All Appointees — Google Drive Link</h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                This link appears as a "View All Appointees" button on the public Executive Team page.
+                This link powers the "View All Appointees" button on the public Executive Team page.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+          <div className="flex flex-wrap items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
             {editingDrive ? (
               <>
                 <input
                   autoFocus
                   value={driveDraft}
                   onChange={(e) => setDriveDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') saveDriveUrl(); if (e.key === 'Escape') { setDriveDraft(driveUrl); setEditingDrive(false); }}}
-                  className="flex-1 bg-white border border-green2 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green2/30 font-mono"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveDriveUrl();
+                    if (e.key === 'Escape') { setDriveDraft(driveUrl); setEditingDrive(false); }
+                  }}
+                  className="flex-1 min-w-0 bg-white border border-green-500 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-200 font-mono"
                   placeholder="https://drive.google.com/..."
                 />
                 <button
                   onClick={saveDriveUrl}
                   disabled={savingDrive}
-                  className="flex-shrink-0 px-4 py-2 bg-green2 text-white text-sm font-semibold rounded-lg hover:bg-green1 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                  className="flex-shrink-0 px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
                 >
                   {savingDrive ? (
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -218,12 +220,12 @@ export default function AdminTeamUpload() {
                   href={driveUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 text-sm text-blue-600 underline truncate font-mono"
+                  className="flex-1 min-w-0 text-sm text-blue-600 underline truncate font-mono"
                 >
                   {driveUrl}
                 </a>
                 {driveSaved && (
-                  <span className="text-xs text-green2 font-semibold flex items-center gap-1">
+                  <span className="text-xs text-green-600 font-semibold flex items-center gap-1 flex-shrink-0">
                     <IoCheckmark /> Saved
                   </span>
                 )}
@@ -270,164 +272,7 @@ export default function AdminTeamUpload() {
             onMemberUpdate={(id, fields) => handleMemberUpdate('press', id, fields)}
           />
         </div>
-      </div>
-    </div>
-  );
-}
 
-// =============================================
-// Static default data
-// =============================================
-const executiveTeamData = [
-  { id: 'president',  name: 'Name Here', image: placeholder, role: 'President',               extra: '' },
-  { id: 'exec-0',     name: 'Name Here', image: placeholder, role: 'Vice President',           extra: '' },
-  { id: 'exec-1',     name: 'Name Here', image: placeholder, role: 'General Secretary',        extra: '' },
-  { id: 'exec-2',     name: 'Name Here', image: placeholder, role: 'Financial Secretary',      extra: '' },
-  { id: 'exec-3',     name: 'Name Here', image: placeholder, role: 'Treasurer',                extra: '' },
-  { id: 'exec-4',     name: 'Name Here', image: placeholder, role: 'Public Relations Officer', extra: '' },
-  { id: 'exec-5',     name: 'Name Here', image: placeholder, role: 'Director of Socials',      extra: '' },
-  { id: 'exec-6',     name: 'Name Here', image: placeholder, role: 'Director of Academics',    extra: '' },
-  { id: 'exec-7',     name: 'Name Here', image: placeholder, role: 'Director of Welfare',      extra: '' },
-  { id: 'exec-8',     name: 'Name Here', image: placeholder, role: 'Director of Sports',       extra: '' },
-  { id: 'exec-9',     name: 'Name Here', image: placeholder, role: 'Director of Health',       extra: '' },
-];
-
-const classRepsData = classReps.map((rep, idx) => ({
-  id: `classrep-${idx}`,
-  name: rep.name,
-  image: rep.img,
-  role: rep.title,
-  extra: rep.work,
-}));
-
-const pressTeamData = [
-  { id: 'editor-in-chief', name: 'Name Here', image: placeholder, role: 'Editor-in-Chief',      extra: '500 Level' },
-  { id: 'press-0',         name: 'Name Here', image: placeholder, role: 'Deputy Editor',         extra: '500 Level' },
-  { id: 'press-1',         name: 'Name Here', image: placeholder, role: 'News Editor',           extra: '400 Level' },
-  { id: 'press-2',         name: 'Name Here', image: placeholder, role: 'Social Media Manager',  extra: '400 Level' },
-  { id: 'press-3',         name: 'Name Here', image: placeholder, role: 'Graphics Designer',     extra: '400 Level' },
-  { id: 'press-4',         name: 'Name Here', image: placeholder, role: 'Photographer',          extra: '300 Level' },
-  { id: 'press-5',         name: 'Name Here', image: placeholder, role: 'Video Editor',          extra: '400 Level' },
-  { id: 'press-6',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
-  { id: 'press-7',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '300 Level' },
-  { id: 'press-8',         name: 'Name Here', image: placeholder, role: 'Reporter',              extra: '200 Level' },
-  { id: 'press-9',         name: 'Name Here', image: placeholder, role: 'Content Writer',        extra: '400 Level' },
-];
-
-type TeamType = 'executive' | 'classRep' | 'press';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  image: string;
-  role: string;
-  extra?: string;
-}
-
-export default function AdminTeamUpload() {
-  const [teams, setTeams] = useState<Record<TeamType, TeamMember[]>>({
-    executive: executiveTeamData,
-    classRep: classRepsData,
-    press: pressTeamData,
-  });
-
-  // Load all persisted data (image + name + role + extra) from Supabase
-  useEffect(() => {
-    supabase
-      .from('team_images')
-      .select('id, team_type, member_id, image_url, name, role, extra')
-      .then(({ data, error }) => {
-        if (error || !data) return;
-        const updates: Record<string, Partial<TeamMember>> = {};
-        data.forEach((row) => {
-          if (row.team_type && row.member_id) {
-            const key = `${row.team_type}_${row.member_id}`;
-            updates[key] = {
-              ...(row.image_url && { image: row.image_url }),
-              ...(row.name      && { name:  row.name }),
-              ...(row.role      && { role:  row.role }),
-              ...(row.extra     && { extra: row.extra }),
-            };
-          }
-        });
-
-        setTeams((prev) => {
-          const merged: Record<TeamType, TeamMember[]> = { executive: [], classRep: [], press: [] };
-          (Object.keys(prev) as TeamType[]).forEach((teamType) => {
-            merged[teamType] = prev[teamType].map((m) => {
-              const patch = updates[`${teamType}_${m.id}`];
-              return patch ? { ...m, ...patch } : m;
-            });
-          });
-          return merged;
-        });
-      });
-  }, []);
-
-  const handleImageUpdate = (teamType: TeamType, memberId: string, newImageUrl: string) => {
-    setTeams((prev) => ({
-      ...prev,
-      [teamType]: prev[teamType].map((m) =>
-        m.id === memberId ? { ...m, image: newImageUrl } : m
-      ),
-    }));
-  };
-
-  const handleMemberUpdate = (
-    teamType: TeamType,
-    memberId: string,
-    fields: { name?: string; role?: string; extra?: string }
-  ) => {
-    setTeams((prev) => ({
-      ...prev,
-      [teamType]: prev[teamType].map((m) =>
-        m.id === memberId ? { ...m, ...fields } : m
-      ),
-    }));
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Team Management</h1>
-          <p className="text-sm text-gray-500">
-            Click any photo to upload a new one. Click any name, title, or info field to edit it inline — changes save instantly.
-          </p>
-        </div>
-
-        {/* Executive Team */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <TeamUploadManager
-            members={teams.executive}
-            teamType="executive"
-            teamName="EBSUMSA Executive Team"
-            onImageUpdate={(id, url) => handleImageUpdate('executive', id, url)}
-            onMemberUpdate={(id, fields) => handleMemberUpdate('executive', id, fields)}
-          />
-        </div>
-
-        {/* Class Representatives */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <TeamUploadManager
-            members={teams.classRep}
-            teamType="classRep"
-            teamName="Class Representatives"
-            onImageUpdate={(id, url) => handleImageUpdate('classRep', id, url)}
-            onMemberUpdate={(id, fields) => handleMemberUpdate('classRep', id, fields)}
-          />
-        </div>
-
-        {/* Press Team */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <TeamUploadManager
-            members={teams.press}
-            teamType="press"
-            teamName="Press Team"
-            onImageUpdate={(id, url) => handleImageUpdate('press', id, url)}
-            onMemberUpdate={(id, fields) => handleMemberUpdate('press', id, fields)}
-          />
-        </div>
       </div>
     </div>
   );
