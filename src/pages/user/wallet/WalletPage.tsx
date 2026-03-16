@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import { useWallet } from "../../../hooks/wallet/useWallet";
-import { usePaystackPayment } from "react-paystack";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -92,26 +91,26 @@ function FundTab({ userEmail, userName, onSuccess }: { userEmail: string; userNa
   const amountInKobo = Math.round(parseFloat(amount || "0") * 100);
   const isValid = amountInKobo >= 10000; // min ₦100
 
-  const config = {
-    reference: `ebsu_${Date.now()}`,
-    email: userEmail,
-    amount: amountInKobo,
-    publicKey: PAYSTACK_KEY,
-    metadata: { custom_fields: [{ display_name: "Name", variable_name: "name", value: userName }] } as any,
-  };
-
-  const initializePayment = usePaystackPayment(config);
-
   const handlePay = () => {
     if (!isValid) return;
-    initializePayment({
-      onSuccess: (ref: any) => {
-        const reference = ref?.reference || ref?.trxref || `ref_${Date.now()}`;
+    if (!(window as any).PaystackPop) {
+      alert("Paystack is not loaded yet. Please refresh and try again.");
+      return;
+    }
+    const handler = (window as any).PaystackPop.setup({
+      key: PAYSTACK_KEY,
+      email: userEmail,
+      amount: amountInKobo,
+      ref: `ebsu_${Date.now()}`,
+      metadata: { custom_fields: [{ display_name: "Name", variable_name: "name", value: userName }] },
+      callback: (response: any) => {
+        const reference = response?.reference || response?.trxref || `ref_${Date.now()}`;
         onSuccess(parseFloat(amount), reference);
         setAmount("");
       },
       onClose: () => {},
-    } as any);
+    });
+    handler.openIframe();
   };
 
   return (
