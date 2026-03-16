@@ -255,7 +255,7 @@ function WithdrawTab({ balance, onWithdraw }: { balance: number; onWithdraw: (am
     setLoading(true);
     try {
       await onWithdraw(amt, bankName, accountNumber, accountName);
-      notifyUser("success", "Withdrawal request submitted. Admin will process it shortly.");
+      notifyUser("success", "Withdrawal request submitted. Processing may take up to 24 hours.");
       setAmount(""); setBankName(""); setAccountNumber(""); setAccountName("");
     } catch (err: any) {
       notifyUser("error", err.message || "Withdrawal request failed");
@@ -268,11 +268,14 @@ function WithdrawTab({ balance, onWithdraw }: { balance: number; onWithdraw: (am
     <div className="max-w-md mx-auto">
       <h3 className="text-base font-bold text-gray-900 mb-1">Request Withdrawal</h3>
       <p className="text-sm text-gray-500 mb-2">Submit a withdrawal request. The admin will review and transfer the funds to your account.</p>
-      <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-5">
-        <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 flex gap-3">
+        <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p className="text-xs text-amber-700 font-medium">Withdrawals are processed manually by the admin. Funds are deducted from your balance immediately on request.</p>
+        <div>
+          <p className="text-xs font-bold text-amber-800 mb-0.5">Please note — processing may take up to 24 hours</p>
+          <p className="text-xs text-amber-700 leading-relaxed">Withdrawal requests are reviewed and processed manually by the admin. Your balance is deducted immediately when the request is submitted. You will be contacted once your funds have been sent.</p>
+        </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
