@@ -258,12 +258,14 @@ export default function ResourcesPage() {
             </div>
           </a>
 
-          {/* MBBS Year Drives */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          {/* Level Drives */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
             {[
-              { label: "3rd MBBS Drive", sub: "300 Level", url: "https://drive.google.com/drive/folders/1-WYCxRzrAJOL3a935HlMTqwh8TvJUwko", from: "from-emerald-50", border: "border-emerald-200 hover:border-emerald-400", iconBg: "bg-emerald-100", icon: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700" },
-              { label: "4th MBBS Drive", sub: "400 Level", url: "https://drive.google.com/drive/folders/1-lhThxDEKOEbHot0iFF5uNCJeCXjJG3j", from: "from-teal-50", border: "border-teal-200 hover:border-teal-400", iconBg: "bg-teal-100", icon: "text-teal-600", badge: "bg-teal-100 text-teal-700" },
-              { label: "5th MBBS Drive", sub: "500 Level", url: "https://drive.google.com/drive/folders/1ONfXdUAIanILOqPWgqi2tYZK68oG70hi", from: "from-blue-50", border: "border-blue-200 hover:border-blue-400", iconBg: "bg-blue-100", icon: "text-blue-600", badge: "bg-blue-100 text-blue-700" },
+              { label: "100 Level Drive", sub: "Preclinical — Year 1", url: "https://drive.google.com/drive/folders/12sgN__NCu-cnuckQ4AkdLLL5xByVtuna", from: "from-violet-50", border: "border-violet-200 hover:border-violet-400", iconBg: "bg-violet-100", icon: "text-violet-600" },
+              { label: "2nd MBBS Drive", sub: "Preclinical — 300 Level", url: "https://drive.google.com/drive/folders/1v-AHH-EopfBnHmh22MSENV9IHhcHPal7", from: "from-orange-50", border: "border-orange-200 hover:border-orange-400", iconBg: "bg-orange-100", icon: "text-orange-600" },
+              { label: "3rd MBBS Drive", sub: "Clinical — 400 Level", url: "https://drive.google.com/drive/folders/1-WYCxRzrAJOL3a935HlMTqwh8TvJUwko", from: "from-emerald-50", border: "border-emerald-200 hover:border-emerald-400", iconBg: "bg-emerald-100", icon: "text-emerald-600" },
+              { label: "4th MBBS Drive", sub: "Clinical — 500 Level", url: "https://drive.google.com/drive/folders/1-lhThxDEKOEbHot0iFF5uNCJeCXjJG3j", from: "from-teal-50", border: "border-teal-200 hover:border-teal-400", iconBg: "bg-teal-100", icon: "text-teal-600" },
+              { label: "5th MBBS Drive", sub: "Clinical — 600 Level", url: "https://drive.google.com/drive/folders/1ONfXdUAIanILOqPWgqi2tYZK68oG70hi", from: "from-blue-50", border: "border-blue-200 hover:border-blue-400", iconBg: "bg-blue-100", icon: "text-blue-600" },
             ].map((drive, i) => (
               <motion.a
                 key={drive.label}

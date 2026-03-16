@@ -348,11 +348,12 @@ export default function EbsumsaTeam() {
                 </p>
               </div>
               <a
-                href="mailto:ebsumsaleadership@gmail.com"
+                href="mailto:ebsumsa102@gmail.com"
                 className="inline-flex items-center gap-2 bg-green2/10 hover:bg-green2 text-green2 hover:text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 w-fit"
               >
                 <IoMail className="text-base" />
-                ebsumsaleadership@gmail.com
+                <span>ebsumsa102@gmail.com</span>
+                <HiExternalLink className="text-sm" />
               </a>
             </motion.div>
           </section>

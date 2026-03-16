@@ -107,11 +107,11 @@ export default function LearningResources() {
     { value: "300", label: "300L (Year 3)" },
   ];
 
-  // Clinical levels (400-600)
+  // Clinical levels (400-600) — 3rd MBBS=400L, 4th MBBS=500L, 5th MBBS=600L
   const clinicalLevels = [
-    { value: "400", label: "400L (Year 4)" },
-    { value: "500", label: "500L (Year 5)" },
-    { value: "600", label: "600L (Year 6)" },
+    { value: "400", label: "400L (3rd MBBS)" },
+    { value: "500", label: "500L (4th MBBS)" },
+    { value: "600", label: "600L (5th MBBS)" },
   ];
 
   const currentLevels = section === "preclinical" ? preclinicalLevels : clinicalLevels;
@@ -164,35 +164,48 @@ export default function LearningResources() {
                 </div>
               </a>
 
-              {/* MBBS Year Drive Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* Level Drive Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {[
                   {
+                    label: "100 Level Drive",
+                    sub: "Preclinical — Year 1",
+                    url: "https://drive.google.com/drive/folders/12sgN__NCu-cnuckQ4AkdLLL5xByVtuna",
+                    color: "from-violet-500/10 to-purple-500/10",
+                    border: "border-violet-200",
+                    icon: "text-violet-600",
+                  },
+                  {
+                    label: "2nd MBBS Drive",
+                    sub: "Preclinical — 300 Level",
+                    url: "https://drive.google.com/drive/folders/1v-AHH-EopfBnHmh22MSENV9IHhcHPal7",
+                    color: "from-orange-500/10 to-amber-500/10",
+                    border: "border-orange-200",
+                    icon: "text-orange-600",
+                  },
+                  {
                     label: "3rd MBBS Drive",
-                    sub: "Year 3 — 300 Level",
+                    sub: "Clinical — 400 Level",
                     url: "https://drive.google.com/drive/folders/1-WYCxRzrAJOL3a935HlMTqwh8TvJUwko",
                     color: "from-emerald-500/10 to-green-500/10",
                     border: "border-emerald-200",
                     icon: "text-emerald-600",
-                    badge: "bg-emerald-100 text-emerald-700",
                   },
                   {
                     label: "4th MBBS Drive",
-                    sub: "Year 4 — 400 Level",
+                    sub: "Clinical — 500 Level",
                     url: "https://drive.google.com/drive/folders/1-lhThxDEKOEbHot0iFF5uNCJeCXjJG3j",
                     color: "from-teal-500/10 to-cyan-500/10",
                     border: "border-teal-200",
                     icon: "text-teal-600",
-                    badge: "bg-teal-100 text-teal-700",
                   },
                   {
                     label: "5th MBBS Drive",
-                    sub: "Year 5 — 500 Level",
+                    sub: "Clinical — 600 Level",
                     url: "https://drive.google.com/drive/folders/1ONfXdUAIanILOqPWgqi2tYZK68oG70hi",
                     color: "from-blue-500/10 to-indigo-500/10",
                     border: "border-blue-200",
                     icon: "text-blue-600",
-                    badge: "bg-blue-100 text-blue-700",
                   },
                 ].map((drive) => (
                   <a
