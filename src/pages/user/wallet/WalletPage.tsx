@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import { useWallet } from "../../../hooks/wallet/useWallet";
 import { motion, AnimatePresence } from "framer-motion";
