@@ -207,6 +207,7 @@ export default function EbsumsaTeam() {
           setPresidentData((prev) => ({
             ...prev,
             name:  presRow.name      || prev.name,
+            title: presRow.role      || prev.title,
             image: presRow.image_url || prev.image,
             phone: presRow.extra     || prev.phone || "",
           }));
@@ -219,6 +220,7 @@ export default function EbsumsaTeam() {
             return {
               ...m,
               name:  patch.name      || m.name,
+              title: patch.role      || m.title,
               image: patch.image_url || m.image,
               phone: patch.extra     || m.phone,
             };
