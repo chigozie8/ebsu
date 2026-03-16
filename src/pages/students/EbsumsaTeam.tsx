@@ -37,9 +37,7 @@ const defaultExecutiveMembers: ExecutiveMember[] = [
   { name: "Name Here", title: "Director of Research",     image: placeholder, phone: "" },
   { name: "Name Here", title: "Director of Projects",     image: placeholder, phone: "" },
   { name: "Name Here", title: "Chief Whip",               image: placeholder, phone: "" },
-  { name: "Name Here", title: "Provost Marshal",          image: placeholder, phone: "" },
   { name: "Name Here", title: "Assistant Secretary",      image: placeholder, phone: "" },
-  { name: "Name Here", title: "Senate Representative",    image: placeholder, phone: "" },
   { name: "Name Here", title: "Year One Representative",  image: placeholder, phone: "" },
   { name: "Name Here", title: "Year Two Representative",  image: placeholder, phone: "" },
 ];
