@@ -24,6 +24,7 @@ import { trackActivity } from "../../../hooks/analytics/useAnalytics";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import AdvertisementBanner from "../../../components/shared/AdvertisementBanner";
+import WalletCard from "../../../components/widgets/WalletCard";
 
 // Activity types with icons and colors
 interface Activity {
@@ -513,6 +514,9 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      {/* Wallet Card */}
+                      <WalletCard userID={userID} userEmail={user?.email || ""} />
+
                       {/* AI Note Summarizer Card */}
                       <NavLink to="/u/ai-notes">
                         <motion.div

@@ -61,12 +61,21 @@ export default function Hero() {
                 once: true,
               }}
               custom={6}
-              className="w-full flex items-center mt-6"
+              className="w-full flex items-center gap-3 mt-6 flex-wrap"
             >
               <Link to={user && studentDetails ? "/dashboard" : "/signup"}>
                 <Button theme={customButtonTheme} size={"lg"} color="primary">
                   {user && studentDetails ? "Go to Dashboard" : "Get Started"}
                 </Button>
+              </Link>
+              <Link
+                to={user ? "/u/wallet" : "/login"}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-[#00875a] text-[#00875a] font-semibold text-sm hover:bg-[#00875a] hover:text-white transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Pay Now
               </Link>
             </motion.div>
          </div>
