@@ -31,11 +31,11 @@ interface Project {
 }
 
 const categoryConfig = {
-  voluntary: { label: "Voluntary", color: "bg-blue-100 text-blue-800", bgGradient: "from-blue-500 to-blue-600" },
-  who: { label: "WHO Project", color: "bg-green-100 text-green-800", bgGradient: "from-green-500 to-green-600" },
-  personal: { label: "Personal", color: "bg-purple-100 text-purple-800", bgGradient: "from-purple-500 to-purple-600" },
-  research: { label: "Research", color: "bg-orange-100 text-orange-800", bgGradient: "from-orange-500 to-orange-600" },
-  community: { label: "Community", color: "bg-teal-100 text-teal-800", bgGradient: "from-teal-500 to-teal-600" },
+  voluntary: { label: "Voluntary",    color: "bg-green1/10 text-green1",   bgGradient: "from-green1 to-green2" },
+  who:       { label: "WHO Project",  color: "bg-green2/10 text-green2",   bgGradient: "from-green2 to-green3" },
+  personal:  { label: "Personal",     color: "bg-green3/10 text-green3",   bgGradient: "from-green3 to-green1" },
+  research:  { label: "Research",     color: "bg-green5/10 text-green5",   bgGradient: "from-green5 to-green1" },
+  community: { label: "Community",    color: "bg-green4/10 text-green4",   bgGradient: "from-green4 to-green2" },
 };
 
 export default function ProjectDetails() {
@@ -179,14 +179,14 @@ export default function ProjectDetails() {
                   {category.label}
                 </span>
                 {project.featured && (
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                  <span className="px-3 py-1 bg-yellow1/20 text-green3 rounded-full text-sm font-medium">
                     Featured
                   </span>
                 )}
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  project.status === "ongoing" ? "bg-blue-100 text-blue-800" :
-                  project.status === "completed" ? "bg-green-100 text-green-800" :
-                  "bg-orange-100 text-orange-800"
+                  project.status === "ongoing"   ? "bg-green5/10 text-green5" :
+                  project.status === "completed" ? "bg-green1/10 text-green1" :
+                  "bg-green3/10 text-green3"
                 }`}>
                   {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                 </span>
@@ -255,7 +255,7 @@ export default function ProjectDetails() {
                     {project.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium"
+                        className="px-4 py-2 bg-green1/10 text-green1 rounded-full text-sm font-medium"
                       >
                         {tag}
                       </span>

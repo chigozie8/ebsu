@@ -37,14 +37,14 @@ interface ProjectCardProps {
   onClick: () => void;
 }
 
-// Category colors and labels
+// Category colors and labels — all use brand green shades
 const categoryConfig = {
-  voluntary:      { label: "Voluntary",       color: "bg-blue-100 text-blue-800" },
-  ngo:            { label: "NGO Collaboration", color: "bg-green-100 text-green-800" },
-  personal:       { label: "Personal",         color: "bg-purple-100 text-purple-800" },
-  research:       { label: "Research",         color: "bg-orange-100 text-orange-800" },
-  community:      { label: "Community",        color: "bg-teal-100 text-teal-800" },
-  fun_activities: { label: "Fun Activities",   color: "bg-pink-100 text-pink-800" },
+  voluntary:      { label: "Voluntary",         color: "bg-green1/10 text-green1" },
+  ngo:            { label: "NGO Collaboration",  color: "bg-green3/10 text-green3" },
+  personal:       { label: "Personal",           color: "bg-green2/10 text-green2" },
+  research:       { label: "Research",           color: "bg-green5/10 text-green5" },
+  community:      { label: "Community",          color: "bg-green4/10 text-green4" },
+  fun_activities: { label: "Fun Activities",     color: "bg-yellow1/20 text-green3" },
 };
 
 // =============================================
@@ -84,15 +84,15 @@ const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => {
         </span>
         <div className="flex gap-2">
           {project.featured && (
-            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+            <span className="px-2 py-1 bg-yellow1/20 text-green3 rounded-full text-xs font-medium">
               Featured
             </span>
           )}
           {project.status && (
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              project.status === "ongoing" ? "bg-blue-100 text-blue-800" :
-              project.status === "completed" ? "bg-green-100 text-green-800" :
-              "bg-orange-100 text-orange-800"
+              project.status === "ongoing"   ? "bg-green5/10 text-green5" :
+              project.status === "completed" ? "bg-green1/10 text-green1" :
+              "bg-green3/10 text-green3"
             }`}>
               {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
             </span>
@@ -110,7 +110,7 @@ const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => {
         {project.tags?.slice(0, 3).map((tag) => (
           <span
             key={tag}
-            className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs"
+            className="px-2 py-0.5 bg-green1/10 text-green1 rounded text-xs font-medium"
           >
             {tag}
           </span>
@@ -179,8 +179,8 @@ const statMeta = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
       </svg>
     ),
-    gradient: "from-rose-500 to-pink-500",
-    glow: "shadow-rose-200",
+    gradient: "from-green2 to-green3",
+    glow: "shadow-green-200",
   },
   {
     label: "NGO Collaborations",
@@ -189,8 +189,8 @@ const statMeta = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
       </svg>
     ),
-    gradient: "from-blue-500 to-indigo-600",
-    glow: "shadow-blue-200",
+    gradient: "from-green3 to-green1",
+    glow: "shadow-green-200",
   },
   {
     label: "Team Members",
@@ -199,8 +199,8 @@ const statMeta = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
     ),
-    gradient: "from-amber-500 to-orange-500",
-    glow: "shadow-amber-200",
+    gradient: "from-green5 to-green1",
+    glow: "shadow-green-200",
   },
 ];
 
