@@ -15,16 +15,16 @@ interface ClassRepDisplay {
   regNo: string | number;
   title: string;
   work?: string;
+  phone?: string;
 }
 
 export default function ClassReps() {
   const [reps, setReps] = useState<ClassRepDisplay[]>(
-    staticClassReps.map((r) => ({ ...r, regNo: r.regNo }))
+    staticClassReps.map((r) => ({ ...r }))
   );
 
   useEffect(() => {
     window.scroll(0, 0);
-    // Load overrides from Supabase team_images (classRep type)
     supabase
       .from("team_images")
       .select("member_id, image_url, name, role, extra")
@@ -40,11 +40,11 @@ export default function ClassReps() {
             const patch = overrides[`classrep-${idx}`];
             if (!patch) return rep;
             return {
-              img: patch.image_url || rep.img,
-              name: patch.name || rep.name,
-              regNo: patch.extra || rep.regNo,
-              title: patch.role || rep.title,
-              work: rep.work,
+              ...rep,
+              img:   patch.image_url || rep.img,
+              name:  patch.name      || rep.name,
+              title: patch.role      || rep.title,
+              phone: patch.extra     || rep.phone || "",
             };
           })
         );
@@ -65,7 +65,7 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8">
-            {reps.map(({ img, name, regNo, title }, i) => (
+            {reps.map(({ img, name, regNo, title, phone }, i) => (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"
@@ -73,7 +73,7 @@ export default function ClassReps() {
                 viewport={{ once: true }}
                 custom={i}
                 key={i}
-                className="w-full h-[400px] sss:h-[420px] shadow-4 transition-shadow duration-200 ease-in-out rounded-lg overflow-hidden bg-white"
+                className="w-full shadow-4 transition-shadow duration-200 ease-in-out rounded-lg overflow-hidden bg-white"
               >
                 <img
                   src={img}
@@ -81,18 +81,29 @@ export default function ClassReps() {
                   loading="lazy"
                   decoding="async"
                   onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholderImg; }}
-                  className="w-full h-2/3 object-cover"
+                  className="w-full h-[260px] object-cover"
                 />
-                <div className="h-1/3 p-3 flex flex-col justify-between">
+                <div className="p-3 flex flex-col gap-1.5">
                   <p className="font-bold text-sm md:text-xs uppercase flex gap-1.5 items-center text-gray-900">
-                    <ProfileIcon className="w-6 h-6" /> {name}
+                    <ProfileIcon className="w-5 h-5 flex-shrink-0" /> {name}
                   </p>
                   <p className="font-semibold text-ss flex gap-1.5 items-center text-gray-900">
-                    <RegisterIcon className="w-6 h-6 fill-green1" /> {regNo}
+                    <RegisterIcon className="w-5 h-5 flex-shrink-0 fill-green1" /> {regNo}
                   </p>
                   <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
-                    <GraduateCapIcon className="w-6 h-6 fill-green1" /> {title}
+                    <GraduateCapIcon className="w-5 h-5 flex-shrink-0 fill-green1" /> {title}
                   </p>
+                  {phone && (
+                    <a
+                      href={`tel:${phone}`}
+                      className="font-semibold text-ss flex gap-1.5 items-center text-green1 hover:underline"
+                    >
+                      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h2.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-1.31.655a11.042 11.042 0 005.516 5.516l.655-1.31a1 1 0 011.21-.502l4.493 1.498A1 1 0 0121 18.72V21a2 2 0 01-2 2h-1C9.716 23 1 14.284 1 5V4a1 1 0 011-1z" />
+                      </svg>
+                      {phone}
+                    </a>
+                  )}
                 </div>
               </motion.div>
             ))}
