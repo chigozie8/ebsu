@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ImageUploadModal } from './ImageUploadModal';
 import { supabase } from '../../config/supabase';
+import placeholder from '../../assets/img/team/placeholder.png';
 
 interface TeamMember {
   id: string;
@@ -32,6 +33,11 @@ function EditableField({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
+
+  // Keep draft in sync when parent updates value (e.g. after Supabase fetch)
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
 
   const commit = async () => {
     if (draft.trim() === value) { setEditing(false); return; }
@@ -147,7 +153,7 @@ export function TeamUploadManager({
                 alt={member.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.currentTarget as HTMLImageElement).src = placeholder;
                 }}
               />
               <button
