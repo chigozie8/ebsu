@@ -138,7 +138,7 @@ function StepIndicator({ current }: { current: Step }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PaymentPortal() {
-  const { user, studentDetails } = useGetUserInfo();
+  const { user } = useGetUserInfo();
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormData>({
     fullName: "",
