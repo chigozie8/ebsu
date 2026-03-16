@@ -3,6 +3,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Box-sizing reset (critical for Chrome layout consistency) ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ── Prevent Chrome from inflating font sizes on mobile ── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 *{
     font-family: "DM Sans", sans-serif, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }
