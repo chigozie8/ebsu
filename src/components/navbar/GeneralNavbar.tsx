@@ -267,6 +267,12 @@ export const GeneralNavbar = () => {
                     Blog
                   </motion.p>
                 </NavLink>
+                <NavLink
+                  to={"/payment"}
+                  className="text-sm md:text-xs font-semibold px-3 py-1.5 rounded-lg bg-green1 text-white hover:bg-green2 transition-colors"
+                >
+                  Pay Now
+                </NavLink>
               </div>
             </div>
             <div
@@ -479,6 +485,13 @@ export const GeneralNavbar = () => {
                   className="w-full p-3 hover:text-green1 hover:bg-gray-100 rounded-md transition "
                 >
                   Blog
+                </NavLink>
+                <NavLink
+                  onClick={() => setIsNavOpen(false)}
+                  to={"/payment"}
+                  className="w-full p-3 font-bold text-white bg-green1 hover:bg-green2 rounded-md transition text-center"
+                >
+                  Pay Now
                 </NavLink>
               </div>
             </div>

@@ -97,6 +97,9 @@ const AppRoutes = () => {
   const AiNotesPage = lazy(
     () => import("../pages/user/ai-notes/AiNotesPage")
   );
+  const PaymentPortal = lazy(
+    () => import("../pages/payment/PaymentPortal")
+  );
 
   return (
     <>
@@ -141,6 +144,7 @@ const AppRoutes = () => {
           <Route path="/projects" element={<ProjectsShowcase />} />
           <Route path="/projects/:projectId" element={<ProjectDetails />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/payment" element={<PaymentPortal />} />
           
           <Route path="/about/about-us" element={<AboutUs />} />
           <Route
