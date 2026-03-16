@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import {
   getOrCreateWallet,
   getWallet,
@@ -19,12 +19,12 @@ import {
   type Wallet,
   type WalletTransaction,
   type BankAccount,
-} from "../../../services/walletService";
+} from "../../services/walletService";
 import {
   initializeMonnifyPayment,
   type MonnifyResponse,
-} from "../../../services/monnifyService";
-import { supabase } from "../../../config/supabase";
+} from "../../services/monnifyService";
+import { supabase } from "../../config/supabase";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,13 +50,13 @@ function txIcon(type: WalletTransaction["type"]) {
 }
 
 function txLabel(type: WalletTransaction["type"]): string {
-  return {
+  return ({
     fund: "Wallet Funding",
     payment: "Payment",
     transfer_in: "Transfer Received",
     transfer_out: "Transfer Sent",
     withdrawal: "Withdrawal",
-  }[type];
+  } as Record<WalletTransaction["type"], string>)[type];
 }
 
 function isCredit(type: WalletTransaction["type"]): boolean {
