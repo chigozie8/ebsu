@@ -723,7 +723,7 @@ export default function PaymentPortal() {
                   <button
                     onClick={() => {
                       setStep("form");
-                      setForm({ fullName: "", matricNo: "", email: "", phone: "", purpose: "", customPurpose: "", amount: "", note: "" });
+                      setForm({ fullName: "", matricNo: "", email: "", phone: "", purpose: "", customPurpose: "", amount: "", note: "", paymentMethod: "bank_transfer" });
                       setReceiptFile(null);
                       setReceiptPreview(null);
                       setPaymentId(null);

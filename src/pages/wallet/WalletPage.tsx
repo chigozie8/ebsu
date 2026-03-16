@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import {
   getOrCreateWallet,
-  getWallet,
   getTransactions,
   getBankAccounts,
   fundWallet,
