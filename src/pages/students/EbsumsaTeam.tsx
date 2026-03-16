@@ -38,6 +38,12 @@ const defaultExecutiveMembers: ExecutiveMember[] = [
   { name: "Name Here", title: "Director of Projects",     image: placeholder, phone: "" },
   { name: "Name Here", title: "Chief Whip",               image: placeholder, phone: "" },
   { name: "Name Here", title: "Year One Representative",  image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Logistics",   image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Legal",       image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of ICT",         image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Publicity",   image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Finance",     image: placeholder, phone: "" },
+  { name: "Name Here", title: "Director of Complaints",  image: placeholder, phone: "" },
 ];
 
 const DEFAULT_DRIVE = "https://drive.google.com/file/d/1Vv_k_nvjAZ1Wi8QnpFa5wlsWCsns7918/view?usp=drivesdk";

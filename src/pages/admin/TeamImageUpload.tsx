@@ -33,6 +33,12 @@ const executiveTeamData: TeamMember[] = [
   { id: 'exec-11',    name: 'Name Here', image: placeholder, role: 'Director of Projects',     extra: '' },
   { id: 'exec-12',    name: 'Name Here', image: placeholder, role: 'Chief Whip',               extra: '' },
   { id: 'exec-13',    name: 'Name Here', image: placeholder, role: 'Year One Representative',  extra: '' },
+  { id: 'exec-14',    name: 'Name Here', image: placeholder, role: 'Director of Logistics',   extra: '' },
+  { id: 'exec-15',    name: 'Name Here', image: placeholder, role: 'Director of Legal',       extra: '' },
+  { id: 'exec-16',    name: 'Name Here', image: placeholder, role: 'Director of ICT',         extra: '' },
+  { id: 'exec-17',    name: 'Name Here', image: placeholder, role: 'Director of Publicity',   extra: '' },
+  { id: 'exec-18',    name: 'Name Here', image: placeholder, role: 'Director of Finance',     extra: '' },
+  { id: 'exec-19',    name: 'Name Here', image: placeholder, role: 'Director of Complaints',  extra: '' },
 ];
 
 const classRepsData: TeamMember[] = classReps.map((rep, idx) => ({
