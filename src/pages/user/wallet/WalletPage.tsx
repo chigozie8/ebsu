@@ -11,7 +11,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 
 type Tab = "overview" | "fund" | "transfer" | "withdraw" | "history";
 
-const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
+const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_live_77ab98bc87c205ec76cb2f7d534cff02df034c8e";
 
 function formatNaira(amount: number) {
   return new Intl.NumberFormat("en-NG", {
