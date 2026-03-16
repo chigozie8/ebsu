@@ -159,29 +159,160 @@ const ProjectCard = ({ project, index, onClick }: ProjectCardProps) => {
 };
   
 // =============================================
-// Countdown Timer Component
+// Stat Card with count-up animation
 // =============================================
-const CountdownTimer = ({ targetCount, label, duration = 2000 }: { targetCount: number; label: string; duration?: number }) => {
+const statMeta = [
+  {
+    label: "Projects Completed",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    ),
+    gradient: "from-green1 to-green2",
+    glow: "shadow-green-200",
+  },
+  {
+    label: "Lives Impacted",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+      </svg>
+    ),
+    gradient: "from-rose-500 to-pink-500",
+    glow: "shadow-rose-200",
+  },
+  {
+    label: "NGO Collaborations",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+      </svg>
+    ),
+    gradient: "from-blue-500 to-indigo-600",
+    glow: "shadow-blue-200",
+  },
+  {
+    label: "Team Members",
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    gradient: "from-amber-500 to-orange-500",
+    glow: "shadow-amber-200",
+  },
+];
+
+const CountdownTimer = ({ targetCount, label, duration = 2200, index }: { targetCount: number; label: string; duration?: number; index: number }) => {
   const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
+  const meta = statMeta[index] ?? statMeta[0];
 
   useEffect(() => {
     if (hasAnimated) return;
-    
-    const startTime = Date.now();
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(easeOut * targetCount));
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        setHasAnimated(true);
-      }
+    const id = `stat-${label.replace(/\s+/g, '-')}`;
+    const startAnimation = () => {
+      const startTime = Date.now();
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        setCount(Math.floor(easeOut * targetCount));
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          setHasAnimated(true);
+        }
+      };
+      requestAnimationFrame(animate);
     };
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting && !hasAnimated) startAnimation(); },
+      { threshold: 0.4 }
+    );
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+    return () => observer.disconnect();
+  }, [targetCount, label, duration, hasAnimated]);
+
+  return (
+    <motion.div
+      id={`stat-${label.replace(/\s+/g, '-')}`}
+      variants={fadeInVariants3}
+      custom={index + 1}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={`relative overflow-hidden bg-white rounded-2xl p-5 sm:p-6 shadow-lg ${meta.glow} hover:shadow-xl transition-shadow duration-300 flex flex-col items-center text-center`}
+    >
+      {/* Top gradient bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${meta.gradient} rounded-t-2xl`} />
+
+      {/* Icon badge */}
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${meta.gradient} text-white flex items-center justify-center mb-3 shadow-md`}>
+        {meta.icon}
+      </div>
+
+      {/* Count */}
+      <p className={`text-3xl sm:text-4xl font-extrabold bg-gradient-to-r ${meta.gradient} bg-clip-text text-transparent leading-none`}>
+        {count.toLocaleString()}+
+      </p>
+
+      {/* Label */}
+      <p className="text-xs sm:text-sm font-semibold text-gray-500 mt-2 leading-tight">{label}</p>
+    </motion.div>
+  );
+};
+
+// =============================================
+// Stats Section
+// =============================================
+const StatsSection = () => {
+  const stats = [
+    { label: "Projects Completed", value: 200 },
+    { label: "Lives Impacted",     value: 20000 },
+    { label: "NGO Collaborations", value: 40 },
+    { label: "Team Members",       value: 50 },
+  ];
+
+  return (
+    <div className="mb-14">
+      {/* Section header */}
+      <motion.div
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={0}
+        className="text-center mb-8"
+      >
+        <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-green1/10 text-green1 text-xs font-bold rounded-full uppercase tracking-widest mb-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-green1 animate-pulse" />
+          Our Impact in Numbers
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 text-balance">
+          Making a Real Difference
+        </h2>
+        <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
+          Every number tells a story of dedication, service, and community care.
+        </p>
+      </motion.div>
+
+      <motion.div
+        variants={fadeInVariants3}
+        initial="initial"
+        whileInView="animate"
+        viewport={{ once: true }}
+        custom={1}
+        className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5"
+      >
+        {stats.map((stat, i) => (
+          <CountdownTimer key={stat.label} targetCount={stat.value} label={stat.label} index={i} />
+        ))}
+      </motion.div>
+    </div>
+  );
+};
     
     const observer = new IntersectionObserver(
       (entries) => {
