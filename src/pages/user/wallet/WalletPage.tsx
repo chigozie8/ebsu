@@ -447,13 +447,14 @@ export default function WalletPage() {
   const balance = wallet?.balance ?? 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-3 sm:px-6">
+    <div className="min-h-screen bg-gray-50 pt-20 pb-12 px-3 sm:px-6" style={{ isolation: "auto" }}>
       <div className="max-w-2xl mx-auto">
         {/* Wallet Card */}
         <motion.div
           variants={fadeInVariants5}
           initial="initial"
-          animate="animate"
+          whileInView="animate"
+          viewport={{ once: true }}
           custom={1}
           className="relative overflow-hidden rounded-2xl bg-[#00875a] text-white p-6 mb-6 shadow-lg"
         >
