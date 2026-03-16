@@ -18,9 +18,8 @@ interface ClassRepDisplay {
 }
 
 export default function ClassReps() {
-  const [reps, setReps] = useState<ClassRepDisplay[]>(
-    staticClassReps.map((r) => ({ ...r }))
-  );
+  const [reps, setReps] = useState<ClassRepDisplay[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scroll(0, 0);
@@ -28,16 +27,15 @@ export default function ClassReps() {
       .from("team_images")
       .select("member_id, image_url, name, role, extra")
       .eq("team_type", "classRep")
-      .then(({ data, error }) => {
-        if (error || !data || data.length === 0) return;
+      .then(({ data }) => {
         const overrides: Record<string, { image_url?: string; name?: string; role?: string; extra?: string }> = {};
-        data.forEach((row) => {
-          overrides[row.member_id] = row;
-        });
-        setReps((prev) =>
-          prev.map((rep, idx) => {
+        if (data && data.length > 0) {
+          data.forEach((row) => { overrides[row.member_id] = row; });
+        }
+        setReps(
+          staticClassReps.map((rep, idx) => {
             const patch = overrides[`classrep-${idx}`];
-            if (!patch) return rep;
+            if (!patch) return { ...rep };
             return {
               ...rep,
               img:   patch.image_url || rep.img,
@@ -47,6 +45,7 @@ export default function ClassReps() {
             };
           })
         );
+        setLoading(false);
       });
   }, []);
 
@@ -64,7 +63,17 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8">
-            {reps.map(({ img, name, title, phone }, i) => (
+            {loading
+              ? Array.from({ length: staticClassReps.length }).map((_, i) => (
+                  <div key={i} className="w-full rounded-lg overflow-hidden bg-white shadow-4 animate-pulse">
+                    <div className="w-full h-[260px] bg-gray-200" />
+                    <div className="p-3 flex flex-col gap-2.5">
+                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))
+              : reps.map(({ img, name, title, phone }, i) => (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"
@@ -102,7 +111,7 @@ export default function ClassReps() {
                   )}
                 </div>
               </motion.div>
-            ))}
+              ))}
           </div>
         </div>
       </div>
