@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
-import { db } from "../../../config/firebase";
+import { useState, useEffect, useRef } from "react";
+import { db, storage } from "../../../config/firebase";
 import {
   collection,
   addDoc,
@@ -12,6 +12,7 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
@@ -65,6 +66,10 @@ export default function AdminAdsManager() {
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string; title: string }>({ show: false, id: "", title: "" });
   const [form, setForm] = useState(EMPTY_FORM);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [imageMode, setImageMode] = useState<"upload" | "url">("upload");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAds = async () => {
     setLoading(true);
@@ -88,6 +93,42 @@ export default function AdminAdsManager() {
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditingId(null);
+    setImagePreview("");
+    setImageMode("upload");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      notifyUser("error", "Image must be under 5MB");
+      return;
+    }
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    setImagePreview(localUrl);
+    setUploadingImage(true);
+    try {
+      const storageRef = ref(storage, `advertisements/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      setForm((p) => ({ ...p, imageUrl: downloadUrl }));
+      notifyUser("success", "Image uploaded");
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      notifyUser("error", "Image upload failed. Try a URL instead.");
+      setImagePreview("");
+      setForm((p) => ({ ...p, imageUrl: "" }));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview("");
+    setForm((p) => ({ ...p, imageUrl: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,6 +191,8 @@ export default function AdminAdsManager() {
       imageUrl: ad.imageUrl || "",
     });
     setEditingId(ad.id);
+    setImagePreview(ad.imageUrl || "");
+    setImageMode(ad.imageUrl ? "upload" : "upload");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -319,18 +362,97 @@ export default function AdminAdsManager() {
                 />
               </div>
 
-              {/* Image URL */}
+              {/* Image — Upload or URL */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Image URL <span className="text-gray-400">(optional)</span>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Image <span className="text-gray-400">(optional)</span>
                 </label>
-                <input
-                  type="url"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))}
-                  placeholder="https://... (paste an image link)"
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
-                />
+                {/* Mode toggle */}
+                <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-3">
+                  {(["upload", "url"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => { setImageMode(mode); handleRemoveImage(); }}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        imageMode === mode
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {mode === "upload" ? "Upload from device" : "Paste URL"}
+                    </button>
+                  ))}
+                </div>
+
+                {imageMode === "upload" ? (
+                  <div>
+                    {/* Hidden file input — accepts images, allows camera on mobile */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleImageFileChange}
+                      className="hidden"
+                      id="ad-image-upload"
+                    />
+                    {imagePreview || form.imageUrl ? (
+                      <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                        <img
+                          src={imagePreview || form.imageUrl}
+                          alt="Ad preview"
+                          className="w-full h-32 object-cover"
+                        />
+                        {uploadingImage && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2">
+                            <Spinner className="w-5 h-5 text-white" />
+                            <span className="text-white text-xs font-medium">Uploading...</span>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors"
+                        >
+                          x
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="ad-image-upload"
+                        className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-6 cursor-pointer transition-colors ${
+                          uploadingImage
+                            ? "border-[#00875a]/50 bg-green-50"
+                            : "border-gray-200 hover:border-[#00875a]/50 hover:bg-green-50"
+                        }`}
+                      >
+                        {uploadingImage ? (
+                          <>
+                            <Spinner className="w-6 h-6 text-[#00875a]" />
+                            <span className="text-xs text-[#00875a] font-medium">Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs text-gray-500 font-medium">Tap to upload from your phone</span>
+                            <span className="text-xss text-gray-400">JPG, PNG, WebP — max 5MB</span>
+                          </>
+                        )}
+                      </label>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="url"
+                    value={form.imageUrl}
+                    onChange={(e) => { setForm((p) => ({ ...p, imageUrl: e.target.value })); setImagePreview(e.target.value); }}
+                    placeholder="https://... (paste an image link)"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00875a]/30 focus:border-[#00875a] transition-colors"
+                  />
+                )}
               </div>
 
               {/* Color Presets */}
