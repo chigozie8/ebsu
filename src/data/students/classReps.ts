@@ -34,4 +34,11 @@ export const classReps = [
     title: "500 Level Course Rep.",
     work: "Student, Event Planner",
   },
+  {
+    img: "/img/class-reps/CR_600.jpg",
+    name: "Name Here",
+    regNo: 0,
+    title: "600 Level Course Rep.",
+    work: "Student",
+  },
 ];
