@@ -273,6 +273,12 @@ export const GeneralNavbar = () => {
                 >
                   Pay Now
                 </NavLink>
+                <NavLink
+                  to={"/u/wallet"}
+                  className="text-sm md:text-xs font-semibold px-3 py-1.5 rounded-lg border-2 border-green1 text-green1 hover:bg-green1 hover:text-white transition-colors"
+                >
+                  My Wallet
+                </NavLink>
               </div>
             </div>
             <div
@@ -492,6 +498,13 @@ export const GeneralNavbar = () => {
                   className="w-full p-3 font-bold text-white bg-green1 hover:bg-green2 rounded-md transition text-center"
                 >
                   Pay Now
+                </NavLink>
+                <NavLink
+                  onClick={() => setIsNavOpen(false)}
+                  to={"/u/wallet"}
+                  className="w-full p-3 font-bold text-green1 border-2 border-green1 hover:bg-green1 hover:text-white rounded-md transition text-center"
+                >
+                  My Wallet
                 </NavLink>
               </div>
             </div>

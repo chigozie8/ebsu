@@ -100,6 +100,9 @@ const AppRoutes = () => {
   const PaymentPortal = lazy(
     () => import("../pages/payment/PaymentPortal")
   );
+  const WalletPage = lazy(
+    () => import("../pages/wallet/WalletPage")
+  );
 
   return (
     <>
@@ -253,6 +256,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <AiNotesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/wallet"
+            element={
+              <ProtectedRoute>
+                <WalletPage />
               </ProtectedRoute>
             }
           />
