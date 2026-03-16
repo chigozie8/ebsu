@@ -102,7 +102,7 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
 
 // ─── Fund Modal ───────────────────────────────────────────────────────────────
 
-function FundModal({ wallet, onSuccess, onClose }: { wallet: Wallet; onSuccess: () => void; onClose: () => void }) {
+function FundModal({ wallet, onSuccess, onClose: _onClose }: { wallet: Wallet; onSuccess: () => void; onClose: () => void }) {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -392,12 +392,12 @@ function WithdrawModal({ wallet, bankAccounts, onSuccess, onRefreshBanks }: { wa
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Bank</label>
             <select value={newBank.bank_code}
               onChange={(e) => {
-                const bank = NIGERIAN_BANKS.find((b) => b.code === e.target.value);
+                const bank = NIGERIAN_BANKS.find((b: { name: string; code: string }) => b.code === e.target.value);
                 setNewBank((p) => ({ ...p, bank_code: e.target.value, bank_name: bank?.name ?? "" }));
               }}
               className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green1/30 focus:border-green1 bg-white">
               <option value="">Select a bank</option>
-              {NIGERIAN_BANKS.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+              {NIGERIAN_BANKS.map((b: { name: string; code: string }) => <option key={b.code} value={b.code}>{b.name}</option>)}
             </select>
           </div>
           <div>
