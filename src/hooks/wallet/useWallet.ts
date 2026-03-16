@@ -11,7 +11,6 @@ import {
   serverTimestamp,
   query,
   where,
-  orderBy,
   getDocs,
 } from "firebase/firestore";
 import { db } from "../../config/firebase";
@@ -66,27 +65,35 @@ export const useWallet = (userID: string | undefined, userEmail: string | undefi
     return () => unsubscribe();
   }, [userID]);
 
-  // Fetch transactions
-  const fetchTransactions = async () => {
+  // Real-time transactions listener
+  useEffect(() => {
     if (!userID) return;
     setLoadingTransactions(true);
-    try {
-      const q = query(
-        collection(db, "transactions"),
-        where("userID", "==", userID),
-        orderBy("createdAt", "desc")
-      );
-      const snap = await getDocs(q);
-      const txns: WalletTransaction[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<WalletTransaction, "id">),
-      }));
+    // Query without orderBy to avoid needing a composite index; sort client-side
+    const q = query(
+      collection(db, "transactions"),
+      where("userID", "==", userID)
+    );
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const txns: WalletTransaction[] = snap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<WalletTransaction, "id">) }))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return bTime - aTime;
+        });
       setTransactions(txns);
-    } catch (err) {
-      console.error("[useWallet] fetchTransactions error:", err);
-    } finally {
       setLoadingTransactions(false);
-    }
+    }, (err) => {
+      console.error("[useWallet] transactions snapshot error:", err);
+      setLoadingTransactions(false);
+    });
+    return () => unsubscribe();
+  }, [userID]);
+
+  // Keep fetchTransactions as a manual refresh no-op (transactions update in real-time)
+  const fetchTransactions = async () => {
+    // no-op — data is live via onSnapshot
   };
 
   // Credit wallet after successful Paystack payment
