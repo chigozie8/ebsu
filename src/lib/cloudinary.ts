@@ -1,106 +1,55 @@
 /**
- * Cloudinary + Firestore gallery helpers.
+ * Cloudinary-only gallery helpers.
  *
- * Strategy (CORS-safe, works in Vite dev & Vercel production):
- *  - Upload  → Cloudinary unsigned upload endpoint (no secret needed, CORS allowed)
- *  - List    → Firebase Firestore "gallery" collection (no CORS issues)
- *  - Delete  → Cloudinary destroy via /api/gallery-upload serverless fn (server-side secret)
- *              Falls back to just removing from Firestore if the API is unavailable.
+ * - Upload  → direct browser → Cloudinary unsigned upload (CORS allowed)
+ * - List    → /api/gallery-list  (server-side, uses API secret safely)
+ * - Delete  → /api/gallery-upload DELETE (server-side, signed destroy)
  *
- * This completely avoids calling the Cloudinary Admin/Search API from the browser,
- * which blocks due to CORS when using Basic Auth.
+ * No Firestore involved. Works in both Vite dev (middleware) and Vercel production.
  */
 
-import {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  orderBy,
-  query,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
 import type { GalleryItem } from "../pages/admin/tabs/AdminGalleryManager";
-
-const COLLECTION = "gallery";
 
 export const getCloudName   = () => (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME   as string) || "";
 export const uploadPreset   = () => (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string) || "";
 
 // ─── List ────────────────────────────────────────────────────────────────────
-/** Fetch all gallery items from Firestore, newest first. */
 export async function listGalleryItems(): Promise<GalleryItem[]> {
-  console.log("[v0] listGalleryItems: starting Firestore fetch");
-  try {
-    const q = query(collection(db, COLLECTION), orderBy("uploadedAt", "desc"));
-    const snap = await getDocs(q);
-    console.log("[v0] listGalleryItems: got", snap.docs.length, "docs");
-    return snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        url:        data.url        as string,
-        publicId:   data.publicId   as string,
-        category:   data.category   as string,
-        caption:    (data.caption   as string) || "",
-        type:       (data.type      as "image" | "video") || "image",
-        uploadedAt: data.uploadedAt?.toDate?.()?.toISOString?.() ?? (data.uploadedAt as string) ?? "",
-        size:       (data.size      as number) | 0,
-        firestoreId: d.id,
-      } as GalleryItem & { firestoreId: string };
-    });
-  } catch (err) {
-    console.log("[v0] listGalleryItems ERROR:", err);
-    throw err;
-  }
-}
+  const res = await fetch("/api/gallery-list");
+  const text = await res.text();
 
-// ─── Save to Firestore after upload ──────────────────────────────────────────
-/** Persist a newly uploaded item to Firestore. */
-export async function saveGalleryItem(
-  item: Omit<GalleryItem, "uploadedAt">
-): Promise<GalleryItem> {
-  console.log("[v0] saveGalleryItem: saving to Firestore", item.publicId);
+  let data: { items?: GalleryItem[]; error?: string };
   try {
-    const ref = await addDoc(collection(db, COLLECTION), {
-      ...item,
-      uploadedAt: serverTimestamp(),
-    });
-    console.log("[v0] saveGalleryItem: saved with id", ref.id);
-    return { ...item, uploadedAt: new Date().toISOString() } as GalleryItem;
-  } catch (err) {
-    console.log("[v0] saveGalleryItem ERROR:", err);
-    throw err;
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Server error — make sure VITE_CLOUDINARY_API_KEY and VITE_CLOUDINARY_API_SECRET are set in Vars.`);
   }
+
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Request failed (${res.status})`);
+  }
+
+  return data.items || [];
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
-/**
- * Delete a gallery item:
- *  1. Remove from Firestore by matching publicId.
- *  2. Attempt to destroy on Cloudinary via the serverless route (best-effort).
- */
 export async function deleteGalleryItem(
   publicId: string,
   resourceType = "image"
 ): Promise<void> {
-  // 1. Remove from Firestore
-  const q = query(collection(db, COLLECTION));
-  const snap = await getDocs(q);
-  const docToDelete = snap.docs.find((d) => d.data().publicId === publicId);
-  if (docToDelete) {
-    await deleteDoc(doc(db, COLLECTION, docToDelete.id));
-  }
-
-  // 2. Best-effort: call serverless route to destroy from Cloudinary CDN
+  const res = await fetch("/api/gallery-upload", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publicId, resourceType }),
+  });
+  const text = await res.text();
+  let data: { success?: boolean; error?: string };
   try {
-    await fetch("/api/gallery-upload", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ publicId, resourceType }),
-    });
+    data = JSON.parse(text);
   } catch {
-    // Silently ignore — item is already removed from Firestore
+    throw new Error("Delete failed — server returned invalid response.");
+  }
+  if (!res.ok || data.error) {
+    throw new Error(data.error || `Delete failed (${res.status})`);
   }
 }
