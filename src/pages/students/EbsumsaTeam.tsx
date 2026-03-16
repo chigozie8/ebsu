@@ -165,10 +165,10 @@ const DriveCtaBanner = ({ url }: { url: string }) => (
         Full Appointee List
       </div>
       <h3 className="text-white text-2xl sm:text-3xl font-extrabold text-balance mb-3">
-        Can't find your appointee?
+        Meet Every Member of the EBSUMSA Family
       </h3>
       <p className="text-white/80 text-sm sm:text-base max-w-md mx-auto mb-6 leading-relaxed">
-        We couldn't fit everyone here! View the complete list of all EBSUMSA appointees on Google Drive.
+        Our executive spotlight features only a few of the remarkable individuals serving EBSUMSA. Access the complete directory of every appointed official.
       </p>
       <a
         href={url}
