@@ -43,21 +43,30 @@ export async function getOrCreateWallet(
   fullName: string,
   email: string
 ): Promise<Wallet> {
-  const { data: existing } = await supabase
+  // Try to fetch existing wallet — PGRST116 means "no rows" which is fine
+  const { data: existing, error: fetchErr } = await supabase
     .from("wallets")
     .select("*")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
+  if (fetchErr) {
+    console.error("[v0] walletService fetchErr:", fetchErr);
+    throw fetchErr;
+  }
   if (existing) return existing as Wallet;
 
-  const { data: created, error } = await supabase
+  // Create new wallet
+  const { data: created, error: insertErr } = await supabase
     .from("wallets")
     .insert({ user_id: userId, full_name: fullName, email })
     .select("*")
     .single();
 
-  if (error) throw error;
+  if (insertErr) {
+    console.error("[v0] walletService insertErr:", insertErr);
+    throw insertErr;
+  }
   return created as Wallet;
 }
 
