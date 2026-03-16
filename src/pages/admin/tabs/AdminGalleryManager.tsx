@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { IoTrash, IoImages, IoVideocam, IoClose, IoCloudUpload, IoRefresh } from "react-icons/io5";
 import { notifyUser } from "../../../helpers/notifyUser";
+import { listGalleryItems, deleteGalleryItem, saveGalleryItem, uploadPreset, getCloudName } from "../../../lib/cloudinary";
 
 export interface GalleryItem {
   url:        string;
@@ -59,16 +60,14 @@ export default function AdminGalleryManager() {
   const [filterCategory, setFilterCategory] = useState("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const cloudName    = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string;
-  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string;
+  const cloudNameVal  = getCloudName();
+  const uploadPresetVal = uploadPreset();
 
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const res  = await fetch("/api/gallery-list");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to load");
-      setItems(data.items || []);
+      const items = await listGalleryItems();
+      setItems(items);
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Failed to load gallery");
     } finally {
@@ -100,7 +99,7 @@ export default function AdminGalleryManager() {
 
   const handleUpload = async () => {
     if (!selectedFile || !preview) return;
-    if (!cloudName || !uploadPreset) {
+    if (!cloudNameVal || !uploadPresetVal) {
       notifyUser("error", "Cloudinary not configured. Check VITE_CLOUDINARY_CLOUD_NAME and VITE_CLOUDINARY_UPLOAD_PRESET in your env vars.");
       return;
     }
@@ -116,13 +115,13 @@ export default function AdminGalleryManager() {
 
       const formData = new FormData();
       formData.append("file", fileToSend, selectedFile.name);
-      formData.append("upload_preset", uploadPreset);
+      formData.append("upload_preset", uploadPresetVal);
       formData.append("folder", "ebsu_gallery");
       // Store category + caption as Cloudinary context metadata
       formData.append("context", `category=${category}|caption=${caption.trim()}`);
 
       const resourceType = isVideo ? "video" : "image";
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudNameVal}/${resourceType}/upload`;
 
       // Use XHR so we get real upload progress
       const newItem = await new Promise<GalleryItem>((resolve, reject) => {
@@ -132,10 +131,10 @@ export default function AdminGalleryManager() {
             setUploadProgress(25 + Math.round((e.loaded / e.total) * 70));
           }
         };
-        xhr.onload = () => {
+        xhr.onload = async () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             const d = JSON.parse(xhr.responseText);
-            resolve({
+            const newItem: GalleryItem = {
               url:        d.secure_url,
               publicId:   d.public_id,
               category,
@@ -143,7 +142,10 @@ export default function AdminGalleryManager() {
               type:       isVideo ? "video" : "image",
               uploadedAt: d.created_at,
               size:       d.bytes,
-            });
+            };
+            // Save metadata to Firestore so listGalleryItems() works everywhere
+            await saveGalleryItem(newItem);
+            resolve(newItem);
           } else {
             try {
               const e = JSON.parse(xhr.responseText);
@@ -174,17 +176,11 @@ export default function AdminGalleryManager() {
     if (!confirm(`Delete this ${item.type}? This cannot be undone.`)) return;
     setDeletingId(item.publicId);
     try {
-      const res  = await fetch("/api/gallery-upload", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicId: item.publicId, resourceType: item.type }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Delete failed");
+      await deleteGalleryItem(item.publicId, item.type);
       setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
       notifyUser("success", "Deleted successfully");
-    } catch {
-      notifyUser("error", "Failed to delete item");
+    } catch (err) {
+      notifyUser("error", err instanceof Error ? err.message : "Failed to delete item");
     } finally {
       setDeletingId(null);
     }
