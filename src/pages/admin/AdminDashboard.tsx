@@ -29,6 +29,7 @@ import AdminNotificationsTab from "./tabs/AdminNotificationsTab";
 import AdminAlumniManager from "./tabs/AdminAlumniManager";
 import AdminNewsletterTab from "./tabs/AdminNewsletterTab";
 import AdminGalleryManager from "./tabs/AdminGalleryManager";
+import AdminAdsManager from "./tabs/AdminAdsManager";
 
 interface Material {
   id: string;
@@ -166,11 +167,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1978,6 +1979,20 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <line x1="3" y1="10" x2="21" y2="10" strokeWidth={2} />
             </svg>
             Events
+          </button>
+          {/* Advertisements Tab */}
+          <button
+            onClick={() => setActiveTab("ads")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "ads"
+                ? "bg-rose-600 text-white shadow-md"
+                : "bg-rose-50 text-rose-600 hover:bg-rose-100 border-2 border-rose-600"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+            Advertisements
           </button>
         </div>
 
@@ -4615,6 +4630,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </p>
           </div>
           <AdminNewsletterTab />
+        </motion.div>
+      )}
+
+      {/* Advertisements Tab */}
+      {activeTab === "ads" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Advertisements</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Create and manage banner advertisements visible to students on their dashboard. Activate, pause, or delete ads at any time.
+            </p>
+          </div>
+          <AdminAdsManager />
         </motion.div>
       )}
 

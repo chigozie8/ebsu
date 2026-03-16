@@ -23,6 +23,7 @@ import EventsWidget from "../../../components/widgets/EventsWidget";
 import { trackActivity } from "../../../hooks/analytics/useAnalytics";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import AdvertisementBanner from "../../../components/shared/AdvertisementBanner";
 
 // Activity types with icons and colors
 interface Activity {
@@ -391,6 +392,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
+                  {/* Advertisement Banner */}
+                  <AdvertisementBanner className="mb-3 sm:mb-4" />
                   <div className="mb-3 sm:mb-4">
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 xxss:gap-3 sm:gap-4 auto-rows-max">
                       <NavLink to="/u/course-outlines">
