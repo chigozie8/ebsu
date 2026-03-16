@@ -22,14 +22,17 @@ export async function listGalleryItems(): Promise<GalleryItem[]> {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error(`Server error — make sure VITE_CLOUDINARY_API_KEY and VITE_CLOUDINARY_API_SECRET are set in Vars.`);
+    // Raw file returned — API route not running yet
+    throw new Error(
+      "Gallery API not available. Make sure VITE_CLOUDINARY_API_KEY and VITE_CLOUDINARY_API_SECRET are set in Vars, then refresh."
+    );
   }
 
   if (!res.ok || data.error) {
     throw new Error(data.error || `Request failed (${res.status})`);
   }
 
-  return data.items || [];
+  return data.items ?? [];
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
