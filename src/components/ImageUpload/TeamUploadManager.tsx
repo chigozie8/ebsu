@@ -200,7 +200,7 @@ export function TeamUploadManager({
               {member.extra !== undefined && (
                 <div>
                   <p className="text-xss font-bold text-gray-400 uppercase tracking-wide mb-0.5">
-                    {teamType === 'executive' ? 'Phone Number' : teamType === 'classRep' ? 'Work / Description' : 'Level / Info'}
+                    {teamType === 'press' ? 'Level / Info' : 'Phone Number'}
                   </p>
                   <EditableField
                     value={member.extra}
