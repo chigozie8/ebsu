@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import { useWallet } from "../../../hooks/wallet/useWallet";
 import { motion, AnimatePresence } from "framer-motion";
@@ -400,10 +400,6 @@ export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [balanceVisible, setBalanceVisible] = useState(true);
 
-  useEffect(() => {
-    if (activeTab === "history") fetchTransactions();
-  }, [activeTab]);
-
   const handleFundSuccess = useCallback(async (amount: number, reference: string) => {
     try {
       await fundWallet(amount, reference);
@@ -536,11 +532,11 @@ export default function WalletPage() {
                     <p className="text-lg font-bold text-green-700">{formatNaira(balance)}</p>
                   </div>
                   <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                    <p className="text-xs text-blue-600 font-semibold mb-1">Total Transactions</p>
+                    <p className="text-xs text-blue-600 font-semibold mb-1">Transactions</p>
                     <p className="text-lg font-bold text-blue-700">{transactions.length}</p>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 mb-6">
                   {[
                     { label: "Fund Wallet", desc: "Add money via Paystack", tab: "fund" as Tab, color: "bg-green-50 border-green-100", iconColor: "text-green-600" },
                     { label: "Transfer Funds", desc: "Send to another student", tab: "transfer" as Tab, color: "bg-orange-50 border-orange-100", iconColor: "text-orange-600" },
@@ -559,6 +555,33 @@ export default function WalletPage() {
                     </button>
                   ))}
                 </div>
+                {/* Recent transactions preview */}
+                {transactions.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Recent Transactions</p>
+                      <button onClick={() => setActiveTab("history")} className="text-xs text-[#00875a] font-semibold hover:underline">See all</button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {transactions.slice(0, 3).map((txn) => {
+                        const isCredit = ["fund", "transfer_in"].includes(txn.type);
+                        const typeLabel: Record<string, string> = { fund: "Wallet Funded", payment: "Payment", transfer_out: "Transfer Sent", transfer_in: "Transfer Received", withdrawal_request: "Withdrawal Request" };
+                        return (
+                          <div key={txn.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            {txnIcon(txn.type)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-800 truncate">{typeLabel[txn.type] || txn.type}</p>
+                              <p className="text-xs text-gray-400">{formatDate(txn.createdAt)}</p>
+                            </div>
+                            <span className={`text-sm font-bold flex-shrink-0 ${isCredit ? "text-green-600" : "text-rose-600"}`}>
+                              {isCredit ? "+" : "-"}{formatNaira(txn.amount)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {activeTab === "fund" && (
