@@ -211,7 +211,7 @@ const CountdownTimer = ({ targetCount, label, duration = 2000 }: { targetCount: 
 // =============================================
 // Stats Component with Countdown
 // =============================================
-const StatsSection = ({ projectCount }: { projectCount: number }) => {
+const StatsSection = () => {
   const stats = [
     { label: "Projects Completed", value: 200 },
     { label: "Lives Impacted",     value: 20000 },
@@ -307,7 +307,7 @@ export default function ProjectsShowcase() {
           </div>
 
           {/* Stats */}
-          <StatsSection projectCount={projects.length} />
+          <StatsSection />
 
           {/* Loading State */}
           {loading ? (
