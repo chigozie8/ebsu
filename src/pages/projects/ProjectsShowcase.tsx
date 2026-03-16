@@ -20,7 +20,7 @@ interface Project {
   no?: number;
   title: string;
   description: string;
-  category: "voluntary" | "who" | "personal" | "research" | "community";
+  category: "voluntary" | "ngo" | "personal" | "research" | "community" | "fun_activities";
   date: string;
   endDate?: string;
   collaborators?: Collaborator[] | string[];
@@ -39,11 +39,12 @@ interface ProjectCardProps {
 
 // Category colors and labels
 const categoryConfig = {
-  voluntary: { label: "Voluntary", color: "bg-blue-100 text-blue-800" },
-  who: { label: "WHO Project", color: "bg-green-100 text-green-800" },
-  personal: { label: "Personal", color: "bg-purple-100 text-purple-800" },
-  research: { label: "Research", color: "bg-orange-100 text-orange-800" },
-  community: { label: "Community", color: "bg-teal-100 text-teal-800" },
+  voluntary:      { label: "Voluntary",       color: "bg-blue-100 text-blue-800" },
+  ngo:            { label: "NGO Collaboration", color: "bg-green-100 text-green-800" },
+  personal:       { label: "Personal",         color: "bg-purple-100 text-purple-800" },
+  research:       { label: "Research",         color: "bg-orange-100 text-orange-800" },
+  community:      { label: "Community",        color: "bg-teal-100 text-teal-800" },
+  fun_activities: { label: "Fun Activities",   color: "bg-pink-100 text-pink-800" },
 };
 
 // =============================================
@@ -212,10 +213,10 @@ const CountdownTimer = ({ targetCount, label, duration = 2000 }: { targetCount: 
 // =============================================
 const StatsSection = ({ projectCount }: { projectCount: number }) => {
   const stats = [
-    { label: "Projects Completed", value: Math.max(projectCount, 25) },
-    { label: "Lives Impacted", value: 5000 },
-    { label: "WHO Collaborations", value: 8 },
-    { label: "Team Members", value: 50 },
+    { label: "Projects Completed", value: 200 },
+    { label: "Lives Impacted",     value: 20000 },
+    { label: "NGO Collaborations", value: 40 },
+    { label: "Team Members",       value: 50 },
   ];
 
   return (
@@ -301,7 +302,7 @@ export default function ProjectsShowcase() {
               Projects Showcase
             </h2>
             <h3 className="text-gray-700 font-medium text-ss ss:text-sm xlg:text-xs text-center max-w-2xl">
-              Discover our voluntary work, WHO collaborations, research initiatives, and community projects
+              Discover our voluntary work, NGO collaborations, research initiatives, community projects and fun activities
             </h3>
           </div>
 
@@ -330,7 +331,7 @@ export default function ProjectsShowcase() {
                 </h4>
                 <p className="text-gray-600 text-sm leading-relaxed">
                   At EBSUMSA, we believe in giving back to our community through various initiatives. 
-                  From WHO-sponsored health programs to voluntary medical outreaches, our students actively 
+                  From NGO-sponsored health programs to voluntary medical outreaches and fun activities, our students actively 
                   participate in projects that make a real difference. This page showcases our collective 
                   efforts and achievements in health promotion, research, and community service.
                 </p>
