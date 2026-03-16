@@ -4,7 +4,6 @@ import Footer from "../../components/footer/Footer";
 import { classReps as staticClassReps } from "../../data/students/classReps";
 import { motion } from "framer-motion";
 import { GraduateCapIcon } from "../../components/icons/general/GraduateCapIcon";
-import { RegisterIcon } from "../../components/icons/general/RegisterIcon";
 import { ProfileIcon } from "../../components/icons/general/ProfileIcon";
 import { supabase } from "../../config/supabase";
 import placeholderImg from "../../assets/img/team/placeholder.png";
@@ -65,7 +64,7 @@ export default function ClassReps() {
             </h3>
           </div>
           <div className="grid sss:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-8">
-            {reps.map(({ img, name, regNo, title, phone }, i) => (
+            {reps.map(({ img, name, title, phone }, i) => (
               <motion.div
                 variants={fadeInVariants3}
                 initial="initial"
@@ -86,9 +85,6 @@ export default function ClassReps() {
                 <div className="p-3 flex flex-col gap-1.5">
                   <p className="font-bold text-sm md:text-xs uppercase flex gap-1.5 items-center text-gray-900">
                     <ProfileIcon className="w-5 h-5 flex-shrink-0" /> {name}
-                  </p>
-                  <p className="font-semibold text-ss flex gap-1.5 items-center text-gray-900">
-                    <RegisterIcon className="w-5 h-5 flex-shrink-0 fill-green1" /> {regNo}
                   </p>
                   <p className="font-semibold text-ss uppercase flex gap-1.5 items-center text-gray-900">
                     <GraduateCapIcon className="w-5 h-5 flex-shrink-0 fill-green1" /> {title}
