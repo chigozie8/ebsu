@@ -158,6 +158,8 @@ const ADMIN_EMAILS = [
   "ebsumsa102@gmail.com",
   "oohveeyuu070@gmail.com",
 ];
+const isAdminEmail = (email?: string) =>
+  !!email && (ADMIN_EMAILS.includes(email.toLowerCase()) || email.toLowerCase().includes("admin"));
 
 export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
@@ -293,9 +295,7 @@ export default function AdminDashboard() {
   const [previewingOutline, setPreviewingOutline] = useState<CourseOutlineEntry | null>(null);
 
   // Check if user is admin
-  const isAdmin =
-      ADMIN_EMAILS.includes(studentDetails?.email || '') ||
-    studentDetails?.email?.includes("admin");
+  const isAdmin = isAdminEmail(studentDetails?.email);
 
   useEffect(() => {
     if (isAdmin) {
