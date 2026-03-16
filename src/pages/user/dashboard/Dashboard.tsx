@@ -23,6 +23,7 @@ import EventsWidget from "../../../components/widgets/EventsWidget";
 import { trackActivity } from "../../../hooks/analytics/useAnalytics";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getWallet, formatNaira } from "../../../services/walletService";
 
 // Activity types with icons and colors
 interface Activity {
@@ -73,7 +74,7 @@ const generateActivities = (studentDetails: any): Activity[] => {
 };
 
 export default function Dashboard() {
-  const { studentDetails, gettingStudentDetails, gettingStudentDetailsErr } =
+  const { studentDetails, gettingStudentDetails, gettingStudentDetailsErr, user } =
     useGetUserInfo();
   const { isImageLoading, setIsImageLoading, LoadingPlaceholder } =
     useLoadImage();
@@ -84,6 +85,7 @@ export default function Dashboard() {
   const [contactForm, setContactForm] = useState({ subject: "", message: "" });
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem("dashboard-dark") === "true";
   });
@@ -127,6 +129,15 @@ export default function Dashboard() {
       trackActivity("page_visit", "Dashboard");
     }
   }, [studentDetails]);
+
+  // Load wallet balance
+  useEffect(() => {
+    if (user?.uid) {
+      getWallet(user.uid).then((w) => {
+        if (w) setWalletBalance(w.balance);
+      });
+    }
+  }, [user?.uid]);
 
   // Format timestamp for activities
   const formatActivityTime = (date: Date) => {
@@ -389,6 +400,36 @@ export default function Dashboard() {
                   <div className="sm:col-span-2 lg:col-span-1">
                     <EventsWidget customIndex={7} />
                   </div>
+                  {/* Wallet Widget */}
+                  <NavLink to="/u/wallet" className="sm:col-span-2 lg:col-span-1">
+                    <motion.div
+                      variants={fadeInVariants5}
+                      initial="initial"
+                      whileInView="animate"
+                      viewport={{ once: true }}
+                      custom={8}
+                      className={`rounded-lg shadow w-full p-4 transition-colors ${isDark ? "bg-[#1e293b]" : "bg-green3"}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-green-400" : "text-green-200"}`}>My Wallet</p>
+                        <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-white text-xl font-extrabold">
+                        {walletBalance !== null ? formatNaira(walletBalance) : "₦ —"}
+                      </p>
+                      <p className="text-green-200 text-xss mt-1">Available Balance</p>
+                      <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span className="text-green-200 text-xss">Tap to manage</span>
+                        <svg className="w-4 h-4 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </motion.div>
+                  </NavLink>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
                   <div className="mb-3 sm:mb-4">

@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { NavLink } from "react-router-dom";
 import { supabase } from "../../config/supabase";
 import Footer from "../../components/footer/Footer";
+import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
+import {
+  getWallet,
+  deductWallet,
+  formatNaira,
+  generateRef,
+} from "../../services/walletService";
 
 // ─── Payment account details ──────────────────────────────────────────────────
 const ACCOUNT = {
@@ -35,6 +43,7 @@ interface FormData {
   customPurpose: string;
   amount: string;
   note: string;
+  paymentMethod: "bank_transfer" | "wallet";
 }
 
 // ─── Copy button helper ───────────────────────────────────────────────────────
@@ -129,6 +138,7 @@ function StepIndicator({ current }: { current: Step }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PaymentPortal() {
+  const { user } = useGetUserInfo();
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormData>({
     fullName: "",
@@ -139,12 +149,14 @@ export default function PaymentPortal() {
     customPurpose: "",
     amount: "",
     note: "",
+    paymentMethod: "bank_transfer",
   });
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [walletError, setWalletError] = useState("");
 
   const update = (field: keyof FormData, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -220,6 +232,49 @@ export default function PaymentPortal() {
     }
   };
 
+  const handleContinue = async () => {
+    if (!validate()) return;
+    if (form.paymentMethod === "wallet") {
+      // Pay with wallet immediately
+      setWalletError("");
+      if (!user?.uid) {
+        setWalletError("Please log in to pay with your wallet.");
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const wallet = await getWallet(user.uid);
+        if (!wallet) { setWalletError("No wallet found. Please fund your wallet first."); setSubmitting(false); return; }
+        const num = parseFloat(form.amount);
+        if (wallet.balance < num) { setWalletError(`Insufficient balance. Your wallet has ${formatNaira(wallet.balance)}.`); setSubmitting(false); return; }
+        const ref = generateRef("PAY");
+        const purposeLabel = form.purpose === "Other" ? form.customPurpose.trim() : form.purpose;
+        await deductWallet(wallet, num, "payment", `Payment: ${purposeLabel}`, ref, { portal: true });
+        const { data, error } = await supabase.from("payments").insert({
+          full_name: form.fullName.trim(),
+          matric_no: form.matricNo.trim() || null,
+          email: form.email.trim() || null,
+          phone: form.phone.trim() || null,
+          purpose: purposeLabel,
+          custom_purpose: form.purpose === "Other" ? form.customPurpose.trim() : null,
+          amount: num,
+          payment_method: "wallet",
+          note: form.note.trim() || null,
+          status: "success",
+        }).select("id").single();
+        if (error) throw error;
+        setPaymentId(data?.id ?? null);
+        setStep("success");
+      } catch (e: unknown) {
+        const err = e as Error;
+        setWalletError(err?.message || "Wallet payment failed.");
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      setStep("bank");
+    }
+  };
   const purposeLabel = form.purpose === "Other" ? form.customPurpose || "Other" : form.purpose;
   const amountFormatted = form.amount
     ? `₦${Number(form.amount).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`
@@ -389,14 +444,73 @@ export default function PaymentPortal() {
                   />
                 </div>
 
+                {/* Payment method */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payment Method</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button type="button" onClick={() => update("paymentMethod", "bank_transfer")}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${form.paymentMethod === "bank_transfer" ? "border-green1 bg-green1/5" : "border-gray-100 hover:border-green1/30"}`}>
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-xs font-semibold ${form.paymentMethod === "bank_transfer" ? "text-green1" : "text-gray-700"}`}>Bank Transfer</p>
+                        <p className="text-xss text-gray-400">Manual transfer</p>
+                      </div>
+                    </button>
+                    {user ? (
+                      <button type="button" onClick={() => update("paymentMethod", "wallet")}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${form.paymentMethod === "wallet" ? "border-green1 bg-green1/5" : "border-gray-100 hover:border-green1/30"}`}>
+                        <div className="w-8 h-8 rounded-full bg-green1/10 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                        <div className="text-left">
+                          <p className={`text-xs font-semibold ${form.paymentMethod === "wallet" ? "text-green1" : "text-gray-700"}`}>My Wallet</p>
+                          <p className="text-xss text-gray-400">Instant payment</p>
+                        </div>
+                      </button>
+                    ) : (
+                      <NavLink to="/login"
+                        className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-100 hover:border-green1/30 transition-all">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-semibold text-gray-400">My Wallet</p>
+                          <p className="text-xss text-green1">Login to use</p>
+                        </div>
+                      </NavLink>
+                    )}
+                  </div>
+                </div>
+
+                {walletError && (
+                  <div className="flex gap-2 items-start bg-red-50 border border-red-200 rounded-xl p-3">
+                    <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-red-600">{walletError}</p>
+                  </div>
+                )}
+
                 <button
-                  onClick={() => { if (validate()) setStep("bank"); }}
-                  className="w-full bg-green1 hover:bg-green2 text-white py-3.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  onClick={handleContinue}
+                  disabled={submitting}
+                  className="w-full bg-green1 hover:bg-green2 disabled:opacity-60 text-white py-3.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                 >
-                  Continue to Payment
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  {submitting ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+                  ) : form.paymentMethod === "wallet" ? (
+                    <>Pay {form.amount ? formatNaira(parseFloat(form.amount)) : ""} with Wallet</>
+                  ) : (
+                    <>Continue to Payment <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></>
+                  )}
                 </button>
               </motion.div>
             )}
@@ -609,7 +723,7 @@ export default function PaymentPortal() {
                   <button
                     onClick={() => {
                       setStep("form");
-                      setForm({ fullName: "", matricNo: "", email: "", phone: "", purpose: "", customPurpose: "", amount: "", note: "" });
+                      setForm({ fullName: "", matricNo: "", email: "", phone: "", purpose: "", customPurpose: "", amount: "", note: "", paymentMethod: "bank_transfer" });
                       setReceiptFile(null);
                       setReceiptPreview(null);
                       setPaymentId(null);
