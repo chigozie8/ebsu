@@ -42,7 +42,7 @@ export default function CourseOutlines() {
   
   // Check if user is admin
   const ADMIN_EMAILS = ["patronkwo@gmail.com", "kenronkwo@gmail.com", "ebsumsapresident2526@gmail.com", "ebsumsa102@gmail.com", "oohveeyuu070@gmail.com"];
-  const isAdmin = ADMIN_EMAILS.includes(studentDetails?.email || '') || studentDetails?.email?.includes("admin");
+  const isAdmin = ADMIN_EMAILS.includes((studentDetails?.email || '').toLowerCase()) || studentDetails?.email?.toLowerCase().includes("admin");
 
   // Fetch all course outlines from Firestore on mount
   useEffect(() => {
