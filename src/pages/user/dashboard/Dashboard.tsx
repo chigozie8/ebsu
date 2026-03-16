@@ -74,7 +74,7 @@ const generateActivities = (studentDetails: any): Activity[] => {
 };
 
 export default function Dashboard() {
-  const { studentDetails, gettingStudentDetails, gettingStudentDetailsErr } =
+  const { studentDetails, gettingStudentDetails, gettingStudentDetailsErr, user } =
     useGetUserInfo();
   const { isImageLoading, setIsImageLoading, LoadingPlaceholder } =
     useLoadImage();
@@ -131,7 +131,6 @@ export default function Dashboard() {
   }, [studentDetails]);
 
   // Load wallet balance
-  const { user } = useGetUserInfo();
   useEffect(() => {
     if (user?.uid) {
       getWallet(user.uid).then((w) => {
