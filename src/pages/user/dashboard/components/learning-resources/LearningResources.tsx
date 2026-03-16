@@ -130,58 +130,92 @@ export default function LearningResources() {
               </p>
             </div>
 
-            {/* Google Drive Full Access Banner */}
-            <div className="w-full bg-green1/5 border border-green1/20 rounded-2xl p-4 sm:p-5 mb-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-9 h-9 rounded-xl bg-green1/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900 text-sm">Full Resource Library on Google Drive</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Click the links below for full access to all materials by year group.</p>
-                </div>
+            {/* Google Drive Quick Access — replaces old 2 drive links */}
+            <div className="w-full mb-6">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1 h-5 rounded-full bg-green1 inline-block" />
+                <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Quick Drive Access</h2>
               </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                <a
-                  href="https://drive.google.com/folderview?id=1-JZRq-aFQzkN04ViATbH2vbCt_qgTUQg"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 bg-white border border-green1/20 rounded-xl p-3 hover:border-green1 hover:shadow-sm transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-xs sm:text-sm">Preclinicals Drive</p>
-                    <p className="text-xs text-gray-400">Years 1 – 3 (100L – 300L)</p>
-                  </div>
-                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+              {/* Full Library Hero Card */}
+              <a
+                href="https://drive.google.com/drive/folders/1C3IdOlXofYJcUXuVRD8FHsLcPBjSTlEj"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-4 w-full bg-gradient-to-r from-green1 to-green2 rounded-2xl p-5 mb-3 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+              >
+                {/* Decorative circles */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+                <div className="absolute right-10 top-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/10 pointer-events-none" />
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0 z-10">
+                  <p className="text-white font-extrabold text-sm sm:text-base leading-tight">Access All Textbooks</p>
+                  <p className="text-white/75 text-xs mt-0.5">Complete EBSUMSA textbook library — all levels</p>
+                </div>
+                <div className="z-10 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                </a>
-                <a
-                  href="https://drive.google.com/folderview?id=1--udSwv2mWUf39QGa2yL2wnOpENLtgxX"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 bg-white border border-green1/20 rounded-xl p-3 hover:border-green1 hover:shadow-sm transition-all group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-green1/10 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-4 h-4 text-green1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </div>
+              </a>
+
+              {/* MBBS Year Drive Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {[
+                  {
+                    label: "3rd MBBS Drive",
+                    sub: "Year 3 — 300 Level",
+                    url: "https://drive.google.com/drive/folders/1-WYCxRzrAJOL3a935HlMTqwh8TvJUwko",
+                    color: "from-emerald-500/10 to-green-500/10",
+                    border: "border-emerald-200",
+                    icon: "text-emerald-600",
+                    badge: "bg-emerald-100 text-emerald-700",
+                  },
+                  {
+                    label: "4th MBBS Drive",
+                    sub: "Year 4 — 400 Level",
+                    url: "https://drive.google.com/drive/folders/1-lhThxDEKOEbHot0iFF5uNCJeCXjJG3j",
+                    color: "from-teal-500/10 to-cyan-500/10",
+                    border: "border-teal-200",
+                    icon: "text-teal-600",
+                    badge: "bg-teal-100 text-teal-700",
+                  },
+                  {
+                    label: "5th MBBS Drive",
+                    sub: "Year 5 — 500 Level",
+                    url: "https://drive.google.com/drive/folders/1ONfXdUAIanILOqPWgqi2tYZK68oG70hi",
+                    color: "from-blue-500/10 to-indigo-500/10",
+                    border: "border-blue-200",
+                    icon: "text-blue-600",
+                    badge: "bg-blue-100 text-blue-700",
+                  },
+                ].map((drive) => (
+                  <a
+                    key={drive.label}
+                    href={drive.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`group flex items-center gap-3 bg-gradient-to-br ${drive.color} border ${drive.border} rounded-xl p-3.5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0`}>
+                      <svg className={`w-4 h-4 ${drive.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 text-xs sm:text-sm leading-tight">{drive.label}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">{drive.sub}</p>
+                    </div>
+                    <svg className={`w-3.5 h-3.5 text-gray-400 group-hover:${drive.icon} transition-colors flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 text-xs sm:text-sm">Clinicals Drive</p>
-                    <p className="text-xs text-gray-400">Years 4 – 6 (400L – 600L)</p>
-                  </div>
-                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-green1 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
+                  </a>
+                ))}
               </div>
             </div>
 
