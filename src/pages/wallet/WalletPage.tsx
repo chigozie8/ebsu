@@ -169,7 +169,7 @@ function FundModal({ wallet, onSuccess, onClose }: { wallet: Wallet; onSuccess: 
 
 // ─── Transfer Modal ───────────────────────────────────────────────────────────
 
-function TransferModal({ wallet, onSuccess, onClose }: { wallet: Wallet; onSuccess: () => void; onClose: () => void }) {
+function TransferModal({ wallet, onSuccess, onClose: _onClose }: { wallet: Wallet; onSuccess: () => void; onClose: () => void }) {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");

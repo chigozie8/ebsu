@@ -214,7 +214,7 @@ export async function deleteBankAccount(id: string): Promise<void> {
 
 // ── Nigerian banks list ───────────────────────────────────────────────────────
 
-export const NIGERIAN_BANKS = [
+export const NIGERIAN_BANKS: { name: string; code: string }[] = [
   { name: "Access Bank", code: "044" },
   { name: "Citibank Nigeria", code: "023" },
   { name: "Ecobank Nigeria", code: "050" },
