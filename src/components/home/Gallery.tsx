@@ -12,7 +12,7 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
-import { galleryItems } from "../../data/galleryData";
+import { galleryItems, type GalleryItem } from "../../data/galleryData";
 export type { GalleryItem } from "../../data/galleryData";
 
 // ---------- animation variants ----------

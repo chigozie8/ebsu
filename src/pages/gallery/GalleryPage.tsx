@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
 import { galleryItems } from "../../data/galleryData";
-import type { GalleryItem } from "../../data/galleryData";
 import {
   IoClose,
   IoChevronBack,
