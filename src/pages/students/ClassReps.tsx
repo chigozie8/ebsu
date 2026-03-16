@@ -7,6 +7,7 @@ import { GraduateCapIcon } from "../../components/icons/general/GraduateCapIcon"
 import { RegisterIcon } from "../../components/icons/general/RegisterIcon";
 import { ProfileIcon } from "../../components/icons/general/ProfileIcon";
 import { supabase } from "../../config/supabase";
+import placeholderImg from "../../assets/img/team/placeholder.png";
 
 interface ClassRepDisplay {
   img: string;
@@ -79,6 +80,7 @@ export default function ClassReps() {
                   alt={name}
                   loading="lazy"
                   decoding="async"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = placeholderImg; }}
                   className="w-full h-2/3 object-cover"
                 />
                 <div className="h-1/3 p-3 flex flex-col justify-between">
