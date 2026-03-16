@@ -12,23 +12,8 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
-
-// ─── Add gallery items directly here ────────────────────────────────────────
-// To add a photo: place it in /public/img/gallery/ then add an entry below.
-// type: "image" for photos, "video" for video files.
-// Example:
-//   { id: "1", url: "/img/gallery/event1.jpg", type: "image", caption: "Annual dinner 2024" },
-export interface GalleryItem {
-  id: string;
-  url: string;
-  type: "image" | "video";
-  caption?: string;
-}
-
-const galleryItems: GalleryItem[] = [
-  // Add your images here, e.g.:
-  // { id: "1", url: "/img/gallery/photo1.jpg", type: "image", caption: "Caption here" },
-];
+import { galleryItems } from "../../data/galleryData";
+export type { GalleryItem } from "../../data/galleryData";
 
 // ---------- animation variants ----------
 const fadeInVariants1 = {
@@ -183,7 +168,6 @@ function EmptyGallery() {
 // ---------- Main Gallery ----------
 export default function Gallery() {
   const items = galleryItems;
-  const loading = false;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -254,13 +238,7 @@ export default function Gallery() {
             {/* Grid preview */}
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
-                {loading ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {Array.from({ length: PREVIEW_COUNT }).map((_, i) => (
-                      <div key={i} className="aspect-square rounded-xl bg-gray-200 animate-pulse" />
-                    ))}
-                  </div>
-                ) : items.length === 0 ? (
+                {items.length === 0 ? (
                   <EmptyGallery />
                 ) : (
                   <>

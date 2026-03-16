@@ -43,11 +43,12 @@ export default defineConfig(({ mode }) => {
     name: 'api-dev-middleware',
     configureServer(server: import('vite').ViteDevServer) {
       server.middlewares.use(async (req, res, next) => {
-        // Read from process.env directly — Vercel sandbox injects vars here,
-        // not into .env files, so loadEnv() returns empty strings.
-        const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
-        const apiKey    = process.env.VITE_CLOUDINARY_API_KEY;
-        const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET;
+        // Use bracket notation to bypass Vite's compile-time `define` replacement
+        // of process.env — Vercel injects vars into process.env at runtime.
+        const penv      = process["env"] as Record<string, string | undefined>;
+        const cloudName = penv["VITE_CLOUDINARY_CLOUD_NAME"];
+        const apiKey    = penv["VITE_CLOUDINARY_API_KEY"];
+        const apiSecret = penv["VITE_CLOUDINARY_API_SECRET"];
 
         // ── GET /api/gallery-list ─────────────────────────────────────────
         if (req.url === '/api/gallery-list') {
