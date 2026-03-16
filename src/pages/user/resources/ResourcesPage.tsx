@@ -213,6 +213,87 @@ export default function ResourcesPage() {
           </p>
         </motion.div>
 
+        {/* ── Textbook Drive Hero Banner ───────────────────────────────────── */}
+        <motion.div
+          variants={fadeInVariants5}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          custom={2}
+          className="mb-6"
+        >
+          <a
+            href="https://drive.google.com/drive/folders/1C3IdOlXofYJcUXuVRD8FHsLcPBjSTlEj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full bg-gradient-to-r from-green1 to-green2 rounded-2xl p-5 sm:p-6 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+          >
+            {/* Decorative circles */}
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-white/10 pointer-events-none hidden sm:block" />
+            <div className="absolute right-16 top-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-white/10 pointer-events-none hidden sm:block" />
+
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-colors">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+
+            <div className="flex-1 min-w-0 z-10">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full uppercase tracking-wide">
+                  All Levels
+                </span>
+              </div>
+              <p className="text-white font-extrabold text-lg sm:text-xl leading-tight">Access All Textbooks</p>
+              <p className="text-white/80 text-sm mt-1">
+                Browse the complete EBSUMSA textbook library — every year, every course, all in one place.
+              </p>
+            </div>
+
+            <div className="z-10 flex items-center gap-2 mt-2 sm:mt-0 px-4 py-2.5 bg-white text-green1 font-bold text-sm rounded-xl shadow group-hover:shadow-md transition-all flex-shrink-0">
+              Open Drive
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </div>
+          </a>
+
+          {/* MBBS Year Drives */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            {[
+              { label: "3rd MBBS Drive", sub: "300 Level", url: "https://drive.google.com/drive/folders/1-WYCxRzrAJOL3a935HlMTqwh8TvJUwko", from: "from-emerald-50", border: "border-emerald-200 hover:border-emerald-400", iconBg: "bg-emerald-100", icon: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700" },
+              { label: "4th MBBS Drive", sub: "400 Level", url: "https://drive.google.com/drive/folders/1-lhThxDEKOEbHot0iFF5uNCJeCXjJG3j", from: "from-teal-50", border: "border-teal-200 hover:border-teal-400", iconBg: "bg-teal-100", icon: "text-teal-600", badge: "bg-teal-100 text-teal-700" },
+              { label: "5th MBBS Drive", sub: "500 Level", url: "https://drive.google.com/drive/folders/1ONfXdUAIanILOqPWgqi2tYZK68oG70hi", from: "from-blue-50", border: "border-blue-200 hover:border-blue-400", iconBg: "bg-blue-100", icon: "text-blue-600", badge: "bg-blue-100 text-blue-700" },
+            ].map((drive, i) => (
+              <motion.a
+                key={drive.label}
+                href={drive.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                variants={fadeInVariants5}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true }}
+                custom={i + 3}
+                className={`group flex items-center gap-3 bg-gradient-to-br ${drive.from} to-white border ${drive.border} rounded-xl p-4 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5`}
+              >
+                <div className={`w-10 h-10 rounded-xl ${drive.iconBg} flex items-center justify-center flex-shrink-0`}>
+                  <svg className={`w-5 h-5 ${drive.icon}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 text-sm leading-tight">{drive.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{drive.sub}</p>
+                </div>
+                <svg className={`w-4 h-4 text-gray-300 group-hover:${drive.icon} transition-colors flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Filters */}
         <motion.div
           variants={fadeInVariants5}
