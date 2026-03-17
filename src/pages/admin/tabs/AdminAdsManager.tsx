@@ -28,7 +28,7 @@ export interface Advertisement {
   bgColor: string;
   textColor: string;
   isActive: boolean;
-  placement: "dashboard" | "both";
+  placement: "dashboard" | "home" | "both" | "all";
   imageUrl?: string;
   createdAt?: any;
   updatedAt?: any;
@@ -42,7 +42,7 @@ const EMPTY_FORM = {
   bgColor: "#00875a",
   textColor: "#ffffff",
   isActive: true,
-  placement: "dashboard" as "dashboard" | "both",
+  placement: "dashboard" as "dashboard" | "home" | "both" | "all",
   imageUrl: "",
 };
 
@@ -509,19 +509,22 @@ export default function AdminAdsManager() {
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
                   Placement
                 </label>
-                <div className="flex gap-2">
-                  {(["dashboard", "both"] as const).map((p) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(["dashboard", "home", "both", "all"] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, placement: p }))}
-                      className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-colors ${
+                      className={`py-2 rounded-xl text-xs font-semibold border transition-colors ${
                         form.placement === p
                           ? "bg-[#00875a] text-white border-[#00875a]"
                           : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                       }`}
                     >
-                      {p === "dashboard" ? "Dashboard Only" : "Dashboard + All"}
+                      {p === "dashboard" && "Dashboard Only"}
+                      {p === "home" && "Home Page Only"}
+                      {p === "both" && "Dashboard + Home"}
+                      {p === "all" && "All Pages"}
                     </button>
                   ))}
                 </div>
@@ -640,7 +643,10 @@ export default function AdminAdsManager() {
                         {ad.isActive ? "Active" : "Paused"}
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-xss font-medium bg-gray-100 text-gray-500 border border-gray-200">
-                        {ad.placement === "both" ? "All Placements" : "Dashboard"}
+                        {ad.placement === "dashboard" && "Dashboard Only"}
+                        {ad.placement === "home" && "Home Page Only"}
+                        {ad.placement === "both" && "Dashboard + Home"}
+                        {ad.placement === "all" && "All Pages"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
