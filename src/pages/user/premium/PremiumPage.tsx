@@ -101,7 +101,8 @@ export default function PremiumPage() {
   const userEmail = studentDetails?.email || "";
   const userName = `${studentDetails?.firstName || ""} ${studentDetails?.lastName || ""}`.trim();
 
-  const { balance, payWithWallet } = useWallet(userID, userEmail);
+  const { wallet, payWithWallet } = useWallet(userID, userEmail);
+  const balance = wallet?.balance ?? 0;
 
   const [isPremium, setIsPremium] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
@@ -174,7 +175,7 @@ export default function PremiumPage() {
     setPaying(true);
     try {
       const ref = `ebsu_premium_wallet_${Date.now()}`;
-      await payWithWallet(PREMIUM_PRICE, "EBSUMSA Premium Package Unlock", ref);
+      await payWithWallet(PREMIUM_PRICE, "EBSUMSA Premium Package Unlock");
       await grantPremium(ref);
     } catch {
       notifyUser("error", "Payment failed. Please try again.");

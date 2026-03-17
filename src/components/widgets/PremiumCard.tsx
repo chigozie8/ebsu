@@ -11,7 +11,7 @@ interface PremiumCardProps {
   userEmail: string;
 }
 
-export default function PremiumCard({ userID, userEmail }: PremiumCardProps) {
+export default function PremiumCard({ userID }: PremiumCardProps) {
   const navigate = useNavigate();
   const [isPremium, setIsPremium] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
