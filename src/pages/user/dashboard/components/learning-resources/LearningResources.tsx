@@ -176,6 +176,14 @@ export default function LearningResources() {
                     icon: "text-violet-600",
                   },
                   {
+                    label: "200 Level Drive",
+                    sub: "Preclinical — Year 2",
+                    url: "https://drive.google.com/drive/folders/1-JZRq-aFQzkN04ViATbH2vbCt_qgTUQg",
+                    color: "from-pink-500/10 to-rose-500/10",
+                    border: "border-pink-200",
+                    icon: "text-pink-600",
+                  },
+                  {
                     label: "2nd MBBS Drive",
                     sub: "Preclinical — 300 Level",
                     url: "https://drive.google.com/drive/folders/1v-AHH-EopfBnHmh22MSENV9IHhcHPal7",
