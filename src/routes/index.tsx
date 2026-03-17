@@ -103,6 +103,9 @@ const AppRoutes = () => {
   const WalletPage = lazy(
     () => import("../pages/user/wallet/WalletPage")
   );
+  const PremiumPage = lazy(
+    () => import("../pages/user/premium/PremiumPage")
+  );
 
   return (
     <>
@@ -272,6 +275,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium"
+            element={
+              <ProtectedRoute>
+                <PremiumPage />
               </ProtectedRoute>
             }
           />
