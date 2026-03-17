@@ -1,12 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { db } from "../../config/firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import type { Advertisement } from "../../pages/admin/tabs/AdminAdsManager";
 
 interface AdvertisementBannerProps {
@@ -41,24 +36,19 @@ export default function AdvertisementBanner({ className = "" }: AdvertisementBan
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const q = query(
-          collection(db, "advertisements"),
-          where("isActive", "==", true)
-        );
-        const snapshot = await getDocs(q);
+        // Simple collection fetch — no compound index needed, filter client-side
+        const snapshot = await getDocs(collection(db, "advertisements"));
         const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
-        // Filter by placement and remove dismissed ads
         const filtered = data.filter(
           (a) =>
-            (a.placement === "dashboard" || a.placement === "both") &&
+            a.isActive === true &&
+            ["dashboard", "both", "all"].includes(a.placement) &&
             !getDismissed().includes(a.id)
         );
         setAds(filtered);
-        if (filtered.length > 0) {
-          setVisible(true);
-        }
+        if (filtered.length > 0) setVisible(true);
       } catch (err) {
-        console.error("Error fetching ads:", err);
+        console.error("AdvertisementBanner fetch error:", err);
       }
     };
     fetchAds();
