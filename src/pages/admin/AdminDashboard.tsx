@@ -31,6 +31,7 @@ import AdminNewsletterTab from "./tabs/AdminNewsletterTab";
 import AdminGalleryManager from "./tabs/AdminGalleryManager";
 import AdminAdsManager from "./tabs/AdminAdsManager";
 import AdminWithdrawalsManager from "./tabs/AdminWithdrawalsManager";
+import AdminSendMoney from "./tabs/AdminSendMoney";
 
 interface Material {
   id: string;
@@ -168,11 +169,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -2008,6 +2009,21 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Withdrawals
+          </button>
+
+          {/* Send Money Tab */}
+          <button
+            onClick={() => setActiveTab("sendmoney")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "sendmoney"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-2 border-indigo-600"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Send Money
           </button>
         </div>
 
@@ -4679,6 +4695,23 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </p>
           </div>
           <AdminWithdrawalsManager />
+        </motion.div>
+      )}
+
+      {/* Send Money Tab */}
+      {activeTab === "sendmoney" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Send Money</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Transfer funds directly from your Paystack balance to any Nigerian bank account. Transfers are processed instantly via the Paystack Transfer API.
+            </p>
+          </div>
+          <AdminSendMoney />
         </motion.div>
       )}
 
