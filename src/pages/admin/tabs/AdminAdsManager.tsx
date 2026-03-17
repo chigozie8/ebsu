@@ -387,12 +387,11 @@ export default function AdminAdsManager() {
 
                 {imageMode === "upload" ? (
                   <div>
-                    {/* Hidden file input — accepts images, allows camera on mobile */}
+                    {/* Hidden file input — accepts images from gallery/files */}
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       onChange={handleImageFileChange}
                       className="hidden"
                       id="ad-image-upload"
