@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
-import { db, storage } from "../../../config/firebase";
+import { db } from "../../../config/firebase";
 import {
   collection,
   addDoc,
@@ -12,7 +12,7 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { supabase, STORAGE_BUCKETS } from "../../../config/supabase";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
@@ -106,31 +106,27 @@ export default function AdminAdsManager() {
       return;
     }
     setUploadingImage(true);
-    // Show local preview immediately while uploading
     const localUrl = URL.createObjectURL(file);
     setImagePreview(localUrl);
     try {
-      console.log("[v0] Starting Firebase Storage upload for:", file.name, "size:", file.size);
-      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      const storageRef = ref(storage, `advertisements/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      console.log("[v0] Upload snapshot:", snapshot.metadata.fullPath);
-      const downloadUrl = await getDownloadURL(storageRef);
-      console.log("[v0] Download URL obtained:", downloadUrl);
-      setForm((p) => ({ ...p, imageUrl: downloadUrl }));
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.ADVERTISEMENTS)
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage
+        .from(STORAGE_BUCKETS.ADVERTISEMENTS)
+        .getPublicUrl(fileName);
+      setImagePreview(data.publicUrl);
+      setForm((p) => ({ ...p, imageUrl: data.publicUrl }));
       notifyUser("success", "Image uploaded successfully");
     } catch (err: any) {
-      console.error("[v0] Image upload failed:", err?.code, err?.message, err);
+      console.error("Supabase image upload failed:", err?.message, err);
       setImagePreview("");
       setForm((p) => ({ ...p, imageUrl: "" }));
       if (fileInputRef.current) fileInputRef.current.value = "";
-      const msg =
-        err?.code === "storage/unauthorized"
-          ? "Upload permission denied. Check Firebase Storage rules."
-          : err?.code === "storage/unknown"
-          ? "Upload failed (network or CORS error). Try pasting an image URL instead."
-          : "Image upload failed. Try pasting an image URL instead.";
-      notifyUser("error", msg);
+      notifyUser("error", "Image upload failed. Please try again or paste an image URL.");
     } finally {
       setUploadingImage(false);
     }
