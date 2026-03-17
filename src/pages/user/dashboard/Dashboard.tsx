@@ -577,6 +577,37 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      {/* Fee Payment Card */}
+                      <NavLink to="/u/fees">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={17}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-blue-500 bg-gradient-to-br from-cyan-400/90 to-blue-500/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group"
+                        >
+                          {/* Decorative elements */}
+                          <div className="absolute top-2 right-2 w-8 h-8 bg-white/10 rounded-full blur-lg group-hover:scale-150 transition-transform duration-500" />
+                          <div className="absolute bottom-2 left-2 w-6 h-6 bg-white/10 rounded-full blur-md group-hover:scale-150 transition-transform duration-500" />
+                          <svg
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20 relative z-10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                          </svg>
+                          <p className="uppercase text-white text-sss xxss:text-xss sm:text-xs lg:text-base font-bold text-center relative z-10 drop-shadow-sm">
+                            Fee Payments
+                          </p>
+                        </motion.div>
+                      </NavLink>
                       <NavLink to="/u/resources">
                         <motion.div
                           variants={fadeInVariants5}
