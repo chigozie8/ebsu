@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -19,20 +19,32 @@ const firebaseConfig = {
 // Check if Firebase config is valid
 export const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-export const app = initializeApp(firebaseConfig);
+// Prevent re-initialization if already initialized (HMR safe)
+export const app = getApps().length
+  ? getApps()[0]
+  : initializeApp(
+      isFirebaseConfigured
+        ? firebaseConfig
+        : { apiKey: "placeholder", authDomain: "placeholder.firebaseapp.com", projectId: "placeholder" }
+    );
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "";
 export const storage = getStorage(
   app,
-  storageBucket.startsWith("gs://") ? storageBucket : `gs://${storageBucket}`
+  storageBucket
+    ? storageBucket.startsWith("gs://")
+      ? storageBucket
+      : `gs://${storageBucket}`
+    : undefined
 );
 
-// Initialize performance and analytics only in browser environment
+// Initialize performance and analytics only in browser environment with valid config
 let perf: FirebasePerformance | null = null;
 let analytics: Analytics | null = null;
 
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && isFirebaseConfigured) {
   try {
     perf = getPerformance(app);
     analytics = getAnalytics(app);
