@@ -138,7 +138,7 @@ export default function PremiumDashboard() {
   const navigate = useNavigate();
   const { studentDetails } = useGetUserInfo();
   const userID = studentDetails?.userID || "";
-  const userName = studentDetails?.name || "Member";
+  const userName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}` : "Member";
 
   const [checking, setChecking] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
