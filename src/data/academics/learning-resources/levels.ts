@@ -13,7 +13,8 @@ export const preclinicalLevels: LevelCard[] = [
     level: "200",
     title: "200 Level (Year 2)",
     desc: "Anatomy, Physiology, and Biochemistry - Introduction to the human body structure and function",
-    section: "preclinical" as const
+    section: "preclinical" as const,
+    driveUrl: "https://drive.google.com/drive/folders/1-JZRq-aFQzkN04ViATbH2vbCt_qgTUQg"
   },
   {
     level: "300",
