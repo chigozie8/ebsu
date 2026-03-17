@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
@@ -11,12 +11,6 @@ import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const ID_CARD_PRICE = 100;
-const PAYSTACK_KEY =
-  import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ||
-  "pk_live_77ab98bc87c205ec76cb2f7d534cff02df034c8e";
-
-// Helper to check if Paystack is loaded
-const isPaystackReady = () => !!(window as any).PaystackPop;
 
 export default function IDCardPayment() {
   const navigate = useNavigate();
@@ -27,39 +21,13 @@ export default function IDCardPayment() {
   const { wallet, payWithWallet, loadingWallet } = useWallet(userID, userEmail);
   const balance = wallet?.balance ?? 0;
 
-  const [payMethod, setPayMethod] = useState<"paystack" | "wallet">("paystack");
   const [paying, setPaying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [paystackReady, setPaystackReady] = useState(isPaystackReady());
-
-  // Poll for Paystack SDK to be ready
-  useEffect(() => {
-    if (paystackReady) return;
-    
-    const checkPaystack = setInterval(() => {
-      if (isPaystackReady()) {
-        setPaystackReady(true);
-        clearInterval(checkPaystack);
-      }
-    }, 200);
-
-    // Also check immediately and after a short delay
-    const timeout = setTimeout(() => {
-      if (isPaystackReady()) {
-        setPaystackReady(true);
-      }
-    }, 500);
-
-    return () => {
-      clearInterval(checkPaystack);
-      clearTimeout(timeout);
-    };
-  }, [paystackReady]);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
-  const recordPayment = async (reference: string, method: "paystack" | "wallet") => {
+  const recordPayment = async (reference: string) => {
     // Log transaction
     await addDoc(collection(db, "transactions"), {
       userID,
@@ -79,64 +47,10 @@ export default function IDCardPayment() {
       userName,
       amount: ID_CARD_PRICE,
       reference,
-      method,
+      method: "wallet",
       status: "success",
       createdAt: serverTimestamp(),
     });
-  };
-
-  const handlePaystack = () => {
-    if (!userEmail) {
-      notifyUser("error", "Please log in to continue.");
-      return;
-    }
-    
-    const PaystackPop = (window as any).PaystackPop;
-    if (!PaystackPop) {
-      notifyUser("error", "Paystack is still loading. Please wait a moment and try again.");
-      // Force re-check
-      setPaystackReady(false);
-      return;
-    }
-
-    try {
-      const handler = PaystackPop.setup({
-      key: PAYSTACK_KEY,
-      email: userEmail,
-      amount: ID_CARD_PRICE * 100, // Paystack uses kobo
-      ref: `ebsu_idcard_${Date.now()}`,
-      metadata: {
-        custom_fields: [
-          { display_name: "Name", variable_name: "name", value: userName },
-          { display_name: "Purpose", variable_name: "purpose", value: "ID Card Registration" },
-        ],
-      },
-      callback: async (res: any) => {
-        setPaying(true);
-        try {
-          await recordPayment(res?.reference || `ref_${Date.now()}`, "paystack");
-          notifyUser("success", "Payment successful! Redirecting to registration form...");
-          setTimeout(() => {
-            navigate("/u/id-card", {
-              state: { paymentVerified: true, payerName: userName, reference: res?.reference, amount: ID_CARD_PRICE },
-            });
-          }, 1200);
-        } catch (error) {
-          console.error("Error recording payment:", error);
-          notifyUser("error", "Payment recorded but failed to save. Please contact support.");
-        } finally {
-          setPaying(false);
-        }
-      },
-      onClose: () => {
-          notifyUser("info", "Payment cancelled.");
-        },
-      });
-      handler.openIframe();
-    } catch (error) {
-      console.error("[v0] Paystack setup error:", error);
-      notifyUser("error", "Failed to initialize payment. Please refresh and try again.");
-    }
   };
 
   const handleWalletPay = async () => {
@@ -154,7 +68,7 @@ export default function IDCardPayment() {
     try {
       await payWithWallet(ID_CARD_PRICE, "EBSUMSA ID Card Registration Fee");
       const reference = `ebsu_idcard_wallet_${Date.now()}`;
-      await recordPayment(reference, "wallet");
+      await recordPayment(reference);
       notifyUser("success", "Payment successful! Redirecting to registration form...");
       setTimeout(() => {
         navigate("/u/id-card", {
@@ -211,8 +125,7 @@ export default function IDCardPayment() {
               ID Card Registration Payment
             </h1>
             <p className="text-sm text-gray-500 mt-1 text-pretty">
-              Pay securely using Paystack or your EBSUMSA wallet to proceed with
-              your ID card registration.
+              Pay securely using your EBSUMSA wallet to proceed with your ID card registration.
             </p>
           </div>
 
@@ -246,44 +159,20 @@ export default function IDCardPayment() {
               <p className="text-xs opacity-75 mt-1">EBSUMSA ID Card Registration Fee</p>
             </div>
 
-            {/* Payment Method Selection */}
+            {/* Wallet Payment Section */}
             <div className="p-5">
-              <p className="text-sm font-semibold text-gray-800 mb-3">Select Payment Method</p>
-              
-              <div className="flex gap-2 p-1 rounded-xl bg-gray-100 mb-5">
-                {/* Paystack Option */}
-                <button
-                  onClick={() => setPayMethod("paystack")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                    payMethod === "paystack"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.693 0H3.307C1.481 0 0 1.481 0 3.307v17.386C0 22.519 1.481 24 3.307 24h17.386C22.519 24 24 22.519 24 20.693V3.307C24 1.481 22.519 0 20.693 0zm-1.76 9.358h-2.595c-.828 0-1.5.672-1.5 1.5v3.784c0 .828.672 1.5 1.5 1.5h2.596v2.117h-2.596c-1.993 0-3.617-1.624-3.617-3.617V10.858c0-1.993 1.624-3.617 3.617-3.617h2.596v2.117z" />
-                  </svg>
-                  Paystack
-                </button>
-
-                {/* Wallet Option */}
-                <button
-                  onClick={() => setPayMethod("wallet")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                    payMethod === "wallet"
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-semibold text-gray-800">Pay with Wallet</p>
+                <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg">
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
-                  Wallet ({fmt(balance)})
-                </button>
+                  <span className="text-sm font-medium text-gray-700">{fmt(balance)}</span>
+                </div>
               </div>
 
               {/* Wallet balance warning */}
-              {payMethod === "wallet" && insufficientBalance && (
+              {insufficientBalance && (
                 <div className="flex gap-3 bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                   <svg
                     className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
@@ -301,7 +190,7 @@ export default function IDCardPayment() {
                   <div>
                     <p className="text-sm font-medium text-red-800">Insufficient Balance</p>
                     <p className="text-xs text-red-600 mt-0.5">
-                      You need {fmt(ID_CARD_PRICE - balance)} more. Please fund your wallet or use Paystack.
+                      You need {fmt(ID_CARD_PRICE - balance)} more. Please fund your wallet.
                     </p>
                     <button
                       onClick={() => navigate("/u/wallet")}
@@ -314,7 +203,7 @@ export default function IDCardPayment() {
               )}
 
               {/* Wallet balance sufficient */}
-              {payMethod === "wallet" && !insufficientBalance && (
+              {!insufficientBalance && (
                 <div className="flex gap-3 bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
                   <svg
                     className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"
@@ -339,52 +228,25 @@ export default function IDCardPayment() {
               )}
 
               {/* Pay Button */}
-              {payMethod === "paystack" ? (
-<button
-                  onClick={handlePaystack}
-                  disabled={paying || !userEmail || !paystackReady}
-                  className="w-full bg-[#0ba4db] hover:bg-[#0993c7] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {paying ? (
-                    <>
-                      <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
-                      <span>Processing...</span>
-                    </>
-                  ) : !paystackReady ? (
-                    <>
-                      <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
-                      <span>Loading Paystack...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      Pay {fmt(ID_CARD_PRICE)} with Paystack
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowConfirm(true)}
-                  disabled={paying || insufficientBalance || !userID}
-                  className="w-full bg-green-700 hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {paying ? (
-                    <>
-                      <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                      Pay {fmt(ID_CARD_PRICE)} from Wallet
-                    </>
-                  )}
-                </button>
-              )}
+              <button
+                onClick={() => setShowConfirm(true)}
+                disabled={paying || insufficientBalance || !userID}
+                className="w-full bg-green-700 hover:bg-green-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {paying ? (
+                  <>
+                    <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Pay {fmt(ID_CARD_PRICE)} from Wallet
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
@@ -463,12 +325,12 @@ export default function IDCardPayment() {
               <button
                 onClick={handleWalletPay}
                 disabled={paying}
-                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-800 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:bg-gray-300"
+                className="flex-1 py-3 rounded-xl bg-green-700 hover:bg-green-800 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {paying ? (
                   <>
                     <Spinner className="w-4 h-4 text-transparent animate-spin fill-white" />
-                    Processing...
+                    <span>Paying...</span>
                   </>
                 ) : (
                   "Confirm Payment"
