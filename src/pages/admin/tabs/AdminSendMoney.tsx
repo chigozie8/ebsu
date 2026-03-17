@@ -44,6 +44,11 @@ export default function AdminSendMoney() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [logs, setLogs] = useState<TransferLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [otpRequired, setOtpRequired] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [pendingTransferCode, setPendingTransferCode] = useState("");
+  const [pendingLogData, setPendingLogData] = useState<Omit<TransferLog, "id"> | null>(null);
+  const [finalizingSend, setFinalizingSend] = useState(false);
   const bankDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -61,12 +66,22 @@ export default function AdminSendMoney() {
   useEffect(() => {
     (async () => {
       try {
+        console.log("[v0] Fetching banks from /api/paystack-banks...");
         const res = await fetch("/api/paystack-banks");
-        const data = await res.json();
-        if (data.banks) setBanks(data.banks);
+        console.log("[v0] Banks response status:", res.status, res.statusText);
+        const text = await res.text();
+        console.log("[v0] Banks raw response:", text.slice(0, 300));
+        const data = JSON.parse(text);
+        if (data.banks) {
+          console.log("[v0] Banks loaded:", data.banks.length);
+          setBanks(data.banks);
+        } else {
+          console.error("[v0] Banks error from API:", data);
+          notifyUser("error", data.error || "Failed to load banks");
+        }
       } catch (err) {
-        console.error("[AdminSendMoney] fetch banks error:", err);
-        notifyUser("error", "Failed to load banks. Check your Paystack secret key.");
+        console.error("[v0] fetch banks error:", err);
+        notifyUser("error", "Failed to load banks. The API may not be available in preview — deploy to Vercel first.");
       } finally {
         setLoadingBanks(false);
       }
@@ -94,15 +109,21 @@ export default function AdminSendMoney() {
     setResolvingAccount(true);
     setAccountName("");
     try {
-      const res = await fetch(`/api/paystack-resolve-account?account_number=${accNum}&bank_code=${bankCode}`);
-      const data = await res.json();
+      const url = `/api/paystack-resolve-account?account_number=${accNum}&bank_code=${bankCode}`;
+      console.log("[v0] Resolving account:", url);
+      const res = await fetch(url);
+      console.log("[v0] Resolve response status:", res.status);
+      const text = await res.text();
+      console.log("[v0] Resolve raw response:", text.slice(0, 300));
+      const data = JSON.parse(text);
       if (data.account_name) {
         setAccountName(data.account_name);
       } else {
+        console.error("[v0] Resolve error:", data);
         notifyUser("error", data.error || "Could not resolve account name");
       }
     } catch (err) {
-      console.error("[AdminSendMoney] resolve account error:", err);
+      console.error("[v0] resolve account error:", err);
       notifyUser("error", "Account resolution failed");
     } finally {
       setResolvingAccount(false);
@@ -131,6 +152,7 @@ export default function AdminSendMoney() {
     setSending(true);
     setShowConfirm(false);
     try {
+      console.log("[v0] Initiating transfer to:", accountName, "bank:", selectedBank!.code, "amount:", amount);
       const res = await fetch("/api/paystack-transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,12 +164,35 @@ export default function AdminSendMoney() {
           narration: narration || "EBSUMSA Admin Transfer",
         }),
       });
-      const data = await res.json();
+      console.log("[v0] Transfer response status:", res.status);
+      const text = await res.text();
+      console.log("[v0] Transfer raw response:", text.slice(0, 500));
+      const data = JSON.parse(text);
       if (!data.success) {
         notifyUser("error", data.error || "Transfer failed");
+        setSending(false);
         return;
       }
-      // Save to Firestore log
+      // If OTP is required
+      if (data.status === "otp") {
+        setPendingTransferCode(data.transfer_code);
+        setPendingLogData({
+          accountName,
+          accountNumber,
+          bankName: selectedBank!.name,
+          amount: parseFloat(amount),
+          narration: narration || "EBSUMSA Admin Transfer",
+          transferCode: data.transfer_code,
+          reference: data.reference,
+          status: "otp",
+          createdAt: new Date(),
+        });
+        setOtpRequired(true);
+        setSending(false);
+        notifyUser("info", "OTP sent to your registered phone number. Please enter it to complete the transfer.");
+        return;
+      }
+      // Transfer successful (no OTP required)
       const logEntry = {
         accountName,
         accountNumber,
@@ -174,6 +219,50 @@ export default function AdminSendMoney() {
       notifyUser("error", "Transfer failed. Please try again.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleOtpSubmit = async () => {
+    if (!otp || otp.length < 4) {
+      notifyUser("error", "Please enter a valid OTP");
+      return;
+    }
+    setFinalizingSend(true);
+    try {
+      const res = await fetch("/api/paystack-finalize-transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transfer_code: pendingTransferCode, otp }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        notifyUser("error", data.error || "OTP verification failed");
+        setFinalizingSend(false);
+        return;
+      }
+      // Save to Firestore
+      if (pendingLogData) {
+        const finalLogEntry = { ...pendingLogData, status: data.status, createdAt: serverTimestamp() };
+        const docRef = await addDoc(collection(db, "adminTransfers"), finalLogEntry);
+        setLogs(prev => [{ id: docRef.id, ...finalLogEntry, createdAt: new Date() }, ...prev]);
+      }
+      notifyUser("success", "Transfer completed successfully!");
+      // Reset everything
+      setOtpRequired(false);
+      setOtp("");
+      setPendingTransferCode("");
+      setPendingLogData(null);
+      setSelectedBank(null);
+      setBankSearch("");
+      setAccountNumber("");
+      setAccountName("");
+      setAmount("");
+      setNarration("");
+    } catch (err) {
+      console.error("[AdminSendMoney] OTP finalize error:", err);
+      notifyUser("error", "OTP verification failed. Please try again.");
+    } finally {
+      setFinalizingSend(false);
     }
   };
 
@@ -396,6 +485,60 @@ export default function AdminSendMoney() {
                 <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
                 <button onClick={handleSend} disabled={sending} className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2">
                   {sending ? <Spinner className="w-4 h-4 text-white" /> : "Confirm & Send"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* OTP Modal */}
+      <AnimatePresence>
+        {otpRequired && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900">OTP Required</p>
+                  <p className="text-xs text-gray-500">Paystack sent an OTP to your registered phone number.</p>
+                </div>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="Enter OTP"
+                maxLength={6}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 transition-colors mb-4 text-center tracking-widest text-lg font-bold"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setOtpRequired(false); setOtp(""); setPendingTransferCode(""); setPendingLogData(null); }}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleOtpSubmit}
+                  disabled={finalizingSend || otp.length < 4}
+                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  {finalizingSend ? <Spinner className="w-4 h-4 text-white" /> : "Verify & Send"}
                 </button>
               </div>
             </motion.div>
