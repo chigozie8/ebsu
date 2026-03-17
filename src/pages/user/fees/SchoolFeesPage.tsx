@@ -22,8 +22,7 @@ export default function SchoolFeesPage() {
   const userID = studentDetails?.userID || "";
   const userEmail = studentDetails?.email || "";
   const userName = `${studentDetails?.firstName || ""} ${studentDetails?.lastName || ""}`.trim();
-  const userPhone = studentDetails?.phoneNo || "";
-  const regNumber = studentDetails?.registrationNumber || "";
+  const regNumber = studentDetails?.regNo?.toString() || "";
 
   const [amount, setAmount] = useState<string>("");
   const [description, setDescription] = useState("School Fees Payment");
