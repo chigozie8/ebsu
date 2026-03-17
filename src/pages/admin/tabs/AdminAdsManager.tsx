@@ -12,7 +12,7 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { supabase, STORAGE_BUCKETS } from "../../../config/supabase";
+import { supabase, supabaseAdmin, STORAGE_BUCKETS } from "../../../config/supabase";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
@@ -110,12 +110,12 @@ export default function AdminAdsManager() {
     setImagePreview(localUrl);
     try {
       const ext = file.name.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadError } = await supabase.storage
+      const fileName = `ads/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabaseAdmin.storage
         .from(STORAGE_BUCKETS.ADVERTISEMENTS)
         .upload(fileName, file, { cacheControl: "3600", upsert: false });
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage
+      const { data } = supabaseAdmin.storage
         .from(STORAGE_BUCKETS.ADVERTISEMENTS)
         .getPublicUrl(fileName);
       setImagePreview(data.publicUrl);
