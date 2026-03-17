@@ -608,6 +608,38 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+                      {/* School Fees Card - Remita */}
+                      <NavLink to="/u/school-fees">
+                        <motion.div
+                          variants={fadeInVariants5}
+                          initial="initial"
+                          whileInView="animate"
+                          viewport={{
+                            once: true,
+                          }}
+                          custom={18}
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-emerald-500 hover:to-teal-600 bg-gradient-to-br from-emerald-500/90 to-teal-600/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group"
+                        >
+                          {/* Decorative elements */}
+                          <div className="absolute top-2 right-2 w-8 h-8 bg-white/10 rounded-full blur-lg group-hover:scale-150 transition-transform duration-500" />
+                          <div className="absolute bottom-2 left-2 w-6 h-6 bg-white/10 rounded-full blur-md group-hover:scale-150 transition-transform duration-500" />
+                          <svg
+                            className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20 relative z-10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+                          </svg>
+                          <p className="uppercase text-white text-sss xxss:text-xss sm:text-xs lg:text-base font-bold text-center relative z-10 drop-shadow-sm">
+                            School Fees
+                          </p>
+                          <span className="absolute bottom-1 right-2 text-[8px] text-white/60 font-medium">REMITA</span>
+                        </motion.div>
+                      </NavLink>
                       <NavLink to="/u/resources">
                         <motion.div
                           variants={fadeInVariants5}

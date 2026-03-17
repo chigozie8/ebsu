@@ -112,6 +112,9 @@ const AppRoutes = () => {
   const FeePaymentPage = lazy(
     () => import("../pages/user/fees/FeePaymentPage")
   );
+  const SchoolFeesPage = lazy(
+    () => import("../pages/user/fees/SchoolFeesPage")
+  );
 
   return (
     <>
@@ -305,6 +308,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <FeePaymentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/school-fees"
+            element={
+              <ProtectedRoute>
+                <SchoolFeesPage />
               </ProtectedRoute>
             }
           />
