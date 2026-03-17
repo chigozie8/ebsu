@@ -1,13 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl =
+  (process.env.VITE_SUPABASE_URL as string) ||
+  (process.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
+  (process.env.SUPABASE_URL as string) || '';
+
+const supabaseAnonKey =
+  (process.env.VITE_SUPABASE_ANON_KEY as string) ||
+  (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
+  (process.env.SUPABASE_ANON_KEY as string) || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Missing Supabase environment variables: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  console.warn('[Supabase] Missing environment variables. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in project Vars.');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Storage bucket names
 export const STORAGE_BUCKETS = {
