@@ -1,6 +1,6 @@
 import { IncomingForm } from 'formidable';
 import * as fs from 'fs';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
+import * as pdfjsLib from 'pdfjs-dist';
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -9,7 +9,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const form = new IncomingForm();
-    const [fields, files] = await form.parse(req);
+    const [, files] = await form.parse(req);
 
     const file = files.file?.[0];
     if (!file) {
