@@ -10,6 +10,33 @@ import {
   fadeInVariants2,
   fadeInVariants3,
 } from "../../animation/variants";
+import { InstagramIcon } from "../icons/socials/InstagramIcon";
+import { XIcon } from "../icons/socials/XIcon";
+import { YouTubeIcon } from "../icons/socials/YouTubeIcon";
+
+const socialLinks = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/ebsumsaofficial?utm_source=qr&igsh=MW5mMWlrY3g4c3lxaQ==",
+    icon: InstagramIcon,
+    bg: "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400",
+    handle: "Instagram",
+  },
+  {
+    label: "X (Twitter)",
+    href: "https://x.com/Ebsumsaofficial",
+    icon: XIcon,
+    bg: "bg-black",
+    handle: "X (Twitter)",
+  },
+  {
+    label: "YouTube",
+    href: "https://youtube.com/@ebsumsatv?si=qWJTfD2Z4L61wrBo",
+    icon: YouTubeIcon,
+    bg: "bg-red-600",
+    handle: "YouTube",
+  },
+];
 
 export default function About() {
   return (
@@ -84,6 +111,30 @@ export default function About() {
                   Advancing medical education through clinical skills, research, public health outreach, and connecting students with professional opportunities.
                 </p>
               </div>
+            </motion.div>
+            <motion.div
+              variants={fadeInVariants1}
+              initial="initial"
+              whileInView="animate"
+              custom={5}
+              viewport={{ once: true }}
+              className="flex items-center gap-2 mt-4"
+            >
+              {socialLinks.map((social) => {
+                const Icon = social.icon;
+                return (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className={`flex items-center justify-center w-9 h-9 rounded-full text-white ${social.bg} hover:opacity-80 transition-opacity`}
+                  >
+                    <Icon className="w-4 h-4 fill-white" />
+                  </a>
+                );
+              })}
             </motion.div>
           </div>
           <div className="mmd:basis-3/5">
