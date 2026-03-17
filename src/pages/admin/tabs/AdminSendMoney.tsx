@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "firebase/firestore";
 import { notifyUser } from "../../../helpers/notifyUser";
@@ -44,6 +44,18 @@ export default function AdminSendMoney() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [logs, setLogs] = useState<TransferLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const bankDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (bankDropdownRef.current && !bankDropdownRef.current.contains(e.target as Node)) {
+        setShowBankList(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Fetch banks on mount
   useEffect(() => {
@@ -197,13 +209,13 @@ export default function AdminSendMoney() {
           {/* Bank Select */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">Bank</label>
-            <div className="relative">
+            <div className="relative" ref={bankDropdownRef}>
               <input
                 type="text"
                 value={bankSearch}
                 onChange={e => { setBankSearch(e.target.value); setShowBankList(true); }}
-                onFocus={() => setShowBankList(true)}
-                placeholder={loadingBanks ? "Loading banks..." : "Search bank name..."}
+                onClick={() => setShowBankList(true)}
+                placeholder={loadingBanks ? "Loading banks..." : "Type to search banks..."}
                 disabled={loadingBanks}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition-colors"
               />
