@@ -47,19 +47,32 @@ export const useWallet = (userID: string | undefined, userEmail: string | undefi
       return;
     }
     const walletRef = doc(db, "wallets", userID);
-    const unsubscribe = onSnapshot(walletRef, async (snap) => {
-      if (snap.exists()) {
-        setWallet(snap.data() as Wallet);
-      } else {
-        // Auto-create wallet on first visit
-        const newWallet: Wallet = {
+
+    // First check if wallet exists; create it if not, then subscribe
+    const initWallet = async () => {
+      const snap = await getDoc(walletRef);
+      if (!snap.exists()) {
+        await setDoc(walletRef, {
           userID,
           balance: 0,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        };
-        await setDoc(walletRef, newWallet);
+        });
       }
+    };
+
+    initWallet().catch(console.error);
+
+    const unsubscribe = onSnapshot(walletRef, (snap) => {
+      if (snap.exists()) {
+        setWallet(snap.data() as Wallet);
+      } else {
+        // Doc doesn't exist yet (race condition) — show zero balance
+        setWallet({ userID, balance: 0, createdAt: null, updatedAt: null });
+      }
+      setLoadingWallet(false);
+    }, (err) => {
+      console.error("[useWallet] wallet snapshot error:", err);
       setLoadingWallet(false);
     });
     return () => unsubscribe();
