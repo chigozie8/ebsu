@@ -16,7 +16,7 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    console.log('[v0] Extracting PDF:', file.originalFilename);
+    console.log('Extracting PDF:', file.originalFilename);
 
     // Read PDF file
     const fileBuffer = fs.readFileSync(file.filepath);
