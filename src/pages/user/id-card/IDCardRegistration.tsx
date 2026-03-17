@@ -7,7 +7,7 @@ import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
-import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
+import { supabaseAdmin, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function IDCardRegistration() {
@@ -27,6 +27,8 @@ export default function IDCardRegistration() {
   // Get payment info passed from the payment page
   const paymentVerified = location.state?.paymentVerified as boolean | undefined;
   const payerName = location.state?.payerName as string | undefined;
+  const paystackReference = location.state?.paystackReference as string | undefined;
+  const amountPaid = location.state?.amountPaid as number | undefined;
 
   // Guard: if user navigated here directly without going through payment, send them back
   useEffect(() => {
@@ -96,7 +98,7 @@ export default function IDCardRegistration() {
       ? STORAGE_BUCKETS.PAYMENT_RECEIPTS
       : STORAGE_BUCKETS.ID_CARDS;
 
-    const { data, error } = await supabase.storage
+    const { data, error } = await supabaseAdmin.storage
       .from(bucket)
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -158,6 +160,8 @@ export default function IDCardRegistration() {
         photoUrl: imageUrl,
         paymentReceiptUrl: receiptUrl,
         payerName: payerName || "",
+        paystackReference: paystackReference || "",
+        amountPaid: amountPaid || 2000,
         status: "pending",
         createdAt: serverTimestamp(),
       });
@@ -229,17 +233,29 @@ export default function IDCardRegistration() {
 
           {/* Payment verified banner */}
           {paymentVerified && (
-            <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl overflow-hidden mb-6 border border-green-200 shadow-sm"
+            >
+              <div className="bg-[#00875a] px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm">Payment Successful</p>
+                  <p className="text-white/70 text-xs">Your Paystack payment has been confirmed</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-green-800">Payment Confirmed</p>
-                <p className="text-xs text-green-600">Transfer reported by {payerName}. Please upload your receipt below.</p>
-              </div>
-            </div>
+              {paystackReference && (
+                <div className="bg-green-50 px-4 py-2.5 flex items-center justify-between gap-2">
+                  <p className="text-xs text-green-700 font-medium">Reference:</p>
+                  <p className="text-xs text-green-900 font-mono font-bold truncate">{paystackReference}</p>
+                </div>
+              )}
+            </motion.div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -416,56 +432,56 @@ export default function IDCardRegistration() {
             </div>
 
             {/* Payment Receipt Upload */}
-            <div className="border border-dashed border-amber-300 bg-amber-50/40 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-sm font-semibold text-gray-800">
-                  Payment Receipt <span className="text-red-500">*</span>
-                </p>
+            <div className="rounded-2xl border-2 border-dashed border-[#00875a]/30 bg-green-50/30 overflow-hidden">
+              <div className="px-4 pt-4 pb-3 flex items-center gap-2 border-b border-[#00875a]/10">
+                <div className="w-8 h-8 rounded-xl bg-[#00875a]/10 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-[#00875a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">
+                    Payment Receipt <span className="text-red-500">*</span>
+                  </p>
+                  <p className="text-xs text-gray-500">Upload screenshot or photo of your Paystack receipt</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                Upload a screenshot or photo of your payment receipt as proof of payment.
-              </p>
-              <div
-                onClick={() => receiptInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-amber-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-amber-400 transition-colors overflow-hidden bg-white min-h-[100px]"
-              >
-                {receiptPreview && receiptPreview !== "pdf" ? (
-                  <img
-                    src={receiptPreview}
-                    alt="Receipt preview"
-                    className="w-full max-h-48 object-contain"
-                  />
-                ) : receiptPreview === "pdf" ? (
-                  <div className="text-center p-4">
-                    <svg className="h-10 w-10 mx-auto text-red-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <div className="p-4">
+                <div
+                  onClick={() => receiptInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-[#00875a]/25 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#00875a]/50 hover:bg-[#00875a]/5 transition-all overflow-hidden bg-white min-h-[120px]"
+                >
+                  {receiptPreview && receiptPreview !== "pdf" ? (
+                    <img src={receiptPreview} alt="Receipt preview" className="w-full max-h-52 object-contain" />
+                  ) : receiptPreview === "pdf" ? (
+                    <div className="text-center p-6">
+                      <svg className="h-10 w-10 mx-auto text-red-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-xs text-gray-600 font-medium">{receiptFile?.name}</span>
+                    </div>
+                  ) : (
+                    <div className="text-center p-6">
+                      <div className="w-12 h-12 rounded-2xl bg-[#00875a]/10 flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-[#00875a]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">Click to upload receipt</p>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG or PDF — max 10MB</p>
+                    </div>
+                  )}
+                </div>
+                <input ref={receiptInputRef} type="file" accept="image/*,application/pdf" onChange={handleReceiptChange} className="hidden" />
+                {receiptFile && (
+                  <div className="flex items-center gap-2 mt-3 bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+                    <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-xs text-gray-600 font-medium">{receiptFile?.name}</span>
-                  </div>
-                ) : (
-                  <div className="text-center p-4">
-                    <svg className="h-8 w-8 mx-auto text-amber-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    <span className="text-xs text-gray-500">Click to upload receipt (image or PDF)</span>
+                    <p className="text-xs text-green-700 font-medium truncate">{receiptFile.name}</p>
                   </div>
                 )}
               </div>
-              <input
-                ref={receiptInputRef}
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handleReceiptChange}
-                className="hidden"
-              />
-              {receiptFile && (
-                <p className="text-xs text-green-600 mt-2 font-medium">
-                  Receipt selected: {receiptFile.name}
-                </p>
-              )}
             </div>
 
             <button
