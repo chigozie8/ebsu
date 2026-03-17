@@ -1,101 +1,148 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import { useWallet } from "../../../hooks/wallet/useWallet";
 import { db } from "../../../config/firebase";
 import {
-  doc,
-  onSnapshot,
-  setDoc,
-  serverTimestamp,
-  collection,
-  addDoc,
+  doc, onSnapshot, setDoc, serverTimestamp, collection, addDoc,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
+import { useNavigate } from "react-router-dom";
 
-const PREMIUM_PRICE = 100; // ₦100
+const PREMIUM_PRICE = 100;
 const PAYSTACK_KEY =
   import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ||
   "pk_live_77ab98bc87c205ec76cb2f7d534cff02df034c8e";
 
 const FEATURES = [
   {
+    title: "AI Note Taker",
+    desc: "Auto-generate clean, structured notes from lectures, PDFs, and study sessions.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
     ),
-    title: "AI Note Taker",
-    desc: "Auto-generate structured notes from lectures, PDFs, and study sessions using AI.",
-    color: "from-cyan-500/20 to-blue-500/10",
-    border: "border-cyan-500/30",
-    iconColor: "text-cyan-400",
+    accent: "#38bdf8",
+    glow: "rgba(56,189,248,0.15)",
+    tag: "AI",
   },
   {
+    title: "AI Summarizer",
+    desc: "Condense textbooks, journals, and lecture notes into bite-sized summaries instantly.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     ),
-    title: "AI Summarizer",
-    desc: "Condense lengthy textbooks, journals, and lecture notes into digestible summaries instantly.",
-    color: "from-violet-500/20 to-purple-500/10",
-    border: "border-violet-500/30",
-    iconColor: "text-violet-400",
+    accent: "#a78bfa",
+    glow: "rgba(167,139,250,0.15)",
+    tag: "AI",
   },
   {
+    title: "Academic Mentorship",
+    desc: "Get paired with senior students and medical professionals for personalised guidance.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
-    title: "Academic Mentorship",
-    desc: "Get paired with senior students and medical professionals for personalized academic guidance.",
-    color: "from-green-500/20 to-emerald-500/10",
-    border: "border-green-500/30",
-    iconColor: "text-green-400",
+    accent: "#34d399",
+    glow: "rgba(52,211,153,0.15)",
+    tag: "Mentorship",
   },
   {
+    title: "Skills Acquisition",
+    desc: "Access curated programmes in communication, leadership, and clinical procedures.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
       </svg>
     ),
-    title: "Skills Acquisition",
-    desc: "Access curated skill programmes — communication, leadership, clinical procedures, and more.",
-    color: "from-orange-500/20 to-amber-500/10",
-    border: "border-orange-500/30",
-    iconColor: "text-orange-400",
+    accent: "#fb923c",
+    glow: "rgba(251,146,60,0.15)",
+    tag: "Skills",
   },
   {
+    title: "Tech Skills",
+    desc: "Learn web development, data science, AI/ML, and digital health tools.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
       </svg>
     ),
-    title: "Tech Skills Acquisition",
-    desc: "Learn in-demand tech skills: web development, data science, AI/ML, and digital health tools.",
-    color: "from-blue-500/20 to-indigo-500/10",
-    border: "border-blue-500/30",
-    iconColor: "text-blue-400",
+    accent: "#60a5fa",
+    glow: "rgba(96,165,250,0.15)",
+    tag: "Tech",
   },
   {
+    title: "Udemy Courses",
+    desc: "Access curated Udemy courses in medicine, science, and technology at special rates.",
     icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
-    title: "Udemy Courses Access",
-    desc: "Get discounted or free access to curated Udemy courses in medicine, science, and technology.",
-    color: "from-rose-500/20 to-pink-500/10",
-    border: "border-rose-500/30",
-    iconColor: "text-rose-400",
+    accent: "#f472b6",
+    glow: "rgba(244,114,182,0.15)",
+    tag: "Courses",
   },
 ];
 
+// Starfield background canvas
+function StarCanvas() {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const raf = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+
+    const stars = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: 0.4 + Math.random() * 1.2,
+      a: Math.random(),
+      speed: 0.003 + Math.random() * 0.006,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    let t = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      t += 0.01;
+      stars.forEach((s) => {
+        const alpha = 0.2 + 0.6 * ((Math.sin(t * s.speed * 60 + s.phase) + 1) / 2);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,220,100,${alpha * 0.7})`;
+        ctx.fill();
+      });
+      raf.current = requestAnimationFrame(draw);
+    };
+    draw();
+    window.addEventListener("resize", resize);
+    return () => {
+      cancelAnimationFrame(raf.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={ref} className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} />;
+}
+
 export default function PremiumPage() {
+  const navigate = useNavigate();
   const { studentDetails } = useGetUserInfo();
   const userID = studentDetails?.userID || "";
   const userEmail = studentDetails?.email || "";
@@ -106,7 +153,7 @@ export default function PremiumPage() {
 
   const [isPremium, setIsPremium] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "wallet">("paystack");
+  const [payMethod, setPayMethod] = useState<"paystack" | "wallet">("paystack");
   const [paying, setPaying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -120,63 +167,43 @@ export default function PremiumPage() {
   }, [userID]);
 
   const grantPremium = async (reference: string) => {
-    if (!userID) return;
     await setDoc(doc(db, "premiumUsers", userID), {
-      userID,
-      email: userEmail,
-      name: userName,
-      active: true,
-      paidAt: serverTimestamp(),
-      reference,
-      amount: PREMIUM_PRICE,
+      userID, email: userEmail, name: userName,
+      active: true, paidAt: serverTimestamp(), reference, amount: PREMIUM_PRICE,
     });
-    // Log transaction
     await addDoc(collection(db, "transactions"), {
-      userID,
-      type: "payment",
-      amount: PREMIUM_PRICE,
-      description: "EBSUMSA Premium Package Unlock",
-      reference,
-      status: "success",
-      createdAt: serverTimestamp(),
+      userID, type: "payment", amount: PREMIUM_PRICE,
+      description: "EBSUMSA Premium Package", reference,
+      status: "success", createdAt: serverTimestamp(),
     });
     notifyUser("success", "Premium unlocked! Welcome to EBSUMSA Premium.");
   };
 
   const handlePaystack = () => {
     if (!(window as any).PaystackPop) {
-      notifyUser("error", "Paystack is not loaded. Please refresh and try again.");
+      notifyUser("error", "Paystack not loaded. Refresh and try again.");
       return;
     }
-    const handler = (window as any).PaystackPop.setup({
+    (window as any).PaystackPop.setup({
       key: PAYSTACK_KEY,
       email: userEmail,
-      amount: PREMIUM_PRICE * 100, // kobo
+      amount: PREMIUM_PRICE * 100,
       ref: `ebsu_premium_${Date.now()}`,
       metadata: { custom_fields: [{ display_name: "Name", variable_name: "name", value: userName }] },
-      callback: async (response: any) => {
+      callback: async (res: any) => {
         setPaying(true);
-        try {
-          await grantPremium(response?.reference || `ref_${Date.now()}`);
-        } finally {
-          setPaying(false);
-        }
+        try { await grantPremium(res?.reference || `ref_${Date.now()}`); }
+        finally { setPaying(false); }
       },
       onClose: () => {},
-    });
-    handler.openIframe();
+    }).openIframe();
   };
 
   const handleWalletPay = async () => {
-    if (balance < PREMIUM_PRICE) {
-      notifyUser("error", `Insufficient balance. You need ₦${PREMIUM_PRICE} in your wallet.`);
-      return;
-    }
     setPaying(true);
     try {
-      const ref = `ebsu_premium_wallet_${Date.now()}`;
-      await payWithWallet(PREMIUM_PRICE, "EBSUMSA Premium Package Unlock");
-      await grantPremium(ref);
+      await payWithWallet(PREMIUM_PRICE, "EBSUMSA Premium Package");
+      await grantPremium(`ebsu_premium_wallet_${Date.now()}`);
     } catch {
       notifyUser("error", "Payment failed. Please try again.");
     } finally {
@@ -185,197 +212,275 @@ export default function PremiumPage() {
     }
   };
 
-  const formatNaira = (n: number) =>
-    new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 2 }).format(n);
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
   if (checkingStatus) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#08001a" }}>
         <Spinner className="w-8 h-8 text-yellow-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-20 pb-16" style={{ background: "linear-gradient(160deg, #0d1117 0%, #0f1b2d 50%, #0d1117 100%)" }}>
-      <div className="max-w-3xl mx-auto px-4">
+    <div className="min-h-screen relative" style={{ background: "linear-gradient(160deg, #08001a 0%, #0e0028 50%, #08001a 100%)" }}>
+      <StarCanvas />
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center pt-8 pb-10"
-        >
-          {/* Crown */}
-          <div className="relative inline-flex items-center justify-center w-20 h-20 mb-5">
-            <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-xl" />
-            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400/20 to-amber-600/20 border border-yellow-500/40 flex items-center justify-center">
-              <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                <path d="M2 17l2-9 4.5 4L12 4l3.5 8L20 8l2 9H2z" fill="url(#crownGold)" stroke="#f59e0b" strokeWidth="1.2" strokeLinejoin="round" />
+      {/* Deep purple radial blob */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0,
+        background: "radial-gradient(ellipse 70% 50% at 50% 30%, rgba(139,92,246,0.08) 0%, transparent 70%)" }} />
+
+      <div className="relative z-10 max-w-xl mx-auto px-4 pt-24 pb-20">
+
+        {/* Back */}
+        <button onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors mb-8">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+
+        {/* Hero */}
+        <motion.div initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: "easeOut" }} className="text-center mb-10">
+
+          {/* Glowing crown ring */}
+          <div className="relative inline-flex items-center justify-center mb-6">
+            <div className="absolute w-28 h-28 rounded-full blur-2xl" style={{ background: "rgba(251,191,36,0.18)" }} />
+            <div className="absolute w-20 h-20 rounded-full animate-ping" style={{ background: "rgba(251,191,36,0.05)", animationDuration: "3s" }} />
+            <div className="relative w-20 h-20 rounded-full flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(217,119,6,0.1))", border: "1px solid rgba(251,191,36,0.35)", boxShadow: "0 0 40px rgba(251,191,36,0.12), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+              <svg viewBox="0 0 40 32" fill="none" className="w-10 h-10">
                 <defs>
-                  <linearGradient id="crownGold" x1="2" y1="4" x2="22" y2="17" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#fbbf24" />
-                    <stop offset="100%" stopColor="#d97706" />
+                  <linearGradient id="pg1" x1="0" y1="0" x2="40" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#fde68a" />
+                    <stop offset="55%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#b45309" />
                   </linearGradient>
                 </defs>
+                <path d="M4 28l3-15 7.5 7L20 4l5.5 16L34 9l3 19H4z"
+                  fill="url(#pg1)" stroke="#fbbf24" strokeWidth="1" strokeLinejoin="round" />
+                <circle cx="4" cy="13" r="2.2" fill="#fde68a" />
+                <circle cx="20" cy="4" r="2.2" fill="#fff9c4" />
+                <circle cx="36" cy="9" r="2.2" fill="#fde68a" />
+                <rect x="4" y="28" width="32" height="2.5" rx="1.25" fill="url(#pg1)" opacity="0.6" />
               </svg>
             </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 text-balance">
-            EBSUMSA{" "}
-            <span className="bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 bg-clip-text text-transparent">
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl font-black mb-3 leading-tight tracking-tight">
+            <span className="text-white">EBSUMSA </span>
+            <span style={{ background: "linear-gradient(90deg, #fde68a 0%, #fbbf24 45%, #f59e0b 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               Premium
             </span>
           </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto text-balance leading-relaxed">
-            Unlock an elevated academic experience with exclusive tools, mentorship, and resources designed for EBSU medical students.
+          <p className="text-white/50 text-sm sm:text-base leading-relaxed max-w-sm mx-auto text-balance">
+            One unlock. Lifetime access to an elite suite of academic tools, mentorship, and exclusive resources.
           </p>
 
-          {/* Price badge */}
-          <div className="inline-flex items-baseline gap-1 mt-5 bg-white/5 border border-yellow-500/30 rounded-2xl px-5 py-2.5">
-            <span className="text-3xl font-bold text-white">₦{PREMIUM_PRICE}</span>
-            <span className="text-gray-400 text-sm">one-time</span>
+          {/* Price pill */}
+          <div className="inline-flex items-center gap-3 mt-6 px-5 py-3 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(251,191,36,0.2)", boxShadow: "0 4px 32px rgba(251,191,36,0.06)" }}>
+            <div>
+              <p className="text-3xl font-black text-white leading-none">₦{PREMIUM_PRICE}</p>
+              <p className="text-white/30 text-xss font-medium mt-0.5">one-time payment</p>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-left">
+              <p className="text-yellow-400 font-bold text-xs">Lifetime</p>
+              <p className="text-white/30 text-xss">No renewals</p>
+            </div>
           </div>
         </motion.div>
 
-        {/* Features grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8"
-        >
+        {/* Feature cards */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
           {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.06 }}
-              className={`relative rounded-2xl p-4 border bg-gradient-to-br ${f.color} ${f.border} overflow-hidden`}
-            >
-              {/* Subtle locked overlay */}
-              {!isPremium && (
-                <div className="absolute top-3 right-3">
-                  <svg className="w-3.5 h-3.5 text-white/30" fill="currentColor" viewBox="0 0 20 20">
+            <motion.div key={f.title}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 + i * 0.07 }}
+              className="relative rounded-2xl p-4 overflow-hidden group/card"
+              style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: isPremium ? `0 0 0 0` : "none",
+              }}>
+              {/* Hover colour wash */}
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{ background: f.glow }} />
+              {/* Top accent line */}
+              <div className="absolute top-0 left-4 right-4 h-px rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity duration-500"
+                style={{ background: `linear-gradient(90deg, transparent, ${f.accent}, transparent)` }} />
+
+              <div className="relative flex items-start gap-3">
+                <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center mt-0.5"
+                  style={{ background: `${f.glow}`, border: `1px solid ${f.accent}30`, color: f.accent }}>
+                  {f.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h3 className="text-white font-bold text-sm">{f.title}</h3>
+                    <span className="text-xss px-1.5 py-px rounded-full font-semibold"
+                      style={{ background: `${f.glow}`, color: f.accent }}>
+                      {f.tag}
+                    </span>
+                  </div>
+                  <p className="text-white/40 text-xs leading-relaxed">{f.desc}</p>
+                </div>
+                {!isPremium && (
+                  <svg className="w-3.5 h-3.5 text-white/20 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                   </svg>
-                </div>
-              )}
-              <div className={`mb-2.5 ${f.iconColor}`}>{f.icon}</div>
-              <h3 className="text-white font-bold text-sm mb-1">{f.title}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
+                )}
+                {isPremium && (
+                  <svg className="w-3.5 h-3.5 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5} style={{ color: f.accent }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Payment / Unlocked section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="rounded-2xl border border-yellow-500/20 bg-white/5 p-6 mb-8"
-        >
+        {/* Payment / Active section */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
+          className="rounded-2xl overflow-hidden"
+          style={{ border: "1px solid rgba(251,191,36,0.2)", background: "rgba(255,255,255,0.03)", boxShadow: "0 8px 40px rgba(251,191,36,0.05)" }}>
+
           {isPremium ? (
-            /* Already premium */
-            <div className="text-center py-4">
-              <div className="w-14 h-14 rounded-full bg-yellow-400/20 border border-yellow-500/40 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-7 h-7 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <div className="text-center py-10 px-6">
+              <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
+                <div className="absolute inset-0 rounded-full blur-lg" style={{ background: "rgba(52,211,153,0.25)" }} />
+                <div className="relative w-full h-full rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.4)" }}>
+                  <svg className="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
               </div>
-              <h3 className="text-white font-bold text-lg mb-1">You are a Premium Member</h3>
-              <p className="text-gray-400 text-sm">All premium features are unlocked and available to you. Enjoy your access.</p>
+              <h3 className="text-white font-black text-xl mb-2">You are Premium</h3>
+              <p className="text-white/40 text-sm max-w-xs mx-auto">All features are unlocked. Thank you for supporting EBSUMSA.</p>
+              <div className="inline-flex items-center gap-1.5 mt-4 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24" }}>
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                Premium Member
+              </div>
             </div>
           ) : (
-            <>
-              <h3 className="text-white font-bold text-base mb-1">Unlock Premium</h3>
-              <p className="text-gray-400 text-xs mb-5">Choose how you would like to pay the one-time fee of <span className="text-yellow-400 font-semibold">₦{PREMIUM_PRICE}</span>.</p>
+            <div className="p-6">
+              {/* Top banner */}
+              <div className="text-center mb-6">
+                <p className="text-white font-bold text-base mb-0.5">Unlock Everything</p>
+                <p className="text-white/40 text-xs">One payment. Instant access. No subscriptions.</p>
+              </div>
 
-              {/* Payment method toggle */}
-              <div className="flex gap-2 mb-5">
-                {(["paystack", "wallet"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setPaymentMethod(m)}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
-                      paymentMethod === m
-                        ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300"
-                        : "bg-white/5 border-white/10 text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    {m === "paystack" ? "Pay with Paystack" : `Wallet (${formatNaira(balance)})`}
+              {/* Method toggle */}
+              <div className="flex gap-2 p-1 rounded-xl mb-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                {([
+                  { id: "paystack", label: "Paystack", icon: (
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.693 0H3.307C1.481 0 0 1.481 0 3.307v17.386C0 22.519 1.481 24 3.307 24h17.386C22.519 24 24 22.519 24 20.693V3.307C24 1.481 22.519 0 20.693 0zm-1.76 9.358h-2.595c-.828 0-1.5.672-1.5 1.5v3.784c0 .828.672 1.5 1.5 1.5h2.596v2.117h-2.596c-1.993 0-3.617-1.624-3.617-3.617V10.858c0-1.993 1.624-3.617 3.617-3.617h2.596v2.117zm-8.618 0H7.721c-.828 0-1.5.672-1.5 1.5v3.784c0 .828.672 1.5 1.5 1.5h2.595v2.117H7.721c-1.993 0-3.617-1.624-3.617-3.617V10.858c0-1.993 1.624-3.617 3.617-3.617h2.595v2.117z" />
+                    </svg>
+                  )},
+                  { id: "wallet", label: `Wallet (${fmt(balance)})`, icon: (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  )},
+                ] as { id: "paystack" | "wallet"; label: string; icon: React.ReactNode }[]).map((m) => (
+                  <button key={m.id} onClick={() => setPayMethod(m.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all"
+                    style={payMethod === m.id ? {
+                      background: "linear-gradient(135deg, rgba(251,191,36,0.2), rgba(217,119,6,0.15))",
+                      border: "1px solid rgba(251,191,36,0.4)", color: "#fbbf24",
+                    } : {
+                      background: "transparent", border: "1px solid transparent", color: "rgba(255,255,255,0.35)",
+                    }}>
+                    {m.icon}{m.label}
                   </button>
                 ))}
               </div>
 
-              {paymentMethod === "wallet" && balance < PREMIUM_PRICE && (
-                <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2.5 mb-4">
-                  <p className="text-rose-400 text-xs font-medium">Insufficient wallet balance. Please fund your wallet or pay via Paystack.</p>
-                </div>
+              {/* Wallet insufficient warning */}
+              {payMethod === "wallet" && balance < PREMIUM_PRICE && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                  className="rounded-xl px-4 py-3 mb-4 flex items-start gap-2.5"
+                  style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                  <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-red-400 text-xs leading-relaxed">
+                    Insufficient balance. Fund your wallet first or switch to Paystack.
+                  </p>
+                </motion.div>
               )}
 
+              {/* CTA Button */}
               <button
-                onClick={() => {
-                  if (paymentMethod === "paystack") handlePaystack();
-                  else setShowConfirm(true);
-                }}
-                disabled={paying || (paymentMethod === "wallet" && balance < PREMIUM_PRICE)}
-                className="w-full py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#1a1a1a" }}
+                onClick={() => payMethod === "paystack" ? handlePaystack() : setShowConfirm(true)}
+                disabled={paying || (payMethod === "wallet" && balance < PREMIUM_PRICE)}
+                className="w-full relative overflow-hidden rounded-xl py-4 font-black text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)", color: "#1a0a00", boxShadow: "0 4px 24px rgba(251,191,36,0.3)" }}
               >
+                <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, #fde68a, #fbbf24, #b45309)" }} />
                 {paying ? (
-                  <Spinner className="w-5 h-5 text-amber-900" />
+                  <Spinner className="relative w-5 h-5" style={{ color: "#1a0a00" } as any} />
                 ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 016 0v2h2V7a5 5 0 00-5-5z" />
+                  <span className="relative flex items-center gap-2">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <path d="M2 17l2-9 4.5 4L12 4l3.5 8L20 8l2 9H2z" fill="currentColor" />
                     </svg>
                     Unlock Premium — ₦{PREMIUM_PRICE}
-                  </>
+                  </span>
                 )}
               </button>
-            </>
+
+              <p className="text-center text-white/20 text-xss mt-3">Secure payment • Instant unlock • No hidden fees</p>
+            </div>
           )}
         </motion.div>
       </div>
 
-      {/* Wallet payment confirm modal */}
+      {/* Wallet confirm modal */}
       <AnimatePresence>
         {showConfirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-4 sm:pb-0"
+            style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm rounded-2xl p-6 border border-yellow-500/20"
-              style={{ background: "#0f1b2d" }}
-            >
-              <h3 className="text-white font-bold text-base mb-2">Confirm Wallet Payment</h3>
-              <p className="text-gray-400 text-sm mb-1">
-                <span className="text-yellow-400 font-semibold">₦{PREMIUM_PRICE}</span> will be deducted from your wallet balance.
-              </p>
-              <p className="text-gray-500 text-xs mb-5">Current balance: {formatNaira(balance)}</p>
+              initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              transition={{ type: "spring", damping: 24, stiffness: 300 }}
+              className="w-full max-w-sm rounded-2xl p-6"
+              style={{ background: "linear-gradient(145deg, #0e0028, #140038)", border: "1px solid rgba(251,191,36,0.2)", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}>
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                  style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)" }}>
+                  <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-white font-bold text-base mb-1">Confirm Wallet Payment</h3>
+                <p className="text-white/40 text-xs">
+                  <span className="text-yellow-400 font-bold">₦{PREMIUM_PRICE}</span> will be deducted from your wallet balance of <span className="text-white font-semibold">{fmt(balance)}</span>.
+                </p>
+              </div>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400 border border-white/10 hover:bg-white/5 transition-colors"
-                >
+                <button onClick={() => setShowConfirm(false)} disabled={paying}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}>
                   Cancel
                 </button>
-                <button
-                  onClick={handleWalletPay}
-                  disabled={paying}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#1a1a1a" }}
-                >
-                  {paying ? <Spinner className="w-4 h-4" /> : "Confirm Payment"}
+                <button onClick={handleWalletPay} disabled={paying}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+                  style={{ background: "linear-gradient(135deg, #fbbf24, #d97706)", color: "#1a0a00" }}>
+                  {paying ? <Spinner className="w-4 h-4" /> : "Confirm"}
                 </button>
               </div>
             </motion.div>
