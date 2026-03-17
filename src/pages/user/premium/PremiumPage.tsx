@@ -160,8 +160,10 @@ export default function PremiumPage() {
   useEffect(() => {
     if (!userID) return;
     const unsub = onSnapshot(doc(db, "premiumUsers", userID), (snap) => {
-      setIsPremium(snap.exists() && snap.data()?.active === true);
+      const active = snap.exists() && snap.data()?.active === true;
+      setIsPremium(active);
       setCheckingStatus(false);
+      if (active) navigate("/u/premium/dashboard", { replace: true });
     });
     return () => unsub();
   }, [userID]);
@@ -177,6 +179,7 @@ export default function PremiumPage() {
       status: "success", createdAt: serverTimestamp(),
     });
     notifyUser("success", "Premium unlocked! Welcome to EBSUMSA Premium.");
+    setTimeout(() => navigate("/u/premium/dashboard"), 1200);
   };
 
   const handlePaystack = () => {
