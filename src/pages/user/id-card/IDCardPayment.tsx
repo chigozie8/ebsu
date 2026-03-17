@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
@@ -15,6 +15,9 @@ const PAYSTACK_KEY =
   import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ||
   "pk_live_77ab98bc87c205ec76cb2f7d534cff02df034c8e";
 
+// Helper to check if Paystack is loaded
+const isPaystackReady = () => !!(window as any).PaystackPop;
+
 export default function IDCardPayment() {
   const navigate = useNavigate();
   const { studentDetails, userID, loading: authLoading } = useGetUserInfo();
@@ -27,6 +30,31 @@ export default function IDCardPayment() {
   const [payMethod, setPayMethod] = useState<"paystack" | "wallet">("paystack");
   const [paying, setPaying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [paystackReady, setPaystackReady] = useState(isPaystackReady());
+
+  // Poll for Paystack SDK to be ready
+  useEffect(() => {
+    if (paystackReady) return;
+    
+    const checkPaystack = setInterval(() => {
+      if (isPaystackReady()) {
+        setPaystackReady(true);
+        clearInterval(checkPaystack);
+      }
+    }, 200);
+
+    // Also check immediately and after a short delay
+    const timeout = setTimeout(() => {
+      if (isPaystackReady()) {
+        setPaystackReady(true);
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(checkPaystack);
+      clearTimeout(timeout);
+    };
+  }, [paystackReady]);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
@@ -62,12 +90,17 @@ export default function IDCardPayment() {
       notifyUser("error", "Please log in to continue.");
       return;
     }
-    if (!(window as any).PaystackPop) {
-      notifyUser("error", "Paystack not loaded. Refresh and try again.");
+    
+    const PaystackPop = (window as any).PaystackPop;
+    if (!PaystackPop) {
+      notifyUser("error", "Paystack is still loading. Please wait a moment and try again.");
+      // Force re-check
+      setPaystackReady(false);
       return;
     }
 
-    (window as any).PaystackPop.setup({
+    try {
+      const handler = PaystackPop.setup({
       key: PAYSTACK_KEY,
       email: userEmail,
       amount: ID_CARD_PRICE * 100, // Paystack uses kobo
@@ -96,9 +129,14 @@ export default function IDCardPayment() {
         }
       },
       onClose: () => {
-        notifyUser("info", "Payment cancelled.");
-      },
-    }).openIframe();
+          notifyUser("info", "Payment cancelled.");
+        },
+      });
+      handler.openIframe();
+    } catch (error) {
+      console.error("[v0] Paystack setup error:", error);
+      notifyUser("error", "Failed to initialize payment. Please refresh and try again.");
+    }
   };
 
   const handleWalletPay = async () => {
@@ -302,15 +340,20 @@ export default function IDCardPayment() {
 
               {/* Pay Button */}
               {payMethod === "paystack" ? (
-                <button
+<button
                   onClick={handlePaystack}
-                  disabled={paying || !userEmail}
+                  disabled={paying || !userEmail || !paystackReady}
                   className="w-full bg-[#0ba4db] hover:bg-[#0993c7] disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   {paying ? (
                     <>
                       <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
                       <span>Processing...</span>
+                    </>
+                  ) : !paystackReady ? (
+                    <>
+                      <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
+                      <span>Loading Paystack...</span>
                     </>
                   ) : (
                     <>
