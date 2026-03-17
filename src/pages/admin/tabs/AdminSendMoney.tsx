@@ -66,12 +66,22 @@ export default function AdminSendMoney() {
   useEffect(() => {
     (async () => {
       try {
+        console.log("[v0] Fetching banks from /api/paystack-banks...");
         const res = await fetch("/api/paystack-banks");
-        const data = await res.json();
-        if (data.banks) setBanks(data.banks);
+        console.log("[v0] Banks response status:", res.status, res.statusText);
+        const text = await res.text();
+        console.log("[v0] Banks raw response:", text.slice(0, 300));
+        const data = JSON.parse(text);
+        if (data.banks) {
+          console.log("[v0] Banks loaded:", data.banks.length);
+          setBanks(data.banks);
+        } else {
+          console.error("[v0] Banks error from API:", data);
+          notifyUser("error", data.error || "Failed to load banks");
+        }
       } catch (err) {
-        console.error("[AdminSendMoney] fetch banks error:", err);
-        notifyUser("error", "Failed to load banks. Check your Paystack secret key.");
+        console.error("[v0] fetch banks error:", err);
+        notifyUser("error", "Failed to load banks. The API may not be available in preview — deploy to Vercel first.");
       } finally {
         setLoadingBanks(false);
       }
@@ -99,15 +109,21 @@ export default function AdminSendMoney() {
     setResolvingAccount(true);
     setAccountName("");
     try {
-      const res = await fetch(`/api/paystack-resolve-account?account_number=${accNum}&bank_code=${bankCode}`);
-      const data = await res.json();
+      const url = `/api/paystack-resolve-account?account_number=${accNum}&bank_code=${bankCode}`;
+      console.log("[v0] Resolving account:", url);
+      const res = await fetch(url);
+      console.log("[v0] Resolve response status:", res.status);
+      const text = await res.text();
+      console.log("[v0] Resolve raw response:", text.slice(0, 300));
+      const data = JSON.parse(text);
       if (data.account_name) {
         setAccountName(data.account_name);
       } else {
+        console.error("[v0] Resolve error:", data);
         notifyUser("error", data.error || "Could not resolve account name");
       }
     } catch (err) {
-      console.error("[AdminSendMoney] resolve account error:", err);
+      console.error("[v0] resolve account error:", err);
       notifyUser("error", "Account resolution failed");
     } finally {
       setResolvingAccount(false);
@@ -136,6 +152,7 @@ export default function AdminSendMoney() {
     setSending(true);
     setShowConfirm(false);
     try {
+      console.log("[v0] Initiating transfer to:", accountName, "bank:", selectedBank!.code, "amount:", amount);
       const res = await fetch("/api/paystack-transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,7 +164,10 @@ export default function AdminSendMoney() {
           narration: narration || "EBSUMSA Admin Transfer",
         }),
       });
-      const data = await res.json();
+      console.log("[v0] Transfer response status:", res.status);
+      const text = await res.text();
+      console.log("[v0] Transfer raw response:", text.slice(0, 500));
+      const data = JSON.parse(text);
       if (!data.success) {
         notifyUser("error", data.error || "Transfer failed");
         setSending(false);
