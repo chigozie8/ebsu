@@ -2,6 +2,7 @@ import logo from "../../assets/logo/logo.png";
 import { WebIcon } from "../icons/socials/WebIcon";
 import { XIcon } from "../icons/socials/XIcon";
 import { InstagramIcon } from "../icons/socials/InstagramIcon";
+import { YouTubeIcon } from "../icons/socials/YouTubeIcon";
 
 export default function Footer() {
   return (
@@ -97,8 +98,10 @@ export default function Footer() {
 
           <div className="flex items-center gap-3 mt-2 sm:mt-0">
             <a
-              href="https://www.instagram.com/ebsumsaofficial?igsh=Z2JxMGtpMTJkOXYx"
+              href="https://www.instagram.com/ebsumsaofficial?utm_source=qr&igsh=MW5mMWlrY3g4c3lxaQ=="
               className="text-white/80 hover:text-white transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Instagram"
             >
               <InstagramIcon className="w-4 h-4 md:w-5 md:h-5 fill-white" />
@@ -106,13 +109,26 @@ export default function Footer() {
             <a
               href="https://x.com/Ebsumsaofficial"
               className="text-white/80 hover:text-white transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="X (Twitter)"
             >
               <XIcon className="w-4 h-4 md:w-5 md:h-5" />
             </a>
             <a
+              href="https://youtube.com/@ebsumsatv?si=qWJTfD2Z4L61wrBo"
+              className="text-white/80 hover:text-white transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+            >
+              <YouTubeIcon className="w-4 h-4 md:w-5 md:h-5 fill-white" />
+            </a>
+            <a
               href="https://ebsu.edu.ng/"
               className="text-white/80 hover:text-white transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="EBSU Website"
             >
               <WebIcon className="w-4 h-4 md:w-5 md:h-5" />
