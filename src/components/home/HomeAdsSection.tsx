@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "../../config/firebase";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -26,21 +26,33 @@ export default function HomeAdsSection() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
+        // Simple query with no compound index requirement
         const q = query(
           collection(db, "advertisements"),
-          where("isActive", "==", true),
           orderBy("createdAt", "desc")
         );
         const snap = await getDocs(q);
-        const data = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
-        // Show ads with placement "home" or "both" or "all"
-        const homeAds = data.filter((a) =>
-          ["home", "both", "all"].includes(a.placement)
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
+        // Filter client-side to avoid composite index requirement
+        const homeAds = data.filter(
+          (a) => a.isActive === true && ["home", "both", "all"].includes(a.placement)
         );
+        console.log("[v0] HomeAds fetched:", data.length, "total, filtered:", homeAds.length);
         setAds(homeAds);
-      } catch (_) {
-        // silently fail — ads are not critical
+      } catch (err) {
+        console.error("[v0] HomeAdsSection fetch error:", err);
+        // Fallback: try without orderBy
+        try {
+          const snap = await getDocs(collection(db, "advertisements"));
+          const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
+          const homeAds = data.filter(
+            (a) => a.isActive === true && ["home", "both", "all"].includes(a.placement)
+          );
+          console.log("[v0] HomeAds fallback fetch:", homeAds.length, "ads");
+          setAds(homeAds);
+        } catch (fallbackErr) {
+          console.error("[v0] HomeAdsSection fallback error:", fallbackErr);
+        }
       } finally {
         setLoading(false);
       }
