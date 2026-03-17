@@ -271,19 +271,37 @@ export default function AdminWithdrawalsManager() {
                 </div>
               </div>
 
-              {/* Bank details */}
-              <div className="bg-gray-50 rounded-xl p-3 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                  <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Bank</p>
-                  <p className="text-sm font-semibold text-gray-800">{req.bankName}</p>
+              {/* Bank details — clearly shown for admin to act on */}
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-3">
+                <p className="text-xss font-bold text-amber-700 uppercase tracking-wide mb-2">Transfer funds to this account before marking processed</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Bank</p>
+                    <p className="text-sm font-semibold text-gray-800">{req.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Account Number</p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-sm font-bold text-gray-900">{req.accountNumber}</p>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(req.accountNumber); notifyUser("success", "Account number copied"); }}
+                        className="text-[#00875a] hover:text-[#006d49] p-0.5"
+                        title="Copy account number"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Account Name</p>
+                    <p className="text-sm font-semibold text-gray-800">{req.accountName}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Account No.</p>
-                  <p className="text-sm font-semibold text-gray-800">{req.accountNumber}</p>
-                </div>
-                <div>
-                  <p className="text-xss text-gray-400 font-semibold uppercase tracking-wide">Account Name</p>
-                  <p className="text-sm font-semibold text-gray-800">{req.accountName}</p>
+                <div className="mt-2 pt-2 border-t border-amber-200 flex items-center gap-2">
+                  <p className="text-xs font-bold text-amber-800">Amount to send:</p>
+                  <p className="text-sm font-bold text-[#00875a]">{formatNaira(req.amount)}</p>
                 </div>
               </div>
 
@@ -333,11 +351,14 @@ export default function AdminWithdrawalsManager() {
             <h3 className="text-base font-bold text-gray-900 mb-1">
               {noteModal.type === "process" ? "Mark as Processed" : "Reject & Refund"}
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {noteModal.type === "process"
-                ? "Confirm you have sent the funds to the user's bank account."
-                : "The amount will be refunded back to the user's wallet immediately."}
-            </p>
+            {noteModal.type === "process" ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-4">
+                <p className="text-xs font-bold text-amber-800 mb-0.5">Have you already sent the money?</p>
+                <p className="text-xs text-amber-700">Only click "Confirm Processed" AFTER you have physically transferred the funds to the user's bank account. This action cannot be undone.</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">The amount will be refunded back to the user's wallet immediately.</p>
+            )}
             <textarea
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
