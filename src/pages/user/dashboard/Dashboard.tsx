@@ -25,6 +25,7 @@ import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import AdvertisementBanner from "../../../components/shared/AdvertisementBanner";
 import WalletCard from "../../../components/widgets/WalletCard";
+import PremiumCard from "../../../components/widgets/PremiumCard";
 
 // Activity types with icons and colors
 interface Activity {
@@ -549,6 +550,9 @@ export default function Dashboard() {
                           </p>
                         </motion.div>
                       </NavLink>
+
+                      {/* Premium Package Card */}
+                      <PremiumCard userID={studentDetails?.userID || ""} userEmail={studentDetails?.email || ""} />
                     </div>
                   </div>
                   <div className="mb-3 sm:mb-4">
