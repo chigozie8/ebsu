@@ -431,7 +431,7 @@ export default function PremiumPage() {
                 <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity"
                   style={{ background: "linear-gradient(135deg, #fde68a, #fbbf24, #b45309)" }} />
                 {paying ? (
-                  <Spinner className="relative w-5 h-5" style={{ color: "#1a0a00" } as any} />
+                  <Spinner className="relative w-5 h-5 text-amber-900" />
                 ) : (
                   <span className="relative flex items-center gap-2">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
