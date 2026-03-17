@@ -105,21 +105,32 @@ export default function AdminAdsManager() {
       notifyUser("error", "Image must be under 5MB");
       return;
     }
-    // Show local preview immediately
+    setUploadingImage(true);
+    // Show local preview immediately while uploading
     const localUrl = URL.createObjectURL(file);
     setImagePreview(localUrl);
-    setUploadingImage(true);
     try {
-      const storageRef = ref(storage, `advertisements/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
+      console.log("[v0] Starting Firebase Storage upload for:", file.name, "size:", file.size);
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+      const storageRef = ref(storage, `advertisements/${fileName}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      console.log("[v0] Upload snapshot:", snapshot.metadata.fullPath);
       const downloadUrl = await getDownloadURL(storageRef);
+      console.log("[v0] Download URL obtained:", downloadUrl);
       setForm((p) => ({ ...p, imageUrl: downloadUrl }));
-      notifyUser("success", "Image uploaded");
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      notifyUser("error", "Image upload failed. Try a URL instead.");
+      notifyUser("success", "Image uploaded successfully");
+    } catch (err: any) {
+      console.error("[v0] Image upload failed:", err?.code, err?.message, err);
       setImagePreview("");
       setForm((p) => ({ ...p, imageUrl: "" }));
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      const msg =
+        err?.code === "storage/unauthorized"
+          ? "Upload permission denied. Check Firebase Storage rules."
+          : err?.code === "storage/unknown"
+          ? "Upload failed (network or CORS error). Try pasting an image URL instead."
+          : "Image upload failed. Try pasting an image URL instead.";
+      notifyUser("error", msg);
     } finally {
       setUploadingImage(false);
     }
