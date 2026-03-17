@@ -15,6 +15,7 @@ export const STORAGE_BUCKETS = {
   ID_CARDS: 'id-cards',
   LEARNING_RESOURCES: 'learning-resources',
   PAYMENT_RECEIPTS: 'id-cards',
+  ADVERTISEMENTS: 'advertisements',
 } as const;
 
 // Helper to get public URL for a file

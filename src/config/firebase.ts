@@ -22,7 +22,11 @@ export const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.p
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);
+const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "";
+export const storage = getStorage(
+  app,
+  storageBucket.startsWith("gs://") ? storageBucket : `gs://${storageBucket}`
+);
 
 // Initialize performance and analytics only in browser environment
 let perf: FirebasePerformance | null = null;

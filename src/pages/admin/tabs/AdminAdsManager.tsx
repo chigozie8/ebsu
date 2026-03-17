@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
-import { db, storage } from "../../../config/firebase";
+import { db } from "../../../config/firebase";
 import {
   collection,
   addDoc,
@@ -12,7 +12,7 @@ import {
   orderBy,
   serverTimestamp,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { supabase, STORAGE_BUCKETS } from "../../../config/supabase";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { motion } from "framer-motion";
@@ -105,21 +105,28 @@ export default function AdminAdsManager() {
       notifyUser("error", "Image must be under 5MB");
       return;
     }
-    // Show local preview immediately
+    setUploadingImage(true);
     const localUrl = URL.createObjectURL(file);
     setImagePreview(localUrl);
-    setUploadingImage(true);
     try {
-      const storageRef = ref(storage, `advertisements/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
-      setForm((p) => ({ ...p, imageUrl: downloadUrl }));
-      notifyUser("success", "Image uploaded");
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      notifyUser("error", "Image upload failed. Try a URL instead.");
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.ADVERTISEMENTS)
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage
+        .from(STORAGE_BUCKETS.ADVERTISEMENTS)
+        .getPublicUrl(fileName);
+      setImagePreview(data.publicUrl);
+      setForm((p) => ({ ...p, imageUrl: data.publicUrl }));
+      notifyUser("success", "Image uploaded successfully");
+    } catch (err: any) {
+      console.error("Supabase image upload failed:", err?.message, err);
       setImagePreview("");
       setForm((p) => ({ ...p, imageUrl: "" }));
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      notifyUser("error", "Image upload failed. Please try again or paste an image URL.");
     } finally {
       setUploadingImage(false);
     }
