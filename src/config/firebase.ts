@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getPerformance, type FirebasePerformance } from "firebase/performance";
 import { getAnalytics, type Analytics } from "firebase/analytics";
 
@@ -19,26 +19,39 @@ const firebaseConfig = {
 // Check if Firebase config is valid
 export const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "";
-export const storage = getStorage(
-  app,
-  storageBucket.startsWith("gs://") ? storageBucket : `gs://${storageBucket}`
-);
-
-// Initialize performance and analytics only in browser environment
+// Safe initialization - only initialize if config exists
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 let perf: FirebasePerformance | null = null;
 let analytics: Analytics | null = null;
 
-if (typeof window !== "undefined") {
-  try {
-    perf = getPerformance(app);
-    analytics = getAnalytics(app);
-  } catch (error) {
-    console.warn("Firebase performance/analytics initialization failed:", error);
+try {
+  if (isFirebaseConfigured) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    const storageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "";
+    storage = getStorage(
+      app,
+      storageBucket.startsWith("gs://") ? storageBucket : `gs://${storageBucket}`
+    );
+
+    // Initialize performance and analytics only in browser environment
+    if (typeof window !== "undefined") {
+      try {
+        perf = getPerformance(app);
+        analytics = getAnalytics(app);
+      } catch (error) {
+        console.warn("Firebase performance/analytics initialization failed:", error);
+      }
+    }
+  } else {
+    console.warn("[v0] Firebase not configured - missing VITE_FIREBASE_API_KEY or VITE_FIREBASE_PROJECT_ID");
   }
+} catch (error) {
+  console.error("[v0] Firebase initialization failed:", error);
 }
 
-export { perf, analytics };
+export { app, auth, db, storage, perf, analytics };
