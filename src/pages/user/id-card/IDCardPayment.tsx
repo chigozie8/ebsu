@@ -118,7 +118,7 @@ export default function IDCardPayment() {
           notifyUser("success", "Payment successful! Redirecting to registration form...");
           setTimeout(() => {
             navigate("/u/id-card", {
-              state: { paymentVerified: true, payerName: userName, reference: res?.reference },
+              state: { paymentVerified: true, payerName: userName, reference: res?.reference, amount: ID_CARD_PRICE },
             });
           }, 1200);
         } catch (error) {
@@ -158,7 +158,7 @@ export default function IDCardPayment() {
       notifyUser("success", "Payment successful! Redirecting to registration form...");
       setTimeout(() => {
         navigate("/u/id-card", {
-          state: { paymentVerified: true, payerName: userName, reference },
+          state: { paymentVerified: true, payerName: userName, reference, amount: ID_CARD_PRICE },
         });
       }, 1200);
     } catch (error: any) {

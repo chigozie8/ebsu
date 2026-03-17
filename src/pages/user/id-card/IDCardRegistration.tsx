@@ -23,6 +23,7 @@ export default function IDCardRegistration() {
   const paymentVerified = location.state?.paymentVerified as boolean | undefined;
   const payerName = location.state?.payerName as string | undefined;
   const paymentReference = location.state?.reference as string | undefined;
+  const paymentAmount = location.state?.amount as number | undefined;
 
   // Guard: if user navigated here directly without going through payment, send them back
   useEffect(() => {
@@ -123,12 +124,13 @@ export default function IDCardRegistration() {
         photoUrl: imageUrl,
         payerName: payerName || "",
         paymentReference: paymentReference || "",
+        paymentAmount: paymentAmount || 100,
         paymentVerified: true,
         status: "pending",
         createdAt: serverTimestamp(),
       });
 
-      // Send email notification via Resend
+      // Send email notification via Resend (to admin and user)
       try {
         await fetch("/api/send-id-registration", {
           method: "POST",
@@ -145,7 +147,8 @@ export default function IDCardRegistration() {
             classSet: formData.classSet,
             registrationNumber: formData.registrationNumber,
             photoUrl: imageUrl,
-            paymentReference: paymentReference,
+            paymentReference: paymentReference || "",
+            paymentAmount: paymentAmount || 100,
           }),
         });
       } catch (emailError) {
@@ -171,7 +174,7 @@ export default function IDCardRegistration() {
 
       // Redirect to dashboard after success
       setTimeout(() => {
-        navigate("/u/dashboard", { replace: true });
+        navigate("/dashboard", { replace: true });
       }, 2000);
     } catch (error: any) {
       console.error("Error submitting registration:", error);
