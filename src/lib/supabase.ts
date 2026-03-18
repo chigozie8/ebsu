@@ -1,17 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Support both Vite and Next.js env var naming conventions
-// process.env is populated by vite.config.ts cherry-picked keys
-const supabaseUrl = 
-  process.env.SUPABASE_URL || 
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 
-  process.env.VITE_SUPABASE_URL || 
+// Vite exposes VITE_* vars via import.meta.env natively.
+// vite.config.ts also injects SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL into
+// import.meta.env.VITE_SUPABASE_URL at build time via the define block.
+const supabaseUrl: string =
+  (import.meta.env.VITE_SUPABASE_URL as string) ||
+  (process.env.SUPABASE_URL as string) ||
+  (process.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
   '';
-const supabaseAnonKey = 
-  process.env.SUPABASE_ANON_KEY || 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-  process.env.VITE_SUPABASE_ANON_KEY || 
+
+const supabaseAnonKey: string =
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  (process.env.SUPABASE_ANON_KEY as string) ||
+  (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
   '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('[v0] Supabase env vars missing — quizzes and community will not load.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

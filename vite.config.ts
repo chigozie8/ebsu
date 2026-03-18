@@ -25,6 +25,7 @@ const cherryPickedKeys = [
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_URL",
   "SUPABASE_ANON_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
   "VITE_CLOUDINARY_CLOUD_NAME",
   "VITE_CLOUDINARY_UPLOAD_PRESET",
   "VITE_CLOUDINARY_API_KEY",
@@ -117,9 +118,16 @@ export default defineConfig(({ mode }) => {
     },
   };
 
+  // Also expose Supabase vars as import.meta.env for direct Vite access
+  const penv = (process as any).env as Record<string, string | undefined>;
+  const supabaseUrl = penv['SUPABASE_URL'] || penv['NEXT_PUBLIC_SUPABASE_URL'] || env['SUPABASE_URL'] || env['NEXT_PUBLIC_SUPABASE_URL'] || env['VITE_SUPABASE_URL'] || '';
+  const supabaseAnonKey = penv['SUPABASE_ANON_KEY'] || penv['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || env['SUPABASE_ANON_KEY'] || env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || env['VITE_SUPABASE_ANON_KEY'] || '';
+
   return {
     define: {
-      'process.env': processEnv
+      'process.env': processEnv,
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
     },
     plugins: [react(), apiDevPlugin],
     build: {
