@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 import {
@@ -108,7 +107,7 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
   const isLiked = likedIds.has(msg.id);
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+    <div
       className={`rounded-2xl border p-4 transition-all ${msg.is_announcement
         ? "border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-amber-900/10"
         : msg.is_pinned
@@ -178,14 +177,15 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
       </div>
 
       {/* Replies */}
-      <AnimatePresence>
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: expanded ? "9999px" : "0px" }}
+      >
         {expanded && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-            <ReplyThread message={msg} userId={userId} userName={userName} userAvatar={userAvatar} isAdmin={isAdmin} onDeleteReply={onDeleteReply} />
-          </motion.div>
+          <ReplyThread message={msg} userId={userId} userName={userName} userAvatar={userAvatar} isAdmin={isAdmin} onDeleteReply={onDeleteReply} />
         )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -227,8 +227,7 @@ export default function PremiumCommunityPage() {
       setDraft("");
       setAsAnnouncement(false);
       toast.success("Posted!", { style: { background: "#1a1a1a", color: "#fbbf24", border: "1px solid #fbbf2433" } });
-    } catch (err) {
-      console.log("[v0] handlePost error", err);
+    } catch {
       toast.error("Failed to post. Try again.");
     }
   };
@@ -340,7 +339,7 @@ export default function PremiumCommunityPage() {
             <p className="text-sm text-gray-600 mt-1">{search ? "Try a different search term." : "Start a discussion for your fellow premium members."}</p>
           </div>
         ) : (
-          <AnimatePresence mode="popLayout">
+          <div className="space-y-3">
             {/* Pinned / Announcements */}
             {pinned.length > 0 && (
               <div className="space-y-3">
@@ -357,7 +356,7 @@ export default function PremiumCommunityPage() {
                 isAdmin={isAdmin} likedIds={likedIds} onLike={handleLike} onDelete={handleDelete}
                 onPin={togglePin} onAnnounce={toggleAnnouncement} onDeleteReply={handleDeleteReply} />
             ))}
-          </AnimatePresence>
+          </div>
         )}
       </div>
     </div>
