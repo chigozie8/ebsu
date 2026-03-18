@@ -110,6 +110,24 @@ const AppRoutes = () => {
   const PremiumDashboard = lazy(
     () => import("../pages/user/premium/PremiumDashboard")
   );
+  const UdemyPage = lazy(
+    () => import("../pages/user/premium/UdemyPage")
+  );
+  const MentorshipPage = lazy(
+    () => import("../pages/user/premium/MentorshipPage")
+  );
+  const SkillsPage = lazy(
+    () => import("../pages/user/premium/SkillsPage")
+  );
+  const TechSkillsPage = lazy(
+    () => import("../pages/user/premium/TechSkillsPage")
+  );
+  const ExamPrepPage = lazy(
+    () => import("../pages/user/premium/ExamPrepPage")
+  );
+  const CVBuilderPage = lazy(
+    () => import("../pages/user/premium/CVBuilderPage")
+  );
   const FeePaymentPage = lazy(
     () => import("../pages/user/fees/FeePaymentPage")
   );
@@ -303,6 +321,54 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <PremiumDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/udemy"
+            element={
+              <ProtectedRoute>
+                <UdemyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/mentorship"
+            element={
+              <ProtectedRoute>
+                <MentorshipPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/skills"
+            element={
+              <ProtectedRoute>
+                <SkillsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/tech-skills"
+            element={
+              <ProtectedRoute>
+                <TechSkillsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/exam-prep"
+            element={
+              <ProtectedRoute>
+                <ExamPrepPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/cv-builder"
+            element={
+              <ProtectedRoute>
+                <CVBuilderPage />
               </ProtectedRoute>
             }
           />
