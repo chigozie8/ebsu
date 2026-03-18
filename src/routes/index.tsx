@@ -4,6 +4,7 @@ import NotFound from "../pages/error/404/NotFound";
 import LogoSpinner from "../components/loaders/FullLogoSpinner";
 import { Navbar } from "../components/navbar/Navbar";
 import ProtectedRoute from "./ProtectedRoute";
+import { PremiumGate } from "../components/premium/PremiumGate";
 
 
 const AppRoutes = () => {
@@ -267,7 +268,9 @@ const AppRoutes = () => {
             path="/u/ai-notes"
             element={
               <ProtectedRoute>
-                <AiNotesPage />
+                <PremiumGate featureName="AI Notes Summarizer">
+                  <AiNotesPage />
+                </PremiumGate>
               </ProtectedRoute>
             }
           />
