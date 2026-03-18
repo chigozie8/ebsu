@@ -192,12 +192,13 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
 // ── Main Page ─────────────────────────────────────────────
 export default function PremiumCommunityPage() {
   const navigate = useNavigate();
-  const { userID, studentDetails } = useGetUserInfo();
+  const { userID, studentDetails, user } = useGetUserInfo();
   const userId = userID || "";
+  // Use Firestore name if loaded, fall back to Firebase Auth displayName, then email prefix
   const userName = studentDetails
     ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim()
-    : "Member";
-  const userAvatar = studentDetails?.profileImageURL || undefined;
+    : user?.displayName || user?.email?.split("@")[0] || "Member";
+  const userAvatar = studentDetails?.profileImageURL || user?.photoURL || undefined;
   const isAdmin = ADMIN_IDS.includes(userId);
 
   const { messages, loading } = usePremiumMessages(60);
@@ -206,6 +207,8 @@ export default function PremiumCommunityPage() {
   const { deleteMsg, togglePin, toggleAnnouncement, deleteReply } = useAdminPremiumActions();
 
   const [draft, setDraft] = useState("");
+  // canPost must come after draft and posting are declared
+  const canPost = !!userId && draft.trim().length > 0 && !posting;
   const [asAnnouncement, setAsAnnouncement] = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -224,7 +227,8 @@ export default function PremiumCommunityPage() {
       setDraft("");
       setAsAnnouncement(false);
       toast.success("Posted!", { style: { background: "#1a1a1a", color: "#fbbf24", border: "1px solid #fbbf2433" } });
-    } catch {
+    } catch (err) {
+      console.log("[v0] handlePost error", err);
       toast.error("Failed to post. Try again.");
     }
   };
@@ -309,7 +313,7 @@ export default function PremiumCommunityPage() {
                 )}
                 <div className="flex items-center gap-2 ml-auto">
                   <span className="text-xss text-gray-600">Ctrl+Enter to post</span>
-                  <button onClick={handlePost} disabled={posting || !draft.trim() || !userId}
+                  <button onClick={handlePost} disabled={!canPost}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40"
                     style={{ background: "#f59e0b", color: "#0d0d14" }}>
                     {posting ? <div className="w-3.5 h-3.5 border-2 border-[#0d0d14]/40 border-t-[#0d0d14] rounded-full animate-spin" /> : <Send className="w-3.5 h-3.5" />}
