@@ -112,7 +112,7 @@ const FEATURES = [
     accent: "#e879f9",
     bg: "rgba(232,121,249,0.08)",
     tag: "Community",
-    link: "/u/community",
+    link: "/u/premium/community",
     cta: "Join Discussion",
   },
 ];

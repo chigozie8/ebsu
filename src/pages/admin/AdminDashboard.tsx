@@ -32,6 +32,8 @@ import AdminGalleryManager from "./tabs/AdminGalleryManager";
 import AdminAdsManager from "./tabs/AdminAdsManager";
 import AdminWithdrawalsManager from "./tabs/AdminWithdrawalsManager";
 import AdminSendMoney from "./tabs/AdminSendMoney";
+import AdminPremiumCommunityManager from "./tabs/AdminPremiumCommunityManager";
+import AdminPremiumMembersManager from "./tabs/AdminPremiumMembersManager";
 
 interface Material {
   id: string;
@@ -172,11 +174,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -2027,6 +2029,36 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
             Send Money
+          </button>
+
+          {/* Premium Community Tab */}
+          <button
+            onClick={() => setActiveTab("premiumcommunity")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "premiumcommunity"
+                ? "bg-amber-500 text-white shadow-md"
+                : "bg-amber-50 text-amber-600 hover:bg-amber-100 border-2 border-amber-500"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+            </svg>
+            Premium Community
+          </button>
+
+          {/* Premium Members Tab */}
+          <button
+            onClick={() => setActiveTab("premiummembers")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "premiummembers"
+                ? "bg-yellow-600 text-white shadow-md"
+                : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-2 border-yellow-600"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+            Premium Members
           </button>
         </div>
 
@@ -4403,6 +4435,52 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             transition={{ duration: 0.3 }}
           >
             <CommunityMonitor />
+          </motion.div>
+        )}
+
+        {/* Premium Community Tab */}
+        {activeTab === "premiumcommunity" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-5">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500 text-white">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                  </svg>
+                </span>
+                Premium Community Manager
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Moderate, pin, announce, and manage the exclusive premium community forum.</p>
+            </div>
+            <AdminPremiumCommunityManager />
+          </motion.div>
+        )}
+
+        {/* Premium Members Tab */}
+        {activeTab === "premiummembers" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-5">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-yellow-600 text-white">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </span>
+                Premium Members Manager
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">View all premium subscribers, manually grant or revoke access, and search member records.</p>
+            </div>
+            <AdminPremiumMembersManager />
           </motion.div>
         )}
 
