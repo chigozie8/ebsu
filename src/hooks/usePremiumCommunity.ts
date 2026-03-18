@@ -106,9 +106,11 @@ export const usePostPremiumMessage = () => {
   const post = useCallback(async (userId: string, userName: string, content: string, userAvatar?: string, isAnnouncement = false) => {
     setPosting(true);
     try {
-      const { error } = await supabase.from('premium_community_messages').insert([{
-        user_id: userId, user_name: userName, user_avatar: userAvatar, content, is_announcement: isAnnouncement,
-      }]);
+      console.log("[v0] posting premium message", { userId, userName, content, isAnnouncement });
+      const { data, error } = await supabase.from('premium_community_messages').insert([{
+        user_id: userId, user_name: userName, user_avatar: userAvatar || null, content, is_announcement: isAnnouncement,
+      }]).select();
+      console.log("[v0] insert result", { data, error });
       if (error) throw error;
     } finally {
       setPosting(false);
