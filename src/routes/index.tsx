@@ -128,6 +128,9 @@ const AppRoutes = () => {
   const CVBuilderPage = lazy(
     () => import("../pages/user/premium/CVBuilderPage")
   );
+  const PremiumCommunityPage = lazy(
+    () => import("../pages/user/premium/PremiumCommunityPage")
+  );
   const FeePaymentPage = lazy(
     () => import("../pages/user/fees/FeePaymentPage")
   );
@@ -369,6 +372,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <CVBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/community"
+            element={
+              <ProtectedRoute>
+                <PremiumCommunityPage />
               </ProtectedRoute>
             }
           />
