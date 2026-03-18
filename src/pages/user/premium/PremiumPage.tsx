@@ -17,18 +17,6 @@ const PAYSTACK_KEY =
 
 const FEATURES = [
   {
-    title: "AI Note Taker",
-    desc: "Auto-generate clean, structured notes from lectures, PDFs, and study sessions.",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    ),
-    accent: "#38bdf8",
-    glow: "rgba(56,189,248,0.15)",
-    tag: "AI",
-  },
-  {
     title: "AI Summarizer",
     desc: "Condense textbooks, journals, and lecture notes into bite-sized summaries instantly.",
     icon: (
@@ -364,7 +352,7 @@ export default function PremiumPage() {
             </span>
           </h1>
           <p className="text-white/50 text-sm sm:text-base leading-relaxed max-w-sm mx-auto text-balance">
-            One unlock. Lifetime access to an elite suite of academic tools, mentorship, and exclusive resources.
+            Subscribe monthly and unlock an elite suite of academic tools, mentorship, and exclusive resources.
           </p>
 
           {/* Price pill */}
@@ -372,12 +360,12 @@ export default function PremiumPage() {
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(251,191,36,0.2)", boxShadow: "0 4px 32px rgba(251,191,36,0.06)" }}>
             <div>
               <p className="text-3xl font-black text-white leading-none">₦{PREMIUM_PRICE}</p>
-              <p className="text-white/30 text-xss font-medium mt-0.5">one-time payment</p>
+              <p className="text-white/30 text-xss font-medium mt-0.5">per month</p>
             </div>
             <div className="w-px h-8 bg-white/10" />
             <div className="text-left">
-              <p className="text-yellow-400 font-bold text-xs">Lifetime</p>
-              <p className="text-white/30 text-xss">No renewals</p>
+              <p className="text-yellow-400 font-bold text-xs">Monthly</p>
+              <p className="text-white/30 text-xss">Renews monthly</p>
             </div>
           </div>
         </motion.div>
