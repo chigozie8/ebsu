@@ -251,14 +251,11 @@ export default function PremiumDashboard() {
                 <p className="text-xs text-gray-500 leading-relaxed">{f.desc}</p>
 
                 {/* Expanded detail */}
-                {expanded === f.id && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.25 }}
-                    className="mt-3 pt-3 border-t"
-                    style={{ borderColor: "rgba(255,255,255,0.07)" }}
-                  >
+                <div
+                  className="overflow-hidden transition-all duration-200"
+                  style={{ maxHeight: expanded === f.id ? "200px" : "0px", opacity: expanded === f.id ? 1 : 0 }}
+                >
+                  <div className="mt-3 pt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
                     <p className="text-xs text-gray-400 leading-relaxed mb-4">{f.detail}</p>
                     <Link
                       to={f.link}
@@ -271,8 +268,8 @@ export default function PremiumDashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>
-                  </motion.div>
-                )}
+                  </div>
+                </div>
 
                 {/* Expand hint */}
                 <div className="flex items-center gap-1 mt-3">
