@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Support both Vite and Next.js env var naming conventions
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// process.env is populated by vite.config.ts cherry-picked keys
+const supabaseUrl = 
+  process.env.SUPABASE_URL || 
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 
+  process.env.VITE_SUPABASE_URL || 
+  '';
+const supabaseAnonKey = 
+  process.env.SUPABASE_ANON_KEY || 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+  process.env.VITE_SUPABASE_ANON_KEY || 
+  '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
