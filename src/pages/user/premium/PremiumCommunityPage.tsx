@@ -192,9 +192,11 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
 // ── Main Page ─────────────────────────────────────────────
 export default function PremiumCommunityPage() {
   const navigate = useNavigate();
-  const { studentDetails } = useGetUserInfo();
-  const userId = studentDetails?.userID || "anon";
-  const userName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}` : "Member";
+  const { userID, studentDetails } = useGetUserInfo();
+  const userId = userID || "";
+  const userName = studentDetails
+    ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim()
+    : "Member";
   const userAvatar = studentDetails?.profileImageURL || undefined;
   const isAdmin = ADMIN_IDS.includes(userId);
 
@@ -307,7 +309,7 @@ export default function PremiumCommunityPage() {
                 )}
                 <div className="flex items-center gap-2 ml-auto">
                   <span className="text-xss text-gray-600">Ctrl+Enter to post</span>
-                  <button onClick={handlePost} disabled={posting || !draft.trim()}
+                  <button onClick={handlePost} disabled={posting || !draft.trim() || !userId}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-40"
                     style={{ background: "#f59e0b", color: "#0d0d14" }}>
                     {posting ? <div className="w-3.5 h-3.5 border-2 border-[#0d0d14]/40 border-t-[#0d0d14] rounded-full animate-spin" /> : <Send className="w-3.5 h-3.5" />}
