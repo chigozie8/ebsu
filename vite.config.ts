@@ -21,6 +21,10 @@ const cherryPickedKeys = [
   "VITE_IMAGEKIT_URL_ENDPOINT",
   "VITE_SUPABASE_URL",
   "VITE_SUPABASE_ANON_KEY",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "SUPABASE_URL",
+  "SUPABASE_ANON_KEY",
   "VITE_CLOUDINARY_CLOUD_NAME",
   "VITE_CLOUDINARY_UPLOAD_PRESET",
   "VITE_CLOUDINARY_API_KEY",
@@ -35,7 +39,10 @@ const cherryPickedKeys = [
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const processEnv: Record<string, string> = {};
-  cherryPickedKeys.forEach(key => processEnv[key] = env[key]);
+  // Load from both .env files AND runtime process.env (for Vercel integrations)
+  cherryPickedKeys.forEach(key => {
+    processEnv[key] = env[key] || (process as any).env[key] || '';
+  });
 
   // Vite dev plugin: serves /api/gallery-list and /api/gallery-upload locally
   // so the gallery works in the preview without needing `vercel dev`.
