@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
-import { useWallet } from "../../../hooks/wallet/useWallet";
 import { db } from "../../../config/firebase";
 import {
-  doc, onSnapshot, setDoc, serverTimestamp, collection, addDoc,
+  doc, onSnapshot, setDoc, serverTimestamp, collection, addDoc, getDoc, updateDoc,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { notifyUser } from "../../../helpers/notifyUser";
@@ -143,35 +142,78 @@ function StarCanvas() {
 
 export default function PremiumPage() {
   const navigate = useNavigate();
-  const { studentDetails } = useGetUserInfo();
-  const userID = studentDetails?.userID || "";
-  const userEmail = studentDetails?.email || "";
-  const userName = `${studentDetails?.firstName || ""} ${studentDetails?.lastName || ""}`.trim();
+  const { studentDetails, userID: authUserID, loading: authLoading } = useGetUserInfo();
+  
+  // Memoize user data to prevent unnecessary re-renders
+  const userData = useMemo(() => ({
+    userID: studentDetails?.userID || authUserID || "",
+    userEmail: studentDetails?.email || "",
+    userName: `${studentDetails?.firstName || ""} ${studentDetails?.lastName || ""}`.trim(),
+  }), [studentDetails, authUserID]);
 
-  const { wallet, payWithWallet } = useWallet(userID, userEmail);
-  const balance = wallet?.balance ?? 0;
+  const { userID, userEmail, userName } = userData;
 
   const [isPremium, setIsPremium] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [balance, setBalance] = useState(0);
+  const [walletLoaded, setWalletLoaded] = useState(false);
   const [payMethod, setPayMethod] = useState<"paystack" | "wallet">("paystack");
   const [paying, setPaying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Parallel data fetching: Premium status and Wallet balance together
   useEffect(() => {
-    if (!userID) return;
-    let initialLoad = true;
-    const unsub = onSnapshot(doc(db, "premiumUsers", userID), (snap) => {
-      const active = snap.exists() && snap.data()?.active === true;
-      setIsPremium(active);
-      setCheckingStatus(false);
-      // Only auto-redirect on the initial load, not on subsequent writes
-      if (active && initialLoad) {
-        navigate("/u/premium/dashboard", { replace: true });
+    if (!userID) {
+      // If auth is done loading but no userID, stop checking
+      if (!authLoading) {
+        setCheckingStatus(false);
+        setWalletLoaded(true);
       }
-      initialLoad = false;
-    });
-    return () => unsub();
-  }, [userID, navigate]);
+      return;
+    }
+
+    let initialLoad = true;
+    const unsubscribers: (() => void)[] = [];
+
+    // Subscribe to premium status
+    const premiumUnsub = onSnapshot(
+      doc(db, "premiumUsers", userID),
+      (snap) => {
+        const active = snap.exists() && snap.data()?.active === true;
+        setIsPremium(active);
+        setCheckingStatus(false);
+        if (active && initialLoad) {
+          navigate("/u/premium/dashboard", { replace: true });
+        }
+        initialLoad = false;
+      },
+      (err) => {
+        console.error("[PremiumPage] premium status error:", err);
+        setCheckingStatus(false);
+      }
+    );
+    unsubscribers.push(premiumUnsub);
+
+    // Subscribe to wallet balance only (no transactions needed here)
+    const walletUnsub = onSnapshot(
+      doc(db, "wallets", userID),
+      (snap) => {
+        if (snap.exists()) {
+          setBalance(snap.data().balance ?? 0);
+        } else {
+          setBalance(0);
+        }
+        setWalletLoaded(true);
+      },
+      (err) => {
+        console.error("[PremiumPage] wallet error:", err);
+        setWalletLoaded(true);
+      }
+    );
+    unsubscribers.push(walletUnsub);
+
+    return () => unsubscribers.forEach((unsub) => unsub());
+  }, [userID, authLoading, navigate]);
 
   const grantPremium = async (reference: string) => {
     await setDoc(doc(db, "premiumUsers", userID), {
@@ -225,10 +267,30 @@ export default function PremiumPage() {
   const handleWalletPay = async () => {
     setPaying(true);
     try {
-      await payWithWallet(PREMIUM_PRICE, "EBSUMSA Premium Package");
+      // Inline wallet payment to avoid loading full useWallet hook
+      const walletRef = doc(db, "wallets", userID);
+      const walletSnap = await getDoc(walletRef);
+      if (!walletSnap.exists()) throw new Error("Wallet not found");
+      const currentBalance = walletSnap.data().balance;
+      if (currentBalance < PREMIUM_PRICE) throw new Error("Insufficient wallet balance");
+      
+      await updateDoc(walletRef, {
+        balance: currentBalance - PREMIUM_PRICE,
+        updatedAt: serverTimestamp(),
+      });
+      await addDoc(collection(db, "transactions"), {
+        userID,
+        userEmail,
+        type: "payment",
+        amount: PREMIUM_PRICE,
+        description: "EBSUMSA Premium Package",
+        status: "success",
+        createdAt: serverTimestamp(),
+      });
+      
       await grantPremium(`ebsu_premium_wallet_${Date.now()}`);
-    } catch {
-      notifyUser("error", "Payment failed. Please try again.");
+    } catch (err: any) {
+      notifyUser("error", err?.message || "Payment failed. Please try again.");
     } finally {
       setPaying(false);
       setShowConfirm(false);
@@ -238,7 +300,8 @@ export default function PremiumPage() {
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 
-  if (checkingStatus) {
+  // Show loading only while checking premium status (wallet can load in background)
+  if (checkingStatus || authLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#08001a" }}>
         <Spinner className="w-8 h-8 text-yellow-400" />
@@ -411,7 +474,7 @@ export default function PremiumPage() {
                       <path d="M20.693 0H3.307C1.481 0 0 1.481 0 3.307v17.386C0 22.519 1.481 24 3.307 24h17.386C22.519 24 24 22.519 24 20.693V3.307C24 1.481 22.519 0 20.693 0zm-1.76 9.358h-2.595c-.828 0-1.5.672-1.5 1.5v3.784c0 .828.672 1.5 1.5 1.5h2.596v2.117h-2.596c-1.993 0-3.617-1.624-3.617-3.617V10.858c0-1.993 1.624-3.617 3.617-3.617h2.596v2.117zm-8.618 0H7.721c-.828 0-1.5.672-1.5 1.5v3.784c0 .828.672 1.5 1.5 1.5h2.595v2.117H7.721c-1.993 0-3.617-1.624-3.617-3.617V10.858c0-1.993 1.624-3.617 3.617-3.617h2.595v2.117z" />
                     </svg>
                   )},
-                  { id: "wallet", label: `Wallet (${fmt(balance)})`, icon: (
+                  { id: "wallet", label: walletLoaded ? `Wallet (${fmt(balance)})` : "Wallet (...)", icon: (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
