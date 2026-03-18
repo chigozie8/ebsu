@@ -148,7 +148,7 @@ export default function IDCardRegistration() {
             registrationNumber: formData.registrationNumber,
             photoUrl: imageUrl,
             paymentReference: paymentReference || "",
-            paymentAmount: paymentAmount || 100,
+        paymentAmount: paymentAmount || 2500,
           }),
         });
       } catch (emailError) {

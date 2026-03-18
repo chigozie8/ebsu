@@ -10,7 +10,7 @@ import { Spinner } from "../../../components/loaders/Spinner";
 import { db } from "../../../config/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-const ID_CARD_PRICE = 100;
+const ID_CARD_PRICE = 2500;
 
 export default function IDCardPayment() {
   const navigate = useNavigate();
