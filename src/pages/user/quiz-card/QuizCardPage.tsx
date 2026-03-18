@@ -424,7 +424,7 @@ export default function QuizCardPage() {
         <div className="flex-1">
           <AnimatePresence mode="wait">
 
-            {/* ════════════════════ SELECT SCREEN ════════════════════ */}
+            {/* ═════��══════════════ SELECT SCREEN ════════════════════ */}
             {mode === "select" && (
               <motion.div key="select" {...slide} className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
                 {/* Hero */}
@@ -578,33 +578,77 @@ export default function QuizCardPage() {
 
                   {/* Time Limit */}
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                           <Clock className="w-4 h-4 text-blue-600" />
                         </div>
                         <span className="text-sm font-semibold text-gray-800">Time Limit</span>
                       </div>
-                      <span className="text-2xl font-bold text-blue-600">
-                        {timeLimit === 0 ? "∞" : `${timeLimit}m`}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-blue-600">
+                          {timeLimit === 0 ? "∞" : timeLimit < 60 ? `${timeLimit}m` : "1 hr"}
+                        </span>
+                        {/* No limit toggle */}
+                        <button
+                          onClick={() => setTimeLimit(timeLimit === 0 ? 10 : 0)}
+                          className={`text-xs px-2.5 py-1 rounded-full font-semibold border transition-all ${
+                            timeLimit === 0
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-500 border-gray-200 hover:border-blue-400"
+                          }`}
+                        >
+                          {timeLimit === 0 ? "No Limit" : "Set Limit"}
+                        </button>
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={120}
-                      step={5}
-                      value={timeLimit}
-                      onChange={(e) => setTimeLimit(Number(e.target.value))}
-                      className="w-full h-2 rounded-full appearance-none cursor-pointer accent-blue-600"
-                    />
-                    <div className="flex justify-between text-xs text-gray-400 mt-1.5">
-                      <span>No limit</span>
-                      <span className="text-center">
-                        {timeLimit === 0 ? "Drag to set a timer" : `${timeLimit} minutes`}
-                      </span>
-                      <span>120 min</span>
-                    </div>
+
+                    {timeLimit !== 0 && (
+                      <>
+                        <input
+                          type="range"
+                          min={1}
+                          max={60}
+                          step={1}
+                          value={timeLimit}
+                          onChange={(e) => setTimeLimit(Number(e.target.value))}
+                          className="w-full h-2 rounded-full appearance-none cursor-pointer accent-blue-600"
+                        />
+                        {/* Minute markers */}
+                        <div className="flex justify-between text-xs text-gray-400 mt-2">
+                          <span>1 min</span>
+                          <span>15 min</span>
+                          <span>30 min</span>
+                          <span>45 min</span>
+                          <span>1 hr</span>
+                        </div>
+                        {/* Quick preset buttons */}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {[5, 10, 15, 20, 30, 45, 60].map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => setTimeLimit(t)}
+                              className={`text-xs px-3 py-1.5 rounded-full font-semibold border transition-all ${
+                                timeLimit === t
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100"
+                                  : "bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                              }`}
+                            >
+                              {t === 60 ? "1 hr" : `${t} min`}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-xs text-blue-500 font-medium mt-3 text-center">
+                          {timeLimit} minute{timeLimit !== 1 ? "s" : ""} selected — drag or tap a preset
+                        </p>
+                      </>
+                    )}
+
+                    {timeLimit === 0 && (
+                      <p className="text-xs text-gray-400 text-center py-2">
+                        No time limit — take as long as you need. Tap "Set Limit" to add a timer.
+                      </p>
+                    )}
                   </div>
 
                   {/* Toggles */}
@@ -643,7 +687,7 @@ export default function QuizCardPage() {
                       <BookOpen className="w-3.5 h-3.5" /> {questionCount} questions
                     </span>
                     <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                      <Clock className="w-3.5 h-3.5" /> {timeLimit === 0 ? "No time limit" : `${timeLimit} min`}
+                      <Clock className="w-3.5 h-3.5" /> {timeLimit === 0 ? "No time limit" : timeLimit === 60 ? "1 hour" : `${timeLimit} min`}
                     </span>
                     <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">
                       <Target className="w-3.5 h-3.5" /> Pass at {selectedQuiz.pass_score}%
