@@ -39,7 +39,10 @@ const cherryPickedKeys = [
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const processEnv: Record<string, string> = {};
-  cherryPickedKeys.forEach(key => processEnv[key] = env[key]);
+  // Load from both .env files AND runtime process.env (for Vercel integrations)
+  cherryPickedKeys.forEach(key => {
+    processEnv[key] = env[key] || (process as any).env[key] || '';
+  });
 
   // Vite dev plugin: serves /api/gallery-list and /api/gallery-upload locally
   // so the gallery works in the preview without needing `vercel dev`.
