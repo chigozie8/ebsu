@@ -13,6 +13,16 @@ const supabaseAnonKey =
   process.env.VITE_SUPABASE_ANON_KEY || 
   '';
 
+// Debug: Log if Supabase is properly configured
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('[v0] Supabase configuration missing!', { 
+    hasUrl: !!supabaseUrl, 
+    hasKey: !!supabaseAnonKey 
+  });
+} else {
+  console.log('[v0] Supabase configured with URL:', supabaseUrl.substring(0, 30) + '...');
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type Community = {
