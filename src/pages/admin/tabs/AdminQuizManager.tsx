@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Search, Edit2, Trash2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { AdminQuizBuilder } from '../../../components/quiz/AdminQuizBuilder';
 import { PDFSummarizer } from '../../../components/quiz/PDFSummarizer';
+import { JsonQuizUploader } from '../../../components/quiz/JsonQuizUploader';
 import { supabase } from '../../../lib/supabase';
 import { initializeQuizTables, createSampleQuiz } from '../../../lib/quiz-db';
 import toast from 'react-hot-toast';
@@ -21,7 +22,7 @@ interface Quiz {
 }
 
 export const AdminQuizManager = () => {
-  const [activeTab, setActiveTab] = useState<'manage' | 'create' | 'pdf'>('manage');
+  const [activeTab, setActiveTab] = useState<'manage' | 'create' | 'pdf' | 'json'>('manage');
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -289,6 +290,16 @@ ON CONFLICT (name) DO NOTHING;`}
         >
           PDF to Questions
         </button>
+        <button
+          onClick={() => setActiveTab('json')}
+          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+            activeTab === 'json'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          JSON Upload
+        </button>
       </div>
 
       {/* Manage Quizzes Tab */}
@@ -419,6 +430,20 @@ ON CONFLICT (name) DO NOTHING;`}
                 toast.success('PDF processed! You can now create a quiz with these questions.');
               }}
             />
+          </div>
+        </motion.div>
+      )}
+
+      {/* JSON Upload Tab */}
+      {activeTab === 'json' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="bg-white rounded-lg p-6">
+            <JsonQuizUploader onQuizUploaded={fetchQuizzes} />
           </div>
         </motion.div>
       )}
