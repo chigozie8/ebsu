@@ -159,14 +159,19 @@ export default function PremiumPage() {
 
   useEffect(() => {
     if (!userID) return;
+    let initialLoad = true;
     const unsub = onSnapshot(doc(db, "premiumUsers", userID), (snap) => {
       const active = snap.exists() && snap.data()?.active === true;
       setIsPremium(active);
       setCheckingStatus(false);
-      if (active) navigate("/u/premium/dashboard", { replace: true });
+      // Only auto-redirect on the initial load, not on subsequent writes
+      if (active && initialLoad) {
+        navigate("/u/premium/dashboard", { replace: true });
+      }
+      initialLoad = false;
     });
     return () => unsub();
-  }, [userID]);
+  }, [userID, navigate]);
 
   const grantPremium = async (reference: string) => {
     await setDoc(doc(db, "premiumUsers", userID), {
@@ -182,9 +187,24 @@ export default function PremiumPage() {
     setTimeout(() => navigate("/u/premium/dashboard"), 1200);
   };
 
-  const handlePaystack = () => {
-    if (!(window as any).PaystackPop) {
-      notifyUser("error", "Paystack not loaded. Refresh and try again.");
+  const waitForPaystack = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).PaystackPop) return resolve(true);
+      let tries = 0;
+      const id = setInterval(() => {
+        tries++;
+        if ((window as any).PaystackPop) { clearInterval(id); resolve(true); }
+        else if (tries >= 20) { clearInterval(id); resolve(false); }
+      }, 250);
+    });
+  };
+
+  const handlePaystack = async () => {
+    setPaying(true);
+    const ready = await waitForPaystack();
+    setPaying(false);
+    if (!ready) {
+      notifyUser("error", "Payment processor not loaded. Please refresh and try again.");
       return;
     }
     (window as any).PaystackPop.setup({
