@@ -34,6 +34,7 @@ const cherryPickedKeys = [
   "VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID",
   "VITE_EMAILJS_WELCOME_TEMPLATE_ID",
   "VITE_EMAILJS_PUBLIC_KEY",
+  "VITE_PAYSTACK_PUBLIC_KEY",
 ];
 
 // https://vitejs.dev/config/

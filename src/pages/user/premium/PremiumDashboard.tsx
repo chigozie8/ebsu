@@ -40,9 +40,8 @@ const FEATURES = [
     accent: "#34d399",
     bg: "rgba(52,211,153,0.08)",
     tag: "Mentorship",
-    link: null,
+    link: "/u/premium/mentorship",
     cta: "Request Mentor",
-    comingSoon: true,
   },
   {
     id: "skills",
@@ -53,9 +52,8 @@ const FEATURES = [
     accent: "#fb923c",
     bg: "rgba(251,146,60,0.08)",
     tag: "Skills",
-    link: null,
+    link: "/u/premium/skills",
     cta: "Browse Modules",
-    comingSoon: true,
   },
   {
     id: "tech",
@@ -66,9 +64,8 @@ const FEATURES = [
     accent: "#60a5fa",
     bg: "rgba(96,165,250,0.08)",
     tag: "Tech",
-    link: null,
+    link: "/u/premium/tech-skills",
     cta: "Start Learning",
-    comingSoon: true,
   },
   {
     id: "udemy",
@@ -79,9 +76,8 @@ const FEATURES = [
     accent: "#f472b6",
     bg: "rgba(244,114,182,0.08)",
     tag: "Courses",
-    link: null,
+    link: "/u/premium/udemy",
     cta: "View Courses",
-    comingSoon: true,
   },
   {
     id: "exam-prep",
@@ -92,9 +88,8 @@ const FEATURES = [
     accent: "#fbbf24",
     bg: "rgba(251,191,36,0.08)",
     tag: "Exams",
-    link: null,
+    link: "/u/premium/exam-prep",
     cta: "Open Vault",
-    comingSoon: true,
   },
   {
     id: "cv",
@@ -105,9 +100,8 @@ const FEATURES = [
     accent: "#2dd4bf",
     bg: "rgba(45,212,191,0.08)",
     tag: "Career",
-    link: null,
+    link: "/u/premium/cv-builder",
     cta: "Build My CV",
-    comingSoon: true,
   },
   {
     id: "community",
@@ -210,7 +204,7 @@ export default function PremiumDashboard() {
           className="mt-8 grid grid-cols-3 gap-3"
         >
           {[
-            { label: "Features", value: `${FEATURES.length}` },
+            { label: "Features", value: `${FEATURES.length} Tools` },
             { label: "Status", value: "Active" },
             { label: "Access", value: "Lifetime" },
           ].map((s) => (
@@ -247,11 +241,6 @@ export default function PremiumDashboard() {
                     </svg>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {f.comingSoon && (
-                      <span className="text-xss px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(255,255,255,0.06)", color: "#9ca3af" }}>
-                        Soon
-                      </span>
-                    )}
                     <span className="text-xss px-2 py-0.5 rounded-full font-bold" style={{ background: `${f.accent}18`, color: TAG_COLORS[f.tag] }}>
                       {f.tag}
                     </span>
@@ -271,26 +260,17 @@ export default function PremiumDashboard() {
                     style={{ borderColor: "rgba(255,255,255,0.07)" }}
                   >
                     <p className="text-xs text-gray-400 leading-relaxed mb-4">{f.detail}</p>
-                    {f.link ? (
-                      <Link
-                        to={f.link}
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-colors"
-                        style={{ background: f.accent, color: "#0d0d14" }}
-                      >
-                        {f.cta}
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    ) : (
-                      <span
-                        className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl"
-                        style={{ background: "rgba(255,255,255,0.06)", color: "#6b7280" }}
-                      >
-                        {f.comingSoon ? "Coming Soon" : f.cta}
-                      </span>
-                    )}
+                    <Link
+                      to={f.link}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:opacity-90 active:scale-95"
+                      style={{ background: f.accent, color: "#0d0d14" }}
+                    >
+                      {f.cta}
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
                   </motion.div>
                 )}
 
