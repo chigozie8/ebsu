@@ -174,11 +174,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
