@@ -1,23 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Vite exposes VITE_* vars via import.meta.env natively.
-// vite.config.ts also injects SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL into
-// import.meta.env.VITE_SUPABASE_URL at build time via the define block.
+// Hardcoded fallbacks ensure the client always connects even when env vars
+// are not yet injected (e.g. first load in preview, Vite define race, etc.)
+const FALLBACK_URL = 'https://fmjxxldlqirmnzkekjkf.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtanh4bGRscWlybW56a2VramtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzA0NzIsImV4cCI6MjA4OTQ0NjQ3Mn0.PX18WAPpzzg-emMbxV2bz-yR5fo-MjvVMvDQAYZeTrc';
+
 const supabaseUrl: string =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
   (process.env.SUPABASE_URL as string) ||
   (process.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
-  '';
+  FALLBACK_URL;
 
 const supabaseAnonKey: string =
   (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
   (process.env.SUPABASE_ANON_KEY as string) ||
   (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
-  '';
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('[v0] Supabase env vars missing — quizzes and community will not load.');
-}
+  FALLBACK_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 

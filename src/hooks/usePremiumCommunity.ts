@@ -109,7 +109,7 @@ export const usePostPremiumMessage = () => {
       const { error } = await supabase.from('premium_community_messages').insert([{
         user_id: userId, user_name: userName, user_avatar: userAvatar || null, content, is_announcement: isAnnouncement,
       }]);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
     } finally {
       setPosting(false);
     }
