@@ -129,8 +129,8 @@ export const usePostPremiumReply = () => {
         message_id: messageId, user_id: userId, user_name: userName, user_avatar: userAvatar, content,
       }]);
       if (error) throw error;
-      // Increment replies_count
-      await supabase.rpc('increment_premium_replies', { msg_id: messageId }).then(() => null).catch(() => null);
+      // Increment replies_count (best-effort, ignore errors)
+      try { await supabase.rpc('increment_premium_replies', { msg_id: messageId }); } catch { /* no-op */ }
       // Fallback: manual increment
       const { data: msg } = await supabase.from('premium_community_messages').select('replies_count').eq('id', messageId).single();
       if (msg) {
