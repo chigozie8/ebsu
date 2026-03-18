@@ -227,8 +227,9 @@ export default function PremiumCommunityPage() {
       setDraft("");
       setAsAnnouncement(false);
       toast.success("Posted!", { style: { background: "#1a1a1a", color: "#fbbf24", border: "1px solid #fbbf2433" } });
-    } catch {
-      toast.error("Failed to post. Try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to post. Try again.";
+      toast.error(msg);
     }
   };
 
