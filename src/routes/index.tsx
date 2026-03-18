@@ -131,6 +131,9 @@ const AppRoutes = () => {
   const PremiumCommunityPage = lazy(
     () => import("../pages/user/premium/PremiumCommunityPage")
   );
+  const PdfSummarizerPage = lazy(
+    () => import("../pages/user/premium/PdfSummarizerPage")
+  );
   const FeePaymentPage = lazy(
     () => import("../pages/user/fees/FeePaymentPage")
   );
@@ -380,6 +383,16 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <PremiumCommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/pdf-summarizer"
+            element={
+              <ProtectedRoute>
+                <PremiumGate featureName="AI Summarizer">
+                  <PdfSummarizerPage />
+                </PremiumGate>
               </ProtectedRoute>
             }
           />
