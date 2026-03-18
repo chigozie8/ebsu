@@ -8,18 +8,6 @@ import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
 
 const FEATURES = [
   {
-    id: "ai-notes",
-    title: "AI Note Taker",
-    desc: "Auto-generate clean, structured notes from lectures, PDFs, and voice recordings. Never miss a detail again.",
-    detail: "Upload any lecture PDF or paste raw text and our AI produces concise, colour-coded notes organised by topic, ideal for exam revision.",
-    icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
-    accent: "#38bdf8",
-    bg: "rgba(56,189,248,0.08)",
-    tag: "AI",
-    link: "/u/ai-notes",
-    cta: "Open AI Notes",
-  },
-  {
     id: "ai-summarizer",
     title: "AI Summarizer",
     desc: "Condense textbooks, journals, and clinical guidelines into bite-sized summaries in seconds.",
@@ -206,7 +194,7 @@ export default function PremiumDashboard() {
           {[
             { label: "Features", value: `${FEATURES.length} Tools` },
             { label: "Status", value: "Active" },
-            { label: "Access", value: "Lifetime" },
+            { label: "Plan", value: "Monthly" },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
               <p className="text-lg font-bold" style={{ color: "#fbbf24" }}>{s.value}</p>
