@@ -200,8 +200,6 @@ export default function PremiumCommunityPage() {
     : user?.displayName || user?.email?.split("@")[0] || "Member";
   const userAvatar = studentDetails?.profileImageURL || user?.photoURL || undefined;
   const isAdmin = ADMIN_IDS.includes(userId);
-  // Don't allow posting until userId is resolved
-  const canPost = !!userId && draft.trim().length > 0 && !posting;
 
   const { messages, loading } = usePremiumMessages(60);
   const { post, posting } = usePostPremiumMessage();
@@ -209,6 +207,8 @@ export default function PremiumCommunityPage() {
   const { deleteMsg, togglePin, toggleAnnouncement, deleteReply } = useAdminPremiumActions();
 
   const [draft, setDraft] = useState("");
+  // canPost must come after draft and posting are declared
+  const canPost = !!userId && draft.trim().length > 0 && !posting;
   const [asAnnouncement, setAsAnnouncement] = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
