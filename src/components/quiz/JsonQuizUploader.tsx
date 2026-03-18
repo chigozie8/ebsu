@@ -176,7 +176,13 @@ export const JsonQuizUploader = ({ onQuizUploaded }: JsonQuizUploaderProps) => {
 
     setUploading(true);
     try {
+      // Check if supabase client is properly initialized
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized. Please check your environment variables.');
+      }
+
       // 1. Create the quiz
+      console.log('[v0] Creating quiz:', parsedQuiz.title);
       const { data: quiz, error: quizError } = await supabase
         .from('quizzes')
         .insert([
@@ -193,12 +199,21 @@ export const JsonQuizUploader = ({ onQuizUploaded }: JsonQuizUploaderProps) => {
         .select()
         .single();
 
-      if (quizError) throw quizError;
+      if (quizError) {
+        console.error('[v0] Quiz creation error:', quizError);
+        if (quizError.message.includes('does not exist')) {
+          throw new Error('Quiz tables do not exist. Please run the database migration script first.');
+        }
+        throw new Error(`Failed to create quiz: ${quizError.message}`);
+      }
+
+      console.log('[v0] Quiz created with ID:', quiz.id);
 
       // 2. Create questions
       for (let i = 0; i < parsedQuiz.questions.length; i++) {
         const q = parsedQuiz.questions[i];
 
+        console.log('[v0] Creating question', i + 1, 'of', parsedQuiz.questions.length);
         const { data: question, error: questionError } = await supabase
           .from('quiz_questions')
           .insert([
@@ -214,7 +229,10 @@ export const JsonQuizUploader = ({ onQuizUploaded }: JsonQuizUploaderProps) => {
           .select()
           .single();
 
-        if (questionError) throw questionError;
+        if (questionError) {
+          console.error('[v0] Question creation error:', questionError);
+          throw new Error(`Failed to create question ${i + 1}: ${questionError.message}`);
+        }
 
         // 3. Create answers for each question
         const answersToInsert = q.answers.map((a, aIndex) => ({
@@ -228,9 +246,13 @@ export const JsonQuizUploader = ({ onQuizUploaded }: JsonQuizUploaderProps) => {
           .from('quiz_answers')
           .insert(answersToInsert);
 
-        if (answersError) throw answersError;
+        if (answersError) {
+          console.error('[v0] Answers creation error:', answersError);
+          throw new Error(`Failed to create answers for question ${i + 1}: ${answersError.message}`);
+        }
       }
 
+      console.log('[v0] Quiz upload complete!');
       toast.success(`Quiz "${parsedQuiz.title}" uploaded successfully with ${parsedQuiz.questions.length} questions!`);
       
       // Reset form
@@ -246,7 +268,8 @@ export const JsonQuizUploader = ({ onQuizUploaded }: JsonQuizUploaderProps) => {
       onQuizUploaded?.();
     } catch (error) {
       console.error('[v0] Failed to upload quiz:', error);
-      toast.error('Failed to upload quiz. Please check the console for details.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
