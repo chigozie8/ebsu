@@ -92,6 +92,18 @@ const FEATURES = [
     cta: "Build My CV",
   },
   {
+    id: "drug-reference",
+    title: "Drug & Clinical Reference",
+    desc: "Instant drug profiles, dosing guides, interaction checks, and clinical mnemonics — built for MBBS exams.",
+    detail: "Search any drug for its full profile — mechanism, indications, contraindications, side effects, and dosing. Check drug interactions and generate memorable mnemonics powered by ChatGPT 5nano.",
+    icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z",
+    accent: "#38bdf8",
+    bg: "rgba(56,189,248,0.08)",
+    tag: "Clinical",
+    link: "/u/premium/drug-reference",
+    cta: "Open Reference",
+  },
+  {
     id: "community",
     title: "Premium Community",
     desc: "Join an exclusive group of high-achieving EBSU medical students in a private discussion space.",
@@ -114,6 +126,7 @@ const TAG_COLORS: Record<string, string> = {
   Exams: "#fbbf24",
   Career: "#2dd4bf",
   Community: "#e879f9",
+  Clinical: "#38bdf8",
 };
 
 export default function PremiumDashboard() {
