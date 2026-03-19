@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../../../config/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { Crown, UserCheck, UserX, Search, X, RefreshCw, Calendar, Shield, TrendingUp, Users, Clock, AlertTriangle } from "lucide-react";
+import { collection, getDocs, doc, setDoc, query, orderBy, getDoc } from "firebase/firestore";
+import { Crown, UserCheck, UserX, Search, X, RefreshCw, Calendar, Shield, TrendingUp, Users, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 type PremiumMember = {
@@ -38,12 +38,21 @@ export default function AdminPremiumMembersManager() {
   const [revoking, setRevoking] = useState<string | null>(null);
   const [manualUid, setManualUid] = useState("");
   const [manualGranting, setManualGranting] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState(false);
 
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, "premiumUsers"), orderBy("grantedAt", "desc")));
+      // Avoid orderBy to prevent index errors with mixed field types
+      const snap = await getDocs(collection(db, "premiumUsers"));
       const data: PremiumMember[] = snap.docs.map((d) => ({ id: d.id, ...d.data() } as PremiumMember));
+      // Sort client-side: active first, then by grantedAt desc
+      data.sort((a, b) => {
+        if (a.active !== b.active) return a.active ? -1 : 1;
+        const aTime = a.grantedAt ? new Date(a.grantedAt).getTime() : 0;
+        const bTime = b.grantedAt ? new Date(b.grantedAt).getTime() : 0;
+        return bTime - aTime;
+      });
       setMembers(data);
     } catch (e) {
       console.error("[v0] Failed to fetch premium members:", e);
@@ -84,25 +93,41 @@ export default function AdminPremiumMembersManager() {
 
   const handleManualGrant = async () => {
     const uid = manualUid.trim();
-    if (!uid) return;
+    if (!uid) {
+      toast.error("Please enter a valid User ID.");
+      return;
+    }
     setManualGranting(true);
+    setManualSuccess(false);
     try {
-      // Set expiration to 1 month from now
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
-      
-      await setDoc(doc(db, "premiumUsers", uid), { 
-        active: true, 
-        grantedAt: new Date().toISOString(), 
-        grantedByAdmin: true, 
+
+      const payload = {
+        active: true,
+        grantedAt: new Date().toISOString(),
+        grantedByAdmin: true,
         manual: true,
-        expiresAt: expiresAt,
-      }, { merge: true });
-      toast.success(`Premium granted to ${uid} (expires ${expiresAt.toLocaleDateString()})`);
+        expiresAt,
+        userID: uid,
+      };
+
+      await setDoc(doc(db, "premiumUsers", uid), payload, { merge: true });
+
+      // Verify it was written
+      const check = await getDoc(doc(db, "premiumUsers", uid));
+      if (!check.exists() || check.data()?.active !== true) {
+        throw new Error("Write verification failed");
+      }
+
+      toast.success(`Premium granted to ${uid}`);
+      setManualSuccess(true);
       setManualUid("");
-      fetchMembers();
-    } catch {
-      toast.error("Failed to grant access.");
+      setTimeout(() => setManualSuccess(false), 3000);
+      await fetchMembers();
+    } catch (e: any) {
+      console.error("[v0] Manual grant error:", e);
+      toast.error(`Failed to grant access: ${e?.message || "Unknown error"}`);
     } finally {
       setManualGranting(false);
     }
@@ -162,19 +187,34 @@ export default function AdminPremiumMembersManager() {
             <Shield className="w-4 h-4 text-white" />
           </div>
           <h3 className="font-bold text-gray-800 text-sm">Manually Grant Premium Access</h3>
+          {manualSuccess && (
+            <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 border border-green-200 px-2.5 py-1 rounded-lg">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Granted successfully
+            </span>
+          )}
         </div>
         <div className="flex gap-3">
-          <input value={manualUid} onChange={(e) => setManualUid(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleManualGrant()}
+          <input
+            value={manualUid}
+            onChange={(e) => setManualUid(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !manualGranting && handleManualGrant()}
             placeholder="Enter Firebase User ID (UID)…"
-            className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
-          <button onClick={handleManualGrant} disabled={manualGranting || !manualUid.trim()}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 transition-all">
-            {manualGranting ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Crown className="w-4 h-4" />}
-            Grant
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+          <button
+            onClick={handleManualGrant}
+            disabled={manualGranting || !manualUid.trim()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            {manualGranting
+              ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : <Crown className="w-4 h-4" />}
+            {manualGranting ? "Granting…" : "Grant"}
           </button>
         </div>
-        <p className="text-xss text-gray-500 mt-2">The UID is the user's Firebase Authentication ID, visible in Firebase Console under Authentication.</p>
+        <p className="text-xss text-gray-500 mt-2">
+          Paste the user's Firebase UID (found in Firebase Console → Authentication → Users → copy UID).
+        </p>
       </div>
 
       {/* Search + Filter + Refresh */}
