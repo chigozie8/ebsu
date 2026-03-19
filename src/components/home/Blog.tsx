@@ -35,7 +35,7 @@ export default function Blog() {
               viewport={{ once: true }}
               custom={1}
             >
-              <div className="bar-style" /> Blog
+              <div className="bar-style" /> EBSUMSA Blog & Latest Articles
             </motion.h2>
             <motion.p
               variants={fadeInVariants3}
@@ -45,7 +45,7 @@ export default function Blog() {
               custom={2}
               className="text-gray-700 font-[500] text-ss ss:text-sm xlg:text-xs"
             >
-              Check out our Latest Articles and Blogs.
+              Stay tuned for insightful articles, student stories, research highlights, and updates from the world of medicine.
             </motion.p>
           </div>
 

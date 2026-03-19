@@ -96,10 +96,10 @@ export default function CTANewsLetter() {
               />
               <div className="flex items-center flex-col w-full p-0 xsm:p-4">
                 <h2 className="text-center text-md xss:text-lg sm:text-xl md:text-2xl font-[600]">
-                  Get involved and stay informed
+                  Stay Connected, Stay Informed
                 </h2>
                 <p className="text-gray-700 font-[500] text-ss ss:text-sm xlg:text-xs mb-3 text-center flex gap-2">
-                  Subscribe to our newsletter and receive weekly updates directly in your email!
+                  Subscribe to the EBSUMSA Newsletter and receive weekly updates on academic resources, events, opportunities, and community news delivered straight to your inbox.
                 </p>
                 <div className="flex items-center flex-col gap-6 w-full">
                   <button
@@ -110,7 +110,7 @@ export default function CTANewsLetter() {
                       <Spinner className="w-4 sm:w-6 fill-white" />
                     ) : (
                       <div className="w-full flex gap-3 justify-center items-center text-xs md:text-base">
-                        Subscribe <BellIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                        Subscribe Now <BellIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                     )}
                   </button>
