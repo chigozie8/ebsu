@@ -24,6 +24,11 @@ export default function AdminNewsletterTab() {
   const [sentCount, setSentCount] = useState(0);
   const [progress, setProgress] = useState(0);
 
+  const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID;
+  const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+  const isConfigured = !!(serviceId && templateId && publicKey);
+
   useEffect(() => {
     fetchSubscribers();
   }, []);
@@ -51,13 +56,8 @@ export default function AdminNewsletterTab() {
       notifyUser("error", "No subscribers to send to");
       return;
     }
-
-    const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID;
-    const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-    if (!serviceId || !templateId || !publicKey) {
-      notifyUser("error", "EmailJS is not configured. Please check your environment variables.");
+    if (!isConfigured) {
+      notifyUser("error", "EmailJS is not configured. Add the environment variables in Project Settings → Vars.");
       return;
     }
 
@@ -117,6 +117,39 @@ export default function AdminNewsletterTab() {
   return (
     <div className="space-y-6">
 
+      {/* EmailJS config warning */}
+      {!isConfigured && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex gap-3 items-start">
+          <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-amber-800">EmailJS Not Configured</p>
+            <p className="text-xs text-amber-700 mt-0.5 leading-5">
+              The following environment variables are missing. Add them in <span className="font-semibold">Project Settings → Vars</span> then redeploy:
+            </p>
+            <ul className="mt-1.5 space-y-0.5">
+              {[
+                { key: "VITE_EMAILJS_SERVICE_ID", val: serviceId },
+                { key: "VITE_EMAILJS_PUBLIC_KEY", val: publicKey },
+                { key: "VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID", val: templateId },
+              ].map(({ key, val }) => (
+                <li key={key} className="flex items-center gap-2 text-xs text-amber-700">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${val ? "bg-green-500" : "bg-red-400"}`} />
+                  <span className="font-mono font-semibold bg-amber-100 px-1 rounded">{key}</span>
+                  <span>{val ? "OK" : "Missing"}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-amber-600 mt-2">
+              Get these values from your <a href="https://dashboard.emailjs.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">EmailJS dashboard</a>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4">
@@ -134,8 +167,10 @@ export default function AdminNewsletterTab() {
         <div className="bg-white border border-gray-200 rounded-xl p-4 col-span-2 sm:col-span-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Email Service</p>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-            <p className="text-sm font-semibold text-gray-700">EmailJS Connected</p>
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isConfigured ? "bg-green-500" : "bg-red-400"}`} />
+            <p className="text-sm font-semibold text-gray-700">
+              {isConfigured ? "EmailJS Connected" : "Not Configured"}
+            </p>
           </div>
         </div>
       </div>
@@ -191,7 +226,7 @@ export default function AdminNewsletterTab() {
 
           <button
             onClick={sendNewsletter}
-            disabled={sending || loading || !subject.trim() || !message.trim()}
+            disabled={sending || loading || !subject.trim() || !message.trim() || !isConfigured}
             className="flex items-center justify-center gap-2 px-6 py-2.5 bg-green-700 text-white text-sm font-semibold rounded-xl hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {sending ? (
