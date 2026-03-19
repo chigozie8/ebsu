@@ -94,7 +94,9 @@ Create a practical, engaging lesson that:
 4. Has **Practice Tasks** for the student
 5. Ends with **Next Steps**
 
-Use **bold** for headers. Keep code in simple blocks. Make it approachable for a medical student with no prior tech background (if beginner level).`
+Use **bold** for headers. Keep code in simple blocks. Make it approachable for a medical student with no prior tech background (if beginner level).`,
+        false,
+        { model: "gpt-5-nano" }
       );
       setLessonContent(typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Unable to load lesson.");
     } catch {
@@ -121,7 +123,7 @@ Use **bold** for headers. Keep code in simple blocks. Make it approachable for a
         { role: "assistant", content: lessonContent },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: trimmed },
-      ]);
+      ], false, { model: "gpt-5-nano" });
       const reply: Message = { role: "assistant", id: `a_${Date.now()}`, content: typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Please try again." };
       setMessages((prev) => [...prev, reply]);
     } catch { /* silent */ } finally { setLoading(false); }

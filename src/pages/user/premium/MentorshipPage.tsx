@@ -73,7 +73,7 @@ export default function MentorshipPage() {
       const response = await puter.ai.chat([
         { role: "system", content: SYSTEM_PROMPT },
         ...history,
-      ]);
+      ], false, { model: "gpt-5-nano" });
 
       const reply: Message = {
         role: "assistant",
@@ -234,7 +234,7 @@ export default function MentorshipPage() {
             </svg>
           </button>
         </div>
-        <p className="text-xss text-gray-600 text-center mt-1.5">Powered by puter.js AI · Press Enter to send</p>
+        <p className="text-xss text-gray-600 text-center mt-1.5">Powered by ChatGPT 5nano via puter.js · Press Enter to send</p>
       </div>
     </div>
   );

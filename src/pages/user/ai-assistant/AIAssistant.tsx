@@ -136,8 +136,8 @@ export default function AIAssistant() {
         playSound("ai-done");
       } else if (activeTab === "vision" && uploadedImage) {
         // Image analysis/vision - pass image as second argument
-        // Use a vision-capable model (gpt-4o or claude-3)
-        const visionModel = selectedModel.category === "vision" ? "gpt-4o" : selectedModel.id;
+        // Use gpt-5-nano for vision — best model available via puter.js
+        const visionModel = "gpt-5-nano";
         
         response = await window.puter.ai.chat(
           inputValue || "Describe this image in detail",
