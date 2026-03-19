@@ -70,7 +70,12 @@ export default function SkillsPage() {
     }
 
     try {
-      const response = await puter.ai.chat(
+      // Create timeout promise (12 seconds for longer content)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 12000)
+      );
+
+      const chatPromise = puter.ai.chat(
         `You are a medical education expert teaching EBSU medical students. Create a comprehensive but concise lesson on "${lesson}" in the context of "${module.title}" for MBBS students in Nigeria. 
 
 Format the response with:
@@ -82,9 +87,14 @@ Format the response with:
 
 Keep it practical, specific to the Nigerian/EBSU context where relevant. Use clear headings with **bold** for headers.`
       );
+
+      const response = await Promise.race([chatPromise, timeoutPromise]);
       setLessonContent(typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Unable to load lesson content.");
-    } catch {
-      setLessonContent("Failed to load lesson. Please try again.");
+    } catch (err: any) {
+      const message = err?.message?.includes("timeout")
+        ? "Lesson loading took too long. Please try again."
+        : "Failed to load lesson. Please try again.";
+      setLessonContent(message);
     } finally {
       setLoadingLesson(false);
     }
@@ -106,19 +116,26 @@ Keep it practical, specific to the Nigerian/EBSU context where relevant. Use cle
     }
 
     try {
-      const response = await puter.ai.chat([
+      // Create timeout promise (10 seconds for Q&A)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 10000)
+      );
+
+      const chatPromise = puter.ai.chat([
         { role: "system", content: `You are a medical education expert helping an EBSU MBBS student understand "${activeLesson}" in the module "${activeModule?.title}". Answer questions clearly, practically, and with Nigerian medical context where relevant.` },
         { role: "assistant", content: lessonContent },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: trimmed },
       ]);
+
+      const response = await Promise.race([chatPromise, timeoutPromise]);
       const reply: Message = {
         role: "assistant", id: `a_${Date.now()}`,
         content: typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Sorry, please try again.",
       };
       setMessages((prev) => [...prev, reply]);
     } catch {
-      // silent error
+      // Silent error - user will see timeout message if needed
     } finally {
       setLoading(false);
     }

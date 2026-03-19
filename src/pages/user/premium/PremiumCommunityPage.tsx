@@ -67,7 +67,7 @@ function ReplyThread({ message, userId, userName, userAvatar, isAdmin, onDeleteR
                 <span className="text-xs font-semibold text-amber-300">{r.user_name}</span>
                 <span className="text-xss text-gray-500">{timeAgo(r.created_at)}</span>
               </div>
-              <p className="text-sm text-gray-300 leading-relaxed break-words">{r.content}</p>
+              <p className="text-sm text-gray-300 leading-relaxed break-words">{r.reply}</p>
             </div>
             {(isAdmin || r.user_id === userId) && (
               <button onClick={() => onDeleteReply(r.id, message.id)}
@@ -133,7 +133,7 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
             )}
             <span className="text-xss text-gray-500 ml-auto">{timeAgo(msg.created_at)}</span>
           </div>
-          <p className="mt-1.5 text-sm text-gray-200 leading-relaxed break-words whitespace-pre-wrap">{msg.content}</p>
+          <p className="mt-1.5 text-sm text-gray-200 leading-relaxed break-words whitespace-pre-wrap">{msg.message}</p>
           {msg.image_url && <img src={msg.image_url} alt="attachment" className="mt-2 rounded-xl max-h-64 object-cover border border-white/10" />}
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function PremiumCommunityPage() {
   };
 
   const filtered = messages.filter((m) =>
-    !search || m.content.toLowerCase().includes(search.toLowerCase()) || m.user_name.toLowerCase().includes(search.toLowerCase())
+    !search || m.message.toLowerCase().includes(search.toLowerCase()) || m.user_name.toLowerCase().includes(search.toLowerCase())
   );
   const pinned = filtered.filter((m) => m.is_pinned || m.is_announcement);
   const regular = filtered.filter((m) => !m.is_pinned && !m.is_announcement);

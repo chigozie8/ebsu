@@ -65,15 +65,22 @@ export default function MentorshipPage() {
     }
 
     try {
+      // Create timeout promise (10 seconds)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 10000)
+      );
+
       const history = [...messages, userMsg].map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
-      const response = await puter.ai.chat([
+      const chatPromise = puter.ai.chat([
         { role: "system", content: SYSTEM_PROMPT },
         ...history,
       ]);
+
+      const response = await Promise.race([chatPromise, timeoutPromise]);
 
       const reply: Message = {
         role: "assistant",
@@ -82,7 +89,10 @@ export default function MentorshipPage() {
       };
       setMessages((prev) => [...prev, reply]);
     } catch (err: any) {
-      setError("Something went wrong. Please try again.");
+      const message = err?.message?.includes("timeout")
+        ? "Response took too long. Please try again."
+        : "Something went wrong. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }

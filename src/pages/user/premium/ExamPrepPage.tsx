@@ -51,7 +51,12 @@ export default function ExamPrepPage() {
     }
 
     try {
-      const response = await puter.ai.chat(
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 15000)
+      );
+
+      const chatPromise = puter.ai.chat(
         `Generate ${questionCount} MBBS-style multiple choice questions on "${selectedSubject.name}" suitable for medical students at EBSU Nigeria.
 
 Return ONLY a valid JSON array with this exact structure, no extra text:
@@ -68,6 +73,8 @@ Return ONLY a valid JSON array with this exact structure, no extra text:
 Where "correct" is the 0-based index of the correct option (0=A, 1=B, 2=C, 3=D). Make questions clinically relevant and exam-style.`
       );
 
+      const response = await Promise.race([chatPromise, timeoutPromise]);
+
       const text = typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "";
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error("Invalid response format");
@@ -78,8 +85,11 @@ Where "correct" is the 0-based index of the correct option (0=A, 1=B, 2=C, 3=D).
       setSelected(null);
       setShowExplanation(false);
       setExamState("active");
-    } catch {
-      setErrorMsg("Failed to generate questions. Please try again.");
+    } catch (err: any) {
+      const message = err?.message?.includes("timeout") 
+        ? "Request took too long. Please try again." 
+        : "Failed to generate questions. Please try again.";
+      setErrorMsg(message);
       setExamState("select");
     }
   };

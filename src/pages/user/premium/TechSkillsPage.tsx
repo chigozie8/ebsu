@@ -84,7 +84,12 @@ export default function TechSkillsPage() {
     }
 
     try {
-      const response = await puter.ai.chat(
+      // Create timeout promise (12 seconds for tech content)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 12000)
+      );
+
+      const chatPromise = puter.ai.chat(
         `You are a tech educator teaching "${module}" as part of the "${track.title}" track for EBSU medical students who are beginners/intermediate in tech. 
 
 Create a practical, engaging lesson that:
@@ -96,9 +101,14 @@ Create a practical, engaging lesson that:
 
 Use **bold** for headers. Keep code in simple blocks. Make it approachable for a medical student with no prior tech background (if beginner level).`
       );
+
+      const response = await Promise.race([chatPromise, timeoutPromise]);
       setLessonContent(typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Unable to load lesson.");
-    } catch {
-      setLessonContent("Failed to load lesson. Please try again.");
+    } catch (err: any) {
+      const message = err?.message?.includes("timeout")
+        ? "Lesson loading took too long. Please try again."
+        : "Failed to load lesson. Please try again.";
+      setLessonContent(message);
     } finally {
       setLoadingLesson(false);
     }
@@ -116,12 +126,19 @@ Use **bold** for headers. Keep code in simple blocks. Make it approachable for a
     if (!puter?.ai?.chat) { setLoading(false); return; }
 
     try {
-      const response = await puter.ai.chat([
+      // Create timeout promise (10 seconds for Q&A)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Request timeout")), 10000)
+      );
+
+      const chatPromise = puter.ai.chat([
         { role: "system", content: `You are a tech educator helping an EBSU medical student learn "${activeModule}" in the "${activeTrack?.title}" track. Answer questions clearly, with code examples where helpful. Use medical/health context.` },
         { role: "assistant", content: lessonContent },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: trimmed },
       ]);
+
+      const response = await Promise.race([chatPromise, timeoutPromise]);
       const reply: Message = { role: "assistant", id: `a_${Date.now()}`, content: typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Please try again." };
       setMessages((prev) => [...prev, reply]);
     } catch { /* silent */ } finally { setLoading(false); }
