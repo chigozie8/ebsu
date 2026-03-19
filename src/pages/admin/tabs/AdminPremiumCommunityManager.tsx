@@ -40,7 +40,7 @@ function RepliesPanel({ msgId, onDeleteReply }: { msgId: string; onDeleteReply: 
             <div className="flex-1 min-w-0">
               <span className="text-xs font-semibold text-gray-700">{r.user_name}</span>
               <span className="text-xss text-gray-400 ml-1">{timeAgo(r.created_at)}</span>
-              <p className="text-xs text-gray-600 mt-0.5 break-words">{r.content}</p>
+              <p className="text-xs text-gray-600 mt-0.5 break-words">{r.reply}</p>
             </div>
             <button onClick={() => onDeleteReply(r.id)} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-1">
               <Trash2 className="w-3.5 h-3.5" />
@@ -63,7 +63,7 @@ export default function AdminPremiumCommunityManager() {
   const [asAnnouncement, setAsAnnouncement] = useState(false);
 
   const filtered = messages.filter((m) => {
-    const matchesSearch = !search || m.content.toLowerCase().includes(search.toLowerCase()) || m.user_name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !search || m.message.toLowerCase().includes(search.toLowerCase()) || m.user_name.toLowerCase().includes(search.toLowerCase());
     if (filter === "pinned") return matchesSearch && m.is_pinned;
     if (filter === "announcements") return matchesSearch && m.is_announcement;
     return matchesSearch;
@@ -195,7 +195,7 @@ export default function AdminPremiumCommunityManager() {
                         <span className="flex items-center gap-0.5"><MessageSquare className="w-3 h-3" />{msg.replies_count}</span>
                       </div>
                     </div>
-                    <p className="mt-1.5 text-sm text-gray-700 break-words whitespace-pre-wrap">{msg.content}</p>
+                    <p className="mt-1.5 text-sm text-gray-700 break-words whitespace-pre-wrap">{msg.message}</p>
                   </div>
                 </div>
 
