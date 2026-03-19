@@ -370,7 +370,7 @@ export default function PremiumPage() {
             <div className="w-px h-8 bg-white/10" />
             <div className="text-left">
               <p className="text-yellow-400 font-bold text-xs">Monthly</p>
-              <p className="text-white/30 text-xss">Renews monthly</p>
+              <p className="text-white/30 text-xss">Auto-renews from wallet</p>
             </div>
           </div>
         </motion.div>
