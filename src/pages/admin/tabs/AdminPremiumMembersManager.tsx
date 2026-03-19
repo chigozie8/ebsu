@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../../../config/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { Crown, UserCheck, UserX, Search, X, RefreshCw, Calendar, Shield, TrendingUp, Users } from "lucide-react";
+import { Crown, UserCheck, UserX, Search, X, RefreshCw, Calendar, Shield, TrendingUp, Users, Clock, AlertTriangle } from "lucide-react";
 import toast from "react-hot-toast";
 
 type PremiumMember = {
@@ -13,6 +13,9 @@ type PremiumMember = {
   amount?: number;
   email?: string;
   name?: string;
+  expiresAt?: Date | { toDate: () => Date };
+  revokedAt?: Date | { toDate: () => Date };
+  revokeReason?: string;
 };
 
 function timeAgo(date: string) {
@@ -30,7 +33,7 @@ export default function AdminPremiumMembersManager() {
   const [members, setMembers] = useState<PremiumMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "inactive" | "expiring">("all");
   const [granting, setGranting] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [manualUid, setManualUid] = useState("");
@@ -84,8 +87,18 @@ export default function AdminPremiumMembersManager() {
     if (!uid) return;
     setManualGranting(true);
     try {
-      await setDoc(doc(db, "premiumUsers", uid), { active: true, grantedAt: new Date().toISOString(), grantedByAdmin: true, manual: true }, { merge: true });
-      toast.success(`Premium granted to ${uid}`);
+      // Set expiration to 1 month from now
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      
+      await setDoc(doc(db, "premiumUsers", uid), { 
+        active: true, 
+        grantedAt: new Date().toISOString(), 
+        grantedByAdmin: true, 
+        manual: true,
+        expiresAt: expiresAt,
+      }, { merge: true });
+      toast.success(`Premium granted to ${uid} (expires ${expiresAt.toLocaleDateString()})`);
       setManualUid("");
       fetchMembers();
     } catch {
@@ -95,27 +108,46 @@ export default function AdminPremiumMembersManager() {
     }
   };
 
+  const getExpirationDate = (m: PremiumMember): Date | null => {
+    if (!m.expiresAt) return null;
+    return (m.expiresAt as any).toDate ? (m.expiresAt as any).toDate() : new Date(m.expiresAt as any);
+  };
+  
+  const isExpiringSoon = (m: PremiumMember): boolean => {
+    const expDate = getExpirationDate(m);
+    if (!expDate || !m.active) return false;
+    const now = new Date();
+    const daysUntilExpiry = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+  };
+  
   const filtered = members.filter((m) => {
     const matchesSearch = !search || m.id.toLowerCase().includes(search.toLowerCase()) || (m.name || "").toLowerCase().includes(search.toLowerCase()) || (m.email || "").toLowerCase().includes(search.toLowerCase());
     if (filter === "active") return matchesSearch && m.active;
     if (filter === "inactive") return matchesSearch && !m.active;
+    if (filter === "expiring") return matchesSearch && isExpiringSoon(m);
     return matchesSearch;
   });
 
   const activeCount = members.filter((m) => m.active).length;
   const inactiveCount = members.filter((m) => !m.active).length;
+  const expiringCount = members.filter((m) => isExpiringSoon(m)).length;
 
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-center">
           <p className="text-2xl font-bold text-amber-600">{members.length}</p>
-          <p className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> Total Members</p>
+          <p className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-1"><Users className="w-3 h-3" /> Total</p>
         </div>
         <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{activeCount}</p>
           <p className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-1"><UserCheck className="w-3 h-3" /> Active</p>
+        </div>
+        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 text-center">
+          <p className="text-2xl font-bold text-orange-500">{expiringCount}</p>
+          <p className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-1"><AlertTriangle className="w-3 h-3" /> Expiring</p>
         </div>
         <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
           <p className="text-2xl font-bold text-red-500">{inactiveCount}</p>
@@ -154,7 +186,7 @@ export default function AdminPremiumMembersManager() {
           {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>}
         </div>
         <div className="flex gap-2">
-          {(["all", "active", "inactive"] as const).map((f) => (
+          {(["all", "active", "expiring", "inactive"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${filter === f ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
               {f}
@@ -181,8 +213,9 @@ export default function AdminPremiumMembersManager() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-12 gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 text-xss font-semibold text-gray-500 uppercase tracking-wide">
-            <div className="col-span-4">User ID</div>
-            <div className="col-span-3">Granted</div>
+            <div className="col-span-3">User ID</div>
+            <div className="col-span-2">Granted</div>
+            <div className="col-span-2">Expires</div>
             <div className="col-span-2">Amount</div>
             <div className="col-span-1 text-center">Status</div>
             <div className="col-span-2 text-right">Actions</div>
@@ -193,7 +226,7 @@ export default function AdminPremiumMembersManager() {
               <motion.div key={m.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className={`grid grid-cols-12 gap-3 px-4 py-3 items-center border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/30"}`}>
                 {/* UID */}
-                <div className="col-span-4 flex items-center gap-2 min-w-0">
+                <div className="col-span-3 flex items-center gap-2 min-w-0">
                   <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xss font-bold"
                     style={{ background: m.active ? "#f59e0b1a" : "#f3f4f6", color: m.active ? "#d97706" : "#9ca3af" }}>
                     {m.id.slice(0, 2).toUpperCase()}
@@ -204,12 +237,31 @@ export default function AdminPremiumMembersManager() {
                   </div>
                 </div>
                 {/* Granted at */}
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <p className="text-xs text-gray-600 flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
                     {m.grantedAt ? timeAgo(m.grantedAt) : "—"}
                   </p>
-                  {m.reference && <p className="text-xss text-gray-400 truncate font-mono mt-0.5">{m.reference}</p>}
+                </div>
+                {/* Expires at */}
+                <div className="col-span-2">
+                  {(() => {
+                    const expDate = getExpirationDate(m);
+                    if (!expDate) return <span className="text-xss text-gray-400 italic">No expiry</span>;
+                    const now = new Date();
+                    const daysLeft = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                    const isExpired = daysLeft <= 0;
+                    const isExpiringSoonNow = daysLeft > 0 && daysLeft <= 7;
+                    return (
+                      <div>
+                        <p className={`text-xs flex items-center gap-1 ${isExpired ? "text-red-500" : isExpiringSoonNow ? "text-orange-500" : "text-gray-600"}`}>
+                          <Clock className={`w-3 h-3 flex-shrink-0 ${isExpired ? "text-red-400" : isExpiringSoonNow ? "text-orange-400" : "text-gray-400"}`} />
+                          {isExpired ? "Expired" : `${daysLeft}d left`}
+                        </p>
+                        <p className="text-xss text-gray-400 mt-0.5">{expDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {/* Amount */}
                 <div className="col-span-2">

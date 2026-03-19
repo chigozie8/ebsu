@@ -204,9 +204,14 @@ export default function PremiumPage() {
   }, [userID, authLoading, navigate]);
 
   const grantPremium = async (reference: string) => {
+    // Set expiration to 1 month from now
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    
     await setDoc(doc(db, "premiumUsers", userID), {
       userID, email: userEmail, name: userName,
       active: true, paidAt: serverTimestamp(), reference, amount: PREMIUM_PRICE,
+      expiresAt: expiresAt,
     });
     await addDoc(collection(db, "transactions"), {
       userID, type: "payment", amount: PREMIUM_PRICE,
