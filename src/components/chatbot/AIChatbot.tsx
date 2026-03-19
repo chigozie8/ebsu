@@ -132,9 +132,9 @@ export const AIChatbot = () => {
         { role: "user", content: currentInput },
       ];
 
-      // Use Puter.js AI chat with streaming
+      // Use Puter.js AI chat with streaming - ChatGPT 5nano (best model)
       const response = await window.puter.ai.chat(conversationHistory, {
-        model: "gpt-4o-mini",
+        model: "gpt-5-nano",
         stream: true,
       });
 
@@ -249,7 +249,7 @@ export const AIChatbot = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm">EBSU AI Assistant</h3>
-                  <p className="text-xs text-white/80">Powered by GPT</p>
+                  <p className="text-xs text-white/80">Powered by ChatGPT 5nano</p>
                 </div>
               </div>
               <button
