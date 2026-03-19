@@ -7,7 +7,7 @@ export default function PhilosophyAndObjectives() {
           <h2 className="">
             {" "}
             <div className="bar-style" />
-            Faculty of Clinical Sciences - Medicine and Surgery, EBSU
+            Department of Medicine and Surgery, EBSU
           </h2>
           <h4 className="mb-4 font-semibold text-base sm:text-md ">
             Philosophy and Objectives
@@ -15,10 +15,13 @@ export default function PhilosophyAndObjectives() {
           <div className="mb-5">
             <h5 className="text-xs sm:text-base font-medium text-green1">Philosophy</h5>
             <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-5">
-              The Faculty of Clinical Sciences is committed to producing competent, ethical, and compassionate medical and surgical professionals who will serve as agents of change in healthcare delivery. Our philosophy is anchored on the principles of "Pro Deo et Humanitate" (For God and Humanity), recognizing that medical practitioners have a sacred responsibility to improve public health and transform lives. We believe in holistic medical education that combines rigorous scientific knowledge with clinical excellence, research innovation, and community engagement.
+              The Department of Medicine and Surgery is committed to producing competent, ethical, and compassionate medical and surgical professionals who will serve as agents of change in healthcare delivery. Our philosophy is anchored on the principles of "Pro Deo et Humanitate" (For God and Humanity), recognizing that medical practitioners have a sacred responsibility to improve public health and transform lives. We believe in holistic medical education that combines rigorous scientific knowledge with clinical excellence, research innovation, and community engagement.
+            </p>
+            <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-4">
+              The Department houses two faculties — the <span className="font-semibold text-gray-800">Faculty of Clinical Sciences</span> and the <span className="font-semibold text-gray-800">Faculty of Basic Clinical Sciences</span> — as well as the <span className="font-semibold text-gray-800">Faculty of Basic Medical Sciences</span>, all working collaboratively to deliver a comprehensive and integrated medical curriculum. Together, these faculties ensure that students receive a strong foundation in the biomedical sciences alongside advanced clinical training, preparing them for the full spectrum of medical practice.
             </p>
             <p className="text-sm sm:text-xs text-gray-700 leading-7">
-              The Faculty emphasizes the development of culturally-sensitive, socially responsible physicians who understand the unique healthcare challenges of Nigeria and Africa, and are equipped to address these challenges with evidence-based practice. We foster an environment of continuous learning, critical thinking, and professional development, ensuring that our graduates are competitive on the global stage while remaining committed to addressing local health disparities and improving community wellbeing.
+              The Department emphasizes the development of culturally-sensitive, socially responsible physicians who understand the unique healthcare challenges of Nigeria and Africa, and are equipped to address these challenges with evidence-based practice. We foster an environment of continuous learning, critical thinking, and professional development, ensuring that our graduates are competitive on the global stage while remaining committed to addressing local health disparities and improving community wellbeing.
             </p>
           </div>
           <div className="mb-5">
