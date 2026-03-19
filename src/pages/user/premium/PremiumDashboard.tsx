@@ -153,16 +153,24 @@ export default function PremiumDashboard() {
       if (!active) {
         navigate("/u/premium", { replace: true });
       } else {
-        // Get expiration date
-        const expData = snap.data()?.expiresAt;
-        if (expData) {
-          const expDate = expData.toDate ? expData.toDate() : new Date(expData);
+        const data = snap.data() ?? {};
+        // Try expiresAt first, then fall back to paidAt + 1 month
+        let expDate: Date | null = null;
+        if (data.expiresAt) {
+          expDate = data.expiresAt.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt);
+        } else if (data.paidAt) {
+          const paidDate: Date = data.paidAt.toDate ? data.paidAt.toDate() : new Date(data.paidAt);
+          expDate = new Date(paidDate);
+          expDate.setMonth(expDate.getMonth() + 1);
+        }
+        if (expDate) {
           setExpiresAt(expDate);
-          // Calculate days remaining
           const now = new Date();
-          const diffTime = expDate.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
           setDaysRemaining(diffDays);
+        } else {
+          // No date info at all — mark as N/A
+          setDaysRemaining(-999);
         }
       }
     });
@@ -230,8 +238,18 @@ export default function PremiumDashboard() {
             { label: "Status", value: "Active", color: "#34d399" },
             { 
               label: "Renews In", 
-              value: daysRemaining !== null ? `${daysRemaining} days` : "...",
-              color: daysRemaining !== null && daysRemaining <= 7 ? "#f87171" : daysRemaining !== null && daysRemaining <= 14 ? "#fb923c" : "#fbbf24"
+              value: daysRemaining === null
+                ? "..."
+                : daysRemaining === -999
+                  ? "N/A"
+                  : daysRemaining <= 0
+                    ? "Expired"
+                    : `${daysRemaining}d`,
+              color: daysRemaining !== null && daysRemaining !== -999 && daysRemaining <= 7
+                ? "#f87171"
+                : daysRemaining !== null && daysRemaining !== -999 && daysRemaining <= 14
+                  ? "#fb923c"
+                  : "#fbbf24"
             },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -242,7 +260,7 @@ export default function PremiumDashboard() {
         </motion.div>
 
         {/* Renewal Warning Banner */}
-        {daysRemaining !== null && daysRemaining <= 7 && (
+        {daysRemaining !== null && daysRemaining !== -999 && daysRemaining <= 7 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
