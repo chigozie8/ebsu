@@ -134,6 +134,9 @@ const AppRoutes = () => {
   const PdfSummarizerPage = lazy(
     () => import("../pages/user/premium/PdfSummarizerPage")
   );
+  const DrugReferencePage = lazy(
+    () => import("../pages/user/premium/DrugReferencePage")
+  );
   const FeePaymentPage = lazy(
     () => import("../pages/user/fees/FeePaymentPage")
   );
@@ -383,6 +386,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <PremiumCommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/premium/drug-reference"
+            element={
+              <ProtectedRoute>
+                <DrugReferencePage />
               </ProtectedRoute>
             }
           />
