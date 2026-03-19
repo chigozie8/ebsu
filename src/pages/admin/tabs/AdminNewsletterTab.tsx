@@ -24,9 +24,9 @@ export default function AdminNewsletterTab() {
   const [sentCount, setSentCount] = useState(0);
   const [progress, setProgress] = useState(0);
 
-  const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-  const templateId = import.meta.env.VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID;
-  const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+  const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_2avshb4";
+  const templateId = import.meta.env.VITE_EMAILJS_NEWSLETTER_TEMPLATE_ID || "template_wpwl9lf";
+  const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "fpJNbTUq8_NZhbKw1";
   const isConfigured = !!(serviceId && templateId && publicKey);
 
   useEffect(() => {

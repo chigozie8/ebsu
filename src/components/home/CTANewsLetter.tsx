@@ -24,9 +24,9 @@ export default function CTANewsLetter() {
   const { studentDetails, userID } = useGetUserInfo();
 
   const sendWelcomeEmail = async (name: string, email: string) => {
-    const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_WELCOME_TEMPLATE_ID;
-    const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    const serviceId  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || "service_2avshb4";
+    const templateId = import.meta.env.VITE_EMAILJS_WELCOME_TEMPLATE_ID || "template_wpwl9lf";
+    const publicKey  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || "fpJNbTUq8_NZhbKw1";
     if (!serviceId || !templateId || !publicKey) return;
     try {
       await emailjs.send(
