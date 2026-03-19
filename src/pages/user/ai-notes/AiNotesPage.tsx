@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "react-router-dom";
+import { playSound } from "../../../hooks/useSound";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -495,6 +496,7 @@ export default function AiNotesPage() {
       else if (mode === "keypoints") { const parsed = parseJSON<KeyPoint[]>(content); result = { mode, items: parsed || [] }; }
       else result = { mode, content } as OutputResult;
       setResults((prev) => ({ ...prev, [mode]: result }));
+      playSound("ai-done");
     } catch (e: any) {
       setError(e?.message || "AI generation failed. Please try again.");
     } finally {
