@@ -77,7 +77,9 @@ Rules:
 - Make it more professional, action-oriented, and ATS-friendly
 - Use strong action verbs and quantify achievements where possible
 - Keep it concise and appropriate for a medical CV
-- Return ONLY the enhanced text, no extra commentary or labels.`
+- Return ONLY the enhanced text, no extra commentary or labels.`,
+        false,
+        { model: "gpt-5-nano" }
       );
       const enhanced = typeof response === "string" ? response : response?.message?.content ?? response?.content ?? content;
       setEnhancedSection((prev) => ({ ...prev, [key]: enhanced.trim() }));

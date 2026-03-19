@@ -65,7 +65,9 @@ Return ONLY a valid JSON array with this exact structure, no extra text:
   }
 ]
 
-Where "correct" is the 0-based index of the correct option (0=A, 1=B, 2=C, 3=D). Make questions clinically relevant and exam-style.`
+Where "correct" is the 0-based index of the correct option (0=A, 1=B, 2=C, 3=D). Make questions clinically relevant and exam-style.`,
+        false,
+        { model: "gpt-5-nano" }
       );
 
       const text = typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "";

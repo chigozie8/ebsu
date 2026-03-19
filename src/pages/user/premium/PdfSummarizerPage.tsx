@@ -380,7 +380,7 @@ export default function PdfSummarizerPage() {
     try {
       const puter = await waitForPuter();
       const prompt = buildPrompt(mode, rawText.slice(0, 14000));
-      const response = await puter.ai.chat(prompt, false, { model: "gpt-4o" });
+      const response = await puter.ai.chat(prompt, false, { model: "gpt-5-nano" });
       const content: string = typeof response === "string" ? response : response?.message?.content ?? response?.toString() ?? "";
       let result: OutputResult;
       if (mode === "flashcards") { const p = parseJSON<Flashcard[]>(content); result = { mode, items: p || [{ term: "Parse error", definition: content }] }; }

@@ -80,7 +80,9 @@ Format the response with:
 4. Clinical Pearls / Tips
 5. Common Mistakes to Avoid
 
-Keep it practical, specific to the Nigerian/EBSU context where relevant. Use clear headings with **bold** for headers.`
+Keep it practical, specific to the Nigerian/EBSU context where relevant. Use clear headings with **bold** for headers.`,
+        false,
+        { model: "gpt-5-nano" }
       );
       setLessonContent(typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Unable to load lesson content.");
     } catch {
@@ -111,7 +113,7 @@ Keep it practical, specific to the Nigerian/EBSU context where relevant. Use cle
         { role: "assistant", content: lessonContent },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: trimmed },
-      ]);
+      ], false, { model: "gpt-5-nano" });
       const reply: Message = {
         role: "assistant", id: `a_${Date.now()}`,
         content: typeof response === "string" ? response : response?.message?.content ?? response?.content ?? "Sorry, please try again.",
