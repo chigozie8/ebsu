@@ -51,9 +51,9 @@ export default function ExamPrepPage() {
     }
 
     try {
-      // Create timeout promise
+      // Create timeout promise (20 seconds for question generation)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), 15000)
+        setTimeout(() => reject(new Error("Request timeout")), 20000)
       );
 
       const chatPromise = puter.ai.chat(

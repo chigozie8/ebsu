@@ -70,9 +70,9 @@ export default function SkillsPage() {
     }
 
     try {
-      // Create timeout promise (12 seconds for longer content)
+      // Create timeout promise (20 seconds for longer content)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), 12000)
+        setTimeout(() => reject(new Error("Request timeout")), 20000)
       );
 
       const chatPromise = puter.ai.chat(
@@ -116,9 +116,9 @@ Keep it practical, specific to the Nigerian/EBSU context where relevant. Use cle
     }
 
     try {
-      // Create timeout promise (10 seconds for Q&A)
+      // Create timeout promise (15 seconds for Q&A)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), 10000)
+        setTimeout(() => reject(new Error("Request timeout")), 15000)
       );
 
       const chatPromise = puter.ai.chat([

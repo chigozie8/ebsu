@@ -104,6 +104,69 @@ export default function UdemyPage() {
             </div>
           </div>
 
+          {/* Telegram Alternative Channel */}
+          <div className="rounded-2xl p-5 mb-6" style={{ background: "linear-gradient(135deg, rgba(0,136,204,0.1), rgba(24,143,211,0.08))", border: "1px solid rgba(0,136,204,0.25)" }}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(0,136,204,0.2)", border: "1px solid rgba(0,136,204,0.4)" }}>
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style={{ color: "#0088cc" }}>
+                  <path d="M12 0c6.627 0 12 5.373 12 12s-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295-.237 0-.385-.045-.585-.156l.355-5.083.005-.047c1.664-1.482 5.206-4.693 5.206-4.693.196-.18.461-.09.456.244-.003.141-.14 1.405-1.13 7.065-.057.324-.171.487-.352.487-.14 0-.358-.08-.563-.155l-7.044-2.236c-.52-.165-.52-.385.04-.585l.27-.106c.252-.105 5.052-1.936 5.052-1.936.23-.09.455-.009.612.164l3.956 3.809c.231.22.22.385.04.618z"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-white mb-0.5">Free Courses on Telegram</h3>
+                <p className="text-xs text-blue-200 mb-3 leading-relaxed">
+                  Join our Telegram community for constantly updated free Udemy courses, exclusive study materials, and medical education resources shared daily by the EBSUMSA community.
+                </p>
+                <a
+                  href="https://t.me/Udemy_Free_Courses4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 hover:opacity-90"
+                  style={{ background: "linear-gradient(135deg, #0088cc, #188fd3)", color: "#fff", boxShadow: "0 4px 15px rgba(0,136,204,0.3)" }}
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c6.627 0 12 5.373 12 12s-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295-.237 0-.385-.045-.585-.156l.355-5.083.005-.047c1.664-1.482 5.206-4.693 5.206-4.693.196-.18.461-.09.456.244-.003.141-.14 1.405-1.13 7.065-.057.324-.171.487-.352.487-.14 0-.358-.08-.563-.155l-7.044-2.236c-.52-.165-.52-.385.04-.585l.27-.106c.252-.105 5.052-1.936 5.052-1.936.23-.09.455-.009.612.164l3.956 3.809c.231.22.22.385.04.618z"/>
+                  </svg>
+                  Join Telegram Channel
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Section */}
+          <div className="rounded-2xl p-5 mb-6" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)" }}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)" }}>
+                <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0zM8 9a1 1 0 100-2 1 1 0 000 2zm5 0a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-emerald-300 mb-2">Access Your Learning Resources</h3>
+                <ul className="text-xs text-gray-300 space-y-1.5 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                    <span><strong>Udemy Shared Account:</strong> Login with shared credentials above to access premium courses including anatomy, pharmacology, USMLE prep, and more.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                    <span><strong>Telegram Channel:</strong> Get daily updates on newly free Udemy courses and exclusive study materials curated for EBSU medical students.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                    <span><strong>Pro Tip:</strong> When you find a free course on Telegram, enroll immediately as free coupons expire quickly. Save your certificates to your profile.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                    <span><strong>Study Groups:</strong> Discuss courses and study together with fellow EBSUMSA members in the community section.</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           {/* Credentials card */}
           <div className="rounded-2xl p-5 mb-6" style={{ background: "rgba(244,114,182,0.06)", border: "1px solid rgba(244,114,182,0.2)" }}>
             <div className="flex items-center gap-2 mb-4">

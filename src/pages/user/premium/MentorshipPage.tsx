@@ -65,9 +65,9 @@ export default function MentorshipPage() {
     }
 
     try {
-      // Create timeout promise (10 seconds)
+      // Create timeout promise (15 seconds for mentor responses)
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), 10000)
+        setTimeout(() => reject(new Error("Request timeout")), 15000)
       );
 
       const history = [...messages, userMsg].map((m) => ({
