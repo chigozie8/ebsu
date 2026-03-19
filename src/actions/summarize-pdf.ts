@@ -10,8 +10,9 @@ export async function summarizePDFContent(fileContent: string, fileName: string)
       throw new Error('File content is empty')
     }
     
+    // Use ChatGPT 5nano - the best AI model for premium features
     const result = await generateText({
-      model: 'openai/gpt-4o-mini',
+      model: 'openai/gpt-5-nano',
       system: 'You are an expert at summarizing educational documents. Provide a clear, concise summary highlighting key concepts and important information.',
       prompt: `Summarize this document content:\n\n${fileContent}\n\nProvide:\n1. A brief overview (2-3 sentences)\n2. Key concepts (bulleted list)\n3. Important takeaways\n4. Recommended study points`,
     })
@@ -33,8 +34,9 @@ export async function generateExamQuestionsFromPDF(fileContent: string, fileName
       throw new Error('File content is empty')
     }
     
+    // Use ChatGPT 5nano - the best AI model for premium features
     const result = await generateText({
-      model: 'openai/gpt-4o-mini',
+      model: 'openai/gpt-5-nano',
       system: 'You are an expert educator creating exam questions based on document content. Generate questions that test understanding of key concepts.',
       prompt: `Based on this educational document, generate 5 multiple choice exam questions:\n\n${fileContent}\n\nFormat each question as:\nQ{number}: [Question]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\nAnswer: [Correct letter]\nExplanation: [Brief explanation]\n\nTopic: ${topicArea}`,
     })

@@ -23,10 +23,10 @@ interface AIModel {
 }
 
 const AI_MODELS: AIModel[] = [
-  // Chat Models
-  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", category: "chat", description: "Latest GPT-4 model with vision capabilities" },
+  // Chat Models - ChatGPT 5nano is the best/default for premium
+  { id: "gpt-5-nano", name: "ChatGPT 5nano", provider: "OpenAI", category: "chat", description: "Best AI model - Premium recommended" },
+  { id: "gpt-4o", name: "GPT-4o", provider: "OpenAI", category: "chat", description: "GPT-4 with vision capabilities" },
   { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", category: "chat", description: "Faster, more affordable GPT-4" },
-  { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "OpenAI", category: "chat", description: "High performance GPT-4" },
   { id: "claude-3-5-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", category: "chat", description: "Anthropic's latest model" },
   { id: "claude-3-opus", name: "Claude 3 Opus", provider: "Anthropic", category: "chat", description: "Most capable Claude model" },
   { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", provider: "Google", category: "chat", description: "Google's multimodal AI" },
@@ -38,6 +38,7 @@ const AI_MODELS: AIModel[] = [
   { id: "flux-1.1-pro", name: "FLUX 1.1 Pro", provider: "Black Forest Labs", category: "image", description: "High quality image generation" },
   { id: "stable-diffusion-xl", name: "Stable Diffusion XL", provider: "Stability AI", category: "image", description: "Open source image generation" },
   // Vision Models
+  { id: "gpt-5-nano", name: "ChatGPT 5nano Vision", provider: "OpenAI", category: "vision", description: "Best image understanding - Premium" },
   { id: "gpt-4-vision", name: "GPT-4 Vision", provider: "OpenAI", category: "vision", description: "Image understanding and analysis" },
   { id: "claude-3-vision", name: "Claude 3 Vision", provider: "Anthropic", category: "vision", description: "Analyze images with Claude" },
 ];

@@ -485,7 +485,8 @@ export default function AiNotesPage() {
     try {
       const puter = await waitForPuter();
       const prompt = buildPrompt(mode, rawText.slice(0, 12000));
-      const response = await puter.ai.chat(prompt, false, { model: "gpt-4o" });
+      // Use ChatGPT 5nano - the best AI model for premium features
+      const response = await puter.ai.chat(prompt, false, { model: "gpt-5-nano" });
       let content = typeof response === "string" ? response : response?.message?.content ?? response?.toString() ?? "";
       let result: OutputResult;
       if (mode === "flashcards") { const parsed = parseJSON<Flashcard[]>(content); result = { mode, items: parsed || [{ term: "Parse error", definition: content }] }; }
