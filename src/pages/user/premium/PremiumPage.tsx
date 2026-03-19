@@ -10,7 +10,7 @@ import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
 import { useNavigate } from "react-router-dom";
 
-const PREMIUM_PRICE = 100;
+const PREMIUM_PRICE = 500;
 const PAYSTACK_KEY =
   import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ||
   "pk_live_77ab98bc87c205ec76cb2f7d534cff02df034c8e";

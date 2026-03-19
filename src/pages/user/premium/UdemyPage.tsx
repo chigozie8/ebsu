@@ -1,11 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
-// Credentials will be provided by admin — leave as placeholders until updated
-const UDEMY_EMAIL = "your-udemy-email@example.com";
-const UDEMY_PASSWORD = "your-udemy-password";
+const TELEGRAM_LINK = "https://t.me/Udemy_Free_Courses4";
 
 const COURSES = [
   {
@@ -60,18 +56,9 @@ const COURSES = [
 
 export default function UdemyPage() {
   const navigate = useNavigate();
-  const [copied, setCopied] = useState<"email" | "password" | null>(null);
 
-  const copy = (type: "email" | "password") => {
-    const text = type === "email" ? UDEMY_EMAIL : UDEMY_PASSWORD;
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(type);
-      setTimeout(() => setCopied(null), 2000);
-    });
-  };
-
-  const openUdemy = () => {
-    window.open("https://www.udemy.com/join/login-popup/", "_blank", "noopener,noreferrer");
+  const openTelegram = () => {
+    window.open(TELEGRAM_LINK, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -99,123 +86,70 @@ export default function UdemyPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">Udemy Course Access</h1>
-              <p className="text-xs text-gray-400 mt-0.5">Premium members get shared access to handpicked courses</p>
+              <h1 className="text-2xl font-bold text-white">Free Udemy Courses</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Premium members get access to free Udemy courses via our Telegram group</p>
             </div>
           </div>
 
-          {/* Credentials card */}
-          <div className="rounded-2xl p-5 mb-6" style={{ background: "rgba(244,114,182,0.06)", border: "1px solid rgba(244,114,182,0.2)" }}>
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-4 h-4 text-pink-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          {/* Telegram CTA card */}
+          <div className="rounded-2xl p-5 mb-6" style={{ background: "rgba(38,166,209,0.07)", border: "1px solid rgba(38,166,209,0.25)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              {/* Telegram icon */}
+              <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="#26a8d1">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.794l-2.968-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.896.765z" />
               </svg>
-              <h2 className="text-sm font-bold text-pink-300">Shared Login Credentials</h2>
+              <h2 className="text-sm font-bold text-[#26a8d1]">Join Our Telegram Group</h2>
             </div>
 
-            <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-              Use these credentials to log in to Udemy. Please do not change the password or account settings to keep access available for all premium members.
+            <p className="text-xs text-gray-400 mb-5 leading-relaxed">
+              All free Udemy courses are shared directly in our Telegram group. Join to browse and enrol in hundreds of free courses updated regularly — medical, tech, and professional development.
             </p>
 
-            {/* Email */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-xl px-4 py-3"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div>
-                  <p className="text-xss text-gray-500 mb-0.5 font-medium uppercase tracking-wider">Email</p>
-                  <p className="text-sm text-white font-mono">{UDEMY_EMAIL}</p>
-                </div>
-                <button
-                  onClick={() => copy("email")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95"
-                  style={{ background: copied === "email" ? "rgba(52,211,153,0.2)" : "rgba(244,114,182,0.15)", color: copied === "email" ? "#34d399" : "#f472b6", border: `1px solid ${copied === "email" ? "rgba(52,211,153,0.3)" : "rgba(244,114,182,0.3)"}` }}
-                >
-                  {copied === "email" ? (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Password */}
-              <div className="flex items-center justify-between rounded-xl px-4 py-3"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                <div>
-                  <p className="text-xss text-gray-500 mb-0.5 font-medium uppercase tracking-wider">Password</p>
-                  <p className="text-sm text-white font-mono">{"•".repeat(UDEMY_PASSWORD.length)}</p>
-                </div>
-                <button
-                  onClick={() => copy("password")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95"
-                  style={{ background: copied === "password" ? "rgba(52,211,153,0.2)" : "rgba(244,114,182,0.15)", color: copied === "password" ? "#34d399" : "#f472b6", border: `1px solid ${copied === "password" ? "rgba(52,211,153,0.3)" : "rgba(244,114,182,0.3)"}` }}
-                >
-                  {copied === "password" ? (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Open Udemy CTA */}
             <button
-              onClick={openUdemy}
-              className="w-full mt-4 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 hover:opacity-90"
-              style={{ background: "linear-gradient(135deg, #a435f0, #7c3aed)", color: "#fff", boxShadow: "0 4px 20px rgba(124,58,237,0.35)" }}
+              onClick={openTelegram}
+              className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-98 hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #26a8d1, #1a85a8)", color: "#fff", boxShadow: "0 4px 20px rgba(38,168,209,0.3)" }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.26 13.794l-2.968-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.896.765z" />
               </svg>
-              Open Udemy Login Page
+              Open Telegram Group
             </button>
           </div>
 
-          {/* Notice */}
-          <div className="rounded-xl px-4 py-3 mb-8 flex items-start gap-2.5"
-            style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)" }}>
-            <svg className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p className="text-amber-300 text-xs leading-relaxed">
-              <span className="font-bold">Important:</span> Do not change the Udemy account password, purchase courses, or modify account settings. This account is shared across all premium members.
-            </p>
+          {/* How it works */}
+          <div className="rounded-xl px-4 py-4 mb-8 space-y-3"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-xs font-bold text-white mb-1">How it works</p>
+            {[
+              "Tap the button above to open the Telegram group",
+              "Browse free Udemy course links shared in the group",
+              "Click any course link to enrol for free on Udemy",
+              "New free courses are added regularly — stay active",
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xss font-bold"
+                  style={{ background: "rgba(244,114,182,0.15)", color: "#f472b6" }}>
+                  {i + 1}
+                </div>
+                <p className="text-xs text-gray-400 leading-relaxed">{step}</p>
+              </div>
+            ))}
           </div>
 
-          {/* Recommended courses */}
-          <h2 className="text-base font-bold text-white mb-4">Recommended Courses for MBBS Students</h2>
+          {/* Recommended course categories */}
+          <h2 className="text-base font-bold text-white mb-4">Courses Available in the Group</h2>
           <div className="space-y-3">
             {COURSES.map((c, i) => (
               <motion.div key={c.title}
                 initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * i, duration: 0.35 }}
+                transition={{ delay: 0.08 * i, duration: 0.35 }}
                 className="flex items-center gap-4 rounded-xl p-4"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
               >
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: `${c.accent}18`, border: `1px solid ${c.accent}30` }}>
-                  <svg className="w-4.5 h-4.5" fill="none" stroke={c.accent} viewBox="0 0 24 24" strokeWidth={1.8}>
+                  <svg className="w-4 h-4" fill="none" stroke={c.accent} viewBox="0 0 24 24" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d={c.icon} />
                   </svg>
                 </div>
