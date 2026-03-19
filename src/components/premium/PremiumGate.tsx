@@ -7,8 +7,9 @@ import { useGetUserInfo } from "../../hooks/auth/useGetUserInfo";
 import { useWallet } from "../../hooks/wallet/useWallet";
 import { notifyUser } from "../../helpers/notifyUser";
 import { useNavigate } from "react-router-dom";
+import { useSubscriptionManager } from "../../hooks/premium/useSubscriptionManager";
 
-const PREMIUM_PRICE = 100;
+const PREMIUM_PRICE = 500;
 
 const FEATURES = [
   {
@@ -63,6 +64,9 @@ export function PremiumGate({ children, featureName = "AI Notes" }: PremiumGateP
   const { wallet, payWithWallet } = useWallet(userID, userEmail);
   const balance = wallet?.balance ?? 0;
 
+  // Auto-renewal hook - checks subscription status and attempts renewal if expired
+  useSubscriptionManager({ userID, userEmail, userName });
+
   const [isPremium, setIsPremium] = useState(false);
   const [checking, setChecking] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -83,9 +87,14 @@ export function PremiumGate({ children, featureName = "AI Notes" }: PremiumGateP
 
   const grantPremium = async (reference: string) => {
     if (!userID) return;
+    // Set expiration to 1 month from now
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    
     await setDoc(doc(db, "premiumUsers", userID), {
       userID, email: userEmail, name: userName,
       active: true, paidAt: serverTimestamp(), reference, amount: PREMIUM_PRICE,
+      expiresAt: expiresAt,
     });
     await addDoc(collection(db, "transactions"), {
       userID, type: "payment", amount: PREMIUM_PRICE,
@@ -232,12 +241,12 @@ export function PremiumGate({ children, featureName = "AI Notes" }: PremiumGateP
             <div className="inline-flex items-center gap-3 mt-5 px-5 py-3 rounded-2xl bg-white/10 border border-white/20">
               <div>
                 <p className="text-2xl font-black text-white leading-none">{fmt(PREMIUM_PRICE)}</p>
-                <p className="text-white/50 text-xs mt-0.5">one-time · lifetime access</p>
+                <p className="text-white/50 text-xs mt-0.5">per month · auto-renews</p>
               </div>
               <div className="w-px h-8 bg-white/20" />
               <div>
                 <p className="text-yellow-300 font-bold text-xs">All Features</p>
-                <p className="text-white/50 text-xs">No renewals</p>
+                <p className="text-white/50 text-xs">Auto-renews monthly</p>
               </div>
             </div>
           </div>

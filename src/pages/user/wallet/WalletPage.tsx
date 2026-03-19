@@ -489,6 +489,13 @@ export default function WalletPage() {
                   )}
                 </button>
               </div>
+              {/* Premium auto-renewal note */}
+              <p className="text-white/40 text-xss mt-2 flex items-center gap-1">
+                <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                </svg>
+                Premium auto-renews from wallet (N500/mo)
+              </p>
             </div>
 
             {/* Quick action buttons on the card */}

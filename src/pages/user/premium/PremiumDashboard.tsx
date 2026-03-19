@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { db } from "../../../config/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import { useSubscriptionManager } from "../../../hooks/premium/useSubscriptionManager";
 
 const FEATURES = [
   {
@@ -133,17 +134,37 @@ export default function PremiumDashboard() {
   const navigate = useNavigate();
   const { studentDetails } = useGetUserInfo();
   const userID = studentDetails?.userID || "";
+  const userEmail = studentDetails?.email || "";
   const userName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}` : "Member";
 
   const [checking, setChecking] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
+
+  // Auto-renewal hook - checks subscription status and attempts renewal if expired
+  useSubscriptionManager({ userID, userEmail, userName });
 
   useEffect(() => {
     if (!userID) return;
     const unsub = onSnapshot(doc(db, "premiumUsers", userID), (snap) => {
       const active = snap.exists() && snap.data()?.active === true;
       setChecking(false);
-      if (!active) navigate("/u/premium", { replace: true });
+      if (!active) {
+        navigate("/u/premium", { replace: true });
+      } else {
+        // Get expiration date
+        const expData = snap.data()?.expiresAt;
+        if (expData) {
+          const expDate = expData.toDate ? expData.toDate() : new Date(expData);
+          setExpiresAt(expDate);
+          // Calculate days remaining
+          const now = new Date();
+          const diffTime = expDate.getTime() - now.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          setDaysRemaining(diffDays);
+        }
+      }
     });
     return () => unsub();
   }, [userID, navigate]);
@@ -205,16 +226,80 @@ export default function PremiumDashboard() {
           className="mt-8 grid grid-cols-3 gap-3"
         >
           {[
-            { label: "Features", value: `${FEATURES.length} Tools` },
-            { label: "Status", value: "Active" },
-            { label: "Plan", value: "Monthly" },
+            { label: "Features", value: `${FEATURES.length} Tools`, color: "#fbbf24" },
+            { label: "Status", value: "Active", color: "#34d399" },
+            { 
+              label: "Renews In", 
+              value: daysRemaining !== null ? `${daysRemaining} days` : "...",
+              color: daysRemaining !== null && daysRemaining <= 7 ? "#f87171" : daysRemaining !== null && daysRemaining <= 14 ? "#fb923c" : "#fbbf24"
+            },
           ].map((s) => (
             <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <p className="text-lg font-bold" style={{ color: "#fbbf24" }}>{s.value}</p>
+              <p className="text-lg font-bold" style={{ color: s.color }}>{s.value}</p>
               <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
             </div>
           ))}
         </motion.div>
+
+        {/* Renewal Warning Banner */}
+        {daysRemaining !== null && daysRemaining <= 7 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6 rounded-2xl p-4"
+            style={{
+              background: daysRemaining <= 3 
+                ? "rgba(239,68,68,0.15)" 
+                : "rgba(251,146,60,0.12)",
+              border: daysRemaining <= 3 
+                ? "1px solid rgba(239,68,68,0.3)" 
+                : "1px solid rgba(251,146,60,0.25)",
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ 
+                  background: daysRemaining <= 3 ? "rgba(239,68,68,0.2)" : "rgba(251,146,60,0.2)",
+                  border: daysRemaining <= 3 ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(251,146,60,0.3)"
+                }}>
+                <svg className="w-5 h-5" fill="none" stroke={daysRemaining <= 3 ? "#f87171" : "#fb923c"} viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-sm" style={{ color: daysRemaining <= 3 ? "#f87171" : "#fb923c" }}>
+                  {daysRemaining <= 0 
+                    ? "Subscription Expired" 
+                    : daysRemaining === 1 
+                      ? "Subscription expires tomorrow!" 
+                      : `Subscription expires in ${daysRemaining} days`}
+                </p>
+                <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+                  Your subscription will auto-renew from your wallet balance. Make sure you have at least N500 in your wallet.
+                  {expiresAt && (
+                    <span className="block mt-1 text-gray-500">
+                      Expires: {expiresAt.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  )}
+                </p>
+                <Link
+                  to="/u/wallet"
+                  className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:opacity-90"
+                  style={{ 
+                    background: daysRemaining <= 3 ? "#ef4444" : "#f59e0b", 
+                    color: "#fff" 
+                  }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Fund Wallet
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Feature Cards */}
