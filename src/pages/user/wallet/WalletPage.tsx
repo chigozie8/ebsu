@@ -404,12 +404,12 @@ export default function WalletPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [balanceVisible, setBalanceVisible] = useState(true);
-  const [supportNumber, setSupportNumber] = useState("07082039250");
+  const [supportNumber, setSupportNumber] = useState("+15792583013");
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "settings", "walletSupport"), (snap) => {
       if (snap.exists()) {
-        setSupportNumber(snap.data().phone || "07082039250");
+        setSupportNumber(snap.data().phone || "+15792583013");
       }
     });
     return () => unsub();
@@ -617,7 +617,7 @@ export default function WalletPage() {
 
         {/* Customer Support */}
         <a
-          href={`https://wa.me/234${supportNumber.replace(/^0/, "")}`}
+          href={`https://wa.me/${supportNumber.replace(/[^0-9]/g, "")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 flex items-center gap-3 p-3.5 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 transition-colors"
