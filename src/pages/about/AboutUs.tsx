@@ -41,22 +41,59 @@ export default function AboutUs() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-[1280px] w-full mx-auto flex items-center justify-center px-4">
         <div className="px-4 sm:px-14 sm:py-10 py-6 my-16 ss:mt-20 sm:my-24 bg-white shadow rounded-lg w-full">
+          {/* About Intro */}
           <h2 className="mb-4">
             <div className="bar-style" />
             About EBSUMSA
           </h2>
-          <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-5">
-            Ebonyi State University Medical Students Association (EBSUMSA) is the association of all medical students at Ebonyi State University, Abakaliki. Our motto is "Pro Deo et Humanitate" which translates as "For God and Humanity" hence we are tasked with the responsibility of impacting our immediate environment and transforming overall public health.
-          </p>
-          <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-5">
-            For our members, we advance academic excellence, professional development, and community health by organizing clinical skills workshops, research forums, public health outreaches, and peer-support programs to set medical students of EBSU as top on the global landscape.
-          </p>
-          <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-5">
-            EBSUMSA also serves as a bridge between students, faculty, and healthcare partners or investors to promote ethical practice, leadership, and opportunities for internships and collaborative projects. Through our initiatives, we foster a culture of excellence, compassion, and commitment to improving healthcare delivery and public health outcomes in our society.
-          </p>
           <p className="text-sm sm:text-xs text-gray-700 leading-7 mb-8">
-            Our core values encompass professionalism, integrity, innovation, and a deep commitment to social responsibility. We believe that medical education extends beyond the classroom—it encompasses developing well-rounded healthcare professionals who are not only skilled clinicians but also advocates for their communities and leaders in their fields.
+            The Ebonyi State University Medical Students Association (EBSUMSA) is the official representative body for all medical students at Ebonyi State University, Abakaliki. Guided by our motto, <span className="font-semibold text-gray-800">"Pro Deo et Humanitate"</span> (For God and Humanity), we are committed to transforming public health and making a meaningful impact in our immediate community and beyond.
           </p>
+
+          {/* Vision & Mission Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            {/* Vision */}
+            <div className="rounded-2xl border border-green-100 bg-green-50 p-5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <h4 className="text-sm font-bold text-green-800">Our Vision</h4>
+              </div>
+              <p className="text-xs text-green-900 leading-6">
+                To position medical students of EBSU as leaders on the global healthcare landscape through excellence, innovation, and compassion.
+              </p>
+            </div>
+
+            {/* Mission */}
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h4 className="text-sm font-bold text-amber-800">Our Mission</h4>
+              </div>
+              <p className="text-xs text-amber-900 leading-6">
+                To advance medical education by fostering clinical excellence, promoting cutting-edge research, driving public health outreach, and connecting students with professional development opportunities.
+              </p>
+            </div>
+          </div>
+
+          {/* What We Do */}
+          <div className="mb-8">
+            <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <div className="w-1 h-4 rounded-full bg-green-600" />
+              What We Do
+            </h4>
+            <p className="text-sm sm:text-xs text-gray-700 leading-7">
+              EBSUMSA serves as a vital bridge between students, faculty, and the wider healthcare community. We organize clinical skills workshops, research forums, public health outreaches, and peer-support programs. Through strategic partnerships with healthcare investors and institutions, we promote ethical practice, leadership, and access to internships and collaborative projects that prepare our members for global impact.
+            </p>
+          </div>
 
           {/* Social Media Links */}
           <div className="border-t border-gray-100 pt-8">
