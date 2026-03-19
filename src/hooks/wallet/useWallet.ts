@@ -157,34 +157,50 @@ export const useWallet = (userID: string | undefined, userEmail: string | undefi
   // Transfer to another user by email
   const transferToUser = async (recipientEmail: string, amount: number) => {
     if (!userID || !userEmail) throw new Error("Not authenticated");
-    if (recipientEmail.toLowerCase() === userEmail.toLowerCase())
+    if (recipientEmail.trim().toLowerCase() === userEmail.trim().toLowerCase())
       throw new Error("You cannot transfer to yourself");
+    if (amount <= 0) throw new Error("Enter a valid amount");
 
-    // Find recipient's wallet by email from userInfo collection
-    const userInfoQ = query(
-      collection(db, "userInfo"),
-      where("email", "==", recipientEmail)
-    );
-    const userInfoSnap = await getDocs(userInfoQ);
-    if (userInfoSnap.empty) throw new Error("No EBSUMSA user found with that email");
-
-    const recipientUserID = userInfoSnap.docs[0].data().userID;
+    // 1. Check sender balance first
     const senderWalletRef = doc(db, "wallets", userID);
-    const recipientWalletRef = doc(db, "wallets", recipientUserID);
-
     const senderSnap = await getDoc(senderWalletRef);
     if (!senderSnap.exists() || senderSnap.data().balance < amount)
       throw new Error("Insufficient wallet balance");
 
+    // 2. Find recipient in userInfo by email
+    const userInfoQ = query(
+      collection(db, "userInfo"),
+      where("email", "==", recipientEmail.trim().toLowerCase())
+    );
+    const userInfoSnap = await getDocs(userInfoQ);
+
+    // Also try non-lowercase version in case email was stored as entered
+    let recipientDoc = userInfoSnap.docs[0];
+    if (!recipientDoc) {
+      const userInfoQ2 = query(
+        collection(db, "userInfo"),
+        where("email", "==", recipientEmail.trim())
+      );
+      const userInfoSnap2 = await getDocs(userInfoQ2);
+      recipientDoc = userInfoSnap2.docs[0];
+    }
+
+    if (!recipientDoc) throw new Error("No EBSUMSA account found with that email address");
+
+    const recipientUserID = recipientDoc.data().userID;
+    if (!recipientUserID) throw new Error("Recipient account is incomplete. Please contact support.");
+
+    const recipientWalletRef = doc(db, "wallets", recipientUserID);
     const recipientSnap = await getDoc(recipientWalletRef);
     const recipientBalance = recipientSnap.exists() ? recipientSnap.data().balance : 0;
 
-    // Debit sender
+    // 3. Debit sender
     await updateDoc(senderWalletRef, {
       balance: senderSnap.data().balance - amount,
       updatedAt: serverTimestamp(),
     });
-    // Credit recipient (create wallet if needed)
+
+    // 4. Credit recipient (create wallet if it doesn't exist)
     if (recipientSnap.exists()) {
       await updateDoc(recipientWalletRef, {
         balance: recipientBalance + amount,
@@ -199,20 +215,20 @@ export const useWallet = (userID: string | undefined, userEmail: string | undefi
       });
     }
 
-    // Log transactions for both parties
+    // 5. Log transactions for both parties
     await addDoc(collection(db, "transactions"), {
       userID,
       userEmail,
       type: "transfer_out",
       amount,
-      description: `Transfer to ${recipientEmail}`,
-      recipientEmail,
+      description: `Transfer to ${recipientEmail.trim()}`,
+      recipientEmail: recipientEmail.trim(),
       status: "success",
       createdAt: serverTimestamp(),
     });
     await addDoc(collection(db, "transactions"), {
       userID: recipientUserID,
-      userEmail: recipientEmail,
+      userEmail: recipientEmail.trim(),
       type: "transfer_in",
       amount,
       description: `Transfer received from ${userEmail}`,
