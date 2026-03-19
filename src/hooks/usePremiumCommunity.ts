@@ -7,7 +7,7 @@ export type PremiumMessage = {
   user_id: string;
   user_name: string;
   user_avatar?: string;
-  content: string;
+  message: string;
   image_url?: string;
   likes_count: number;
   replies_count: number;
@@ -22,7 +22,7 @@ export type PremiumReply = {
   user_id: string;
   user_name: string;
   user_avatar?: string;
-  content: string;
+  reply: string;
   created_at: string;
 };
 
@@ -107,7 +107,7 @@ export const usePostPremiumMessage = () => {
     setPosting(true);
     try {
       const { error } = await supabase.from('premium_community_messages').insert([{
-        user_id: userId, user_name: userName, user_avatar: userAvatar || null, content, is_announcement: isAnnouncement,
+        user_id: userId, user_name: userName, user_avatar: userAvatar || null, message: content, is_announcement: isAnnouncement,
       }]);
       if (error) throw new Error(error.message);
     } finally {
@@ -126,7 +126,7 @@ export const usePostPremiumReply = () => {
     setPosting(true);
     try {
       const { error } = await supabase.from('premium_community_replies').insert([{
-        message_id: messageId, user_id: userId, user_name: userName, user_avatar: userAvatar, content,
+        message_id: messageId, user_id: userId, user_name: userName, user_avatar: userAvatar, reply: content,
       }]);
       if (error) throw error;
       // Manual replies_count increment

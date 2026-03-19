@@ -240,8 +240,8 @@ export default function PremiumDashboard() {
 
                 {/* Expanded detail */}
                 <div
-                  className="overflow-hidden transition-all duration-200"
-                  style={{ maxHeight: expanded === f.id ? "200px" : "0px", opacity: expanded === f.id ? 1 : 0 }}
+                  className="overflow-hidden transition-all duration-150"
+                  style={{ maxHeight: expanded === f.id ? "300px" : "0px", opacity: expanded === f.id ? 1 : 0, willChange: "max-height, opacity" }}
                 >
                   <div className="mt-3 pt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
                     <p className="text-xs text-gray-400 leading-relaxed mb-4">{f.detail}</p>
