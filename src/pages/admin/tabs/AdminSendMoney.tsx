@@ -32,6 +32,7 @@ const formatDate = (ts: any) => {
 export default function AdminSendMoney() {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loadingBanks, setLoadingBanks] = useState(true);
+  const [banksError, setBanksError] = useState("");
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
   const [bankSearch, setBankSearch] = useState("");
   const [showBankList, setShowBankList] = useState(false);
@@ -66,22 +67,19 @@ export default function AdminSendMoney() {
   useEffect(() => {
     (async () => {
       try {
-        console.log("[v0] Fetching banks from /api/paystack-banks...");
         const res = await fetch("/api/paystack-banks");
-        console.log("[v0] Banks response status:", res.status, res.statusText);
-        const text = await res.text();
-        console.log("[v0] Banks raw response:", text.slice(0, 300));
-        const data = JSON.parse(text);
+        const data = await res.json();
         if (data.banks) {
-          console.log("[v0] Banks loaded:", data.banks.length);
           setBanks(data.banks);
         } else {
-          console.error("[v0] Banks error from API:", data);
-          notifyUser("error", data.error || "Failed to load banks");
+          const msg = data.error || "Failed to load banks";
+          setBanksError(msg);
+          notifyUser("error", msg);
         }
       } catch (err) {
-        console.error("[v0] fetch banks error:", err);
-        notifyUser("error", "Failed to load banks. The API may not be available in preview — deploy to Vercel first.");
+        const msg = "Failed to reach Paystack API. Ensure PAYSTACK_SECRET_KEY is set in your project Vars.";
+        setBanksError(msg);
+        notifyUser("error", msg);
       } finally {
         setLoadingBanks(false);
       }
@@ -110,20 +108,14 @@ export default function AdminSendMoney() {
     setAccountName("");
     try {
       const url = `/api/paystack-resolve-account?account_number=${accNum}&bank_code=${bankCode}`;
-      console.log("[v0] Resolving account:", url);
       const res = await fetch(url);
-      console.log("[v0] Resolve response status:", res.status);
-      const text = await res.text();
-      console.log("[v0] Resolve raw response:", text.slice(0, 300));
-      const data = JSON.parse(text);
+      const data = await res.json();
       if (data.account_name) {
         setAccountName(data.account_name);
       } else {
-        console.error("[v0] Resolve error:", data);
         notifyUser("error", data.error || "Could not resolve account name");
       }
     } catch (err) {
-      console.error("[v0] resolve account error:", err);
       notifyUser("error", "Account resolution failed");
     } finally {
       setResolvingAccount(false);
@@ -152,7 +144,6 @@ export default function AdminSendMoney() {
     setSending(true);
     setShowConfirm(false);
     try {
-      console.log("[v0] Initiating transfer to:", accountName, "bank:", selectedBank!.code, "amount:", amount);
       const res = await fetch("/api/paystack-transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,10 +155,7 @@ export default function AdminSendMoney() {
           narration: narration || "EBSUMSA Admin Transfer",
         }),
       });
-      console.log("[v0] Transfer response status:", res.status);
-      const text = await res.text();
-      console.log("[v0] Transfer raw response:", text.slice(0, 500));
-      const data = JSON.parse(text);
+      const data = await res.json();
       if (!data.success) {
         notifyUser("error", data.error || "Transfer failed");
         setSending(false);
@@ -289,6 +277,29 @@ export default function AdminSendMoney() {
           <p className="text-xs text-indigo-600">Transfers are sent directly from your Paystack balance to any Nigerian bank account.</p>
         </div>
       </div>
+
+      {/* Config error banner */}
+      {banksError && (
+        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 flex gap-3 items-start">
+          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-red-800">Paystack Not Configured</p>
+            <p className="text-xs text-red-700 mt-0.5 leading-5">
+              <span className="font-semibold">PAYSTACK_SECRET_KEY</span> is missing. To fix this:
+            </p>
+            <ol className="text-xs text-red-700 mt-1.5 leading-6 list-decimal list-inside space-y-0.5">
+              <li>Open <span className="font-semibold">Project Settings</span> (top-right gear icon)</li>
+              <li>Go to the <span className="font-semibold">Vars</span> tab</li>
+              <li>Add <span className="font-mono font-semibold bg-red-100 px-1 rounded">PAYSTACK_SECRET_KEY</span> with your secret key from the Paystack dashboard</li>
+              <li>Redeploy or refresh the page</li>
+            </ol>
+          </div>
+        </div>
+      )}
 
       {/* Transfer Form */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-6">
