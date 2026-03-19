@@ -46,10 +46,7 @@ CREATE TABLE IF NOT EXISTS marketplace_products (
   status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'removed')),
   created_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now(),
-  is_featured BOOLEAN DEFAULT FALSE,
-  INDEX seller_idx (seller_id),
-  INDEX status_idx (status),
-  INDEX category_idx (category)
+  is_featured BOOLEAN DEFAULT FALSE
 );
 
 -- Product Images Table
@@ -59,8 +56,7 @@ CREATE TABLE IF NOT EXISTS product_images (
   image_url TEXT NOT NULL,
   alt_text VARCHAR(255),
   display_order INT DEFAULT 0,
-  created_at TIMESTAMP DEFAULT now(),
-  INDEX product_idx (product_id)
+  created_at TIMESTAMP DEFAULT now()
 );
 
 -- Shopping Cart Table
@@ -78,9 +74,7 @@ CREATE TABLE IF NOT EXISTS cart_items (
   product_id UUID NOT NULL REFERENCES marketplace_products(id),
   quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
   added_at TIMESTAMP DEFAULT now(),
-  UNIQUE(cart_id, product_id),
-  INDEX cart_idx (cart_id),
-  INDEX product_idx (product_id)
+  UNIQUE(cart_id, product_id)
 );
 
 -- Orders Table
@@ -100,11 +94,9 @@ CREATE TABLE IF NOT EXISTS marketplace_orders (
   payment_status VARCHAR(20) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'paid', 'failed', 'refunded')),
   payment_method VARCHAR(50),
   transaction_id VARCHAR(255),
+  notes TEXT,
   created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now(),
-  delivered_at TIMESTAMP,
-  INDEX buyer_idx (buyer_id),
-  INDEX status_idx (order_status)
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 -- Order Items Table
@@ -117,9 +109,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   quantity INT NOT NULL CHECK (quantity > 0),
   unit_price DECIMAL(10, 2) NOT NULL,
   subtotal DECIMAL(10, 2) NOT NULL,
-  seller_payout_status VARCHAR(20) DEFAULT 'pending' CHECK (seller_payout_status IN ('pending', 'processed', 'cancelled')),
-  INDEX order_idx (order_id),
-  INDEX seller_idx (seller_id)
+  seller_payout_status VARCHAR(20) DEFAULT 'pending' CHECK (seller_payout_status IN ('pending', 'processed', 'cancelled'))
 );
 
 -- Reviews Table
@@ -138,9 +128,7 @@ CREATE TABLE IF NOT EXISTS marketplace_reviews (
   seller_response TEXT,
   seller_response_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now(),
-  INDEX product_idx (product_id),
-  INDEX reviewer_idx (reviewer_id)
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 -- Review Helpfulness Table
@@ -149,8 +137,7 @@ CREATE TABLE IF NOT EXISTS review_helpfulness (
   review_id UUID NOT NULL REFERENCES marketplace_reviews(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id),
   is_helpful BOOLEAN,
-  UNIQUE(review_id, user_id),
-  INDEX review_idx (review_id)
+  UNIQUE(review_id, user_id)
 );
 
 -- Discount Codes Table
@@ -164,8 +151,7 @@ CREATE TABLE IF NOT EXISTS discount_codes (
   expiry_date TIMESTAMP,
   created_by UUID REFERENCES auth.users(id),
   active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT now(),
-  INDEX code_idx (code)
+  created_at TIMESTAMP DEFAULT now()
 );
 
 -- Seller Messages Table
@@ -176,9 +162,7 @@ CREATE TABLE IF NOT EXISTS seller_messages (
   receiver_id UUID NOT NULL REFERENCES auth.users(id),
   message TEXT NOT NULL,
   is_read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT now(),
-  INDEX sender_idx (sender_id),
-  INDEX receiver_idx (receiver_id)
+  created_at TIMESTAMP DEFAULT now()
 );
 
 -- Seller Transaction History
@@ -191,8 +175,7 @@ CREATE TABLE IF NOT EXISTS seller_transactions (
   commission_amount DECIMAL(10, 2) DEFAULT 0,
   net_amount DECIMAL(10, 2),
   status VARCHAR(20) DEFAULT 'completed',
-  created_at TIMESTAMP DEFAULT now(),
-  INDEX seller_idx (seller_id)
+  created_at TIMESTAMP DEFAULT now()
 );
 
 -- ==================== OPPORTUNITIES TABLES ====================
@@ -213,9 +196,7 @@ CREATE TABLE IF NOT EXISTS opportunities (
   applications_count INT DEFAULT 0,
   status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'closed', 'archived')),
   created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now(),
-  INDEX type_idx (type),
-  INDEX deadline_idx (deadline)
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 -- User Applications Table
@@ -226,9 +207,7 @@ CREATE TABLE IF NOT EXISTS user_applications (
   status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'withdrawn')),
   applied_at TIMESTAMP DEFAULT now(),
   updated_at TIMESTAMP DEFAULT now(),
-  UNIQUE(user_id, opportunity_id),
-  INDEX user_idx (user_id),
-  INDEX opportunity_idx (opportunity_id)
+  UNIQUE(user_id, opportunity_id)
 );
 
 -- ==================== INDEXES FOR PERFORMANCE ====================
