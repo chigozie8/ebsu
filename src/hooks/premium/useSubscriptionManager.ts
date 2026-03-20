@@ -96,14 +96,14 @@ export const useSubscriptionManager = ({
     } catch (error: any) {
       console.error("[useSubscriptionManager] Error checking subscription:", error);
     }
-  }, [userID, userEmail, userName]);
+  }, [userID, userEmail]);
 
   // Check subscription status on mount
   useEffect(() => {
     if (!userID || hasChecked.current) return;
     hasChecked.current = true;
     checkAndRenewSubscription();
-  }, [userID, checkAndRenewSubscription]);
+  }, [userID]);
 
   return { checkAndRenewSubscription };
 };
