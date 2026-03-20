@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, AlertCircle } from 'lucide-react';
+import { ChevronDown, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 interface Guideline {
@@ -15,26 +15,11 @@ const GuidelinesBanner: React.FC = () => {
 
   useEffect(() => {
     fetchGuidelines();
-
-    // Subscribe to guideline changes
     const channel = supabase
       .channel('community_guidelines_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_guidelines',
-        },
-        () => {
-          fetchGuidelines();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_guidelines' }, fetchGuidelines)
       .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, []);
 
   const fetchGuidelines = async () => {
@@ -43,50 +28,51 @@ const GuidelinesBanner: React.FC = () => {
         .from('community_guidelines')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setGuidelines(data || []);
     } catch (err) {
-      console.error('[v0] Failed to fetch guidelines:', err);
+      console.error('[community] Failed to fetch guidelines:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading || guidelines.length === 0) {
-    return null;
-  }
+  if (loading || guidelines.length === 0) return null;
 
   return (
-    <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-blue-100 transition-colors"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
       >
-        <div className="flex items-center gap-3 text-left">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Community Guidelines</h3>
-            <p className="text-xs sm:text-sm text-gray-600">Click to view community rules</p>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <ShieldCheck className="w-4 h-4 text-teal-600" />
+          </div>
+          <div className="text-left">
+            <p className="font-semibold text-slate-800 text-sm">Community Guidelines</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {expanded ? 'Tap to collapse' : `${guidelines.length} rules · tap to view`}
+            </p>
           </div>
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-gray-600 transition-transform flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-400 transition-transform duration-200 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
 
       {expanded && (
-        <div className="px-4 sm:px-6 py-4 sm:py-5 bg-white border-t border-blue-200">
-          <ul className="space-y-2 sm:space-y-3">
-            {guidelines.map((guideline, index) => (
-              <li key={guideline.id} className="flex gap-3">
-                <span className="font-semibold text-blue-600 flex-shrink-0 text-sm sm:text-base">
-                  {index + 1}.
+        <div className="px-5 pb-5 pt-1 border-t border-slate-100">
+          <ol className="space-y-2.5 mt-3">
+            {guidelines.map((g, i) => (
+              <li key={g.id} className="flex gap-3 items-start">
+                <span className="w-5 h-5 rounded-full bg-teal-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
                 </span>
-                <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{guideline.content}</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{g.content}</p>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
       )}
     </div>

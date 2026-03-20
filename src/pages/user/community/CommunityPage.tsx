@@ -6,9 +6,20 @@ import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage 
 import MessageCard from '../../../components/community/MessageCard';
 import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
-import { Send, Search, MessageSquare, Check, ArrowLeft } from 'lucide-react';
+import { Send, Search, MessageSquare, Check, ArrowLeft, Users, TrendingUp, Flame } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
+
+const TOPICS = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
+
+const TOPIC_META: Record<string, { color: string; dot: string }> = {
+  All:         { color: 'bg-teal-500 text-white shadow-teal-200',          dot: 'bg-teal-400' },
+  General:     { color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
+  Academics:   { color: 'bg-blue-100 text-blue-700 border border-blue-200',    dot: 'bg-blue-500' },
+  'Campus Life':{ color: 'bg-pink-100 text-pink-700 border border-pink-200',   dot: 'bg-pink-500' },
+  Tech:        { color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
+  Events:      { color: 'bg-amber-100 text-amber-700 border border-amber-200',  dot: 'bg-amber-500' },
+};
 
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,11 +28,10 @@ const CommunityPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-  // Get current user from useGetUserInfo hook
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const userId = studentDetails?.userID || 'anonymous';
-  const userName = studentDetails?.firstName && studentDetails?.lastName 
-    ? `${studentDetails.firstName} ${studentDetails.lastName}` 
+  const userId    = studentDetails?.userID || 'anonymous';
+  const userName  = studentDetails?.firstName && studentDetails?.lastName
+    ? `${studentDetails.firstName} ${studentDetails.lastName}`
     : 'Student User';
   const userAvatar = studentDetails?.profileImageURL || undefined;
 
@@ -30,87 +40,67 @@ const CommunityPage: React.FC = () => {
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
 
-  // Track message count to detect new incoming messages from others
   const prevMessageCountRef = useRef<number | null>(null);
   useEffect(() => {
     if (loading) return;
     if (prevMessageCountRef.current !== null && messages.length > prevMessageCountRef.current) {
-      // Only play if the latest message is NOT from the current user
       const latest = messages[0];
-      if (latest && latest.user_id !== userId) {
-        playSound("message");
-      }
+      if (latest && latest.user_id !== userId) playSound('message');
     }
     prevMessageCountRef.current = messages.length;
   }, [messages, loading, userId]);
 
-  const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
-
-  // Subscribe to message updates
   useEffect(() => {
     const channel = supabase
       .channel('community_messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'community_messages',
-        },
-        () => {
-          // Message was updated (likes_count changed), the component will re-render with new data from the hook
-        }
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'community_messages' }, () => {})
       .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, []);
 
-  const filteredMessages = messages.filter((msg) =>
-    msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    msg.user_name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMessages = messages.filter(
+    (msg) =>
+      msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      msg.user_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Separate pinned and regular messages
-  const pinnedMessages = filteredMessages.filter((msg) => msg.is_pinned);
-  const regularMessages = filteredMessages.filter((msg) => !msg.is_pinned);
+  const pinnedMessages  = filteredMessages.filter((m) => m.is_pinned);
+  const regularMessages = filteredMessages.filter((m) => !m.is_pinned);
 
   const handlePostMessage = async () => {
     if (!newMessage.trim()) return;
-
-    // Check if user info is loaded
-    if (!studentDetails || !studentDetails.userID) {
-      toast.error('Loading your profile... Please try again in a moment.');
+    if (!studentDetails?.userID) {
+      toast.error('Loading your profile… Please try again.');
       return;
     }
-
     try {
       await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar);
       setNewMessage('');
-      toast.success('Message posted successfully!', {
+      toast.success('Message posted!', {
         duration: 3000,
         position: 'top-right',
         style: {
-          background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+          background: 'linear-gradient(135deg,#14b8a6 0%,#06b6d4 100%)',
           color: 'white',
-          borderRadius: '8px',
-          padding: '16px',
+          borderRadius: '10px',
+          padding: '14px 18px',
           fontSize: '14px',
           fontWeight: '500',
         },
-        icon: <Check className="w-5 h-5" />,
+        icon: <Check className="w-4 h-4" />,
       });
     } catch (err) {
-      console.error('[v0] Failed to post message:', err);
+      console.error('[community] post failed:', err);
       toast.error('Failed to post message. Please try again.');
     }
   };
 
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handlePostMessage();
+  };
+
   return (
     <>
-      {/* Thread Viewer Modal */}
       {selectedThreadId && (
         <ThreadViewer
           messageId={selectedThreadId}
@@ -121,180 +111,239 @@ const CommunityPage: React.FC = () => {
         />
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 pb-6 sm:pb-8 lg:pb-10">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur shadow-sm border-b border-gray-200">
-        <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 py-4 sm:py-5 lg:py-6">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Go back"
-            >
-              <ArrowLeft className="w-5 sm:w-6 h-5 sm:h-6 text-gray-700" />
-            </button>
-            <div className="bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg p-2 sm:p-2.5">
-              <MessageSquare className="w-5 sm:w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Student Community</h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">Ask questions, share ideas, and connect</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="min-h-screen bg-slate-50 pb-12">
 
-      <div className="w-full max-w-[1720px] mx-auto px-3 xxss:px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 lg:mt-8">
-        {/* Search Bar */}
-        <div className="mb-4 sm:mb-5 lg:mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 sm:top-3 w-4 sm:w-5 h-4 sm:h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search messages or users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Topic Filter - Horizontal Scroll on Mobile */}
-        <div className="mb-4 sm:mb-5 lg:mb-6 overflow-x-auto pb-2 -mx-3 sm:-mx-6 lg:-mx-8 px-3 sm:px-6 lg:px-8">
-          <div className="flex gap-2 min-w-max">
-            {topics.map((t) => (
+        {/* ── Hero Header ─────────────────────────────────────────── */}
+        <div className="relative bg-gradient-to-br from-teal-600 via-teal-500 to-cyan-400 overflow-hidden">
+          {/* subtle grid texture */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }}
+          />
+          <div className="relative w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <div className="flex items-center gap-3 mb-5">
               <button
-                key={t}
-                onClick={() => setTopic(t)}
-                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
-                  topic === t
-                    ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-teal-300 hover:bg-gray-50'
-                }`}
+                onClick={() => navigate(-1)}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors text-white"
+                title="Go back"
               >
-                {t}
+                <ArrowLeft className="w-5 h-5" />
               </button>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* New Message Composer */}
-        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-3 sm:p-4 lg:p-5 mb-4 sm:mb-5 lg:mb-6">
-          <div className="flex gap-2 sm:gap-3">
-            {userAvatar ? (
-              <img
-                src={userAvatar}
-                alt={userName}
-                className="w-9 sm:w-10 h-9 sm:h-10 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-xs sm:text-sm font-bold">
-                {userName.charAt(0)}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                    Student Community
+                  </h1>
+                </div>
+                <p className="text-teal-100 text-sm sm:text-base max-w-lg">
+                  Ask questions, share ideas, and connect with fellow EBSU students.
+                </p>
               </div>
-            )}
 
-            <div className="flex-1 min-w-0">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="What's on your mind?"
-                className="w-full p-2 sm:p-3 text-sm sm:text-base border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                rows={2}
-              />
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-stretch sm:items-center mt-2 sm:mt-3">
-                <select
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="px-2.5 sm:px-3 py-1.5 sm:py-2 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-                >
-                  {topics.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handlePostMessage}
-                  disabled={posting || !newMessage.trim() || gettingStudentDetails}
-                  className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm sm:text-base rounded-lg font-medium hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  <Send className="w-4 h-4" />
-                  <span className="hidden sm:inline">Post</span>
-                  <span className="sm:hidden">Post</span>
-                </button>
+              {/* Quick stats */}
+              <div className="flex gap-3 flex-shrink-0">
+                <div className="bg-white/15 backdrop-blur rounded-xl px-4 py-2.5 text-center">
+                  <div className="flex items-center gap-1.5 text-white">
+                    <Users className="w-4 h-4" />
+                    <span className="text-sm font-semibold">{messages.length}</span>
+                  </div>
+                  <p className="text-teal-100 text-xs mt-0.5">Posts</p>
+                </div>
+                <div className="bg-white/15 backdrop-blur rounded-xl px-4 py-2.5 text-center">
+                  <div className="flex items-center gap-1.5 text-white">
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="text-sm font-semibold">{TOPICS.length - 1}</span>
+                  </div>
+                  <p className="text-teal-100 text-xs mt-0.5">Topics</p>
+                </div>
               </div>
+            </div>
+
+            {/* Search bar sitting on the hero */}
+            <div className="mt-6 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-teal-300" />
+              <input
+                type="text"
+                placeholder="Search messages or students…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 text-white placeholder-teal-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm backdrop-blur"
+              />
             </div>
           </div>
         </div>
 
-        {/* Community Guidelines Banner */}
-        <GuidelinesBanner />
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 mt-6">
 
-        {/* Messages */}
-        {loading ? (
-          <div className="text-center py-12 sm:py-16">
-            <div className="animate-spin rounded-full h-10 sm:h-12 w-10 sm:w-12 border-b-2 border-teal-500 mx-auto mb-3 sm:mb-4"></div>
-            <p className="text-sm sm:text-base text-gray-600">Loading discussions...</p>
+          {/* ── Topic Filters ───────────────────────────────────────── */}
+          <div className="overflow-x-auto pb-1 -mx-4 sm:mx-0 px-4 sm:px-0 mb-6">
+            <div className="flex gap-2 min-w-max">
+              {TOPICS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTopic(t)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+                    topic === t
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-200 scale-105'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:border-teal-300 hover:text-teal-600 hover:shadow-sm'
+                  }`}
+                >
+                  {t !== 'All' && (
+                    <span className={`w-2 h-2 rounded-full ${TOPIC_META[t]?.dot ?? 'bg-gray-400'}`} />
+                  )}
+                  {t === 'All' && <Flame className="w-3.5 h-3.5" />}
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : filteredMessages.length === 0 ? (
-          <div className="text-center py-12 sm:py-16 bg-white rounded-xl border border-gray-100">
-            <MessageSquare className="w-10 sm:w-12 h-10 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-            <p className="text-sm sm:text-base text-gray-600">No messages yet. Be the first to ask something!</p>
-          </div>
-        ) : (
-          <div className="space-y-3 sm:space-y-4 lg:space-y-5">
-            {/* Pinned Messages Section */}
-            {pinnedMessages.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
-                  </svg>
-                  <h2 className="text-sm font-semibold text-gray-900">Pinned Messages</h2>
+
+          {/* ── Two-column layout (composer + content) ─────────────── */}
+          <div className="flex flex-col lg:flex-row gap-6">
+
+            {/* LEFT — post composer + guidelines */}
+            <div className="lg:w-[380px] xl:w-[420px] flex-shrink-0 space-y-4">
+
+              {/* Composer Card */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="bg-gradient-to-r from-teal-500 to-cyan-500 px-5 py-3.5">
+                  <p className="text-white font-semibold text-sm">Start a discussion</p>
+                  <p className="text-teal-100 text-xs mt-0.5">Share what's on your mind</p>
                 </div>
-                <div className="space-y-3 sm:space-y-4 mb-6">
-                  {pinnedMessages.map((message) => (
-                    <div key={message.id} className="bg-amber-50 rounded-xl shadow-md border-2 border-amber-200 overflow-hidden hover:shadow-lg transition-shadow relative">
-                      <div className="absolute top-2 right-2 bg-amber-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
-                        </svg>
-                        Pinned
+                <div className="p-4 sm:p-5">
+                  <div className="flex gap-3 items-start">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-teal-200"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center flex-shrink-0 text-white text-sm font-bold ring-2 ring-teal-100">
+                        {userName.charAt(0)}
                       </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-700 mb-1.5">{userName}</p>
+                      <textarea
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={onKeyDown}
+                        placeholder="What's on your mind? (Ctrl+Enter to post)"
+                        className="w-full p-3 text-sm border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-slate-50 placeholder-slate-400"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+                    <select
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white text-slate-700 font-medium"
+                    >
+                      {TOPICS.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handlePostMessage}
+                      disabled={posting || !newMessage.trim() || gettingStudentDetails}
+                      className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm rounded-lg font-semibold hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-teal-100"
+                    >
+                      <Send className="w-4 h-4" />
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Guidelines Banner */}
+              <GuidelinesBanner />
+            </div>
+
+            {/* RIGHT — messages feed */}
+            <div className="flex-1 min-w-0">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-12 h-12 rounded-full border-4 border-teal-100 border-t-teal-500 animate-spin mb-4" />
+                  <p className="text-slate-500 text-sm">Loading discussions…</p>
+                </div>
+              ) : filteredMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100">
+                  <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mb-4">
+                    <MessageSquare className="w-8 h-8 text-teal-400" />
+                  </div>
+                  <p className="text-slate-700 font-semibold text-base">No messages yet</p>
+                  <p className="text-slate-400 text-sm mt-1">Be the first to start a discussion!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+
+                  {/* Pinned Messages */}
+                  {pinnedMessages.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-5 h-5 bg-amber-400 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">Pinned</span>
+                      </div>
+                      <div className="space-y-3">
+                        {pinnedMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className="rounded-2xl overflow-hidden border-2 border-amber-200 bg-amber-50 shadow-sm hover:shadow-md transition-shadow relative"
+                          >
+                            <div className="absolute top-3 right-3 bg-amber-400 text-white px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 z-10">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
+                              </svg>
+                              Pinned
+                            </div>
+                            <MessageCard
+                              message={message}
+                              isOwn={message.user_id === userId}
+                              onDelete={() => deleteMessage(message.id)}
+                              onEdit={(id, text) => editMessage(id, text)}
+                              isAdmin={message.user_id === userId}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regular Messages */}
+                  {regularMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-200 transition-all"
+                    >
                       <MessageCard
                         message={message}
                         isOwn={message.user_id === userId}
                         onDelete={() => deleteMessage(message.id)}
                         onEdit={(id, text) => editMessage(id, text)}
+                        onThreadClick={setSelectedThreadId}
                         isAdmin={message.user_id === userId}
                       />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Regular Messages */}
-            {regularMessages.length > 0 && (
-              <div className="space-y-3 sm:space-y-4 lg:space-y-5">
-                {regularMessages.map((message) => (
-                  <div key={message.id} className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
-                    <MessageCard
-                      message={message}
-                      isOwn={message.user_id === userId}
-                      onDelete={() => deleteMessage(message.id)}
-                      onEdit={(id, text) => editMessage(id, text)}
-                      onThreadClick={setSelectedThreadId}
-                      isAdmin={message.user_id === userId}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
     </>
   );
 };
