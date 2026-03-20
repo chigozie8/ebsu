@@ -99,6 +99,7 @@ export const useSubscriptionManager = ({
   }, [userID, userEmail]);
 
   // Check subscription status on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!userID || hasChecked.current) return;
     hasChecked.current = true;
