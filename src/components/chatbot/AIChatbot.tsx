@@ -99,12 +99,6 @@ export const AIChatbot = () => {
   const [streamingContent, setStreamingContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Hide chatbot on the premium package page
-  const isPremiumPage = location.pathname === "/u/premium";
-  if (isPremiumPage) {
-    return null;
-  }
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -112,6 +106,12 @@ export const AIChatbot = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent]);
+
+  // Hide chatbot on the premium package page
+  const isPremiumPage = location.pathname === "/u/premium";
+  if (isPremiumPage) {
+    return null;
+  }
 
   const sendMessage = async () => {
     if (!input.trim()) return;
