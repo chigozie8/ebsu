@@ -1,23 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Hardcoded fallbacks ensure the client always connects even when env vars
-// are not yet injected (e.g. first load in preview, Vite define race, etc.)
-const FALLBACK_URL = 'https://fmjxxldlqirmnzkekjkf.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtanh4bGRscWlybW56a2VramtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzA0NzIsImV4cCI6MjA4OTQ0NjQ3Mn0.PX18WAPpzzg-emMbxV2bz-yR5fo-MjvVMvDQAYZeTrc';
-
-const supabaseUrl: string =
-  (import.meta.env.VITE_SUPABASE_URL as string) ||
-  (process.env.SUPABASE_URL as string) ||
-  (process.env.NEXT_PUBLIC_SUPABASE_URL as string) ||
-  FALLBACK_URL;
-
-const supabaseAnonKey: string =
-  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-  (process.env.SUPABASE_ANON_KEY as string) ||
-  (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ||
-  FALLBACK_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// ─── Community Types ──────────────────────────────────────────────────────────
+// This file now exports only TypeScript types.
+// All data access uses Firebase Firestore (see src/hooks/useCommunity.ts).
 
 export type Community = {
   id: string;
@@ -33,6 +16,12 @@ export type Community = {
   is_pinned: boolean;
   is_edited: boolean;
   is_deleted: boolean;
+  image_url?: string;
+  sticker_url?: string;
+  media_type?: 'text' | 'image' | 'sticker';
+  forwarded_from?: string;
+  forwarded_from_user?: string;
+  sub_community_id?: string;
 };
 
 export type CommunityReply = {
@@ -46,6 +35,9 @@ export type CommunityReply = {
   updated_at: string;
   is_edited: boolean;
   is_deleted: boolean;
+  image_url?: string;
+  sticker_url?: string;
+  media_type?: 'text' | 'image' | 'sticker';
 };
 
 export type CommunityLike = {
@@ -76,4 +68,25 @@ export type CommunityGuideline = {
   id: string;
   content: string;
   created_at: string;
+};
+
+export type SubCommunity = {
+  id: string;
+  name: string;
+  description?: string;
+  icon_url?: string;
+  color: string;
+  parent_topic: string;
+  created_by: string;
+  member_count: number;
+  created_at: string;
+  is_active: boolean;
+};
+
+export type CommunitySticker = {
+  id: string;
+  pack_name: string;
+  name: string;
+  url: string;
+  emoji_tags?: string[];
 };
