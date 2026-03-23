@@ -146,7 +146,7 @@ export const usePostMessage = () => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const postMessage = useCallback(async (userId: string, userName: string, message: string, topic: string, userAvatar?: string) => {
+  const postMessage = useCallback(async (userId: string, userName: string, message: string, topic: string, userAvatar?: string, imageUrls?: string[], subcategoryId?: string) => {
     try {
       setPosting(true);
       setError(null);
@@ -157,6 +157,8 @@ export const usePostMessage = () => {
           user_avatar: userAvatar,
           message,
           topic,
+          image_urls: imageUrls && imageUrls.length > 0 ? imageUrls : null,
+          subcategory_id: subcategoryId || null,
         },
       ]);
 

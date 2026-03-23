@@ -82,7 +82,15 @@ const CommunityPage: React.FC = () => {
       return;
     }
     try {
-      await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar, imageUrls, selectedSubcategory);
+      await postMessage(
+        userId,
+        userName,
+        newMessage,
+        topic === 'All' ? 'General' : topic,
+        userAvatar,
+        imageUrls.length > 0 ? imageUrls : undefined,
+        selectedSubcategory
+      );
       setNewMessage('');
       clearImages();
       toast.success('Message posted!', {
