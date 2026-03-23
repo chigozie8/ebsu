@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityMessages, usePostMessage, useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
+import { useCommunityMessageEnhanced, useImageUpload } from '../../../hooks/useCommunityFeatures';
 import MessageCard from '../../../components/community/MessageCard';
 import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
-import { Send, Search, MessageSquare, Check, ArrowLeft, Users, TrendingUp, Flame } from 'lucide-react';
+import { SubcategoryFilter } from '../../../components/community/SubcategoryFilter';
+import { StickerPicker } from '../../../components/community/StickerPicker';
+import { Send, Search, MessageSquare, Check, ArrowLeft, Users, TrendingUp, Flame, Image, Smile, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
 
@@ -27,6 +30,9 @@ const CommunityPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | undefined>();
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
   const userId    = studentDetails?.userID || 'anonymous';
@@ -39,6 +45,8 @@ const CommunityPage: React.FC = () => {
   const { postMessage, posting } = usePostMessage();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage } = useEditMessage();
+  const { imageUrls, addImageUrl, removeImageUrl, clearImages } = useCommunityMessageEnhanced();
+  const { uploading, uploadImage } = useImageUpload();
 
   const prevMessageCountRef = useRef<number | null>(null);
   useEffect(() => {
@@ -68,14 +76,15 @@ const CommunityPage: React.FC = () => {
   const regularMessages = filteredMessages.filter((m) => !m.is_pinned);
 
   const handlePostMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && imageUrls.length === 0) return;
     if (!studentDetails?.userID) {
       toast.error('Loading your profile… Please try again.');
       return;
     }
     try {
-      await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar);
+      await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar, imageUrls, selectedSubcategory);
       setNewMessage('');
+      clearImages();
       toast.success('Message posted!', {
         duration: 3000,
         position: 'top-right',
@@ -95,6 +104,16 @@ const CommunityPage: React.FC = () => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.currentTarget.files;
+    if (!files) return;
+
+    for (let i = 0; i < files.length && imageUrls.length < 3; i++) {
+      const url = await uploadImage(files[i], userId);
+      if (url) addImageUrl(url);
+    }
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handlePostMessage();
   };
@@ -110,6 +129,17 @@ const CommunityPage: React.FC = () => {
           userAvatar={userAvatar}
         />
       )}
+
+      {/* Sticker Picker Modal */}
+      <StickerPicker
+        userId={userId}
+        isOpen={showStickerPicker}
+        onClose={() => setShowStickerPicker(false)}
+        onSelectSticker={(sticker) => {
+          setNewMessage((prev) => prev + ` ${sticker.image_url} `);
+          setShowStickerPicker(false);
+        }}
+      />
 
       <div className="min-h-screen bg-slate-50 pb-12">
 
@@ -204,6 +234,15 @@ const CommunityPage: React.FC = () => {
             </div>
           </div>
 
+          {/* ── Subcategories Filter ────────────────────────────────── */}
+          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+            <p className="text-xs font-semibold text-slate-600 mb-3 uppercase">Filter by category</p>
+            <SubcategoryFilter
+              selectedCategory={selectedSubcategory}
+              onCategoryChange={setSelectedSubcategory}
+            />
+          </div>
+
           {/* ── Two-column layout (composer + content) ─────────────── */}
           <div className="flex flex-col lg:flex-row gap-6">
 
@@ -239,10 +278,57 @@ const CommunityPage: React.FC = () => {
                         className="w-full p-3 text-sm border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-slate-50 placeholder-slate-400"
                         rows={3}
                       />
+
+                      {/* Image Preview */}
+                      {imageUrls.length > 0 && (
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          {imageUrls.map((url, idx) => (
+                            <div key={idx} className="relative group">
+                              <img
+                                src={url}
+                                alt={`preview-${idx}`}
+                                className="w-full h-20 object-cover rounded-lg border border-slate-200"
+                              />
+                              <button
+                                onClick={() => removeImageUrl(idx)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading || imageUrls.length >= 3}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading || imageUrls.length >= 3}
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
+                        title="Add images (max 3)"
+                      >
+                        <Image className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setShowStickerPicker(true)}
+                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
+                        title="Add sticker"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                    </div>
                     <select
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
@@ -254,7 +340,7 @@ const CommunityPage: React.FC = () => {
                     </select>
                     <button
                       onClick={handlePostMessage}
-                      disabled={posting || !newMessage.trim() || gettingStudentDetails}
+                      disabled={posting || (!newMessage.trim() && imageUrls.length === 0) || gettingStudentDetails}
                       className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm rounded-lg font-semibold hover:from-teal-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-teal-100"
                     >
                       <Send className="w-4 h-4" />
