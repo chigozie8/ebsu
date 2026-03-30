@@ -1,5 +1,3 @@
-'use server'
-
 import { generateText } from 'ai'
 
 export async function summarizePDFContent(fileContent: string, fileName: string) {

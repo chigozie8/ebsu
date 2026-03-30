@@ -1,4 +1,3 @@
-"use client"
 import { Carousel } from "flowbite-react";
 import { FC } from "react";
 import { BlogPostProp } from "../../../../models/misc/blog/blogPosts";
