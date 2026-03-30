@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GeneralNavbar } from "../../components/navbar/GeneralNavbar";
 import Footer from "../../components/footer/Footer";
-import { galleryItems } from "../../data/galleryData";
+import { useCloudinaryGallery } from "../../hooks/useCloudinaryGallery";
 import {
   IoClose,
   IoChevronBack,
@@ -46,7 +46,7 @@ function useColumns() {
 }
 
 export default function GalleryPage() {
-  const items = galleryItems;
+  const { items, loading, error } = useCloudinaryGallery();
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch]           = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -182,11 +182,31 @@ export default function GalleryPage() {
       {/* Main content */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
         {/* Loading skeleton */}
+        {loading && (
+          <div className="flex gap-4">
+            {Array.from({ length: 4 }).map((_, col) => (
+              <div key={col} className="flex-1 flex flex-col gap-4">
+                {Array.from({ length: 3 }).map((_, row) => (
+                  <div key={row} className="aspect-square rounded-2xl bg-gray-200 animate-pulse" />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Error state */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center py-28 text-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+              <IoImages className="text-3xl text-red-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700">Couldn't load gallery</h3>
+            <p className="text-sm text-gray-400 max-w-xs">{error}</p>
+          </div>
+        )}
 
         {/* Empty state */}
-        {filtered.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -210,7 +230,7 @@ export default function GalleryPage() {
         )}
 
         {/* Masonry grid */}
-        {filtered.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <motion.div
             layout
             className="flex gap-4"

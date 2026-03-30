@@ -12,8 +12,8 @@ import {
   IoPlay,
   IoVideocam,
 } from "react-icons/io5";
-import { galleryItems, type GalleryItem } from "../../data/galleryData";
-export type { GalleryItem } from "../../data/galleryData";
+import { useCloudinaryGallery, type GalleryItem } from "../../hooks/useCloudinaryGallery";
+export type { GalleryItem } from "../../hooks/useCloudinaryGallery";
 
 // ---------- animation variants ----------
 const fadeInVariants1 = {
@@ -165,9 +165,20 @@ function EmptyGallery() {
   );
 }
 
+// ---------- Loading Skeleton ----------
+function GallerySkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="aspect-square rounded-xl bg-gray-200 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
 // ---------- Main Gallery ----------
 export default function Gallery() {
-  const items = galleryItems;
+  const { items, loading } = useCloudinaryGallery();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -238,7 +249,9 @@ export default function Gallery() {
             {/* Grid preview */}
             <div className="basis-1/2">
               <div className="p-0 sm:p-6">
-                {items.length === 0 ? (
+                {loading ? (
+                  <GallerySkeleton />
+                ) : items.length === 0 ? (
                   <EmptyGallery />
                 ) : (
                   <>
