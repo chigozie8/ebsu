@@ -71,5 +71,6 @@
   },
   "engines": {
     "node": ">=18.x"
-  }
+  },
+  "packageManager": "npm@10.0.0"
 }
