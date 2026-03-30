@@ -23,6 +23,7 @@ export const STORAGE_BUCKETS = {
   LEARNING_RESOURCES: 'learning-resources',
   PAYMENT_RECEIPTS: 'id-cards',
   ADVERTISEMENTS: 'advertisements',
+  COMMUNITY_IMAGES: 'community-images',
 } as const;
 
 // Helper to get public URL for a file
