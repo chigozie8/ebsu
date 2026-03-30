@@ -44,14 +44,22 @@ export default defineConfig(({ mode }) => {
   });
 
   const penv = (process as any).env as Record<string, string | undefined>;
-  const supabaseUrl = penv['SUPABASE_URL'] || penv['NEXT_PUBLIC_SUPABASE_URL'] || env['SUPABASE_URL'] || env['NEXT_PUBLIC_SUPABASE_URL'] || env['VITE_SUPABASE_URL'] || '';
-  const supabaseAnonKey = penv['SUPABASE_ANON_KEY'] || penv['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || env['SUPABASE_ANON_KEY'] || env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || env['VITE_SUPABASE_ANON_KEY'] || '';
+
+  const resolveKey = (...keys: string[]) =>
+    keys.map(k => penv[k] || env[k] || '').find(Boolean) || '';
+
+  const viteImportMetaEnv: Record<string, string> = {};
+  const viteKeys = cherryPickedKeys.filter(k => k.startsWith('VITE_'));
+  viteKeys.forEach(key => {
+    viteImportMetaEnv[`import.meta.env.${key}`] = JSON.stringify(penv[key] || env[key] || '');
+  });
 
   return {
     define: {
       'process.env': processEnv,
-      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
-      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+      ...viteImportMetaEnv,
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(resolveKey('VITE_SUPABASE_URL', 'SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL')),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(resolveKey('VITE_SUPABASE_ANON_KEY', 'SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_KEY')),
     },
     plugins: [react()],
     server: {
