@@ -335,7 +335,7 @@ export default function Gallery() {
               >
                 Explore the view
               </motion.h3>
-              <Lottie animationData={galleryAnim} className="md:w-[80%] w-full" />
+              <Lottie animationData={galleryAnim} loop={false} className="md:w-[80%] w-full" />
             </div>
           </div>
         </div>
