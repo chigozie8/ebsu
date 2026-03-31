@@ -63,8 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...mapResources(vidJson.resources || [], "video"),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
-    // No CDN caching — always serve fresh so uploads appear immediately
-    res.setHeader("Cache-Control", "no-store");
+    // 2-minute CDN cache — short enough that uploads appear quickly,
+    // long enough to avoid hammering Cloudinary's rate limit.
+    res.setHeader("Cache-Control", "s-maxage=120, stale-while-revalidate=300");
     return res.status(200).json({ items });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

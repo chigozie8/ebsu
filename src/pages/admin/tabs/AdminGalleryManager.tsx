@@ -58,6 +58,7 @@ export default function AdminGalleryManager() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [filterCategory, setFilterCategory] = useState("all");
+  const [staleData, setStaleData]           = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const cloudNameVal  = getCloudName();
@@ -80,28 +81,30 @@ export default function AdminGalleryManager() {
 
   const fetchItems = async () => {
     setLoading(true);
+    setStaleData(false);
     try {
       const fetched = await listGalleryItems();
       if (fetched.length > 0) {
         setItems(fetched);
         saveLocal(fetched);
       } else {
-        // Server returned empty — keep showing last known items and warn
+        // Server returned empty — silently show last known items
         const fallback = loadLocal();
         if (fallback.length > 0) {
           setItems(fallback);
-          notifyUser("error", "Gallery API returned empty — showing last saved list. Try refreshing in a moment.");
+          setStaleData(true);
         } else {
           setItems([]);
         }
       }
-    } catch (err) {
+    } catch {
+      // API unavailable (rate limit, outage) — show saved list silently
       const fallback = loadLocal();
       if (fallback.length > 0) {
         setItems(fallback);
-        notifyUser("error", "Could not reach server — showing last saved gallery list.");
+        setStaleData(true);
       } else {
-        notifyUser("error", err instanceof Error ? err.message : "Failed to load gallery");
+        notifyUser("error", "Gallery unavailable — check your connection and try refreshing.");
       }
     } finally {
       setLoading(false);
@@ -192,6 +195,7 @@ export default function AdminGalleryManager() {
       });
 
       setUploadProgress(100);
+      setStaleData(false);
       setItems((prev) => {
         const updated = [newItem as unknown as GalleryItem, ...prev];
         saveLocal(updated);
@@ -247,7 +251,10 @@ export default function AdminGalleryManager() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Gallery Manager</h2>
-          <p className="text-sm text-gray-500 mt-1">{items.length} item{items.length !== 1 ? "s" : ""} — powered by Cloudinary</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {items.length} item{items.length !== 1 ? "s" : ""} — powered by Cloudinary
+            {staleData && <span className="ml-2 text-amber-500 text-xs">(saved list — refresh to sync)</span>}
+          </p>
         </div>
         <button onClick={fetchItems} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-green2 transition-colors">
           <IoRefresh className={loading ? "animate-spin" : ""} /> Refresh
