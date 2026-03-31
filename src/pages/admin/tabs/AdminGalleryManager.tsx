@@ -63,13 +63,46 @@ export default function AdminGalleryManager() {
   const cloudNameVal  = getCloudName();
   const uploadPresetVal = uploadPreset();
 
+  const LS_KEY = "ebsumsa_gallery_cache";
+
+  const saveLocal = (data: GalleryItem[]) => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ items: data, at: Date.now() })); } catch { /* ignore */ }
+  };
+
+  const loadLocal = (): GalleryItem[] => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return [];
+      const { items } = JSON.parse(raw) as { items: GalleryItem[] };
+      return Array.isArray(items) ? items : [];
+    } catch { return []; }
+  };
+
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const items = await listGalleryItems();
-      setItems(items);
+      const fetched = await listGalleryItems();
+      if (fetched.length > 0) {
+        setItems(fetched);
+        saveLocal(fetched);
+      } else {
+        // Server returned empty — keep showing last known items and warn
+        const fallback = loadLocal();
+        if (fallback.length > 0) {
+          setItems(fallback);
+          notifyUser("error", "Gallery API returned empty — showing last saved list. Try refreshing in a moment.");
+        } else {
+          setItems([]);
+        }
+      }
     } catch (err) {
-      notifyUser("error", err instanceof Error ? err.message : "Failed to load gallery");
+      const fallback = loadLocal();
+      if (fallback.length > 0) {
+        setItems(fallback);
+        notifyUser("error", "Could not reach server — showing last saved gallery list.");
+      } else {
+        notifyUser("error", err instanceof Error ? err.message : "Failed to load gallery");
+      }
     } finally {
       setLoading(false);
     }
@@ -159,7 +192,11 @@ export default function AdminGalleryManager() {
       });
 
       setUploadProgress(100);
-      setItems((prev) => [newItem, ...prev]);
+      setItems((prev) => {
+        const updated = [newItem as unknown as GalleryItem, ...prev];
+        saveLocal(updated);
+        return updated;
+      });
       // Bust the server-side gallery cache so the new item appears for all visitors
       fetch("/api/gallery-cache", { method: "DELETE" }).catch(() => {});
       notifyUser("success", "Image uploaded to gallery!");
@@ -177,7 +214,11 @@ export default function AdminGalleryManager() {
     setDeletingId(item.publicId);
     try {
       await deleteGalleryItem(item.publicId, item.type);
-      setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
+      setItems((prev) => {
+        const updated = prev.filter((i) => i.publicId !== item.publicId);
+        saveLocal(updated);
+        return updated;
+      });
       // Remove this specific item from the server-side cache immediately
       // (avoids Cloudinary search-index lag when clicking Refresh)
       fetch("/api/gallery-cache", {

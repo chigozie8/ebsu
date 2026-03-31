@@ -18,8 +18,25 @@ interface UseCloudinaryGalleryResult {
   refetch: () => void;
 }
 
+const LS_KEY = "ebsumsa_gallery_cache";
+
+function saveToLocal(items: GalleryItem[]) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ items, at: Date.now() }));
+  } catch { /* storage full or unavailable */ }
+}
+
+function loadFromLocal(): GalleryItem[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const { items } = JSON.parse(raw) as { items: GalleryItem[] };
+    return Array.isArray(items) ? items : [];
+  } catch { return []; }
+}
+
 export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
-  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [items, setItems] = useState<GalleryItem[]>(() => loadFromLocal());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -40,11 +57,24 @@ export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
           ...item,
           id: item.publicId || String(idx),
         }));
-        setItems(mapped);
+        if (mapped.length > 0) {
+          setItems(mapped);
+          saveToLocal(mapped);
+        } else {
+          // Server returned empty — keep showing the last known items from localStorage
+          const fallback = loadFromLocal();
+          if (fallback.length > 0) setItems(fallback);
+        }
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err.message || "Failed to load gallery");
+        // On any network / server error, keep the previously cached items visible
+        const fallback = loadFromLocal();
+        if (fallback.length > 0) {
+          setItems(fallback);
+        } else {
+          setError(err.message || "Failed to load gallery");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
