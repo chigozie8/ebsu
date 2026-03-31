@@ -109,10 +109,26 @@ app.get('/api/gallery-list', async (req, res) => {
   }
 });
 
-// DELETE /api/gallery-cache  — bust the gallery cache after an upload or delete
-app.delete('/api/gallery-cache', (_req, res) => {
+// DELETE /api/gallery-cache  — bust or surgically update the gallery cache
+// Body (optional): { publicId: string }  → removes only that item from cache
+// No body                                → wipes the whole cache (use after uploads)
+app.delete('/api/gallery-cache', (req, res) => {
   try {
-    if (fs.existsSync(GALLERY_CACHE_FILE)) fs.unlinkSync(GALLERY_CACHE_FILE);
+    const { publicId } = (req.body || {}) as { publicId?: string };
+    if (publicId) {
+      // Surgical remove: update cache in-place so re-fetches don't need to call Cloudinary
+      const existing = readCache();
+      if (existing) {
+        const updated = {
+          items: (existing.items as any[]).filter((i: any) => i.publicId !== publicId),
+          at: existing.at,
+        };
+        writeCache(updated);
+        return res.status(200).json({ cleared: false, removed: publicId, remaining: updated.items.length });
+      }
+    } else {
+      if (fs.existsSync(GALLERY_CACHE_FILE)) fs.unlinkSync(GALLERY_CACHE_FILE);
+    }
     return res.status(200).json({ cleared: true });
   } catch (err) {
     return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
@@ -145,9 +161,13 @@ app.delete('/api/gallery-upload', async (req, res) => {
       method: 'POST',
       body: form,
     });
-    const d = await r.json() as { result: string };
+    const d = await r.json() as { result?: string; error?: { message: string } };
+    // Expose the real Cloudinary error so clients can show meaningful messages
+    if (d.error) {
+      return res.status(500).json({ error: d.error.message });
+    }
     if (d.result !== 'ok' && d.result !== 'not found') {
-      return res.status(500).json({ error: `Cloudinary delete failed: ${d.result}` });
+      return res.status(500).json({ error: `Cloudinary returned: ${d.result ?? 'unknown'}` });
     }
     return res.status(200).json({ success: true });
   } catch (err) {

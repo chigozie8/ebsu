@@ -369,7 +369,7 @@ export default function Gallery() {
             animate="visible"
             exit="exit"
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[9999] bg-black/95 flex flex-col"
+            className="fixed inset-0 z-[9999] flex flex-col" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(16px)" }}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">

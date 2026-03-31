@@ -178,8 +178,13 @@ export default function AdminGalleryManager() {
     try {
       await deleteGalleryItem(item.publicId, item.type);
       setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
-      // Bust the server-side gallery cache so the deletion is visible to all visitors
-      fetch("/api/gallery-cache", { method: "DELETE" }).catch(() => {});
+      // Remove this specific item from the server-side cache immediately
+      // (avoids Cloudinary search-index lag when clicking Refresh)
+      fetch("/api/gallery-cache", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId: item.publicId }),
+      }).catch(() => {});
       notifyUser("success", "Deleted successfully");
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Failed to delete item");

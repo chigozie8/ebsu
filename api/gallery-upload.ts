@@ -48,9 +48,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { method: "POST", body: form }
     );
 
-    const data = await r.json() as { result: string };
+    const data = await r.json() as { result?: string; error?: { message: string } };
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message });
+    }
     if (data.result !== "ok" && data.result !== "not found") {
-      return res.status(500).json({ error: `Cloudinary delete failed: ${data.result}` });
+      return res.status(500).json({ error: `Cloudinary returned: ${data.result ?? "unknown"}` });
     }
 
     return res.status(200).json({ success: true });
