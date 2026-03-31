@@ -374,7 +374,7 @@ export default function Gallery() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-4">
-                <h3 className="text-white font-medium">
+                <h3 className="text-green2 font-medium">
                   Gallery ({imageCount} photo{imageCount !== 1 ? "s" : ""}
                   {videoCount > 0 ? `, ${videoCount} video${videoCount !== 1 ? "s" : ""}` : ""})
                 </h3>
