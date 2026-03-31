@@ -26,30 +26,46 @@ app.get('/api/gallery-list', async (req, res) => {
 
   try {
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`, {
-      method: 'POST',
-      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        expression: 'folder:ebsu_gallery',
-        sort_by: [{ created_at: 'desc' }],
-        max_results: 500,
-        with_field: ['context', 'tags'],
-      }),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      return res.status(502).json({ error: `Cloudinary: ${t.slice(0, 200)}` });
-    }
-    const data = await r.json() as any;
-    const items = (data.resources || []).map((item: any) => ({
-      url: item.secure_url,
-      publicId: item.public_id,
-      category: item.context?.custom?.category || 'general',
-      caption: item.context?.custom?.caption || '',
-      type: item.resource_type === 'video' ? 'video' : 'image',
-      uploadedAt: item.created_at,
-      size: item.bytes,
-    }));
+
+    const searchPayload = (resourceType: string) =>
+      fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          expression: `folder:ebsu_gallery AND resource_type:${resourceType}`,
+          sort_by: [{ created_at: 'desc' }],
+          max_results: 500,
+          with_field: ['context', 'tags'],
+        }),
+      });
+
+    // Fetch images and videos in parallel
+    const [imgRes, vidRes] = await Promise.all([
+      searchPayload('image'),
+      searchPayload('video'),
+    ]);
+
+    const mapResources = (data: any, forcedType: 'image' | 'video') =>
+      (data.resources || []).map((item: any) => ({
+        url: item.secure_url,
+        publicId: item.public_id,
+        category: item.context?.custom?.category || 'general',
+        caption: item.context?.custom?.caption || '',
+        type: forcedType,
+        uploadedAt: item.created_at,
+        size: item.bytes,
+      }));
+
+    const [imgData, vidData] = await Promise.all([
+      imgRes.ok ? imgRes.json() : Promise.resolve({ resources: [] }),
+      vidRes.ok ? vidRes.json() : Promise.resolve({ resources: [] }),
+    ]);
+
+    const items = [
+      ...mapResources(imgData, 'image'),
+      ...mapResources(vidData, 'video'),
+    ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
     return res.status(200).json({ items });
   } catch (err) {
     return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });

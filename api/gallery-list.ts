@@ -8,51 +8,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
   const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
+  type CloudinaryResource = {
+    public_id: string;
+    secure_url: string;
+    resource_type: string;
+    created_at: string;
+    bytes: number;
+    context?: { custom?: { category?: string; caption?: string } };
+  };
+
   try {
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/resources/search`,
-      {
+    const search = (resourceType: string) =>
+      fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`, {
         method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          expression: "folder:ebsu_gallery",
+          expression: `folder:ebsu_gallery AND resource_type:${resourceType}`,
           sort_by: [{ created_at: "desc" }],
           max_results: 500,
           with_field: ["context", "tags"],
         }),
-      }
-    );
+      });
 
-    if (!response.ok) {
-      const text = await response.text();
-      return res.status(502).json({ error: `Cloudinary: ${text.slice(0, 200)}` });
-    }
+    // Fetch images and videos in parallel
+    const [imgRes, vidRes] = await Promise.all([search("image"), search("video")]);
 
-    const data = await response.json() as {
-      resources: Array<{
-        public_id: string;
-        secure_url: string;
-        resource_type: string;
-        created_at: string;
-        bytes: number;
-        context?: { custom?: { category?: string; caption?: string } };
-      }>;
-    };
+    const mapResources = (resources: CloudinaryResource[], forcedType: "image" | "video") =>
+      resources.map((r) => ({
+        url:        r.secure_url,
+        publicId:   r.public_id,
+        category:   r.context?.custom?.category || "general",
+        caption:    r.context?.custom?.caption  || "",
+        type:       forcedType,
+        uploadedAt: r.created_at,
+        size:       r.bytes,
+      }));
 
-    const items = (data.resources || []).map((r) => ({
-      url:        r.secure_url,
-      publicId:   r.public_id,
-      category:   r.context?.custom?.category || "general",
-      caption:    r.context?.custom?.caption  || "",
-      type:       r.resource_type === "video" ? "video" : "image",
-      uploadedAt: r.created_at,
-      size:       r.bytes,
-    }));
+    const [imgData, vidData] = await Promise.all([
+      imgRes.ok ? (imgRes.json() as Promise<{ resources: CloudinaryResource[] }>) : Promise.resolve({ resources: [] }),
+      vidRes.ok ? (vidRes.json() as Promise<{ resources: CloudinaryResource[] }>) : Promise.resolve({ resources: [] }),
+    ]);
+
+    const items = [
+      ...mapResources(imgData.resources || [], "image"),
+      ...mapResources(vidData.resources || [], "video"),
+    ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
     return res.status(200).json({ items });
   } catch (err) {
