@@ -18,9 +18,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Simple in-memory cache for gallery (avoids burning Cloudinary API quota on every page load)
-let galleryCache: { items: unknown[]; at: number } | null = null;
-const GALLERY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// ── Persistent file-based gallery cache ──────────────────────────────────────
+// Survives server restarts. Also serves stale data during Cloudinary rate limits.
+const GALLERY_CACHE_FILE = '/tmp/ebsumsa-gallery-cache.json';
+const GALLERY_CACHE_TTL  = 30 * 60 * 1000; // 30 minutes
+
+type CacheShape = { items: unknown[]; at: number };
+
+function readCache(): CacheShape | null {
+  try {
+    const raw = fs.readFileSync(GALLERY_CACHE_FILE, 'utf8');
+    return JSON.parse(raw) as CacheShape;
+  } catch { return null; }
+}
+
+function writeCache(data: CacheShape) {
+  try { fs.writeFileSync(GALLERY_CACHE_FILE, JSON.stringify(data)); } catch { /* ignore */ }
+}
 
 // GET /api/gallery-list
 app.get('/api/gallery-list', async (req, res) => {
@@ -28,9 +42,10 @@ app.get('/api/gallery-list', async (req, res) => {
   const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
   const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
-  // Serve from cache if fresh
-  if (galleryCache && Date.now() - galleryCache.at < GALLERY_CACHE_TTL) {
-    return res.status(200).json({ items: galleryCache.items, cached: true });
+  // Serve from cache if still fresh (survives server restarts)
+  const cached = readCache();
+  if (cached && Date.now() - cached.at < GALLERY_CACHE_TTL) {
+    return res.status(200).json({ items: cached.items, cached: true });
   }
 
   try {
@@ -48,7 +63,6 @@ app.get('/api/gallery-list', async (req, res) => {
         }),
       });
 
-    // Fetch images and videos in parallel
     const [imgRes, vidRes] = await Promise.all([
       searchPayload('image'),
       searchPayload('video'),
@@ -65,19 +79,32 @@ app.get('/api/gallery-list', async (req, res) => {
         size: item.bytes,
       }));
 
-    const [imgData, vidData] = await Promise.all([
-      imgRes.ok ? imgRes.json() : Promise.resolve({ resources: [] }),
-      vidRes.ok ? vidRes.json() : Promise.resolve({ resources: [] }),
-    ]);
+    // If Cloudinary returns rate-limit / error, fall back to stale cache rather than empty
+    const imgData = imgRes.ok ? await imgRes.json() : { resources: [] };
+    const vidData = vidRes.ok ? await vidRes.json() : { resources: [] };
+
+    if (imgData.error || vidData.error) {
+      console.warn('[gallery] Cloudinary error:', imgData.error?.message || vidData.error?.message);
+      if (cached) {
+        console.log('[gallery] Serving stale cache due to Cloudinary error');
+        return res.status(200).json({ items: cached.items, stale: true });
+      }
+      return res.status(200).json({ items: [] });
+    }
 
     const items = [
       ...mapResources(imgData, 'image'),
       ...mapResources(vidData, 'video'),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
-    galleryCache = { items, at: Date.now() };
+    writeCache({ items, at: Date.now() });
     return res.status(200).json({ items });
   } catch (err) {
+    // On any network error, serve stale cache if available
+    if (cached) {
+      console.log('[gallery] Network error, serving stale cache');
+      return res.status(200).json({ items: cached.items, stale: true });
+    }
     return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
