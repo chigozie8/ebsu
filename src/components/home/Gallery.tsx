@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
-import Lottie from "lottie-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import galleryAnim from "../../json/animation/gallery.json";
-import { motion, AnimatePresence } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
 import {
   IoClose,
@@ -186,6 +186,17 @@ export default function Gallery() {
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20);
 
+  // Scroll-triggered Lottie: play once when section enters viewport
+  const lottieRef = useRef<LottieRefCurrentProps>(null);
+  const lottieContainerRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(lottieContainerRef, { once: true, margin: "0px 0px -100px 0px" });
+
+  useEffect(() => {
+    if (isInView && lottieRef.current) {
+      lottieRef.current.play();
+    }
+  }, [isInView]);
+
   const previewItems = items.slice(0, PREVIEW_COUNT);
   const imageCount = items.filter((i) => i.type === "image").length;
   const videoCount = items.filter((i) => i.type === "video").length;
@@ -335,7 +346,15 @@ export default function Gallery() {
               >
                 Explore the view
               </motion.h3>
-              <Lottie animationData={galleryAnim} loop={false} className="md:w-[80%] w-full" />
+              <div ref={lottieContainerRef}>
+                <Lottie
+                  lottieRef={lottieRef}
+                  animationData={galleryAnim}
+                  loop={false}
+                  autoplay={false}
+                  className="md:w-[80%] w-full"
+                />
+              </div>
             </div>
           </div>
         </div>
