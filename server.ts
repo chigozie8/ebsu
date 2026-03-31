@@ -109,6 +109,16 @@ app.get('/api/gallery-list', async (req, res) => {
   }
 });
 
+// DELETE /api/gallery-cache  — bust the gallery cache after an upload or delete
+app.delete('/api/gallery-cache', (_req, res) => {
+  try {
+    if (fs.existsSync(GALLERY_CACHE_FILE)) fs.unlinkSync(GALLERY_CACHE_FILE);
+    return res.status(200).json({ cleared: true });
+  } catch (err) {
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 // DELETE /api/gallery-upload
 app.delete('/api/gallery-upload', async (req, res) => {
   const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsqjg9mfg';

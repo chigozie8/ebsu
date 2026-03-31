@@ -160,6 +160,8 @@ export default function AdminGalleryManager() {
 
       setUploadProgress(100);
       setItems((prev) => [newItem, ...prev]);
+      // Bust the server-side gallery cache so the new item appears for all visitors
+      fetch("/api/gallery-cache", { method: "DELETE" }).catch(() => {});
       notifyUser("success", "Image uploaded to gallery!");
       clearSelection();
     } catch (err) {
@@ -176,6 +178,8 @@ export default function AdminGalleryManager() {
     try {
       await deleteGalleryItem(item.publicId, item.type);
       setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
+      // Bust the server-side gallery cache so the deletion is visible to all visitors
+      fetch("/api/gallery-cache", { method: "DELETE" }).catch(() => {});
       notifyUser("success", "Deleted successfully");
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Failed to delete item");
