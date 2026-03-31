@@ -41,6 +41,20 @@ export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
+  // Listen for localStorage changes from another tab (e.g. admin uploads)
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LS_KEY && e.newValue) {
+        try {
+          const { items: fresh } = JSON.parse(e.newValue) as { items: GalleryItem[] };
+          if (Array.isArray(fresh) && fresh.length > 0) setItems(fresh);
+        } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

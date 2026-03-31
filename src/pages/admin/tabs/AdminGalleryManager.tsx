@@ -197,9 +197,14 @@ export default function AdminGalleryManager() {
         saveLocal(updated);
         return updated;
       });
-      // Bust the server-side gallery cache so the new item appears for all visitors
-      fetch("/api/gallery-cache", { method: "DELETE" }).catch(() => {});
-      notifyUser("success", "Image uploaded to gallery!");
+      // Inject the new item directly into the server cache so every visitor
+      // sees it immediately — no Cloudinary search-index delay.
+      fetch("/api/gallery-cache", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: newItem }),
+      }).catch(() => {});
+      notifyUser("success", "Uploaded successfully! It's now live in the gallery.");
       clearSelection();
     } catch (err) {
       notifyUser("error", err instanceof Error ? err.message : "Upload failed");

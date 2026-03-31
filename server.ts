@@ -109,6 +109,29 @@ app.get('/api/gallery-list', async (req, res) => {
   }
 });
 
+// POST /api/gallery-cache  — inject a newly-uploaded item directly into the cache
+// This makes the new item visible to everyone immediately, without waiting for
+// Cloudinary's search index to update.
+app.post('/api/gallery-cache', (req, res) => {
+  try {
+    const { item } = (req.body || {}) as { item?: any };
+    if (!item || !item.publicId) return res.status(400).json({ error: 'item with publicId required' });
+    const existing = readCache();
+    if (!existing) {
+      // No cache yet — don't create a partial one, let the next gallery fetch
+      // populate it fully from Cloudinary.
+      return res.status(200).json({ added: false, reason: 'no_cache' });
+    }
+    // Prepend the new item, removing any old duplicate
+    const deduped = (existing.items as any[]).filter((i: any) => i.publicId !== item.publicId);
+    const updated = { items: [item, ...deduped], at: existing.at };
+    writeCache(updated);
+    return res.status(200).json({ added: true, total: updated.items.length });
+  } catch (err) {
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 // DELETE /api/gallery-cache  — bust or surgically update the gallery cache
 // Body (optional): { publicId: string }  → removes only that item from cache
 // No body                                → wipes the whole cache (use after uploads)
