@@ -20,13 +20,9 @@ app.use((req, res, next) => {
 
 // GET /api/gallery-list
 app.get('/api/gallery-list', async (req, res) => {
-  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY;
-  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    return res.status(500).json({ error: 'Cloudinary env vars not configured' });
-  }
+  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsqjg9mfg';
+  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
+  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
   try {
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
@@ -62,13 +58,9 @@ app.get('/api/gallery-list', async (req, res) => {
 
 // DELETE /api/gallery-upload
 app.delete('/api/gallery-upload', async (req, res) => {
-  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY;
-  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    return res.status(500).json({ error: 'Cloudinary env vars not configured' });
-  }
+  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsqjg9mfg';
+  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
+  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
   try {
     const { publicId, resourceType = 'image' } = req.body as { publicId: string; resourceType?: string };

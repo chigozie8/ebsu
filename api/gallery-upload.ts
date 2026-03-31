@@ -22,13 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "DELETE") return res.status(405).json({ error: "Method not allowed" });
 
-  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY;
-  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET;
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    return res.status(500).json({ error: "Cloudinary env vars not configured" });
-  }
+  const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsqjg9mfg';
+  const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
+  const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
   try {
     const body = await readBody(req);

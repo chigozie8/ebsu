@@ -50,8 +50,15 @@ export default defineConfig(({ mode }) => {
 
   const viteImportMetaEnv: Record<string, string> = {};
   const viteKeys = cherryPickedKeys.filter(k => k.startsWith('VITE_'));
+  const CLOUDINARY_FALLBACKS: Record<string, string> = {
+    VITE_CLOUDINARY_CLOUD_NAME:    'dsqjg9mfg',
+    VITE_CLOUDINARY_API_KEY:       '731583139833111',
+    VITE_CLOUDINARY_UPLOAD_PRESET: 'ebsumsa',
+  };
+
   viteKeys.forEach(key => {
-    viteImportMetaEnv[`import.meta.env.${key}`] = JSON.stringify(penv[key] || env[key] || '');
+    const value = penv[key] || env[key] || CLOUDINARY_FALLBACKS[key] || '';
+    viteImportMetaEnv[`import.meta.env.${key}`] = JSON.stringify(value);
   });
 
   return {

@@ -10,8 +10,8 @@
 
 import type { GalleryItem } from "../pages/admin/tabs/AdminGalleryManager";
 
-export const getCloudName   = () => (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME   as string) || "";
-export const uploadPreset   = () => (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string) || "";
+export const getCloudName   = () => (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME   as string) || "dsqjg9mfg";
+export const uploadPreset   = () => (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string) || "ebsumsa";
 
 // ─── List ────────────────────────────────────────────────────────────────────
 export async function listGalleryItems(): Promise<GalleryItem[]> {
