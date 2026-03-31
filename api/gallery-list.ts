@@ -56,6 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...mapResources(vidData.resources || [], "video"),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
     return res.status(200).json({ items });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

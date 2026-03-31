@@ -15,7 +15,7 @@ import {
 
 const CATEGORIES = [
   { value: "all",          label: "All" },
-  { value: "videos",       label: "Videos",    isTypeFilter: true },
+  { value: "videos",       label: "Videos" },
   { value: "general",      label: "General" },
   { value: "events",       label: "Events" },
   { value: "activities",   label: "Activities" },
@@ -59,12 +59,14 @@ export default function GalleryPage() {
 
   // Filtered list
   const filtered = items.filter((item) => {
-    const matchCat =
-      activeCategory === "all"
-        ? true
-        : activeCategory === "videos"
-        ? item.type === "video"
-        : item.type !== "video" && item.category === activeCategory;
+    let matchCat: boolean;
+    if (activeCategory === "all") {
+      matchCat = true;
+    } else if (activeCategory === "videos") {
+      matchCat = item.type === "video";
+    } else {
+      matchCat = item.category === activeCategory;
+    }
     const q = search.trim().toLowerCase();
     const matchSearch = !q || item.caption?.toLowerCase().includes(q) || item.category?.toLowerCase().includes(q);
     return matchCat && matchSearch;
@@ -101,7 +103,7 @@ export default function GalleryPage() {
   const categoryCount = (val: string) => {
     if (val === "all") return items.length;
     if (val === "videos") return items.filter((i) => i.type === "video").length;
-    return items.filter((i) => i.type !== "video" && i.category === val).length;
+    return items.filter((i) => i.category === val).length;
   };
 
   return (
@@ -164,32 +166,32 @@ export default function GalleryPage() {
           </div>
           {/* Category pills */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1">
-          {CATEGORIES.map((cat) => {
-            const count = categoryCount(cat.value);
-            if (cat.value !== "all" && count === 0) return null;
-            const isVideos = cat.value === "videos";
-            return (
-              <button
-                key={cat.value}
-                onClick={() => setActiveCategory(cat.value)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  activeCategory === cat.value
-                    ? isVideos
-                      ? "bg-rose-500 text-white shadow-sm"
-                      : "bg-green2 text-white shadow-sm"
-                    : isVideos
-                    ? "bg-white text-rose-500 border border-rose-200 hover:border-rose-400 hover:bg-rose-50"
-                    : "bg-white text-gray-600 border border-gray-200 hover:border-green2/50 hover:text-green2"
-                }`}
-              >
-                {isVideos && <IoVideocam className="text-base" />}
-                {cat.label}
-                <span className={`text-xs rounded-full px-1.5 py-0.5 ${activeCategory === cat.value ? "bg-white/20 text-white" : isVideos ? "bg-rose-50 text-rose-400" : "bg-gray-100 text-gray-500"}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+            {CATEGORIES.map((cat) => {
+              const count = categoryCount(cat.value);
+              if (cat.value !== "all" && count === 0) return null;
+              const isVideos = cat.value === "videos";
+              return (
+                <button
+                  key={cat.value}
+                  onClick={() => setActiveCategory(cat.value)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                    activeCategory === cat.value
+                      ? isVideos
+                        ? "bg-rose-500 text-white shadow-sm"
+                        : "bg-green2 text-white shadow-sm"
+                      : isVideos
+                      ? "bg-white text-rose-500 border border-rose-200 hover:border-rose-400 hover:bg-rose-50"
+                      : "bg-white text-gray-600 border border-gray-200 hover:border-green2/50 hover:text-green2"
+                  }`}
+                >
+                  {isVideos && <IoVideocam className="text-base" />}
+                  {cat.label}
+                  <span className={`text-xs rounded-full px-1.5 py-0.5 ${activeCategory === cat.value ? "bg-white/20 text-white" : isVideos ? "bg-rose-50 text-rose-400" : "bg-gray-100 text-gray-500"}`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -228,7 +230,9 @@ export default function GalleryPage() {
             className="flex flex-col items-center justify-center py-28 text-center gap-4"
           >
             <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
-              <IoImages className="text-3xl text-gray-400" />
+              {activeCategory === "videos"
+                ? <IoVideocam className="text-3xl text-gray-400" />
+                : <IoImages className="text-3xl text-gray-400" />}
             </div>
             <h3 className="text-lg font-semibold text-gray-700">
               {activeCategory === "videos" ? "No videos yet" : "No photos yet"}
@@ -290,6 +294,11 @@ export default function GalleryPage() {
                             <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
                               <IoVideocam className="text-gray-900 text-xl" />
                             </div>
+                          </div>
+                          {/* Always-visible video badge */}
+                          <div className="absolute top-2 right-2 bg-black/60 rounded-full px-2 py-0.5 flex items-center gap-1">
+                            <IoVideocam className="text-white text-xs" />
+                            <span className="text-white text-xs font-semibold">Video</span>
                           </div>
                         </>
                       ) : (

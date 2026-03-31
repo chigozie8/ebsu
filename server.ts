@@ -18,11 +18,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Simple in-memory cache for gallery (avoids burning Cloudinary API quota on every page load)
+let galleryCache: { items: unknown[]; at: number } | null = null;
+const GALLERY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // GET /api/gallery-list
 app.get('/api/gallery-list', async (req, res) => {
   const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME || 'dsqjg9mfg';
   const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
   const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
+
+  // Serve from cache if fresh
+  if (galleryCache && Date.now() - galleryCache.at < GALLERY_CACHE_TTL) {
+    return res.status(200).json({ items: galleryCache.items, cached: true });
+  }
 
   try {
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
@@ -66,6 +75,7 @@ app.get('/api/gallery-list', async (req, res) => {
       ...mapResources(vidData, 'video'),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
+    galleryCache = { items, at: Date.now() };
     return res.status(200).json({ items });
   } catch (err) {
     return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
