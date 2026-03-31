@@ -42,11 +42,9 @@ app.get('/api/gallery-list', async (req, res) => {
   const apiKey    = process.env.VITE_CLOUDINARY_API_KEY    || '731583139833111';
   const apiSecret = process.env.VITE_CLOUDINARY_API_SECRET || '5Kbu5rq0DcwEbqlWXTD58Mk4dOw';
 
-  // Serve from cache if still fresh (survives server restarts)
-  const cached = readCache();
-  if (cached && Date.now() - cached.at < GALLERY_CACHE_TTL) {
-    return res.status(200).json({ items: cached.items, cached: true });
-  }
+  // Always fetch fresh from Cloudinary so newly uploaded items appear immediately.
+  // The cache is only used as a fallback when Cloudinary is unavailable.
+  const staleCache = readCache();
 
   try {
     const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
@@ -79,17 +77,18 @@ app.get('/api/gallery-list', async (req, res) => {
         size: item.bytes,
       }));
 
-    // If Cloudinary returns rate-limit / error, fall back to stale cache rather than empty
-    const imgData = imgRes.ok ? await imgRes.json() : { resources: [] };
-    const vidData = vidRes.ok ? await vidRes.json() : { resources: [] };
+    const imgData = imgRes.ok ? await imgRes.json() : { resources: [], error: { message: `HTTP ${imgRes.status}` } };
+    const vidData = vidRes.ok ? await vidRes.json() : { resources: [], error: { message: `HTTP ${vidRes.status}` } };
 
+    // Cloudinary returned a rate-limit or API error — serve stale cache instead
     if (imgData.error || vidData.error) {
-      console.warn('[gallery] Cloudinary error:', imgData.error?.message || vidData.error?.message);
-      if (cached) {
-        console.log('[gallery] Serving stale cache due to Cloudinary error');
-        return res.status(200).json({ items: cached.items, stale: true });
+      const errMsg = imgData.error?.message || vidData.error?.message;
+      console.warn('[gallery] Cloudinary error:', errMsg);
+      if (staleCache) {
+        console.log('[gallery] Serving stale cache as fallback');
+        return res.status(200).json({ items: staleCache.items, stale: true });
       }
-      return res.status(200).json({ items: [] });
+      return res.status(200).json({ items: [], error: errMsg });
     }
 
     const items = [
@@ -97,13 +96,14 @@ app.get('/api/gallery-list', async (req, res) => {
       ...mapResources(vidData, 'video'),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
+    // Save fresh data as the new backup cache
     writeCache({ items, at: Date.now() });
     return res.status(200).json({ items });
   } catch (err) {
-    // On any network error, serve stale cache if available
-    if (cached) {
+    // Network/server error — serve stale cache if available
+    if (staleCache) {
       console.log('[gallery] Network error, serving stale cache');
-      return res.status(200).json({ items: cached.items, stale: true });
+      return res.status(200).json({ items: staleCache.items, stale: true });
     }
     return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

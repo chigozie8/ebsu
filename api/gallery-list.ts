@@ -46,17 +46,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         size:       r.bytes,
       }));
 
-    const [imgData, vidData] = await Promise.all([
-      imgRes.ok ? (imgRes.json() as Promise<{ resources: CloudinaryResource[] }>) : Promise.resolve({ resources: [] }),
-      vidRes.ok ? (vidRes.json() as Promise<{ resources: CloudinaryResource[] }>) : Promise.resolve({ resources: [] }),
-    ]);
+    const imgJson = imgRes.ok
+      ? (await imgRes.json() as { resources?: CloudinaryResource[]; error?: { message: string } })
+      : { resources: [], error: { message: `HTTP ${imgRes.status}` } };
+    const vidJson = vidRes.ok
+      ? (await vidRes.json() as { resources?: CloudinaryResource[]; error?: { message: string } })
+      : { resources: [], error: { message: `HTTP ${vidRes.status}` } };
+
+    if (imgJson.error || vidJson.error) {
+      const msg = imgJson.error?.message || vidJson.error?.message;
+      return res.status(200).json({ items: [], error: msg });
+    }
 
     const items = [
-      ...mapResources(imgData.resources || [], "image"),
-      ...mapResources(vidData.resources || [], "video"),
+      ...mapResources(imgJson.resources || [], "image"),
+      ...mapResources(vidJson.resources || [], "video"),
     ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
-    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
+    // No CDN caching — always serve fresh so uploads appear immediately
+    res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({ items });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
