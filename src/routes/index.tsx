@@ -143,6 +143,31 @@ const AppRoutes = () => {
   const SchoolFeesPage = lazy(
     () => import("../pages/user/fees/SchoolFeesPage")
   );
+  
+  // Marketplace routes
+  const MarketplacePage = lazy(
+    () => import("../pages/user/marketplace/MarketplacePage").then(m => ({ default: m.MarketplacePage }))
+  );
+  const ProductDetailPage = lazy(
+    () => import("../pages/user/marketplace/ProductDetailPage").then(m => ({ default: m.ProductDetailPage }))
+  );
+  const ShoppingCartPage = lazy(
+    () => import("../pages/user/marketplace/ShoppingCartPage").then(m => ({ default: m.ShoppingCartPage }))
+  );
+  const CheckoutPage = lazy(
+    () => import("../pages/user/marketplace/CheckoutPage").then(m => ({ default: m.CheckoutPage }))
+  );
+  const SellerDashboardPage = lazy(
+    () => import("../pages/user/marketplace/SellerDashboardPage").then(m => ({ default: m.SellerDashboardPage }))
+  );
+
+  // Opportunities routes
+  const OpportunitiesPage = lazy(
+    () => import("../pages/user/opportunities/OpportunitiesPage").then(m => ({ default: m.OpportunitiesPage }))
+  );
+  const OpportunityDetailPage = lazy(
+    () => import("../pages/user/opportunities/OpportunityDetailPage").then(m => ({ default: m.OpportunityDetailPage }))
+  );
 
   return (
     <>
@@ -431,6 +456,67 @@ const AppRoutes = () => {
               </ProtectedRoute>
             }
           />
+          
+          {/* Marketplace Routes */}
+          <Route
+            path="/u/marketplace"
+            element={
+              <ProtectedRoute>
+                <MarketplacePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/marketplace/product/:productId"
+            element={
+              <ProtectedRoute>
+                <ProductDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/marketplace/cart"
+            element={
+              <ProtectedRoute>
+                <ShoppingCartPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/marketplace/checkout"
+            element={
+              <ProtectedRoute>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/marketplace/seller/dashboard"
+            element={
+              <ProtectedRoute>
+                <SellerDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Opportunities Routes */}
+          <Route
+            path="/u/opportunities"
+            element={
+              <ProtectedRoute>
+                <OpportunitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/opportunities/:opportunityId"
+            element={
+              <ProtectedRoute>
+                <OpportunityDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
