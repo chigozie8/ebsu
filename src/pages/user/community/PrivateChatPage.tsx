@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCheck, Check, Image, X, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Send, CheckCheck, Check, Image, X } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   usePrivateMessages,
@@ -58,13 +58,38 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-// ── Tick component (WhatsApp-style) ───────────────────────────────────────
+// ── BlueTick (verification badge) ─────────────────────────────────────────
+
+function BlueTick({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-label="Verified"
+      role="img"
+      className="flex-shrink-0 inline-block"
+    >
+      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+      <path
+        d="M5.5 10.5l3 3 6-6"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ── Tick component (WhatsApp delivery / seen ticks) ────────────────────────
 
 function Tick({ msg, isMine }: { msg: PrivateMessage; isMine: boolean }) {
   if (!isMine) return null;
-  if (msg.is_seen) return <CheckCheck className="w-3.5 h-3.5 text-teal-300" />;
-  if (msg.is_delivered) return <CheckCheck className="w-3.5 h-3.5 text-white/60" />;
-  return <Check className="w-3.5 h-3.5 text-white/60" />;
+  if (msg.is_seen)      return <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />;
+  if (msg.is_delivered) return <CheckCheck className="w-3.5 h-3.5 text-slate-400" />;
+  return <Check className="w-3.5 h-3.5 text-slate-400" />;
 }
 
 // ── Avatar mini ────────────────────────────────────────────────────────────
@@ -202,9 +227,7 @@ export default function PrivateChatPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-white font-semibold text-sm truncate">{otherName}</span>
-            {isOtherVerified && (
-              <CheckCircle className="w-4 h-4 text-teal-300 flex-shrink-0" strokeWidth={2.5} />
-            )}
+            {isOtherVerified && <BlueTick size={15} />}
           </div>
           <p className="text-xs text-green-200 truncate">
             {otherIsTyping ? 'typing…' : isOtherOnline ? 'online' : otherVerification ? `last seen ${

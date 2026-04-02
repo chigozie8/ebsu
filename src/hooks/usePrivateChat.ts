@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, PrivateChat, PrivateMessage, UserVerification } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -171,40 +171,76 @@ export const useGetOrCreateChat = () => {
 export const usePrivateMessages = (chatId: string | null) => {
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  // Ref so realtime callbacks always see fresh state without stale closures
+  const msgRef = useRef<PrivateMessage[]>([]);
+
+  useEffect(() => {
+    msgRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     if (!chatId) { setLoading(false); return; }
 
-    const fetch = async () => {
+    let alive = true; // guard against setting state after unmount
+
+    const fetchAll = async () => {
       setLoading(true);
       const { data } = await supabase
         .from('private_messages')
         .select('*')
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true });
-      setMessages(data ?? []);
+      if (!alive) return;
+      const rows = data ?? [];
+      setMessages(rows);
+      msgRef.current = rows;
       setLoading(false);
     };
 
-    fetch();
+    fetchAll();
 
     const channel: RealtimeChannel = supabase
-      .channel(`private_messages:${chatId}`)
+      .channel(`pm:${chatId}`, { config: { broadcast: { self: false } } })
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'private_messages', filter: `chat_id=eq.${chatId}` },
-        (payload) => { setMessages((prev) => [...prev, payload.new as PrivateMessage]); }
+        (payload) => {
+          if (!alive) return;
+          const incoming = payload.new as PrivateMessage;
+          // Deduplicate: skip if already present (optimistic insert may have added it)
+          if (msgRef.current.some((m) => m.id === incoming.id)) return;
+          setMessages((prev) => {
+            const next = [...prev, incoming];
+            msgRef.current = next;
+            return next;
+          });
+        }
       )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'private_messages', filter: `chat_id=eq.${chatId}` },
         (payload) => {
-          setMessages((prev) => prev.map((m) => m.id === payload.new.id ? payload.new as PrivateMessage : m));
+          if (!alive) return;
+          const updated = payload.new as PrivateMessage;
+          setMessages((prev) => {
+            const next = prev.map((m) => m.id === updated.id ? updated : m);
+            msgRef.current = next;
+            return next;
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // If the channel drops, re-fetch to catch any missed messages
+        if (!alive) return;
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          fetchAll();
+        }
+      });
 
-    return () => { channel.unsubscribe(); };
+    return () => {
+      alive = false;
+      channel.unsubscribe();
+    };
   }, [chatId]);
 
   return { messages, loading };
@@ -273,28 +309,40 @@ export const useMarkSeen = () => {
 
 export const useTypingIndicator = (chatId: string | null, myId: string) => {
   const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const clearTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const throttleRef    = useRef<number>(0);
+  const channelRef     = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!chatId) return;
 
-    const channel = supabase.channel(`typing:${chatId}`);
-
-    channel
+    const channel = supabase
+      .channel(`typing:${chatId}`)
       .on('broadcast', { event: 'typing' }, (payload) => {
-        if (payload.payload?.userId !== myId) {
-          setOtherIsTyping(true);
-          // Auto clear after 2.5 s if no new event
-          setTimeout(() => setOtherIsTyping(false), 2500);
-        }
+        if (payload.payload?.userId === myId) return;
+        setOtherIsTyping(true);
+        // Reset the auto-clear timer on every new event
+        if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+        clearTimerRef.current = setTimeout(() => setOtherIsTyping(false), 3000);
       })
       .subscribe();
 
-    return () => { channel.unsubscribe(); };
+    channelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+      channelRef.current = null;
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    };
   }, [chatId, myId]);
 
-  const broadcastTyping = useCallback(async () => {
-    if (!chatId) return;
-    await supabase.channel(`typing:${chatId}`).send({
+  // Throttled broadcast: fires at most once every 1.5 s
+  const broadcastTyping = useCallback(() => {
+    if (!chatId || !channelRef.current) return;
+    const now = Date.now();
+    if (now - throttleRef.current < 1500) return;
+    throttleRef.current = now;
+    channelRef.current.send({
       type: 'broadcast',
       event: 'typing',
       payload: { userId: myId },

@@ -16,8 +16,31 @@ import {
 } from "../../../hooks/usePremiumCommunity";
 import {
   ArrowLeft, Send, Heart, MessageSquare, Pin, Megaphone,
-  Trash2, ChevronDown, ChevronUp, Crown, Search, X, CheckCircle
+  Trash2, ChevronDown, ChevronUp, Crown, Search, X
 } from "lucide-react";
+
+function BlueTick({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-label="Verified"
+      role="img"
+      className="flex-shrink-0 inline-block"
+    >
+      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+      <path
+        d="M5.5 10.5l3 3 6-6"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 const ADMIN_IDS = ["admin", "chigozie8"];
 
@@ -144,9 +167,7 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
             >
               {msg.user_name}
             </button>
-            {verification?.is_verified && (
-              <CheckCircle className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" strokeWidth={2.5} />
-            )}
+            {verification?.is_verified && <BlueTick size={15} />}
             {ADMIN_IDS.includes(msg.user_id) && (
               <span className="inline-flex items-center gap-1 text-xss font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#f59e0b", color: "#0d0d14" }}><Crown className="w-2.5 h-2.5" /> Admin</span>
             )}

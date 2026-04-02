@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock } from 'lucide-react';
 import { usePinMessage } from '../../hooks/useCommunity';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
+
+/** WhatsApp-style filled blue verification tick */
+function BlueTick({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-label="Verified"
+      role="img"
+      className="flex-shrink-0 inline-block"
+    >
+      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
+      <path
+        d="M5.5 10.5l3 3 6-6"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 interface MessageCardProps {
   message: Community;
@@ -113,9 +137,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               >
                 {message.user_name}
               </button>
-              {verification?.is_verified && (
-                <CheckCircle className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
-              )}
+              {verification?.is_verified && <BlueTick size={15} />}
               {message.is_edited && (
                 <span className="text-xs text-slate-400 italic">(edited)</span>
               )}
