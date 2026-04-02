@@ -86,8 +86,14 @@ const AppRoutes = () => {
   const CommunityPage = lazy(
     () => import("../pages/user/community/CommunityPage")
   );
+  const CommunitiesListPage = lazy(
+    () => import("../pages/user/community/CommunitiesListPage")
+  );
   const PrivateChatPage = lazy(
     () => import("../pages/user/community/PrivateChatPage")
+  );
+  const PostDetailPage = lazy(
+    () => import("../pages/user/community/PostDetailPage")
   );
   const StudyAIPage = lazy(
     () => import("../pages/user/analytics/AnalyticsPage")
@@ -266,7 +272,23 @@ const AppRoutes = () => {
             path="/u/community"
             element={
               <ProtectedRoute>
+                <CommunitiesListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/community/:slug"
+            element={
+              <ProtectedRoute>
                 <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/community/:slug/post/:postId"
+            element={
+              <ProtectedRoute>
+                <PostDetailPage />
               </ProtectedRoute>
             }
           />

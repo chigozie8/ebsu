@@ -26,6 +26,9 @@ export type Community = {
   user_avatar?: string;
   message: string;
   topic: string;
+  community_id?: string;
+  image_urls?: string[];
+  sticker_url?: string;
   created_at: string;
   updated_at: string;
   likes_count: number;
@@ -76,6 +79,23 @@ export type CommunityGuideline = {
   id: string;
   content: string;
   created_at: string;
+};
+
+// ── Community Group types ──────────────────────────────────────────────────
+
+export type CommunityGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  color: string;
+  banner_url?: string;
+  member_count: number;
+  post_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 // ── Private Chat types ─────────────────────────────────────────────────────
