@@ -146,31 +146,40 @@ export const usePostMessage = () => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const postMessage = useCallback(async (userId: string, userName: string, message: string, topic: string, userAvatar?: string, imageUrls?: string[], subcategory?: string) => {
-    try {
-      setPosting(true);
-      setError(null);
-      const { data, error: err } = await supabase.from('community_messages').insert([
-        {
-          user_id: userId,
-          user_name: userName,
-          user_avatar: userAvatar,
-          message,
-          topic,
-          ...(imageUrls && imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
-          ...(subcategory ? { subcategory } : {}),
-        },
-      ]);
-
-      if (err) throw err;
-      return data;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to post message';
-      setError(errorMsg);
-      throw err;
-    } finally {
-      setPosting(false);
+  const postMessage = useCallback(async (
+    userId: string, userName: string, message: string,
+    topic: string, userAvatar?: string, imageUrls?: string[], subcategory?: string,
+    retries = 2,
+  ) => {
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        setPosting(true);
+        setError(null);
+        const { data, error: err } = await supabase.from('community_messages').insert([
+          {
+            user_id: userId,
+            user_name: userName,
+            user_avatar: userAvatar,
+            message,
+            topic,
+            ...(imageUrls && imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
+            ...(subcategory ? { subcategory } : {}),
+          },
+        ]);
+        if (err) throw err;
+        setPosting(false);
+        return data;
+      } catch (err) {
+        lastErr = err;
+        console.error(`[v0] postMessage attempt ${attempt + 1} failed:`, err);
+        if (attempt < retries) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
     }
+    const errorMsg = lastErr instanceof Error ? lastErr.message : 'Failed to post message';
+    setError(errorMsg);
+    setPosting(false);
+    throw lastErr;
   }, []);
 
   return { postMessage, posting, error };

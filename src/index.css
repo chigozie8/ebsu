@@ -314,6 +314,147 @@ input[type=number] {
 }
 
 /* =============================================
+   COMMUNITY / MESSAGING — Premium WhatsApp-style
+   ============================================= */
+
+/* WhatsApp-style chat background pattern */
+.chat-bg {
+  background-color: #e5ddd5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0C13.4 0 0 13.4 0 30s13.4 30 30 30 30-13.4 30-30S46.6 0 30 0zm0 6c13.3 0 24 10.7 24 24S43.3 54 30 54 6 43.3 6 30 16.7 6 30 6z' fill='%2325D366' fill-opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* Message bubble entrance animation */
+@keyframes messageSlidIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Send button pulse */
+@keyframes sendPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+
+/* Typing indicator dots */
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Seen tick blue sweep */
+@keyframes seenTick {
+  from { color: #9ca3af; }
+  to   { color: #53bdeb; }
+}
+
+/* Modal open */
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Shimmer for skeleton loaders */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.message-bubble-enter {
+  animation: messageSlidIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.send-btn-pulse {
+  animation: sendPulse 1s ease-out infinite;
+}
+
+.typing-dot {
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+.modal-enter {
+  animation: modalScaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* WhatsApp message tail — outgoing */
+.bubble-out {
+  position: relative;
+  background: #dcf8c6;
+  border-radius: 12px 2px 12px 12px;
+}
+.bubble-out::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -8px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 10px 10px;
+  border-color: transparent transparent transparent #dcf8c6;
+}
+
+/* WhatsApp message tail — incoming */
+.bubble-in {
+  position: relative;
+  background: #ffffff;
+  border-radius: 2px 12px 12px 12px;
+}
+.bubble-in::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 10px 10px 0;
+  border-color: transparent #ffffff transparent transparent;
+}
+
+/* Smooth image load fade */
+.img-fade-in {
+  transition: opacity 0.3s ease;
+}
+.img-fade-in.loaded {
+  opacity: 1;
+}
+.img-fade-in:not(.loaded) {
+  opacity: 0;
+}
+
+/* Input focus glow */
+.wa-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.35);
+  border-color: #25d366;
+}
+
+/* Reaction bubble micro-animation */
+@keyframes reactionPop {
+  0%   { transform: scale(0) rotate(-15deg); opacity: 0; }
+  60%  { transform: scale(1.25) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.reaction-pop {
+  animation: reactionPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* =============================================
    Dashboard Dark Mode — scoped to .dashboard-dark
    Does NOT affect any other page
    ============================================= */

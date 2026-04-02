@@ -157,51 +157,61 @@ export const useStickers = (userId: string) => {
   };
 };
 
-// Hook for uploading images to community messages
+// Hook for uploading images to community messages — with retry logic
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
 
-  const uploadImage = useCallback(async (file: File, userId: string): Promise<string | null> => {
-    try {
-      setUploading(true);
-
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return null;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
-        return null;
-      }
-
-      const timestamp = Date.now();
-      const fileName = `${userId}/${timestamp}-${file.name}`;
-      const filePath = `community-images/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data } = supabase.storage
-        .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
-        .getPublicUrl(filePath);
-
-      return data?.publicUrl || null;
-    } catch (err) {
-      console.error('[v0] Error uploading image:', err);
-      toast.error('Failed to upload image');
+  const uploadImage = useCallback(async (file: File, userId: string, retries = 2): Promise<string | null> => {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file (JPG, PNG, GIF, WebP)');
       return null;
-    } finally {
-      setUploading(false);
     }
+
+    // Validate file size (5 MB cap)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5 MB');
+      return null;
+    }
+
+    setUploading(true);
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const timestamp = Date.now();
+        const filePath = `community-images/${userId}/${timestamp}-${attempt}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: attempt > 0, // upsert on retry to avoid conflict
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
+          .getPublicUrl(filePath);
+
+        setUploading(false);
+        return data?.publicUrl || null;
+      } catch (err) {
+        lastError = err;
+        console.error(`[v0] Image upload attempt ${attempt + 1} failed:`, err);
+        if (attempt < retries) {
+          // Brief back-off before retry
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+        }
+      }
+    }
+
+    console.error('[v0] All upload attempts failed:', lastError);
+    toast.error('Failed to upload image. Please check your connection and try again.');
+    setUploading(false);
+    return null;
   }, []);
 
   return {
