@@ -151,7 +151,7 @@ const CommunityWidget: React.FC = () => {
         onClick={() => navigate('/u/community')}
         className="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold py-2 rounded-lg hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
       >
-        View Community
+        Browse Communities
       </button>
     </div>
   );
