@@ -528,6 +528,16 @@ input[type=number] {
   display: inline-block;
 }
 
+/* ── Scrollbar hide utility ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── ThreadViewer messages area positioning fix ── */
+.wa-thread-messages { position: relative; }
+
 /* ── Framer-motion helpers ── */
 .wa-fade { opacity: 0; }
 
