@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCheck, Check, Image, X, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Send, CheckCheck, Check, Image, X, RefreshCw, Loader2 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   usePrivateMessages,
@@ -12,9 +12,9 @@ import {
 import { PrivateMessage } from '../../../lib/supabase';
 import { supabase } from '../../../lib/supabase';
 import toast from 'react-hot-toast';
+import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
-// ── helpers ────────────────────────────────────────────────────────────────
-
+// Helpers
 function formatTime(iso: string) {
   const d = new Date(iso);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -58,79 +58,185 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-// ── Tick component (WhatsApp-style) ───────────────────────────────────────
-
+// Tick component (WhatsApp-style)
 function Tick({ msg, isMine }: { msg: PrivateMessage; isMine: boolean }) {
   if (!isMine) return null;
-  if (msg.is_seen) return <CheckCheck className="w-3.5 h-3.5 text-teal-300" />;
-  if (msg.is_delivered) return <CheckCheck className="w-3.5 h-3.5 text-white/60" />;
-  return <Check className="w-3.5 h-3.5 text-white/60" />;
+  if (msg.is_seen) return <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />;
+  if (msg.is_delivered) return <CheckCheck className="w-3.5 h-3.5 text-slate-400" />;
+  return <Check className="w-3.5 h-3.5 text-slate-400" />;
 }
 
-// ── Avatar mini ────────────────────────────────────────────────────────────
-
+// Avatar mini component
 function AvatarMini({ name, src, size = 8 }: { name: string; src?: string; size?: number }) {
   const g = getAvatarColor(name);
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  if (src) return <img src={src} alt={name} className={`w-${size} h-${size} rounded-full object-cover flex-shrink-0`} />;
+  const [error, setError] = useState(false);
+
+  if (src && !error) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        crossOrigin="anonymous"
+        className={`w-${size} h-${size} rounded-full object-cover flex-shrink-0`}
+        style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
+        onError={() => setError(true)}
+      />
+    );
+  }
   return (
-    <div className={`w-${size} h-${size} rounded-full bg-gradient-to-br ${g} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold`}>
+    <div
+      className={`rounded-full bg-gradient-to-br ${g} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold`}
+      style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
+    >
       {initials}
     </div>
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────────
+// Safe image component with loading state
+function SafeImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-100 rounded-xl ${className}`}>
+        <span className="text-xs text-slate-400 p-4">Image unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div className={`absolute inset-0 wa-skeleton rounded-xl ${className}`} />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        crossOrigin="anonymous"
+        className={`${className} ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        onLoad={() => setLoading(false)}
+        onError={() => { setError(true); setLoading(false); }}
+      />
+    </div>
+  );
+}
+
+// Typing indicator
+function TypingBubble({ name, avatar }: { name: string; avatar?: string }) {
+  return (
+    <div className="flex items-end gap-2 justify-start mb-1.5 wa-msg-in">
+      <AvatarMini name={name} src={avatar} size={7} />
+      <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
+        <div className="flex gap-1 items-center">
+          <span className="wa-typing-dot" />
+          <span className="wa-typing-dot" />
+          <span className="wa-typing-dot" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Skeleton for loading
+function MessageSkeleton({ isRight }: { isRight?: boolean }) {
+  return (
+    <div className={`flex ${isRight ? 'justify-end' : 'justify-start'} gap-2 mb-1.5`}>
+      {!isRight && <div className="w-7 h-7 rounded-full wa-skeleton flex-shrink-0" />}
+      <div className={`wa-skeleton rounded-2xl ${isRight ? 'rounded-br-sm w-36' : 'rounded-bl-sm w-44'} h-12`} />
+    </div>
+  );
+}
+
+// Main Page
 export default function PrivateChatPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const chatId       = searchParams.get('chatId') ?? null;
+  const chatId = searchParams.get('chatId') ?? null;
   const otherIdParam = searchParams.get('otherId') ?? '';
-  const otherName    = searchParams.get('otherName') ?? 'User';
-  const otherAvatar  = searchParams.get('otherAvatar') ?? undefined;
+  const otherName = searchParams.get('otherName') ?? 'User';
+  const otherAvatar = searchParams.get('otherAvatar') ?? undefined;
 
   const { studentDetails } = useGetUserInfo();
-  const myId     = studentDetails?.userID || '';
-  const myName   = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim() : 'Me';
+  const myId = studentDetails?.userID || '';
+  const myName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim() : 'Me';
   const myAvatar = studentDetails?.profileImageURL || undefined;
 
   const { messages, loading } = usePrivateMessages(chatId);
-  const { send, sending }     = useSendPrivateMessage();
-  const { markSeen }          = useMarkSeen();
+  const { send, sending } = useSendPrivateMessage();
+  const { markSeen } = useMarkSeen();
   const { otherIsTyping, broadcastTyping } = useTypingIndicator(chatId, myId);
   const { verification: otherVerification } = useAnyUserVerification(otherIdParam || null);
 
-  const [draft, setDraft]         = useState('');
+  const [draft, setDraft] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile]   = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImg, setUploadingImg] = useState(false);
-  const bottomRef  = useRef<HTMLDivElement>(null);
-  const inputRef   = useRef<HTMLTextAreaElement>(null);
+  const [optimisticMessages, setOptimisticMessages] = useState<PrivateMessage[]>([]);
+  const [failedMessages, setFailedMessages] = useState<Set<string>>(new Set());
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Combine real and optimistic messages
+  const allMessages = [...messages, ...optimisticMessages.filter(om => 
+    !messages.some(m => m.id === om.id || m.content === om.content && m.sender_id === om.sender_id)
+  )];
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, otherIsTyping]);
+  }, [allMessages, otherIsTyping]);
 
   // Mark messages seen on load & new messages
   useEffect(() => {
     if (chatId && myId) markSeen(chatId, myId);
   }, [chatId, myId, messages.length, markSeen]);
 
+  // Auto resize textarea
+  const autoResize = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
+    }
+  };
+
   const handleSend = useCallback(async () => {
     if (!chatId || !myId) return;
     const text = draft.trim();
     if (!text && !imageFile) return;
+
+    const optimisticId = `opt-${Date.now()}`;
+    const optimisticMsg: PrivateMessage = {
+      id: optimisticId,
+      chat_id: chatId,
+      sender_id: myId,
+      sender_name: myName,
+      sender_avatar: myAvatar,
+      content: text || (imageFile ? 'Image' : ''),
+      image_url: imagePreview || undefined,
+      is_seen: false,
+      is_delivered: false,
+      created_at: new Date().toISOString(),
+    };
+
+    // Optimistic update
+    setOptimisticMessages(prev => [...prev, optimisticMsg]);
+    setDraft('');
+    setImageFile(null);
+    setImagePreview(null);
+    if (inputRef.current) inputRef.current.style.height = 'auto';
 
     let imgUrl: string | undefined;
 
     if (imageFile) {
       setUploadingImg(true);
       try {
-        const ext  = imageFile.name.split('.').pop();
+        const ext = imageFile.name.split('.').pop();
         const path = `private_chat/${chatId}/${Date.now()}.${ext}`;
         const { error } = await supabase.storage.from('community-images').upload(path, imageFile, { upsert: true });
         if (!error) {
@@ -145,14 +251,32 @@ export default function PrivateChatPage() {
     }
 
     try {
-      await send(chatId, myId, myName, text || (imgUrl ? '📷 Image' : ''), myAvatar, imgUrl);
-      setDraft('');
-      setImageFile(null);
-      setImagePreview(null);
+      await send(chatId, myId, myName, text || (imgUrl ? 'Image' : ''), myAvatar, imgUrl);
+      // Remove optimistic message once real one arrives
+      setOptimisticMessages(prev => prev.filter(m => m.id !== optimisticId));
     } catch {
-      toast.error('Failed to send message. Tap to retry.');
+      // Mark as failed for retry
+      setFailedMessages(prev => new Set(prev).add(optimisticId));
+      toast.error('Message failed. Tap to retry.');
     }
-  }, [chatId, myId, myName, myAvatar, draft, imageFile, send]);
+  }, [chatId, myId, myName, myAvatar, draft, imageFile, imagePreview, send]);
+
+  const retryMessage = useCallback(async (failedMsg: PrivateMessage) => {
+    if (!chatId || !myId) return;
+    setFailedMessages(prev => {
+      const next = new Set(prev);
+      next.delete(failedMsg.id);
+      return next;
+    });
+    
+    try {
+      await send(chatId, myId, myName, failedMsg.content, myAvatar, failedMsg.image_url);
+      setOptimisticMessages(prev => prev.filter(m => m.id !== failedMsg.id));
+    } catch {
+      setFailedMessages(prev => new Set(prev).add(failedMsg.id));
+      toast.error('Message failed. Tap to retry.');
+    }
+  }, [chatId, myId, myName, myAvatar, send]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -163,19 +287,32 @@ export default function PrivateChatPage() {
 
   const onTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDraft(e.target.value);
+    autoResize();
     broadcastTyping();
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     if (!file) return;
+    
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+    
     setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
+    e.currentTarget.value = '';
   };
 
-  const groups = groupByDate(messages);
+  const groups = groupByDate(allMessages);
 
   const isOtherOnline = otherVerification?.online_status === 'online';
   const isOtherVerified = otherVerification?.is_verified;
@@ -185,7 +322,7 @@ export default function PrivateChatPage() {
       className="h-screen flex flex-col font-sans"
       style={{ background: '#e5ddd5' }}
     >
-      {/* ── Sticky header ─────────────────────────────────── */}
+      {/* Sticky header */}
       <header
         className="flex items-center gap-3 px-4 py-3 sticky top-0 z-30 shadow-sm"
         style={{ background: '#075e54' }}
@@ -202,12 +339,10 @@ export default function PrivateChatPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-white font-semibold text-sm truncate">{otherName}</span>
-            {isOtherVerified && (
-              <CheckCircle className="w-4 h-4 text-teal-300 flex-shrink-0" strokeWidth={2.5} />
-            )}
+            {isOtherVerified && <VerifiedBadge size="sm" />}
           </div>
           <p className="text-xs text-green-200 truncate">
-            {otherIsTyping ? 'typing…' : isOtherOnline ? 'online' : otherVerification ? `last seen ${
+            {otherIsTyping ? 'typing...' : isOtherOnline ? 'online' : otherVerification ? `last seen ${
               (() => {
                 const s = Math.floor((Date.now() - new Date(otherVerification.last_seen).getTime()) / 1000);
                 if (s < 60) return 'just now';
@@ -219,21 +354,23 @@ export default function PrivateChatPage() {
         </div>
       </header>
 
-      {/* ── Messages area ─────────────────────────────────── */}
+      {/* Messages area */}
       <div
-        className="flex-1 overflow-y-auto px-3 py-4 space-y-1"
+        className="flex-1 overflow-y-auto px-3 py-4 space-y-1 wa-scroll"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a0aec0' fill-opacity='0.07'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
         }}
       >
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="w-8 h-8 border-2 border-teal-500/40 border-t-teal-500 rounded-full animate-spin" />
+          <div className="flex flex-col gap-2 py-4">
+            {[false, true, false, true, false, true].map((r, i) => (
+              <MessageSkeleton key={i} isRight={r} />
+            ))}
           </div>
-        ) : messages.length === 0 ? (
+        ) : allMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-            <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mb-2">
+            <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mb-2 shadow-sm">
               <AvatarMini name={otherName} src={otherAvatar} size={12} />
             </div>
             <p className="text-slate-600 font-semibold">Start a conversation with {otherName}</p>
@@ -244,17 +381,21 @@ export default function PrivateChatPage() {
             <div key={group.label}>
               {/* Date separator */}
               <div className="flex items-center justify-center my-3">
-                <span className="bg-white/70 text-slate-500 text-xs px-3 py-1 rounded-full shadow-sm">
+                <span className="wa-date-chip">
                   {group.label}
                 </span>
               </div>
 
               {group.items.map((msg) => {
                 const isMine = msg.sender_id === myId;
+                const isOptimistic = msg.id.startsWith('opt-');
+                const isFailed = failedMessages.has(msg.id);
+
                 return (
                   <div
                     key={msg.id}
-                    className={`flex items-end gap-2 mb-1.5 ${isMine ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end gap-2 mb-1.5 ${isMine ? 'justify-end' : 'justify-start'} ${isMine ? 'wa-msg-out' : 'wa-msg-in'}`}
+                    style={{ opacity: isOptimistic && !isFailed ? 0.7 : 1 }}
                   >
                     {!isMine && (
                       <AvatarMini name={msg.sender_name} src={msg.sender_avatar} size={7} />
@@ -265,30 +406,44 @@ export default function PrivateChatPage() {
                         isMine
                           ? 'bg-[#dcf8c6] rounded-br-sm'
                           : 'bg-white rounded-bl-sm'
-                      }`}
+                      } ${isFailed ? 'ring-2 ring-red-400' : ''}`}
+                      onClick={() => isFailed && retryMessage(msg)}
                     >
                       {/* Image attachment */}
                       {msg.image_url && (
-                        <img
+                        <SafeImage
                           src={msg.image_url}
                           alt="attachment"
                           className="rounded-xl max-h-52 w-full object-cover mb-1.5 border border-black/5"
-                          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
                         />
                       )}
 
                       {/* Text */}
-                      {msg.content && msg.content !== '📷 Image' && (
+                      {msg.content && msg.content !== 'Image' && (
                         <p className="text-[0.875rem] text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
                           {msg.content}
                         </p>
                       )}
 
+                      {/* Failed indicator */}
+                      {isFailed && (
+                        <div className="flex items-center gap-1 mt-1 text-red-500">
+                          <RefreshCw className="w-3 h-3" />
+                          <span className="text-[10px] font-medium">Failed. Tap to retry</span>
+                        </div>
+                      )}
+
                       {/* Time + ticks */}
-                      <div className={`flex items-center gap-1 mt-0.5 ${isMine ? 'justify-end' : 'justify-end'}`}>
-                        <span className="text-[0.65rem] text-slate-400">{formatTime(msg.created_at)}</span>
-                        <Tick msg={msg} isMine={isMine} />
-                      </div>
+                      {!isFailed && (
+                        <div className="flex items-center gap-1 mt-0.5 justify-end">
+                          <span className="text-[0.65rem] text-slate-400">{formatTime(msg.created_at)}</span>
+                          {isOptimistic ? (
+                            <Check className="w-3.5 h-3.5 text-slate-300" />
+                          ) : (
+                            <Tick msg={msg} isMine={isMine} />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -299,29 +454,20 @@ export default function PrivateChatPage() {
 
         {/* Typing bubble */}
         {otherIsTyping && (
-          <div className="flex items-end gap-2 justify-start mb-1.5">
-            <AvatarMini name={otherName} src={otherAvatar} size={7} />
-            <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-2.5 shadow-sm">
-              <div className="flex gap-1 items-center">
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          </div>
+          <TypingBubble name={otherName} avatar={otherAvatar} />
         )}
 
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Image preview bar ─────────────────────────────── */}
+      {/* Image preview bar */}
       {imagePreview && (
         <div className="px-4 py-2 bg-white border-t border-slate-200 flex items-center gap-3">
           <div className="relative">
             <img src={imagePreview} alt="preview" className="h-16 w-16 object-cover rounded-xl border border-slate-200" />
             <button
               onClick={() => { setImageFile(null); setImagePreview(null); }}
-              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"
+              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 transition-colors"
             >
               <X className="w-3 h-3" />
             </button>
@@ -330,7 +476,7 @@ export default function PrivateChatPage() {
         </div>
       )}
 
-      {/* ── Input bar ─────────────────────────────────────── */}
+      {/* Input bar */}
       <div
         className="px-3 py-3 flex items-end gap-2 sticky bottom-0 z-20"
         style={{ background: '#f0f0f0' }}
@@ -349,7 +495,7 @@ export default function PrivateChatPage() {
           className="p-2.5 bg-white rounded-full shadow-sm hover:bg-slate-100 transition-colors text-slate-500 disabled:opacity-50 flex-shrink-0"
         >
           {uploadingImg ? (
-            <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin text-[#25D366]" />
           ) : (
             <Image className="w-5 h-5" />
           )}
@@ -362,7 +508,7 @@ export default function PrivateChatPage() {
             value={draft}
             onChange={onTyping}
             onKeyDown={onKeyDown}
-            placeholder="Type a message…"
+            placeholder="Type a message..."
             rows={1}
             className="flex-1 resize-none outline-none text-sm text-slate-800 placeholder-slate-400 bg-transparent leading-relaxed max-h-32"
             style={{ minHeight: '20px' }}
@@ -373,13 +519,13 @@ export default function PrivateChatPage() {
         <button
           onClick={handleSend}
           disabled={sending || uploadingImg || (!draft.trim() && !imageFile)}
-          className="p-3 rounded-full text-white shadow-md transition-all disabled:opacity-50 active:scale-95 flex-shrink-0"
-          style={{ background: '#075e54' }}
+          className="w-11 h-11 rounded-full text-white shadow-md transition-all disabled:opacity-50 active:scale-95 flex-shrink-0 flex items-center justify-center wa-send-pulse"
+          style={{ background: draft.trim() || imageFile ? '#25D366' : '#aebbc1' }}
         >
           {sending ? (
-            <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Send className="w-5 h-5" />
+            <Send className="w-5 h-5" style={{ marginLeft: '2px' }} />
           )}
         </button>
       </div>
