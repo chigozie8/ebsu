@@ -1,172 +1,238 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase, Community, CommunityReply, CommunityReaction } from '../lib/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  serverTimestamp,
+  Timestamp,
+  getDoc,
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
 
-export const useCommunityMessages = (topic?: string, limit: number = 20) => {
-  const [messages, setMessages] = useState<Community[]>([]);
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface FirebaseCommunityMessage {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  message: string;
+  topic: string;
+  community_id?: string;
+  image_urls?: string[];
+  sticker_url?: string;
+  created_at: string;
+  updated_at: string;
+  likes_count: number;
+  reply_count: number;
+  is_pinned: boolean;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+export interface FirebaseCommunityReply {
+  id: string;
+  message_id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  reply: string;
+  created_at: string;
+  updated_at: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+export interface FirebaseCommunityReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  reaction_emoji: string;
+  created_at: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
+
+function docToMessage(id: string, data: Record<string, unknown>): FirebaseCommunityMessage {
+  return {
+    id,
+    user_id: (data.user_id as string) || '',
+    user_name: (data.user_name as string) || 'Unknown',
+    user_avatar: (data.user_avatar as string | undefined),
+    message: (data.message as string) || '',
+    topic: (data.topic as string) || 'General',
+    community_id: (data.community_id as string | undefined),
+    image_urls: (data.image_urls as string[] | undefined),
+    sticker_url: (data.sticker_url as string | undefined),
+    created_at: toIso(data.created_at),
+    updated_at: toIso(data.updated_at),
+    likes_count: (data.likes_count as number) || 0,
+    reply_count: (data.reply_count as number) || 0,
+    is_pinned: (data.is_pinned as boolean) || false,
+    is_edited: (data.is_edited as boolean) || false,
+    is_deleted: (data.is_deleted as boolean) || false,
+  };
+}
+
+function docToReply(id: string, data: Record<string, unknown>): FirebaseCommunityReply {
+  return {
+    id,
+    message_id: (data.message_id as string) || '',
+    user_id: (data.user_id as string) || '',
+    user_name: (data.user_name as string) || 'Unknown',
+    user_avatar: (data.user_avatar as string | undefined),
+    reply: (data.reply as string) || '',
+    created_at: toIso(data.created_at),
+    updated_at: toIso(data.updated_at),
+    is_edited: (data.is_edited as boolean) || false,
+    is_deleted: (data.is_deleted as boolean) || false,
+  };
+}
+
+// ── Community Messages Hook ────────────────────────────────────────────────
+
+export const useCommunityMessages = (topic?: string, msgLimit: number = 20) => {
+  const [messages, setMessages] = useState<FirebaseCommunityMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [subscription, setSubscription] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        setLoading(true);
-        let query = supabase
-          .from('community_messages')
-          .select('*')
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(limit);
+    setLoading(true);
+    setError(null);
 
-        if (topic && topic !== 'All') {
-          query = query.eq('topic', topic);
-        }
+    const ref = collection(db, 'community_messages');
+    let q;
 
-        const { data, error: err } = await query;
-        if (err) {
-          console.error('[v0] Community fetch error:', err);
-          // Don't throw - just set empty messages and continue
-          setMessages([]);
-        } else {
-          setMessages(data || []);
-        }
-      } catch (err) {
-        console.error('[v0] Community hook error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch messages');
-      } finally {
+    if (topic && topic !== 'All') {
+      q = query(
+        ref,
+        where('is_deleted', '==', false),
+        where('topic', '==', topic),
+        orderBy('created_at', 'desc'),
+        limit(msgLimit)
+      );
+    } else {
+      q = query(
+        ref,
+        where('is_deleted', '==', false),
+        orderBy('created_at', 'desc'),
+        limit(msgLimit)
+      );
+    }
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const msgs = snap.docs.map((d) => docToMessage(d.id, d.data() as Record<string, unknown>));
+        setMessages(msgs);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunityMessages] Firebase error:', err);
+        setError(err.message);
         setLoading(false);
       }
-    };
+    );
 
-    fetchMessages();
+    return () => unsub();
+  }, [topic, msgLimit]);
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('public:community_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_messages',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setMessages((prev) => [payload.new as Community, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedMessage = payload.new as Community;
-            // If the message is marked as deleted, remove it from the list
-            if (updatedMessage.is_deleted) {
-              setMessages((prev) => prev.filter((msg) => msg.id !== updatedMessage.id));
-            } else {
-              // Otherwise, update the message normally
-              setMessages((prev) =>
-                prev.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg))
-              );
-            }
-          } else if (payload.eventType === 'DELETE') {
-            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    setSubscription(channel);
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [topic, limit]);
-
-  return { messages, loading, error, subscription };
+  return { messages, loading, error };
 };
 
+// ── Community Replies Hook ─────────────────────────────────────────────────
+
 export const useCommunityReplies = (messageId: string) => {
-  const [replies, setReplies] = useState<CommunityReply[]>([]);
+  const [replies, setReplies] = useState<FirebaseCommunityReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchReplies = async () => {
-      try {
-        setLoading(true);
-        const { data, error: err } = await supabase
-          .from('community_replies')
-          .select('*')
-          .eq('message_id', messageId)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: true });
+    if (!messageId) { setLoading(false); return; }
 
-        if (err) throw err;
-        setReplies(data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch replies');
-      } finally {
+    const ref = collection(db, 'community_replies');
+    const q = query(
+      ref,
+      where('message_id', '==', messageId),
+      where('is_deleted', '==', false),
+      orderBy('created_at', 'asc')
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setReplies(snap.docs.map((d) => docToReply(d.id, d.data() as Record<string, unknown>)));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunityReplies] Firebase error:', err);
+        setError(err.message);
         setLoading(false);
       }
-    };
+    );
 
-    fetchReplies();
-
-    // Subscribe to realtime updates for replies
-    const channel = supabase
-      .channel(`public:community_replies:${messageId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_replies',
-          filter: `message_id=eq.${messageId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setReplies((prev) => [...prev, payload.new as CommunityReply]);
-          } else if (payload.eventType === 'UPDATE') {
-            setReplies((prev) =>
-              prev.map((reply) => (reply.id === payload.new.id ? (payload.new as CommunityReply) : reply))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setReplies((prev) => prev.filter((reply) => reply.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => unsub();
   }, [messageId]);
 
   return { replies, loading, error };
 };
 
+// ── Post Message ───────────────────────────────────────────────────────────
+
 export const usePostMessage = () => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const postMessage = useCallback(async (userId: string, userName: string, message: string, topic: string, userAvatar?: string, imageUrls?: string[], subcategory?: string) => {
+  const postMessage = useCallback(async (
+    userId: string,
+    userName: string,
+    message: string,
+    topic: string,
+    userAvatar?: string,
+    imageUrls?: string[],
+    subcategory?: string,
+    communityId?: string,
+  ) => {
     try {
       setPosting(true);
       setError(null);
-      const { data, error: err } = await supabase.from('community_messages').insert([
-        {
-          user_id: userId,
-          user_name: userName,
-          user_avatar: userAvatar,
-          message,
-          topic,
-          ...(imageUrls && imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
-          ...(subcategory ? { subcategory } : {}),
-        },
-      ]);
-
-      if (err) throw err;
-      return data;
+      const payload: Record<string, unknown> = {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar || null,
+        message,
+        topic,
+        community_id: communityId || null,
+        likes_count: 0,
+        reply_count: 0,
+        is_pinned: false,
+        is_edited: false,
+        is_deleted: false,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      };
+      if (imageUrls && imageUrls.length > 0) payload.image_urls = imageUrls;
+      if (subcategory) payload.subcategory = subcategory;
+      const docRef = await addDoc(collection(db, 'community_messages'), payload);
+      return docRef;
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to post message';
-      setError(errorMsg);
+      const msg = err instanceof Error ? err.message : 'Failed to post message';
+      setError(msg);
       throw err;
     } finally {
       setPosting(false);
@@ -176,29 +242,44 @@ export const usePostMessage = () => {
   return { postMessage, posting, error };
 };
 
+// ── Post Reply ─────────────────────────────────────────────────────────────
+
 export const usePostReply = () => {
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const postReply = useCallback(async (messageId: string, userId: string, userName: string, reply: string, userAvatar?: string) => {
+  const postReply = useCallback(async (
+    messageId: string,
+    userId: string,
+    userName: string,
+    reply: string,
+    userAvatar?: string,
+  ) => {
     try {
       setPosting(true);
       setError(null);
-      const { data, error: err } = await supabase.from('community_replies').insert([
-        {
-          message_id: messageId,
-          user_id: userId,
-          user_name: userName,
-          user_avatar: userAvatar,
-          reply,
-        },
-      ]);
+      await addDoc(collection(db, 'community_replies'), {
+        message_id: messageId,
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar || null,
+        reply,
+        is_edited: false,
+        is_deleted: false,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
 
-      if (err) throw err;
-      return data;
+      // Increment reply_count on the parent message
+      const msgRef = doc(db, 'community_messages', messageId);
+      const msgSnap = await getDoc(msgRef);
+      if (msgSnap.exists()) {
+        const current = (msgSnap.data().reply_count as number) || 0;
+        await updateDoc(msgRef, { reply_count: current + 1 });
+      }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to post reply';
-      setError(errorMsg);
+      const msg = err instanceof Error ? err.message : 'Failed to post reply';
+      setError(msg);
       throw err;
     } finally {
       setPosting(false);
@@ -208,6 +289,8 @@ export const usePostReply = () => {
   return { postReply, posting, error };
 };
 
+// ── Like Message ───────────────────────────────────────────────────────────
+
 export const useLikeMessage = () => {
   const [liking, setLiking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -216,18 +299,18 @@ export const useLikeMessage = () => {
     try {
       setLiking(true);
       setError(null);
-      const { data, error: err } = await supabase.from('community_likes').insert([
-        {
-          message_id: messageId,
-          user_id: userId,
-        },
-      ]);
-
-      if (err) throw err;
-      return data;
+      await addDoc(collection(db, 'community_likes'), {
+        message_id: messageId,
+        user_id: userId,
+        created_at: serverTimestamp(),
+      });
+      const msgRef = doc(db, 'community_messages', messageId);
+      const snap = await getDoc(msgRef);
+      if (snap.exists()) {
+        await updateDoc(msgRef, { likes_count: ((snap.data().likes_count as number) || 0) + 1 });
+      }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to like message';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to like message');
     } finally {
       setLiking(false);
     }
@@ -237,16 +320,21 @@ export const useLikeMessage = () => {
     try {
       setLiking(true);
       setError(null);
-      const { error: err } = await supabase
-        .from('community_likes')
-        .delete()
-        .eq('message_id', messageId)
-        .eq('user_id', userId);
-
-      if (err) throw err;
+      const q = query(
+        collection(db, 'community_likes'),
+        where('message_id', '==', messageId),
+        where('user_id', '==', userId)
+      );
+      const snap = await getDocs(q);
+      for (const d of snap.docs) await deleteDoc(d.ref);
+      const msgRef = doc(db, 'community_messages', messageId);
+      const msgSnap = await getDoc(msgRef);
+      if (msgSnap.exists()) {
+        const current = (msgSnap.data().likes_count as number) || 0;
+        await updateDoc(msgRef, { likes_count: Math.max(0, current - 1) });
+      }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to unlike message';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to unlike message');
     } finally {
       setLiking(false);
     }
@@ -254,6 +342,8 @@ export const useLikeMessage = () => {
 
   return { likeMessage, unlikeMessage, liking, error };
 };
+
+// ── Delete Message ─────────────────────────────────────────────────────────
 
 export const useDeleteMessage = () => {
   const [deleting, setDeleting] = useState(false);
@@ -263,15 +353,12 @@ export const useDeleteMessage = () => {
     try {
       setDeleting(true);
       setError(null);
-      const { error: err } = await supabase
-        .from('community_messages')
-        .update({ is_deleted: true })
-        .eq('id', messageId);
-
-      if (err) throw err;
+      await updateDoc(doc(db, 'community_messages', messageId), {
+        is_deleted: true,
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to delete message';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to delete message');
     } finally {
       setDeleting(false);
     }
@@ -279,6 +366,8 @@ export const useDeleteMessage = () => {
 
   return { deleteMessage, deleting, error };
 };
+
+// ── Edit Message ───────────────────────────────────────────────────────────
 
 export const useEditMessage = () => {
   const [editing, setEditing] = useState(false);
@@ -288,15 +377,13 @@ export const useEditMessage = () => {
     try {
       setEditing(true);
       setError(null);
-      const { error: err } = await supabase
-        .from('community_messages')
-        .update({ message: newMessage, is_edited: true, updated_at: new Date().toISOString() })
-        .eq('id', messageId);
-
-      if (err) throw err;
+      await updateDoc(doc(db, 'community_messages', messageId), {
+        message: newMessage,
+        is_edited: true,
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to edit message';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to edit message');
     } finally {
       setEditing(false);
     }
@@ -304,6 +391,8 @@ export const useEditMessage = () => {
 
   return { editMessage, editing, error };
 };
+
+// ── Delete Reply ───────────────────────────────────────────────────────────
 
 export const useDeleteReply = () => {
   const [deleting, setDeleting] = useState(false);
@@ -313,15 +402,12 @@ export const useDeleteReply = () => {
     try {
       setDeleting(true);
       setError(null);
-      const { error: err } = await supabase
-        .from('community_replies')
-        .update({ is_deleted: true })
-        .eq('id', replyId);
-
-      if (err) throw err;
+      await updateDoc(doc(db, 'community_replies', replyId), {
+        is_deleted: true,
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to delete reply';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to delete reply');
     } finally {
       setDeleting(false);
     }
@@ -329,6 +415,8 @@ export const useDeleteReply = () => {
 
   return { deleteReply, deleting, error };
 };
+
+// ── Edit Reply ─────────────────────────────────────────────────────────────
 
 export const useEditReply = () => {
   const [editing, setEditing] = useState(false);
@@ -338,15 +426,13 @@ export const useEditReply = () => {
     try {
       setEditing(true);
       setError(null);
-      const { error: err } = await supabase
-        .from('community_replies')
-        .update({ reply: newReply, is_edited: true, updated_at: new Date().toISOString() })
-        .eq('id', replyId);
-
-      if (err) throw err;
+      await updateDoc(doc(db, 'community_replies', replyId), {
+        reply: newReply,
+        is_edited: true,
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to edit reply';
-      setError(errorMsg);
+      setError(err instanceof Error ? err.message : 'Failed to edit reply');
     } finally {
       setEditing(false);
     }
@@ -355,56 +441,43 @@ export const useEditReply = () => {
   return { editReply, editing, error };
 };
 
+// ── Reactions ──────────────────────────────────────────────────────────────
+
 export const useReactions = (messageId: string) => {
-  const [reactions, setReactions] = useState<CommunityReaction[]>([]);
+  const [reactions, setReactions] = useState<FirebaseCommunityReaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchReactions = async () => {
-      try {
-        setLoading(true);
-        const { data, error: err } = await supabase
-          .from('community_reactions')
-          .select('*')
-          .eq('message_id', messageId);
+    if (!messageId) { setLoading(false); return; }
 
-        if (err) throw err;
-        setReactions(data || []);
-      } catch (err) {
-        console.error('[v0] Failed to fetch reactions:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch reactions');
-      } finally {
+    const q = query(
+      collection(db, 'community_reactions'),
+      where('message_id', '==', messageId)
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setReactions(
+          snap.docs.map((d) => ({
+            id: d.id,
+            message_id: d.data().message_id as string,
+            user_id: d.data().user_id as string,
+            reaction_emoji: d.data().reaction_emoji as string,
+            created_at: toIso(d.data().created_at),
+          }))
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useReactions] Firebase error:', err);
+        setError(err.message);
         setLoading(false);
       }
-    };
+    );
 
-    fetchReactions();
-
-    // Subscribe to realtime reaction updates
-    const channel = supabase
-      .channel(`reactions:${messageId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_reactions',
-          filter: `message_id=eq.${messageId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setReactions((prev) => [...prev, payload.new as CommunityReaction]);
-          } else if (payload.eventType === 'DELETE') {
-            setReactions((prev) => prev.filter((r) => r.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => unsub();
   }, [messageId]);
 
   return { reactions, loading, error };
@@ -418,41 +491,26 @@ export const useAddReaction = () => {
     try {
       setAdding(true);
       setError(null);
-
-      // Check if user already reacted with this emoji
-      const { data: existing } = await supabase
-        .from('community_reactions')
-        .select('id')
-        .eq('message_id', messageId)
-        .eq('user_id', userId)
-        .eq('reaction_emoji', emoji)
-        .single();
-
-      if (existing) {
-        // Already reacted with this emoji, remove it
-        const { error: err } = await supabase
-          .from('community_reactions')
-          .delete()
-          .eq('id', existing.id);
-        if (err) throw err;
+      const q = query(
+        collection(db, 'community_reactions'),
+        where('message_id', '==', messageId),
+        where('user_id', '==', userId),
+        where('reaction_emoji', '==', emoji)
+      );
+      const existing = await getDocs(q);
+      if (!existing.empty) {
+        for (const d of existing.docs) await deleteDoc(d.ref);
       } else {
-        // Add new reaction
-        const { error: err } = await supabase
-          .from('community_reactions')
-          .insert([
-            {
-              message_id: messageId,
-              user_id: userId,
-              reaction_emoji: emoji,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        if (err) throw err;
+        await addDoc(collection(db, 'community_reactions'), {
+          message_id: messageId,
+          user_id: userId,
+          reaction_emoji: emoji,
+          created_at: serverTimestamp(),
+        });
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to add reaction';
-      setError(errorMsg);
-      console.error('[v0] Reaction error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add reaction');
+      console.error('[useAddReaction] Firebase error:', err);
     } finally {
       setAdding(false);
     }
@@ -460,6 +518,8 @@ export const useAddReaction = () => {
 
   return { addReaction, adding, error };
 };
+
+// ── Pin Message ────────────────────────────────────────────────────────────
 
 export const usePinMessage = () => {
   const [pinning, setPinning] = useState(false);
@@ -469,17 +529,13 @@ export const usePinMessage = () => {
     try {
       setPinning(true);
       setError(null);
-      
-      const { error: err } = await supabase
-        .from('community_messages')
-        .update({ is_pinned: !currentPinStatus })
-        .eq('id', messageId);
-
-      if (err) throw err;
+      await updateDoc(doc(db, 'community_messages', messageId), {
+        is_pinned: !currentPinStatus,
+        updated_at: serverTimestamp(),
+      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to pin message';
-      setError(errorMsg);
-      console.error('[v0] Pin error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to pin message');
+      console.error('[usePinMessage] Firebase error:', err);
     } finally {
       setPinning(false);
     }

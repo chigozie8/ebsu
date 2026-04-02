@@ -1,35 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCommunityMessages } from '../../hooks/useCommunity';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
 
 const CommunityWidget: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  let messages: any[] = [];
-  let loading = false;
+  useEffect(() => {
+    setLoading(true);
 
-  const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
-  messages = result?.messages || [];
-  loading = result?.loading || false;
+    let q;
+    if (selectedTopic !== 'All') {
+      q = query(
+        collection(db, 'community_messages'),
+        where('is_deleted', '==', false),
+        where('topic', '==', selectedTopic),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
+    } else {
+      q = query(
+        collection(db, 'community_messages'),
+        where('is_deleted', '==', false),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
+    }
 
-  // If there's an error, show a friendly message instead of breaking the dashboard
-  if (!messages) {
-    return (
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-700 p-2.5 rounded-lg">
-              <MessageCircle className="w-5 h-5 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-bold text-white">Student Community</h3>
-          </div>
-        </div>
-        <p className="text-sm text-slate-300">Community setup in progress...</p>
-      </div>
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setMessages(
+          snap.docs.map((d) => {
+            const data = d.data();
+            return { ...data, id: d.id, created_at: toIso(data.created_at) };
+          })
+        );
+        setLoading(false);
+      },
+      () => setLoading(false)
     );
-  }
+
+    return () => unsub();
+  }, [selectedTopic]);
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
   
@@ -151,7 +183,7 @@ const CommunityWidget: React.FC = () => {
         onClick={() => navigate('/u/community')}
         className="w-full mt-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-semibold py-2 rounded-lg hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
       >
-        View Community
+        Browse Communities
       </button>
     </div>
   );

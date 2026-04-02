@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Hardcoded fallbacks ensure the client always connects even when env vars
 // are not yet injected (e.g. first load in preview, Vite define race, etc.)
-const FALLBACK_URL = 'https://pymwhvvosdjeycjelmef.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bXdodnZvc2RqZXljamVsbWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMTk0MjcsImV4cCI6MjA5MDY5NTQyN30.VFDBMiorgHlAWfC-V555VNWVXa_To5t6LyxD9C3IAkQ';
+const FALLBACK_URL = 'https://syfyjowpqzqtizlnrtal.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5Znlqb3dwcXpxdGl6bG5ydGFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDkxMTYsImV4cCI6MjA5MDcyNTExNn0.9dFXwi6uRPg1TpUO-oevRlWcrt6bY6DT4Z3fi4_eht4';
 
 const supabaseUrl: string =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
@@ -26,6 +26,9 @@ export type Community = {
   user_avatar?: string;
   message: string;
   topic: string;
+  community_id?: string;
+  image_urls?: string[];
+  sticker_url?: string;
   created_at: string;
   updated_at: string;
   likes_count: number;
@@ -76,6 +79,23 @@ export type CommunityGuideline = {
   id: string;
   content: string;
   created_at: string;
+};
+
+// ── Community Group types ──────────────────────────────────────────────────
+
+export type CommunityGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  color: string;
+  banner_url?: string;
+  member_count: number;
+  post_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 };
 
 // ── Private Chat types ─────────────────────────────────────────────────────

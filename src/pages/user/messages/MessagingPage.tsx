@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  ArrowLeft, Send, Check, CheckCheck, Loader, Wifi, WifiOff, MessageCircle, Search
+  ArrowLeft, Send, Check, CheckCheck, Loader2, MessageCircle, Search, Image, X, RefreshCw
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
@@ -20,7 +20,7 @@ import { DirectMessage, Conversation } from '../../../lib/supabase';
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
 import { supabase } from '../../../lib/supabase';
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
+// Helpers
 const AVATAR_COLORS = [
   'from-teal-400 to-cyan-400',
   'from-blue-400 to-indigo-400',
@@ -28,17 +28,21 @@ const AVATAR_COLORS = [
   'from-amber-400 to-orange-400',
   'from-emerald-400 to-teal-400',
 ];
+
 function getAvatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
+
 function getInitials(name: string) {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
+
 function formatTime(date: string) {
   return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 }
+
 function formatDateChip(date: string) {
   const d = new Date(date);
   const today = new Date();
@@ -47,6 +51,7 @@ function formatDateChip(date: string) {
   if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
 function formatConvTime(date?: string) {
   if (!date) return '';
   const d = new Date(date);
@@ -56,6 +61,7 @@ function formatConvTime(date?: string) {
   }
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
 function groupByDate(msgs: DirectMessage[]) {
   const groups: { date: string; items: DirectMessage[] }[] = [];
   for (const m of msgs) {
@@ -67,7 +73,7 @@ function groupByDate(msgs: DirectMessage[]) {
   return groups;
 }
 
-/* ── Tick component ──────────────────────────────────────────────────────── */
+// Tick component
 const Ticks: React.FC<{ msg: DirectMessage; myId: string }> = ({ msg, myId }) => {
   if (msg.sender_id !== myId) return null;
   if (msg.is_seen) return <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />;
@@ -75,7 +81,7 @@ const Ticks: React.FC<{ msg: DirectMessage; myId: string }> = ({ msg, myId }) =>
   return <Check className="w-3.5 h-3.5 text-gray-400" />;
 };
 
-/* ── Typing indicator ────────────────────────────────────────────────────── */
+// Typing indicator
 const TypingIndicator: React.FC = () => (
   <div className="flex items-end gap-1.5 mb-1 wa-msg-in">
     <div className="wa-bubble-in px-4 py-3 shadow-sm">
@@ -88,7 +94,35 @@ const TypingIndicator: React.FC = () => (
   </div>
 );
 
-/* ── Conversation list item ───────────────────────────────────────────────── */
+// Safe Image component
+const SafeImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-100 rounded-lg ${className}`}>
+        <span className="text-xs text-slate-400 p-2">Image unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && <div className={`absolute inset-0 wa-skeleton rounded-lg ${className}`} />}
+      <img
+        src={src}
+        alt={alt}
+        crossOrigin="anonymous"
+        className={`${className} ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
+        onLoad={() => setLoading(false)}
+        onError={() => { setError(true); setLoading(false); }}
+      />
+    </div>
+  );
+};
+
+// Conversation list item
 const ConvItem: React.FC<{
   conv: Conversation;
   myId: string;
@@ -101,6 +135,7 @@ const ConvItem: React.FC<{
   const avatar = profile?.avatar_url;
   const gradient = getAvatarColor(name);
   const initials = getInitials(name);
+  const [avatarError, setAvatarError] = useState(false);
 
   return (
     <button
@@ -110,13 +145,13 @@ const ConvItem: React.FC<{
       }`}
     >
       <div className="relative flex-shrink-0">
-        {avatar ? (
+        {avatar && !avatarError ? (
           <img
             src={avatar}
             alt={name}
             crossOrigin="anonymous"
             className="w-12 h-12 rounded-full object-cover"
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            onError={() => setAvatarError(true)}
           />
         ) : (
           <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-bold`}>
@@ -143,15 +178,13 @@ const ConvItem: React.FC<{
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Main MessagingPage
-   ═══════════════════════════════════════════════════════════════════════════ */
+// Main MessagingPage
 const MessagingPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const myId   = studentDetails?.userID || '';
+  const myId = studentDetails?.userID || '';
   const myName = studentDetails?.firstName && studentDetails?.lastName
     ? `${studentDetails.firstName} ${studentDetails.lastName}`
     : 'Student';
@@ -162,10 +195,14 @@ const MessagingPage: React.FC = () => {
   const [activeOtherName, setActiveOtherName] = useState('');
   const [text, setText] = useState('');
   const [convSearch, setConvSearch] = useState('');
-  const [isMobileConvOpen, setIsMobileConvOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const [failedMessages, setFailedMessages] = useState<Set<string>>(new Set());
 
-  const bottomRef   = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { conversations, loading: convsLoading } = useConversations(myId);
   const { messages, loading: msgsLoading } = useDirectMessages(activeConvId || undefined);
@@ -188,7 +225,7 @@ const MessagingPage: React.FC = () => {
 
   // Handle ?with=userId&name=... deep-link
   useEffect(() => {
-    const withId   = searchParams.get('with');
+    const withId = searchParams.get('with');
     const withName = searchParams.get('name');
     if (withId && myId && withId !== myId) {
       openConversationWith(withId, withName || withId);
@@ -202,7 +239,6 @@ const MessagingPage: React.FC = () => {
       setActiveConvId(convId);
       setActiveOtherId(otherId);
       setActiveOtherName(otherName);
-      setIsMobileConvOpen(false);
     } else {
       toast.error('Could not open conversation.');
     }
@@ -228,19 +264,63 @@ const MessagingPage: React.FC = () => {
   };
 
   const handleSend = useCallback(async () => {
-    if (!text.trim() || !activeConvId || !myId || !activeOtherId) return;
+    if (!text.trim() && !imageFile) return;
+    if (!activeConvId || !myId || !activeOtherId) return;
+
     const optimisticText = text.trim();
     setText('');
-    if (textareaRef.current) { textareaRef.current.style.height = 'auto'; }
-    const result = await sendMessage(activeConvId, myId, activeOtherId, optimisticText);
-    if (!result) toast.error('Failed to send message. Please retry.');
-  }, [text, activeConvId, myId, activeOtherId, sendMessage]);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    let imgUrl: string | undefined;
+
+    if (imageFile) {
+      setUploadingImg(true);
+      try {
+        const ext = imageFile.name.split('.').pop();
+        const path = `dm/${activeConvId}/${Date.now()}.${ext}`;
+        const { error } = await supabase.storage.from('community-images').upload(path, imageFile, { upsert: true });
+        if (!error) {
+          const { data: pub } = supabase.storage.from('community-images').getPublicUrl(path);
+          imgUrl = pub.publicUrl;
+        }
+      } catch {
+        toast.error('Image upload failed');
+      } finally {
+        setUploadingImg(false);
+        setImageFile(null);
+        setImagePreview(null);
+      }
+    }
+
+    const result = await sendMessage(activeConvId, myId, activeOtherId, optimisticText || (imgUrl ? 'Image' : ''), imgUrl);
+    if (!result) {
+      toast.error('Failed to send. Tap to retry.');
+    }
+  }, [text, imageFile, activeConvId, myId, activeOtherId, sendMessage]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+    e.currentTarget.value = '';
   };
 
   const groups = groupByDate(messages);
@@ -253,19 +333,25 @@ const MessagingPage: React.FC = () => {
 
   if (gettingStudentDetails) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="w-6 h-6 animate-spin text-[#25D366]" />
+      <div className="flex items-center justify-center bg-[#f0f2f5]" style={{ height: '100dvh' }}>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-[#25D366]" />
+          <p className="text-slate-500 text-sm">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden" style={{ paddingTop: '0' }}>
+    <div className="flex bg-white overflow-hidden" style={{ height: '100dvh' }}>
 
-      {/* ── Sidebar: Conversation List ──────────────────────────── */}
+      {/* Sidebar: Conversation List */}
       <div className={`
-        flex-shrink-0 border-r border-[#e9edef] flex flex-col bg-white
-        ${activeConvId ? 'hidden md:flex md:w-[340px] lg:w-[380px]' : 'flex w-full md:w-[340px] lg:w-[380px]'}
+        border-r border-[#e9edef] flex flex-col bg-white
+        ${activeConvId
+          ? 'hidden md:flex md:w-[340px] lg:w-[380px] flex-shrink-0'
+          : 'flex w-full md:w-[340px] lg:w-[380px] flex-shrink-0'
+        }
       `}>
 
         {/* Sidebar Header */}
@@ -332,7 +418,6 @@ const MessagingPage: React.FC = () => {
                   setActiveConvId(conv.id);
                   setActiveOtherId(otherId);
                   setActiveOtherName(otherId);
-                  setIsMobileConvOpen(false);
                 }}
               />
             ))
@@ -340,9 +425,9 @@ const MessagingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Chat Area ──────────────────────────────────────────── */}
+      {/* Chat Area */}
       {activeConvId ? (
-        <div className={`flex-1 flex flex-col min-w-0 ${!activeConvId ? 'hidden md:flex' : 'flex'}`}>
+        <div className="flex-1 flex flex-col min-w-0 w-full">
 
           {/* Chat Header */}
           <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}>
@@ -373,25 +458,19 @@ const MessagingPage: React.FC = () => {
                 <span className="text-white font-bold text-sm truncate">
                   {otherProfile?.display_name || activeOtherName}
                 </span>
-                {otherProfile?.is_verified && <VerifiedBadge size="sm" className="border-2 border-transparent" />}
+                {otherProfile?.is_verified && <VerifiedBadge size="sm" />}
               </div>
               <div className="flex items-center gap-1 mt-0.5">
                 {otherTyping ? (
-                  <span className="text-green-100 text-xs font-medium">typing…</span>
+                  <span className="text-green-100 text-xs font-medium">typing...</span>
                 ) : otherProfile?.is_online ? (
-                  <>
-                    <Wifi className="w-3 h-3 text-green-200" />
-                    <span className="text-green-100 text-xs">Online</span>
-                  </>
+                  <span className="text-green-100 text-xs">Online</span>
                 ) : (
-                  <>
-                    <WifiOff className="w-3 h-3 text-green-200/70" />
-                    <span className="text-green-100/70 text-xs">
-                      {otherProfile?.last_seen
-                        ? `Last seen ${new Date(otherProfile.last_seen).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}`
-                        : 'Offline'}
-                    </span>
-                  </>
+                  <span className="text-green-100/70 text-xs">
+                    {otherProfile?.last_seen
+                      ? `Last seen ${new Date(otherProfile.last_seen).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true })}`
+                      : 'Offline'}
+                  </span>
                 )}
               </div>
             </div>
@@ -432,18 +511,16 @@ const MessagingPage: React.FC = () => {
                           className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-0.5 ${isMe ? 'wa-msg-out' : 'wa-msg-in'}`}
                         >
                           <div
-                            className={`max-w-[70%] px-3 py-2 shadow-sm text-sm leading-relaxed ${
+                            className={`max-w-[80%] sm:max-w-[70%] px-3 py-2 shadow-sm text-sm leading-relaxed ${
                               isMe ? 'wa-bubble-out' : 'wa-bubble-in'
                             } ${isMe ? (nextSame ? 'rounded-br-sm' : '') : (nextSame ? 'rounded-bl-sm' : '')}`}
                           >
                             {/* Image */}
                             {msg.image_url && (
-                              <img
+                              <SafeImage
                                 src={msg.image_url}
                                 alt="attachment"
-                                crossOrigin="anonymous"
                                 className="rounded-lg max-w-full mb-1"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
                               />
                             )}
                             <p className="break-words whitespace-pre-wrap text-[#111b21]">{msg.content}</p>
@@ -466,8 +543,47 @@ const MessagingPage: React.FC = () => {
             )}
           </div>
 
+          {/* Image preview */}
+          {imagePreview && (
+            <div className="px-4 py-2 bg-white border-t border-slate-200 flex items-center gap-3">
+              <div className="relative">
+                <img src={imagePreview} alt="preview" className="h-14 w-14 object-cover rounded-xl border border-slate-200" />
+                <button
+                  onClick={() => { setImageFile(null); setImagePreview(null); }}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 shadow-sm"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 flex-1">Ready to send</p>
+            </div>
+          )}
+
           {/* Input area */}
-          <div className="flex-shrink-0 bg-[#f0f2f5] px-3 py-2.5 flex items-end gap-2">
+          <div
+            className="flex-shrink-0 bg-[#f0f2f5] px-3 pt-2.5 flex items-end gap-2"
+            style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}
+          >
+            {/* Image upload button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onFileChange}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImg}
+              className="p-2.5 bg-white rounded-full shadow-sm hover:bg-slate-100 transition-colors text-slate-500 disabled:opacity-50 flex-shrink-0"
+            >
+              {uploadingImg ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#25D366]" />
+              ) : (
+                <Image className="w-4 h-4" />
+              )}
+            </button>
+
             <div className="flex-1 bg-white rounded-2xl px-4 py-2.5 flex items-end gap-2 min-h-[44px] shadow-sm">
               <textarea
                 ref={textareaRef}
@@ -482,19 +598,20 @@ const MessagingPage: React.FC = () => {
             </div>
             <button
               onClick={handleSend}
-              disabled={sending || !text.trim()}
-              className="wa-send-btn wa-send-pulse flex-shrink-0"
-              style={{ background: (!sending && text.trim()) ? '#25D366' : '#ccc' }}
+              disabled={sending || uploadingImg || (!text.trim() && !imageFile)}
+              className="w-11 h-11 rounded-full flex items-center justify-center wa-send-pulse flex-shrink-0 transition-all active:scale-95"
+              style={{ background: (text.trim() || imageFile) && !sending ? '#25D366' : '#ccc' }}
             >
-              {sending
-                ? <Loader className="w-4 h-4 animate-spin text-white" />
-                : <Send className="w-4 h-4 text-white" />
-              }
+              {sending ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <Send className="w-4 h-4 text-white" style={{ marginLeft: '2px' }} />
+              )}
             </button>
           </div>
         </div>
       ) : (
-        /* No conversation selected — desktop placeholder */
+        /* No conversation selected - desktop placeholder */
         <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-[#f0f2f5]">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-5 shadow-sm">
             <MessageCircle className="w-12 h-12 text-[#25D366]" />
