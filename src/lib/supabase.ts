@@ -77,3 +77,46 @@ export type CommunityGuideline = {
   content: string;
   created_at: string;
 };
+
+// ── Private Chat types ─────────────────────────────────────────────────────
+
+export type UserVerification = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  is_verified: boolean;
+  verified_at?: string;
+  verified_by?: string;
+  bio?: string;
+  online_status: 'online' | 'offline' | 'away';
+  last_seen: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PrivateChat = {
+  id: string;
+  participant_1: string;
+  participant_2: string;
+  participant_1_name: string;
+  participant_2_name: string;
+  participant_1_avatar?: string;
+  participant_2_avatar?: string;
+  last_message?: string;
+  last_message_at: string;
+  created_at: string;
+};
+
+export type PrivateMessage = {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_avatar?: string;
+  content: string;
+  image_url?: string;
+  is_seen: boolean;
+  is_delivered: boolean;
+  created_at: string;
+};

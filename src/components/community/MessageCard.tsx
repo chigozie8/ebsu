@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock, CheckCircle } from 'lucide-react';
 import { usePinMessage } from '../../hooks/useCommunity';
+import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 
 interface MessageCardProps {
   message: Community;
@@ -10,6 +11,8 @@ interface MessageCardProps {
   onEdit: (messageId: string, newMessage: string) => void;
   onThreadClick?: (messageId: string) => void;
   isAdmin?: boolean;
+  /** Called when the user's avatar or name is clicked */
+  onAvatarClick?: (userId: string, userName: string, userAvatar?: string) => void;
 }
 
 const TOPIC_BADGE: Record<string, string> = {
@@ -49,11 +52,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onEdit,
   onThreadClick,
   isAdmin = false,
+  onAvatarClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing,  setEditing]  = useState(false);
   const [editText, setEditText] = useState(message.message);
   const { togglePin } = usePinMessage();
+  const { verification } = useAnyUserVerification(message.user_id);
 
   const handleEditSubmit = () => {
     if (editText.trim() && editText !== message.message) {
@@ -74,27 +79,43 @@ const MessageCard: React.FC<MessageCardProps> = ({
     <div className="p-4 sm:p-5">
       <div className="flex gap-3 sm:gap-4">
 
-        {/* Avatar */}
-        {message.user_avatar ? (
-          <img
-            src={message.user_avatar}
-            alt={message.user_name}
-            className="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-slate-100"
-          />
-        ) : (
-          <div
-            className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center flex-shrink-0 text-white text-xs font-bold ring-2 ring-slate-100`}
-          >
-            {initials}
-          </div>
-        )}
+        {/* Avatar (clickable) */}
+        <button
+          type="button"
+          onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+          className="flex-shrink-0 focus:outline-none group"
+          title={`View ${message.user_name}'s profile`}
+        >
+          {message.user_avatar ? (
+            <img
+              src={message.user_avatar}
+              alt={message.user_name}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all"
+            />
+          ) : (
+            <div
+              className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all`}
+            >
+              {initials}
+            </div>
+          )}
+        </button>
 
         <div className="flex-1 min-w-0">
 
           {/* Top row: name + time + topic + menu */}
           <div className="flex items-start gap-2 justify-between flex-wrap mb-0.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-slate-900 text-sm">{message.user_name}</span>
+              <button
+                type="button"
+                onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+                className="font-bold text-slate-900 text-sm hover:text-teal-600 transition-colors focus:outline-none"
+              >
+                {message.user_name}
+              </button>
+              {verification?.is_verified && (
+                <CheckCircle className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
+              )}
               {message.is_edited && (
                 <span className="text-xs text-slate-400 italic">(edited)</span>
               )}
