@@ -1,35 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCommunityMessages } from '../../hooks/useCommunity';
+import { supabase } from '../../lib/supabase';
 import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
 
 const CommunityWidget: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTopic, setSelectedTopic] = useState<string>('All');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  let messages: any[] = [];
-  let loading = false;
+  useEffect(() => {
+    const fetchMessages = async () => {
+      setLoading(true);
+      let query = supabase
+        .from('community_messages')
+        .select('*')
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-  const result = useCommunityMessages(selectedTopic === 'All' ? undefined : selectedTopic, 5);
-  messages = result?.messages || [];
-  loading = result?.loading || false;
+      if (selectedTopic !== 'All') {
+        query = query.eq('topic', selectedTopic);
+      }
 
-  // If there's an error, show a friendly message instead of breaking the dashboard
-  if (!messages) {
-    return (
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 shadow-lg border border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-700 p-2.5 rounded-lg">
-              <MessageCircle className="w-5 h-5 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-bold text-white">Student Community</h3>
-          </div>
-        </div>
-        <p className="text-sm text-slate-300">Community setup in progress...</p>
-      </div>
-    );
-  }
+      const { data } = await query;
+      setMessages(data || []);
+      setLoading(false);
+    };
+
+    fetchMessages();
+  }, [selectedTopic]);
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
   
