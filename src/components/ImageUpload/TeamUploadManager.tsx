@@ -13,10 +13,12 @@ interface TeamMember {
 
 interface TeamUploadManagerProps {
   members: TeamMember[];
-  teamType: 'executive' | 'classRep' | 'press';
+  teamType: 'executive' | 'classRep' | 'press' | 'parliament';
   teamName: string;
   onImageUpdate: (memberId: string, newImageUrl: string) => void;
   onMemberUpdate: (memberId: string, fields: { name?: string; role?: string; extra?: string }) => void;
+  onDeleteMember?: (memberId: string) => void;
+  canDelete?: (memberId: string) => boolean;
 }
 
 function EditableField({
@@ -106,6 +108,8 @@ export function TeamUploadManager({
   teamName,
   onImageUpdate,
   onMemberUpdate,
+  onDeleteMember,
+  canDelete,
 }: TeamUploadManagerProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -211,6 +215,20 @@ export function TeamUploadManager({
                     }}
                   />
                 </div>
+              )}
+
+              {/* Delete button — only shown when onDeleteMember provided and canDelete returns true */}
+              {onDeleteMember && canDelete?.(member.id) && (
+                <button
+                  onClick={() => onDeleteMember(member.id)}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
+                  </svg>
+                  Remove
+                </button>
               )}
             </div>
           </div>

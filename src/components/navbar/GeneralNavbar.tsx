@@ -201,6 +201,20 @@ export const GeneralNavbar = () => {
                       </p>
                     </Dropdown.Item>
                   </NavLink>
+                  <NavLink to={"/ebsumsa/parliament"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Parliament
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink to={"/ebsumsa/press"}>
+                    <Dropdown.Item className="group">
+                      <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
+                        Press Club
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
                   <NavLink to={"/ebsumsa/alumni"}>
                     <Dropdown.Item className="group">
                       <p className="group-hover:text-green1 text-ss md:text-sm font-semibold text-gray-700">
@@ -416,6 +430,26 @@ export const GeneralNavbar = () => {
                     <Dropdown.Item>
                       <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
                         Executive Team
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/parliament"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Parliament
+                      </p>
+                    </Dropdown.Item>
+                  </NavLink>
+                  <NavLink
+                    onClick={() => setIsNavOpen(false)}
+                    to={"/ebsumsa/press"}
+                  >
+                    <Dropdown.Item>
+                      <p className="rounded-md hover:bg-gray-100 w-full text-left hover:text-green1">
+                        Press Club
                       </p>
                     </Dropdown.Item>
                   </NavLink>
