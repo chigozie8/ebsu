@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock, CheckCircle } from 'lucide-react';
+import { MoreVertical, Trash2, Edit2, MessageCircle, Pin, CheckCheck, Check } from 'lucide-react';
 import { usePinMessage } from '../../hooks/useCommunity';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
+import VerifiedBadge from './VerifiedBadge';
 
 interface MessageCardProps {
   message: Community;
@@ -12,8 +13,9 @@ interface MessageCardProps {
   onThreadClick?: (messageId: string) => void;
   onProfileClick?: (userId: string, userName: string, userAvatar?: string) => void;
   isAdmin?: boolean;
-  /** Called when the user's avatar or name is clicked */
   onAvatarClick?: (userId: string, userName: string, userAvatar?: string) => void;
+  prevSameUser?: boolean;
+  nextSameUser?: boolean;
 }
 
 const TOPIC_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -45,12 +47,54 @@ function getInitials(name: string) {
 
 function timeAgo(date: string) {
   const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (s < 60)     return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
-  if (s < 3600)   return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400)  return `${Math.floor(s / 3600)}h ago`;
+  if (s < 60) return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   if (s < 604800) return `${Math.floor(s / 86400)}d ago`;
   return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+// Image component with fallback
+const SafeImage: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ src, alt, className, style }) => {
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (error) {
+    return (
+      <div 
+        className={`flex items-center justify-center bg-slate-100 ${className}`}
+        style={style}
+      >
+        <span className="text-xs text-slate-400">Image unavailable</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      {loading && (
+        <div 
+          className={`absolute inset-0 wa-skeleton ${className}`}
+          style={style}
+        />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        crossOrigin="anonymous"
+        className={className}
+        style={{ ...style, opacity: loading ? 0 : 1 }}
+        onLoad={() => setLoading(false)}
+        onError={() => { setError(true); setLoading(false); }}
+      />
+    </div>
+  );
+};
 
 const MessageCard: React.FC<MessageCardProps> = ({
   message,
@@ -61,13 +105,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onProfileClick,
   isAdmin = false,
   onAvatarClick,
+  prevSameUser = false,
+  nextSameUser = false,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [editing,  setEditing]  = useState(false);
+  const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.message);
   const menuRef = useRef<HTMLDivElement>(null);
   const { togglePin } = usePinMessage();
   const { verification } = useAnyUserVerification(message.user_id);
+
+  const isVerified = verification?.is_verified;
 
   useEffect(() => {
     if (!showMenu) return;
@@ -84,8 +132,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   const [g0, g1] = getGrad(message.user_name);
-  const inits     = getInitials(message.user_name);
-  const tc        = TOPIC_COLORS[message.topic || ''] ?? TOPIC_COLORS['General'];
+  const inits = getInitials(message.user_name);
+  const tc = TOPIC_COLORS[message.topic || ''] ?? TOPIC_COLORS['General'];
   const imageUrls = (message as Community & { image_urls?: string[] }).image_urls;
 
   // WhatsApp-style border radius based on bubble grouping
@@ -96,38 +144,42 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const mtClass = prevSameUser ? 'mt-0.5' : 'mt-2';
 
   return (
-    <div className="p-4 sm:p-5 wa-msg-in">
-      <div className="flex gap-3 sm:gap-4">
-
-        {/* Avatar (clickable) */}
-        <button
-          type="button"
-          onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
-          className="flex-shrink-0 focus:outline-none group"
-          title={`View ${message.user_name}'s profile`}
-        >
-          {message.user_avatar ? (
-            <img
-              src={message.user_avatar}
-              alt={message.user_name}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all"
-            />
-          ) : (
-            <div
-              className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all`}
-            >
-              {inits}
-            </div>
+    <div className={`flex gap-2 px-3 ${mtClass} ${isOwn ? 'flex-row-reverse' : ''} ${isOwn ? 'wa-msg-out' : 'wa-msg-in'}`}>
+      {/* Avatar - only show for incoming messages, and only first in group */}
+      <div className="w-8 flex-shrink-0 self-end">
+        {!isOwn && !nextSameUser && (
+          <button
+            type="button"
+            onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+            className="focus:outline-none group"
+            title={`View ${message.user_name}'s profile`}
+          >
+            {message.user_avatar ? (
+              <img
+                src={message.user_avatar}
+                alt={message.user_name}
+                crossOrigin="anonymous"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm group-hover:ring-[#25D366] transition-all"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white shadow-sm group-hover:ring-[#25D366] transition-all"
+                style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+              >
+                {inits}
+              </div>
+            )}
           </button>
-        ) : null}
+        )}
       </div>
 
-      {/* ── Bubble ─────────────────────────────────────────────────── */}
+      {/* Bubble */}
       <div
         className={`max-w-[78%] sm:max-w-[65%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
         style={{ minWidth: 0 }}
       >
-        {/* Sender name — first of incoming group */}
+        {/* Sender name - first of incoming group */}
         {!isOwn && !prevSameUser && (
           <button
             onClick={(e) => { e.stopPropagation(); onProfileClick?.(message.user_id, message.user_name, message.user_avatar); }}
@@ -166,56 +218,56 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </span>
           )}
 
-          {/* Top row: name + verified + time + topic + menu */}
-          <div className="flex items-start gap-2 justify-between flex-wrap mb-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
-                className="font-bold text-slate-900 text-sm hover:text-teal-600 transition-colors focus:outline-none"
+          {/* Menu button */}
+          <div className="absolute top-1 right-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-1 rounded-full hover:bg-black/5 transition-colors opacity-0 group-hover:opacity-100"
+              style={{ opacity: showMenu ? 1 : undefined }}
+            >
+              <MoreVertical className="w-3.5 h-3.5" style={{ color: isOwn ? '#667781' : '#aebbc1' }} />
+            </button>
+
+            {/* Dropdown menu */}
+            {showMenu && (
+              <div
+                ref={menuRef}
+                className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 min-w-[140px]"
+                onClick={(e) => e.stopPropagation()}
               >
-                <MoreVertical className="w-3.5 h-3.5" style={{ color: isOwn ? '#667781' : '#aebbc1' }} />
-              </button>
-              {verification?.is_verified && (
-                <CheckCircle className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
-              )}
-              {message.is_edited && (
-                <span className="text-xs text-slate-400 italic">(edited)</span>
-              )}
-              {message.topic && message.topic !== 'General' && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${TOPIC_BADGE[message.topic] ?? 'bg-slate-100 text-slate-600'}`}
-                >
-                  {isOwn && (
-                    <button
-                      onClick={() => { setEditing(true); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
-                    >
-                      <Edit2 className="w-3.5 h-3.5 text-[#667781]" />
-                      Edit
-                    </button>
-                  )}
-                  {isAdmin && (
-                    <button
-                      onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 transition-colors"
-                    >
-                      <Pin className="w-3.5 h-3.5" />
-                      {message.is_pinned ? 'Unpin' : 'Pin'}
-                    </button>
-                  )}
-                  <div className="h-px mx-3 bg-[#f0f2f5]" />
+                {isOwn && (
                   <button
-                    onClick={() => { onDelete(message.id); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors"
+                    onClick={() => { setEditing(true); setShowMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Delete
+                    <Edit2 className="w-3.5 h-3.5 text-[#667781]" />
+                    Edit
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 transition-colors"
+                  >
+                    <Pin className="w-3.5 h-3.5" />
+                    {message.is_pinned ? 'Unpin' : 'Pin'}
+                  </button>
+                )}
+                {(isOwn || isAdmin) && (
+                  <>
+                    <div className="h-px mx-3 bg-[#f0f2f5]" />
+                    <button
+                      onClick={() => { onDelete(message.id); setShowMenu(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Edit mode */}
           {editing ? (
@@ -252,44 +304,45 @@ const MessageCard: React.FC<MessageCardProps> = ({
               </div>
             </div>
           ) : (
-            <p
-              className="text-[14px] leading-relaxed whitespace-pre-wrap break-words pr-4"
-              style={{ color: '#111b21' }}
-            >
-              {message.message}
-              {message.is_edited && (
-                <span className="text-[10px] ml-1 italic" style={{ color: '#8696a0' }}>(edited)</span>
-              )}
-            </p>
-          )}
+            <>
+              {/* Message text */}
+              <p
+                className="text-[14px] leading-relaxed whitespace-pre-wrap break-words pr-4"
+                style={{ color: '#111b21' }}
+              >
+                {message.message}
+                {message.is_edited && (
+                  <span className="text-[10px] ml-1 italic" style={{ color: '#8696a0' }}>(edited)</span>
+                )}
+              </p>
 
-          {/* Images */}
-          {imageUrls && imageUrls.length > 0 && (
-            <div
-              className={`mt-1.5 grid gap-1 rounded-xl overflow-hidden ${imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {imageUrls.slice(0, 4).map((url, i) => (
+              {/* Images */}
+              {imageUrls && imageUrls.length > 0 && (
                 <div
-                  key={i}
-                  className="relative bg-[#f0f2f5] overflow-hidden rounded-lg"
-                  style={{ aspectRatio: imageUrls.length === 1 ? '16/9' : '1/1' }}
+                  className={`mt-1.5 grid gap-1 rounded-xl overflow-hidden ${imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <img
-                    src={url}
-                    alt=""
-                    crossOrigin="anonymous"
-                    className="w-full h-full object-cover"
-                    onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                  />
-                  {i === 3 && imageUrls.length > 4 && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <span className="text-white text-lg font-bold">+{imageUrls.length - 4}</span>
+                  {imageUrls.slice(0, 4).map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative bg-[#f0f2f5] overflow-hidden rounded-lg"
+                      style={{ aspectRatio: imageUrls.length === 1 ? '16/9' : '1/1' }}
+                    >
+                      <SafeImage
+                        src={url}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      {i === 3 && imageUrls.length > 4 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <span className="text-white text-lg font-bold">+{imageUrls.length - 4}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
 
           {/* Time + ticks + reply count row */}
@@ -318,7 +371,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   {timeAgo(message.created_at)}
                 </span>
                 {isOwn && (
-                  <CheckCheck className="w-3.5 h-3.5" style={{ color: '#8696a0' }} />
+                  <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />
                 )}
               </div>
 

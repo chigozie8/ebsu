@@ -1,17 +1,16 @@
-import React, { useEffect, useRef } from 'react';
-import { X, MessageCircle, CheckCircle, Clock, User } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X, MessageCircle, CheckCircle, Clock, User, Shield, Loader2 } from 'lucide-react';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 
 interface ProfileModalProps {
-  /** The user whose profile is being shown */
   targetUserId: string;
   targetUserName: string;
   targetUserAvatar?: string;
-  /** Current viewer (used to decide if "Message" makes sense) */
   viewerUserId: string;
-  /** Called when the user clicks "Message" */
   onMessage: () => void;
   onClose: () => void;
+  currentUserId?: string;
+  onMessageClick?: (userId: string, userName: string) => void;
 }
 
 function timeAgoFromISO(iso?: string): string {
@@ -24,18 +23,22 @@ function timeAgoFromISO(iso?: string): string {
 }
 
 const AVATAR_COLORS = [
-  'from-teal-400 to-cyan-400',
-  'from-blue-400 to-indigo-500',
-  'from-pink-400 to-rose-500',
-  'from-amber-400 to-orange-400',
-  'from-emerald-400 to-teal-400',
-  'from-purple-400 to-violet-500',
+  ['#00897b', '#26a69a'],
+  ['#1976d2', '#42a5f5'],
+  ['#e91e63', '#f06292'],
+  ['#f57c00', '#ffb74d'],
+  ['#388e3c', '#66bb6a'],
+  ['#7b1fa2', '#ba68c8'],
 ];
 
-function getAvatarColor(name: string) {
+function getAvatarGradient(name: string): [string, string] {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length] as [string, string];
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
 const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -45,39 +48,72 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   viewerUserId,
   onMessage,
   onClose,
+  currentUserId,
+  onMessageClick,
 }) => {
   const { verification, loading } = useAnyUserVerification(targetUserId);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [imageError, setImageError] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const isOnline   = verification?.online_status === 'online';
-  const avatarGrad = getAvatarColor(targetUserName);
-  const initials   = targetUserName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const isSelf     = targetUserId === viewerUserId;
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => onClose(), 150);
+  };
+
+  const isOnline = verification?.online_status === 'online';
+  const isVerified = verification?.is_verified;
+  const [g0, g1] = getAvatarGradient(targetUserName);
+  const initials = getInitials(targetUserName);
+  const isSelf = targetUserId === viewerUserId || targetUserId === currentUserId;
+
+  const handleMessageClick = () => {
+    if (onMessageClick) {
+      onMessageClick(targetUserId, targetUserName);
+    } else {
+      onMessage();
+    }
+  };
 
   return (
-    /* Overlay */
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => { if (e.target === overlayRef.current) handleClose(); }}
     >
       {/* Card */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-        style={{ animationDuration: '150ms' }}
+        className={`bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transition-all duration-200 ${
+          isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
+        }`}
+        style={{
+          animation: isClosing ? 'none' : 'wa-modal-in 0.2s cubic-bezier(0.34,1.56,0.64,1)',
+        }}
       >
-        {/* Header banner */}
-        <div className={`h-24 bg-gradient-to-br ${avatarGrad} relative`}>
+        {/* Header banner with gradient */}
+        <div 
+          className="h-28 relative overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${g0} 0%, ${g1} 100%)` }}
+        >
+          {/* Decorative pattern */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='white' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")",
+            }}
+          />
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/30 rounded-full text-white transition-colors"
           >
             <X className="w-4 h-4" />
@@ -86,42 +122,61 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
         {/* Avatar (overlapping banner) */}
         <div className="px-5 pb-5">
-          <div className="flex items-end justify-between -mt-10 mb-4">
+          <div className="flex items-end justify-between -mt-12 mb-4">
             <div className="relative">
-              {targetUserAvatar ? (
+              {targetUserAvatar && !imageError ? (
                 <img
                   src={targetUserAvatar}
                   alt={targetUserName}
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-md"
+                  crossOrigin="anonymous"
+                  className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-lg"
+                  onError={() => setImageError(true)}
                 />
               ) : (
                 <div
-                  className={`w-20 h-20 rounded-full bg-gradient-to-br ${avatarGrad} flex items-center justify-center ring-4 ring-white shadow-md text-white text-2xl font-bold`}
+                  className="w-24 h-24 rounded-full flex items-center justify-center ring-4 ring-white shadow-lg text-white text-2xl font-bold"
+                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
                 >
                   {initials}
                 </div>
               )}
               {/* Online dot */}
               <span
-                className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-400' : 'bg-slate-300'}`}
+                className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-3 border-white ${
+                  isOnline ? 'bg-[#25D366]' : 'bg-slate-300'
+                }`}
+                style={{ borderWidth: '3px' }}
               />
             </div>
+
+            {/* Verified badge (large) */}
+            {isVerified && (
+              <div className="flex items-center gap-1.5 bg-[#e8f5fe] px-3 py-1.5 rounded-full">
+                <CheckCircle className="w-4 h-4 text-[#53bdeb]" strokeWidth={2.5} />
+                <span className="text-xs font-semibold text-[#0b93d5]">Verified</span>
+              </div>
+            )}
           </div>
 
           {/* Name + badge */}
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold text-slate-900 leading-tight">{targetUserName}</h2>
-            {verification?.is_verified && (
-              <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
+            <h2 className="text-xl font-bold text-slate-900 leading-tight">{targetUserName}</h2>
+            {isVerified && (
+              <CheckCircle className="w-5 h-5 text-[#53bdeb] flex-shrink-0" strokeWidth={2.5} />
             )}
           </div>
 
           {/* Online / last seen */}
-          <div className="flex items-center gap-1.5 text-xs mb-3">
-            {isOnline ? (
+          <div className="flex items-center gap-1.5 text-sm mb-4">
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+                <span className="text-slate-400">Loading...</span>
+              </div>
+            ) : isOnline ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-600 font-medium">Online</span>
+                <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+                <span className="text-[#25D366] font-medium">Online now</span>
               </>
             ) : (
               <>
@@ -133,38 +188,44 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {/* Bio */}
           {loading ? (
-            <div className="h-4 w-3/4 bg-slate-100 animate-pulse rounded mb-3" />
+            <div className="space-y-2 mb-4">
+              <div className="h-4 w-3/4 bg-slate-100 rounded wa-skeleton" />
+              <div className="h-4 w-1/2 bg-slate-100 rounded wa-skeleton" />
+            </div>
           ) : verification?.bio ? (
-            <p className="text-sm text-slate-600 leading-relaxed mb-4 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
-              {verification.bio}
-            </p>
+            <div className="bg-slate-50 rounded-xl px-4 py-3 border border-slate-100 mb-4">
+              <p className="text-sm text-slate-600 leading-relaxed">{verification.bio}</p>
+            </div>
           ) : (
             <p className="text-sm text-slate-400 italic mb-4">No bio yet.</p>
           )}
 
           {/* Verified badge notice */}
-          {verification?.is_verified && (
-            <div className="flex items-center gap-2 text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2 mb-4">
-              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              Verified EBSU student
+          {isVerified && (
+            <div className="flex items-center gap-2.5 bg-gradient-to-r from-[#e8f5fe] to-[#f0fdf4] border border-[#bce8f1] rounded-xl px-4 py-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-[#53bdeb]/20 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-4 h-4 text-[#53bdeb]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#0b93d5]">Verified EBSU Student</p>
+                <p className="text-xs text-slate-500">Identity confirmed by admin</p>
+              </div>
             </div>
           )}
 
           {/* Actions */}
-          {!isSelf && (
+          {!isSelf ? (
             <button
-              onClick={onMessage}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors text-sm shadow-md shadow-teal-100"
+              onClick={handleMessageClick}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold rounded-xl transition-all text-sm shadow-lg shadow-[#25D366]/25 active:scale-[0.98]"
             >
-              <MessageCircle className="w-4 h-4" />
-              Message
+              <MessageCircle className="w-5 h-5" />
+              Send Message
             </button>
-          )}
-
-          {isSelf && (
-            <div className="flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-sm">
+          ) : (
+            <div className="flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-500 rounded-xl text-sm">
               <User className="w-4 h-4" />
-              This is you
+              This is your profile
             </div>
           )}
         </div>
