@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
@@ -8,13 +8,12 @@ import { useUpsertUserProfile } from '../../../hooks/useDirectMessages';
 import MessageCard from '../../../components/community/MessageCard';
 import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
+import ProfileModal from '../../../components/community/ProfileModal';
 import { SubcategoryFilter } from '../../../components/community/SubcategoryFilter';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import { Send, Search, MessageSquare, ArrowLeft, Users, TrendingUp, Flame, Image, Smile, X, Loader } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
-
-const ProfileModal = lazy(() => import('../../../components/community/ProfileModal'));
 
 const TOPICS = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
@@ -176,19 +175,17 @@ const CommunityPage: React.FC = () => {
       />
 
       {profileModal && (
-        <Suspense fallback={null}>
-          <ProfileModal
-            targetUserId={profileModal.userId}
-            targetUserName={profileModal.userName}
-            targetUserAvatar={profileModal.userAvatar}
-            currentUserId={userId}
-            onClose={() => setProfileModal(null)}
-            onMessageClick={(targetId, targetName) => {
-              setProfileModal(null);
-              navigate(`/u/messages?with=${targetId}&name=${encodeURIComponent(targetName)}`);
-            }}
-          />
-        </Suspense>
+        <ProfileModal
+          targetUserId={profileModal.userId}
+          targetUserName={profileModal.userName}
+          targetUserAvatar={profileModal.userAvatar}
+          currentUserId={userId}
+          onClose={() => setProfileModal(null)}
+          onMessageClick={(targetId, targetName) => {
+            setProfileModal(null);
+            navigate(`/u/messages?with=${targetId}&name=${encodeURIComponent(targetName)}`);
+          }}
+        />
       )}
 
       <div className="min-h-screen bg-slate-50 pb-12">
