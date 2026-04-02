@@ -12,13 +12,34 @@ import ProfileModal from '../../../components/community/ProfileModal';
 import { SubcategoryFilter } from '../../../components/community/SubcategoryFilter';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import {
-  Send, Search, MessageSquare, ArrowLeft, Users, TrendingUp,
-  Image, Smile, X, Loader2, Paperclip, ChevronDown,
+  Send, Search, MessageSquare, ArrowLeft, Users,
+  Smile, X, Loader2, Paperclip,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
 
 const TOPICS = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
+
+function fmtDateChip(date: string) {
+  const d = new Date(date);
+  const now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString())  return 'Today';
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+type Community = import('../../../lib/supabase').Community;
+function groupByDate(msgs: Community[]) {
+  const groups: { date: string; items: Community[] }[] = [];
+  for (const m of msgs) {
+    const chip = fmtDateChip(m.created_at);
+    const last = groups[groups.length - 1];
+    if (last && last.date === chip) last.items.push(m);
+    else groups.push({ date: chip, items: [m] });
+  }
+  return groups;
+}
 
 interface ProfileState {
   userId: string;
@@ -45,19 +66,6 @@ const MessageSkeleton: React.FC<{ idx: number }> = ({ idx }) => (
   </div>
 );
 
-// ── Pinned banner ─────────────────────────────────────────────────────────────
-const PinnedBanner: React.FC<{ count: number }> = ({ count }) => (
-  <div className="flex items-center gap-2 mx-3 my-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200">
-    <div className="w-4 h-4 flex-shrink-0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="text-amber-500">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-      </svg>
-    </div>
-    <span className="text-amber-700 text-xs font-semibold">
-      {count} pinned {count === 1 ? 'message' : 'messages'}
-    </span>
-  </div>
-);
 
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -312,70 +320,95 @@ const CommunityPage: React.FC = () => {
         {/* ══ BODY ════════════════════════════════════════════════════ */}
         <div className="flex-1 overflow-hidden flex flex-col">
 
-          {/* Feed */}
+          {/* Feed — WhatsApp chat background */}
           <div
             ref={feedRef}
-            className="flex-1 overflow-y-auto"
-            style={{ background: '#f0f2f5' }}
+            className="flex-1 overflow-y-auto wa-scroll"
+            style={{
+              background: '#e5ddd5',
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            }}
           >
             {/* Guidelines banner */}
             <GuidelinesBanner />
 
-            {/* Pinned */}
-            {pinnedMessages.length > 0 && <PinnedBanner count={pinnedMessages.length} />}
-            {pinnedMessages.map((msg) => (
-              <div key={msg.id} className="border-l-4 border-amber-400 mx-3 my-1 rounded-r-xl overflow-hidden bg-white shadow-sm">
-                <MessageCard
-                  message={msg}
-                  isOwn={msg.user_id === userId}
-                  onDelete={deleteMessage}
-                  onEdit={editMessage}
-                  onThreadClick={setSelectedThreadId}
-                  onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
-                />
+            {/* Pinned date chip + pinned bubbles */}
+            {pinnedMessages.length > 0 && (
+              <div className="pt-2">
+                <div className="flex justify-center mb-1">
+                  <span className="text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm" style={{ background: 'rgba(225,245,254,0.9)', color: '#54656f' }}>
+                    Pinned
+                  </span>
+                </div>
+                {pinnedMessages.map((msg, idx) => (
+                  <MessageCard
+                    key={msg.id}
+                    message={msg}
+                    isOwn={msg.user_id === userId}
+                    onDelete={deleteMessage}
+                    onEdit={editMessage}
+                    onThreadClick={setSelectedThreadId}
+                    onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
+                    prevSameUser={idx > 0 && pinnedMessages[idx - 1].user_id === msg.user_id}
+                    nextSameUser={idx < pinnedMessages.length - 1 && pinnedMessages[idx + 1].user_id === msg.user_id}
+                  />
+                ))}
               </div>
-            ))}
+            )}
 
             {/* Main feed */}
             {loading ? (
-              <div className="divide-y divide-[#f0f2f5] bg-white mt-1">
-                {[0, 1, 2, 3, 4].map((i) => <MessageSkeleton key={i} idx={i} />)}
+              <div className="pt-4 space-y-1">
+                {[false, true, false, false, true, false].map((r, i) => (
+                  <div key={i} className={`flex items-end gap-1.5 px-3 ${r ? 'flex-row-reverse' : ''}`}>
+                    {!r && <div className="w-8 h-8 rounded-full wa-skeleton flex-shrink-0" />}
+                    <div className={`wa-skeleton rounded-2xl h-12 ${r ? 'w-48 rounded-br-none' : 'w-56 rounded-bl-none'}`} />
+                  </div>
+                ))}
               </div>
             ) : regularMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+              <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
                 <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
-                  style={{ background: '#e9f5db' }}
+                  className="w-18 h-18 w-[72px] h-[72px] rounded-full flex items-center justify-center mb-3 shadow"
+                  style={{ background: 'rgba(255,255,255,0.85)' }}
                 >
-                  <MessageSquare className="w-9 h-9" style={{ color: '#25D366' }} />
+                  <MessageSquare className="w-8 h-8" style={{ color: '#25D366' }} />
                 </div>
-                <p className="font-semibold text-[#111b21] text-base">
-                  {searchQuery ? 'No results' : 'No discussions yet'}
+                <p className="font-semibold text-[15px]" style={{ color: '#54656f' }}>
+                  {searchQuery ? 'No results found' : 'No discussions yet'}
                 </p>
-                <p className="text-sm mt-1" style={{ color: '#667781' }}>
-                  {searchQuery ? `Nothing matched "${searchQuery}"` : 'Be the first to start a conversation!'}
+                <p className="text-[13px] mt-1" style={{ color: '#8696a0' }}>
+                  {searchQuery ? `Nothing matched "${searchQuery}"` : 'Be the first to post!'}
                 </p>
               </div>
             ) : (
-              <div className="mt-1">
-                {regularMessages.map((msg, idx) => (
-                  <div
-                    key={msg.id}
-                    className="bg-white border-b border-[#f0f2f5] wa-msg-in"
-                    style={{ animationDelay: `${Math.min(idx, 8) * 30}ms` }}
-                  >
-                    <MessageCard
-                      message={msg}
-                      isOwn={msg.user_id === userId}
-                      onDelete={deleteMessage}
-                      onEdit={editMessage}
-                      onThreadClick={setSelectedThreadId}
-                      onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
-                    />
+              <div className="pt-2 pb-3">
+                {groupByDate(regularMessages).map((group) => (
+                  <div key={group.date}>
+                    {/* Date chip */}
+                    <div className="flex justify-center my-2">
+                      <span
+                        className="text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm"
+                        style={{ background: 'rgba(225,245,254,0.9)', color: '#54656f' }}
+                      >
+                        {group.date}
+                      </span>
+                    </div>
+                    {group.items.map((msg, idx) => (
+                      <MessageCard
+                        key={msg.id}
+                        message={msg}
+                        isOwn={msg.user_id === userId}
+                        onDelete={deleteMessage}
+                        onEdit={editMessage}
+                        onThreadClick={setSelectedThreadId}
+                        onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
+                        prevSameUser={idx > 0 && group.items[idx - 1].user_id === msg.user_id}
+                        nextSameUser={idx < group.items.length - 1 && group.items[idx + 1].user_id === msg.user_id}
+                      />
+                    ))}
                   </div>
                 ))}
-                {/* Bottom padding */}
-                <div className="h-3" />
               </div>
             )}
           </div>
