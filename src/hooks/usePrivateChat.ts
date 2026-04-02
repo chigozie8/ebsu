@@ -1,6 +1,73 @@
-import { useCallback, useEffect, useState } from 'react';
-import { supabase, PrivateChat, PrivateMessage, UserVerification } from '../lib/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  getDocs,
+  getDoc,
+  serverTimestamp,
+  Timestamp,
+  or,
+  and,
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export interface UserVerification {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  is_verified: boolean;
+  verified_at?: string;
+  verified_by?: string;
+  bio?: string;
+  online_status: 'online' | 'offline' | 'away';
+  last_seen: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrivateChat {
+  id: string;
+  participant_1: string;
+  participant_2: string;
+  participant_1_name: string;
+  participant_2_name: string;
+  participant_1_avatar?: string;
+  participant_2_avatar?: string;
+  last_message?: string;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface PrivateMessage {
+  id: string;
+  chat_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_avatar?: string;
+  content: string;
+  image_url?: string;
+  is_seen: boolean;
+  is_delivered: boolean;
+  created_at: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
 
 // ─────────────────────────────────────────────────────────
 // USER VERIFICATION
@@ -13,18 +80,36 @@ export const useUserVerification = (userId: string) => {
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('user_verification')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-      setVerification(data ?? null);
-      setLoading(false);
-    };
+    const q = query(
+      collection(db, 'user_verification'),
+      where('user_id', '==', userId)
+    );
 
-    fetch();
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        const data = d.data();
+        setVerification({
+          id: d.id,
+          user_id: data.user_id as string,
+          user_name: (data.user_name as string) || '',
+          user_avatar: data.user_avatar as string | undefined,
+          is_verified: (data.is_verified as boolean) || false,
+          verified_at: data.verified_at as string | undefined,
+          verified_by: data.verified_by as string | undefined,
+          bio: data.bio as string | undefined,
+          online_status: (data.online_status as 'online' | 'offline' | 'away') || 'offline',
+          last_seen: toIso(data.last_seen),
+          created_at: toIso(data.created_at),
+          updated_at: toIso(data.updated_at),
+        });
+      } else {
+        setVerification(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsub();
   }, [userId]);
 
   const upsertVerification = useCallback(async (
@@ -33,33 +118,57 @@ export const useUserVerification = (userId: string) => {
     avatar?: string,
     bio?: string,
   ) => {
-    const { data } = await supabase
-      .from('user_verification')
-      .upsert({ user_id: uid, user_name: name, user_avatar: avatar, bio }, { onConflict: 'user_id' })
-      .select()
-      .maybeSingle();
-    if (data) setVerification(data);
+    const q = query(collection(db, 'user_verification'), where('user_id', '==', uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      await updateDoc(snap.docs[0].ref, {
+        user_name: name,
+        user_avatar: avatar || null,
+        bio: bio || '',
+        updated_at: serverTimestamp(),
+      });
+    } else {
+      await addDoc(collection(db, 'user_verification'), {
+        user_id: uid,
+        user_name: name,
+        user_avatar: avatar || null,
+        bio: bio || '',
+        is_verified: false,
+        online_status: 'online',
+        last_seen: serverTimestamp(),
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+    }
   }, []);
 
-  /** Admin only: toggle is_verified */
   const toggleVerified = useCallback(async (uid: string, current: boolean) => {
-    await supabase
-      .from('user_verification')
-      .update({ is_verified: !current, verified_at: !current ? new Date().toISOString() : null })
-      .eq('user_id', uid);
+    const q = query(collection(db, 'user_verification'), where('user_id', '==', uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      await updateDoc(snap.docs[0].ref, {
+        is_verified: !current,
+        verified_at: !current ? new Date().toISOString() : null,
+        updated_at: serverTimestamp(),
+      });
+    }
   }, []);
 
-  /** Update online presence */
   const setOnlineStatus = useCallback(async (uid: string, status: 'online' | 'offline') => {
-    await supabase
-      .from('user_verification')
-      .upsert({ user_id: uid, online_status: status, last_seen: new Date().toISOString(), user_name: '' }, { onConflict: 'user_id' });
+    const q = query(collection(db, 'user_verification'), where('user_id', '==', uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      await updateDoc(snap.docs[0].ref, {
+        online_status: status,
+        last_seen: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+    }
   }, []);
 
   return { verification, loading, upsertVerification, toggleVerified, setOnlineStatus };
 };
 
-/** Fetch verification for any user (for profile modal) */
 export const useAnyUserVerification = (userId: string | null) => {
   const [verification, setVerification] = useState<UserVerification | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,12 +176,37 @@ export const useAnyUserVerification = (userId: string | null) => {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    supabase
-      .from('user_verification')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle()
-      .then(({ data }) => { setVerification(data ?? null); setLoading(false); });
+
+    const q = query(
+      collection(db, 'user_verification'),
+      where('user_id', '==', userId)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        const data = d.data();
+        setVerification({
+          id: d.id,
+          user_id: data.user_id as string,
+          user_name: (data.user_name as string) || '',
+          user_avatar: data.user_avatar as string | undefined,
+          is_verified: (data.is_verified as boolean) || false,
+          verified_at: data.verified_at as string | undefined,
+          verified_by: data.verified_by as string | undefined,
+          bio: data.bio as string | undefined,
+          online_status: (data.online_status as 'online' | 'offline' | 'away') || 'offline',
+          last_seen: toIso(data.last_seen),
+          created_at: toIso(data.created_at),
+          updated_at: toIso(data.updated_at),
+        });
+      } else {
+        setVerification(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsub();
   }, [userId]);
 
   return { verification, loading };
@@ -89,25 +223,52 @@ export const useMyChats = (userId: string) => {
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('private_chats')
-        .select('*')
-        .or(`participant_1.eq.${userId},participant_2.eq.${userId}`)
-        .order('last_message_at', { ascending: false });
-      setChats(data ?? []);
+    // Query chats where user is participant_1 or participant_2
+    const q1 = query(
+      collection(db, 'private_chats'),
+      where('participant_1', '==', userId),
+      orderBy('last_message_at', 'desc')
+    );
+    const q2 = query(
+      collection(db, 'private_chats'),
+      where('participant_2', '==', userId),
+      orderBy('last_message_at', 'desc')
+    );
+
+    const allChats: Map<string, PrivateChat> = new Map();
+
+    const mapDoc = (d: { id: string; data: () => Record<string, unknown> }): PrivateChat => ({
+      id: d.id,
+      participant_1: d.data().participant_1 as string,
+      participant_2: d.data().participant_2 as string,
+      participant_1_name: (d.data().participant_1_name as string) || '',
+      participant_2_name: (d.data().participant_2_name as string) || '',
+      participant_1_avatar: d.data().participant_1_avatar as string | undefined,
+      participant_2_avatar: d.data().participant_2_avatar as string | undefined,
+      last_message: d.data().last_message as string | undefined,
+      last_message_at: toIso(d.data().last_message_at),
+      created_at: toIso(d.data().created_at),
+    });
+
+    const sortAndSet = () => {
+      const sorted = Array.from(allChats.values()).sort(
+        (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+      );
+      setChats(sorted);
       setLoading(false);
     };
 
-    fetch();
+    const unsub1 = onSnapshot(q1, (snap) => {
+      snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
+      sortAndSet();
+    });
 
-    const channel: RealtimeChannel = supabase
-      .channel(`private_chats:${userId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'private_chats' }, () => { fetch(); })
-      .subscribe();
+    const unsub2 = onSnapshot(q2, (snap) => {
+      snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
+      sortAndSet();
+    });
 
-    return () => { channel.unsubscribe(); };
+    return () => { unsub1(); unsub2(); };
   }, [userId]);
 
   return { chats, loading };
@@ -130,32 +291,34 @@ export const useGetOrCreateChat = () => {
   ): Promise<string> => {
     setLoading(true);
     try {
-      // Try both orderings for the unique constraint
-      const { data: existing } = await supabase
-        .from('private_chats')
-        .select('id')
-        .or(
-          `and(participant_1.eq.${myId},participant_2.eq.${otherId}),and(participant_1.eq.${otherId},participant_2.eq.${myId})`
-        )
-        .maybeSingle();
+      // Check both orderings
+      const q1 = query(
+        collection(db, 'private_chats'),
+        where('participant_1', '==', myId),
+        where('participant_2', '==', otherId)
+      );
+      const q2 = query(
+        collection(db, 'private_chats'),
+        where('participant_1', '==', otherId),
+        where('participant_2', '==', myId)
+      );
 
-      if (existing?.id) return existing.id;
+      const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+      if (!snap1.empty) return snap1.docs[0].id;
+      if (!snap2.empty) return snap2.docs[0].id;
 
-      const { data: created, error } = await supabase
-        .from('private_chats')
-        .insert({
-          participant_1: myId,
-          participant_2: otherId,
-          participant_1_name: myName,
-          participant_2_name: otherName,
-          participant_1_avatar: myAvatar,
-          participant_2_avatar: otherAvatar,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return created.id as string;
+      const docRef = await addDoc(collection(db, 'private_chats'), {
+        participant_1: myId,
+        participant_2: otherId,
+        participant_1_name: myName,
+        participant_2_name: otherName,
+        participant_1_avatar: myAvatar || null,
+        participant_2_avatar: otherAvatar || null,
+        last_message: null,
+        last_message_at: serverTimestamp(),
+        created_at: serverTimestamp(),
+      });
+      return docRef.id;
     } finally {
       setLoading(false);
     }
@@ -175,36 +338,34 @@ export const usePrivateMessages = (chatId: string | null) => {
   useEffect(() => {
     if (!chatId) { setLoading(false); return; }
 
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('private_messages')
-        .select('*')
-        .eq('chat_id', chatId)
-        .order('created_at', { ascending: true });
-      setMessages(data ?? []);
+    const q = query(
+      collection(db, 'private_messages'),
+      where('chat_id', '==', chatId),
+      orderBy('created_at', 'asc')
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      setMessages(
+        snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            chat_id: data.chat_id as string,
+            sender_id: data.sender_id as string,
+            sender_name: (data.sender_name as string) || '',
+            sender_avatar: data.sender_avatar as string | undefined,
+            content: (data.content as string) || '',
+            image_url: data.image_url as string | undefined,
+            is_seen: (data.is_seen as boolean) || false,
+            is_delivered: (data.is_delivered as boolean) || false,
+            created_at: toIso(data.created_at),
+          };
+        })
+      );
       setLoading(false);
-    };
+    });
 
-    fetch();
-
-    const channel: RealtimeChannel = supabase
-      .channel(`private_messages:${chatId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'private_messages', filter: `chat_id=eq.${chatId}` },
-        (payload) => { setMessages((prev) => [...prev, payload.new as PrivateMessage]); }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'private_messages', filter: `chat_id=eq.${chatId}` },
-        (payload) => {
-          setMessages((prev) => prev.map((m) => m.id === payload.new.id ? payload.new as PrivateMessage : m));
-        }
-      )
-      .subscribe();
-
-    return () => { channel.unsubscribe(); };
+    return () => unsub();
   }, [chatId]);
 
   return { messages, loading };
@@ -227,21 +388,23 @@ export const useSendPrivateMessage = () => {
   ) => {
     setSending(true);
     try {
-      const { error } = await supabase.from('private_messages').insert({
+      await addDoc(collection(db, 'private_messages'), {
         chat_id: chatId,
         sender_id: senderId,
         sender_name: senderName,
-        sender_avatar: senderAvatar,
+        sender_avatar: senderAvatar || null,
         content,
-        image_url: imageUrl,
+        image_url: imageUrl || null,
+        is_seen: false,
+        is_delivered: true,
+        created_at: serverTimestamp(),
       });
-      if (error) throw error;
 
-      // Update last_message on the chat
-      await supabase
-        .from('private_chats')
-        .update({ last_message: content, last_message_at: new Date().toISOString() })
-        .eq('id', chatId);
+      // Update last_message on the chat document
+      await updateDoc(doc(db, 'private_chats', chatId), {
+        last_message: content,
+        last_message_at: serverTimestamp(),
+      });
     } finally {
       setSending(false);
     }
@@ -256,50 +419,128 @@ export const useSendPrivateMessage = () => {
 
 export const useMarkSeen = () => {
   const markSeen = useCallback(async (chatId: string, viewerId: string) => {
-    await supabase
-      .from('private_messages')
-      .update({ is_seen: true })
-      .eq('chat_id', chatId)
-      .neq('sender_id', viewerId)
-      .eq('is_seen', false);
+    const q = query(
+      collection(db, 'private_messages'),
+      where('chat_id', '==', chatId),
+      where('sender_id', '!=', viewerId),
+      where('is_seen', '==', false)
+    );
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      await updateDoc(d.ref, { is_seen: true, is_delivered: true });
+    }
   }, []);
 
   return { markSeen };
 };
 
 // ─────────────────────────────────────────────────────────
-// TYPING INDICATOR (ephemeral via Supabase Broadcast)
+// TYPING INDICATOR (ephemeral via Firestore doc)
 // ─────────────────────────────────────────────────────────
 
 export const useTypingIndicator = (chatId: string | null, myId: string) => {
   const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!chatId) return;
 
-    const channel = supabase.channel(`typing:${chatId}`);
+    const typingDocRef = doc(db, 'typing_indicators', chatId);
+    const unsub = onSnapshot(typingDocRef, (snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      const typingUsers = (data.users as Record<string, number>) || {};
+      const now = Date.now();
+      const otherTyping = Object.entries(typingUsers).some(
+        ([uid, ts]) => uid !== myId && now - ts < 4000
+      );
+      setOtherIsTyping(otherTyping);
+      if (otherTyping) {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setOtherIsTyping(false), 4000);
+      }
+    });
 
-    channel
-      .on('broadcast', { event: 'typing' }, (payload) => {
-        if (payload.payload?.userId !== myId) {
-          setOtherIsTyping(true);
-          // Auto clear after 2.5 s if no new event
-          setTimeout(() => setOtherIsTyping(false), 2500);
-        }
-      })
-      .subscribe();
-
-    return () => { channel.unsubscribe(); };
+    return () => {
+      unsub();
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [chatId, myId]);
 
   const broadcastTyping = useCallback(async () => {
     if (!chatId) return;
-    await supabase.channel(`typing:${chatId}`).send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId: myId },
-    });
+    try {
+      const typingDocRef = doc(db, 'typing_indicators', chatId);
+      const snap = await getDoc(typingDocRef);
+      if (snap.exists()) {
+        await updateDoc(typingDocRef, { [`users.${myId}`]: Date.now() });
+      } else {
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(typingDocRef, { users: { [myId]: Date.now() } });
+      }
+    } catch {
+      // Typing indicator failures are non-critical
+    }
   }, [chatId, myId]);
 
   return { otherIsTyping, broadcastTyping };
+};
+
+// ─────────────────────────────────────────────────────────
+// ALL USER PROFILES (for admin / directory)
+// ─────────────────────────────────────────────────────────
+
+export const useAllUserProfiles = () => {
+  const [profiles, setProfiles] = useState<UserVerification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    const q = query(collection(db, 'user_verification'), orderBy('user_name'));
+    const snap = await getDocs(q);
+    setProfiles(
+      snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          user_id: data.user_id as string,
+          user_name: (data.user_name as string) || '',
+          user_avatar: data.user_avatar as string | undefined,
+          is_verified: (data.is_verified as boolean) || false,
+          verified_at: data.verified_at as string | undefined,
+          verified_by: data.verified_by as string | undefined,
+          bio: data.bio as string | undefined,
+          online_status: (data.online_status as 'online' | 'offline' | 'away') || 'offline',
+          last_seen: toIso(data.last_seen),
+          created_at: toIso(data.created_at),
+          updated_at: toIso(data.updated_at),
+        };
+      })
+    );
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refetch(); }, [refetch]);
+
+  return { profiles, loading, refetch };
+};
+
+export const useToggleVerification = () => {
+  const toggle = useCallback(async (userId: string, current: boolean) => {
+    try {
+      const q = query(collection(db, 'user_verification'), where('user_id', '==', userId));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        await updateDoc(snap.docs[0].ref, {
+          is_verified: !current,
+          updated_at: serverTimestamp(),
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('[useToggleVerification] Firebase error:', err);
+      return false;
+    }
+  }, []);
+  return { toggle };
 };
