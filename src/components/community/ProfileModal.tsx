@@ -1,17 +1,18 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { X, MessageCircle, Clock, User } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { X, MessageCircle, CheckCircle, Clock, User } from 'lucide-react';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 
 interface ProfileModalProps {
+  /** The user whose profile is being shown */
   targetUserId: string;
   targetUserName: string;
   targetUserAvatar?: string;
+  /** Current viewer (used to decide if "Message" makes sense) */
   viewerUserId: string;
+  /** Called when the user clicks "Message" */
   onMessage: () => void;
   onClose: () => void;
 }
-
-// ── helpers ────────────────────────────────────────────────────────────────
 
 function timeAgoFromISO(iso?: string): string {
   if (!iso) return 'Unknown';
@@ -37,53 +38,6 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-/** WhatsApp-style filled blue verification tick */
-function BlueTick({ size = 18 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-label="Verified"
-      role="img"
-      className="flex-shrink-0 inline-block"
-    >
-      <circle cx="10" cy="10" r="10" fill="#1D9BF0" />
-      <path
-        d="M5.5 10.5l3 3 6-6"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// ── CSS keyframe styles injected once ─────────────────────────────────────
-
-const STYLE_ID = 'profile-modal-styles';
-function injectStyles() {
-  if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = `
-    @keyframes pm-overlay-in  { from { opacity: 0 } to   { opacity: 1 } }
-    @keyframes pm-overlay-out { from { opacity: 1 } to   { opacity: 0 } }
-    @keyframes pm-card-in     { from { opacity: 0; transform: scale(0.88) translateY(16px) } to { opacity: 1; transform: scale(1) translateY(0) } }
-    @keyframes pm-card-out    { from { opacity: 1; transform: scale(1)    translateY(0)    } to { opacity: 0; transform: scale(0.88) translateY(12px) } }
-
-    .pm-overlay-enter { animation: pm-overlay-in  220ms cubic-bezier(0.22,1,0.36,1) forwards; }
-    .pm-overlay-exit  { animation: pm-overlay-out 180ms cubic-bezier(0.55,0,1,0.45) forwards; }
-    .pm-card-enter    { animation: pm-card-in     260ms cubic-bezier(0.22,1,0.36,1) forwards; }
-    .pm-card-exit     { animation: pm-card-out    200ms cubic-bezier(0.55,0,1,0.45) forwards; }
-  `;
-  document.head.appendChild(style);
-}
-
-// ── Component ──────────────────────────────────────────────────────────────
-
 const ProfileModal: React.FC<ProfileModalProps> = ({
   targetUserId,
   targetUserName,
@@ -92,106 +46,82 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onMessage,
   onClose,
 }) => {
-  injectStyles();
-
   const { verification, loading } = useAnyUserVerification(targetUserId);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // "closing" state drives the exit animation before the parent unmounts
-  const [closing, setClosing] = useState(false);
-
-  const triggerClose = useCallback(() => {
-    if (closing) return;
-    setClosing(true);
-    setTimeout(onClose, 200); // match pm-card-out duration
-  }, [closing, onClose]);
-
-  // Escape key
+  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') triggerClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [triggerClose]);
+  }, [onClose]);
 
-  const isOnline     = verification?.online_status === 'online';
-  const isVerified   = verification?.is_verified;
-  const avatarGrad   = getAvatarColor(targetUserName);
-  const initials     = targetUserName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-  const isSelf       = targetUserId === viewerUserId;
+  const isOnline   = verification?.online_status === 'online';
+  const avatarGrad = getAvatarColor(targetUserName);
+  const initials   = targetUserName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const isSelf     = targetUserId === viewerUserId;
 
   return (
     /* Overlay */
     <div
       ref={overlayRef}
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 ${closing ? 'pm-overlay-exit' : 'pm-overlay-enter'}`}
-      style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(5px)' }}
-      onClick={(e) => { if (e.target === overlayRef.current) triggerClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       {/* Card */}
       <div
-        className={`bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden ${closing ? 'pm-card-exit' : 'pm-card-enter'}`}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        style={{ animationDuration: '150ms' }}
       >
-        {/* Coloured banner */}
-        <div className={`h-28 bg-gradient-to-br ${avatarGrad} relative flex-shrink-0`}>
+        {/* Header banner */}
+        <div className={`h-24 bg-gradient-to-br ${avatarGrad} relative`}>
           <button
-            onClick={triggerClose}
-            className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/30 active:bg-black/40 rounded-full text-white transition-colors"
-            aria-label="Close"
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 bg-black/20 hover:bg-black/30 rounded-full text-white transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-
-          {/* Drag handle (mobile) */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/30 rounded-full sm:hidden" />
         </div>
 
-        {/* Body */}
-        <div className="px-5 pb-6">
-          {/* Avatar row */}
-          <div className="flex items-end justify-between -mt-12 mb-4">
+        {/* Avatar (overlapping banner) */}
+        <div className="px-5 pb-5">
+          <div className="flex items-end justify-between -mt-10 mb-4">
             <div className="relative">
               {targetUserAvatar ? (
                 <img
                   src={targetUserAvatar}
                   alt={targetUserName}
-                  className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-lg"
+                  className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-md"
                 />
               ) : (
                 <div
-                  className={`w-24 h-24 rounded-full bg-gradient-to-br ${avatarGrad} flex items-center justify-center ring-4 ring-white shadow-lg text-white text-2xl font-bold`}
+                  className={`w-20 h-20 rounded-full bg-gradient-to-br ${avatarGrad} flex items-center justify-center ring-4 ring-white shadow-md text-white text-2xl font-bold`}
                 >
                   {initials}
                 </div>
               )}
-              {/* Online indicator */}
+              {/* Online dot */}
               <span
-                className={`absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full border-2 border-white transition-colors ${
-                  isOnline ? 'bg-emerald-400' : 'bg-slate-300'
-                }`}
+                className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-400' : 'bg-slate-300'}`}
               />
             </div>
+          </div>
 
-            {/* Verified chip (top-right of avatar row) */}
-            {isVerified && (
-              <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full mb-2 mr-1 self-end">
-                <BlueTick size={13} />
-                Verified
-              </div>
+          {/* Name + badge */}
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-lg font-bold text-slate-900 leading-tight">{targetUserName}</h2>
+            {verification?.is_verified && (
+              <CheckCircle className="w-5 h-5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
             )}
           </div>
 
-          {/* Name + blue tick */}
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl font-bold text-slate-900 leading-tight truncate">{targetUserName}</h2>
-            {isVerified && <BlueTick size={18} />}
-          </div>
-
-          {/* Online status */}
-          <div className="flex items-center gap-1.5 text-xs mb-4">
+          {/* Online / last seen */}
+          <div className="flex items-center gap-1.5 text-xs mb-3">
             {isOnline ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-emerald-600 font-semibold">Online now</span>
+                <span className="text-emerald-600 font-medium">Online</span>
               </>
             ) : (
               <>
@@ -203,39 +133,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
           {/* Bio */}
           {loading ? (
-            <div className="h-9 w-full bg-slate-100 animate-pulse rounded-xl mb-4" />
+            <div className="h-4 w-3/4 bg-slate-100 animate-pulse rounded mb-3" />
           ) : verification?.bio ? (
-            <p className="text-sm text-slate-600 leading-relaxed mb-4 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-100">
+            <p className="text-sm text-slate-600 leading-relaxed mb-4 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">
               {verification.bio}
             </p>
           ) : (
             <p className="text-sm text-slate-400 italic mb-4">No bio yet.</p>
           )}
 
-          {/* Verified notice */}
-          {isVerified && (
-            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 mb-5">
-              <BlueTick size={14} />
-              <span>This account is verified as an EBSU student</span>
+          {/* Verified badge notice */}
+          {verification?.is_verified && (
+            <div className="flex items-center gap-2 text-xs text-teal-700 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2 mb-4">
+              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              Verified EBSU student
             </div>
           )}
 
-          {/* Divider */}
-          <div className="border-t border-slate-100 mb-5" />
-
-          {/* Action */}
-          {!isSelf ? (
+          {/* Actions */}
+          {!isSelf && (
             <button
               onClick={onMessage}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-[#075e54] hover:bg-[#064e46] active:bg-[#053e38] text-white font-semibold rounded-xl transition-colors text-sm shadow-md"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-xl transition-colors text-sm shadow-md shadow-teal-100"
             >
               <MessageCircle className="w-4 h-4" />
-              Send Message
+              Message
             </button>
-          ) : (
-            <div className="flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-500 rounded-xl text-sm">
+          )}
+
+          {isSelf && (
+            <div className="flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-sm">
               <User className="w-4 h-4" />
-              This is your profile
+              This is you
             </div>
           )}
         </div>
