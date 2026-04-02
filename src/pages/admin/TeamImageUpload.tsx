@@ -4,6 +4,8 @@ import placeholder from "../../assets/img/team/placeholder.png";
 import { supabase } from '../../config/supabase';
 import { classReps } from '../../data/students/classReps';
 import { IoLink, IoCheckmark, IoPencil } from 'react-icons/io5';
+import { notifyUser } from '../../helpers/notifyUser';
+import { Spinner } from '../../components/loaders/Spinner';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TeamType = 'executive' | 'classRep' | 'press';
@@ -69,6 +71,11 @@ const pressTeamData: TeamMember[] = [
 
 const DEFAULT_DRIVE_URL = 'https://drive.google.com/file/d/1Vv_k_nvjAZ1Wi8QnpFa5wlsWCsns7918/view?usp=drivesdk';
 
+// IDs that ship as defaults — these cannot be deleted
+const FIXED_EXECUTIVE_IDS = new Set(executiveTeamData.map((m) => m.id));
+const FIXED_CLASSREP_IDS  = new Set(classRepsData.map((m) => m.id));
+const FIXED_PRESS_IDS     = new Set(pressTeamData.map((m) => m.id));
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AdminTeamUpload() {
   const [teams, setTeams] = useState<Record<TeamType, TeamMember[]>>({
@@ -82,6 +89,10 @@ export default function AdminTeamUpload() {
   const [editingDrive,  setEditingDrive]  = useState(false);
   const [savingDrive,   setSavingDrive]   = useState(false);
   const [driveSaved,    setDriveSaved]    = useState(false);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<{ teamType: TeamType; member: TeamMember } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     // Load team member overrides from Supabase
@@ -159,6 +170,34 @@ export default function AdminTeamUpload() {
         m.id === memberId ? { ...m, ...fields } : m
       ),
     }));
+  };
+
+  const requestDelete = (teamType: TeamType, memberId: string) => {
+    const member = teams[teamType].find((m) => m.id === memberId);
+    if (member) setDeleteTarget({ teamType, member });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { teamType, member } = deleteTarget;
+    try {
+      await supabase
+        .from('team_images')
+        .delete()
+        .eq('id', `${teamType}_${member.id}`);
+
+      setTeams((prev) => ({
+        ...prev,
+        [teamType]: prev[teamType].filter((m) => m.id !== member.id),
+      }));
+      notifyUser('success', `${member.name} removed`);
+      setDeleteTarget(null);
+    } catch {
+      notifyUser('error', 'Failed to remove member');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -254,6 +293,8 @@ export default function AdminTeamUpload() {
             teamName="EBSUMSA Executive Team"
             onImageUpdate={(id, url) => handleImageUpdate('executive', id, url)}
             onMemberUpdate={(id, fields) => handleMemberUpdate('executive', id, fields)}
+            onDeleteMember={(id) => requestDelete('executive', id)}
+            canDelete={(id) => !FIXED_EXECUTIVE_IDS.has(id)}
           />
         </div>
 
@@ -265,6 +306,8 @@ export default function AdminTeamUpload() {
             teamName="Class Representatives"
             onImageUpdate={(id, url) => handleImageUpdate('classRep', id, url)}
             onMemberUpdate={(id, fields) => handleMemberUpdate('classRep', id, fields)}
+            onDeleteMember={(id) => requestDelete('classRep', id)}
+            canDelete={(id) => !FIXED_CLASSREP_IDS.has(id)}
           />
         </div>
 
@@ -276,10 +319,49 @@ export default function AdminTeamUpload() {
             teamName="Press Team"
             onImageUpdate={(id, url) => handleImageUpdate('press', id, url)}
             onMemberUpdate={(id, fields) => handleMemberUpdate('press', id, fields)}
+            onDeleteMember={(id) => requestDelete('press', id)}
+            canDelete={(id) => !FIXED_PRESS_IDS.has(id)}
           />
         </div>
 
       </div>
     </div>
+
+    {/* Delete confirm modal */}
+    {deleteTarget && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4h6v2" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-gray-900 text-center mb-2">Remove Member</h3>
+          <p className="text-sm text-gray-500 text-center mb-6">
+            Remove <span className="font-semibold text-gray-800">{deleteTarget.member.name}</span> ({deleteTarget.member.role}) from the team? This only removes admin-added records — default placeholders are not affected.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {deleting && <Spinner className="w-4 h-4 text-white" />}
+              {deleting ? 'Removing...' : 'Remove'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }

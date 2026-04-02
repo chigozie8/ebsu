@@ -60,30 +60,6 @@ export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
     setLoading(true);
     setError(null);
 
-    const CLOUD_NAME =
-      (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME) ||
-      "dsqjg9mfg";
-
-    /** Fetch directly from Cloudinary's unsigned resource listing (no secret needed) */
-    const fetchFromCloudinaryDirect = async (): Promise<GalleryItem[]> => {
-      // Cloudinary allows fetching resources in a folder via the "list" endpoint
-      // when a "list" resource type tag is used, or via the upload preset folder name.
-      // We use the /resources/image endpoint with a pre-generated list tag.
-      const base = `https://res.cloudinary.com/${CLOUD_NAME}/image/list/ebsu_gallery.json`;
-      const res = await fetch(base);
-      if (!res.ok) return [];
-      const data = await res.json() as { resources?: { public_id: string; version: number; format: string }[] };
-      return (data.resources || []).map((r, idx) => ({
-        id:         r.public_id || String(idx),
-        url:        `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${r.public_id}.${r.format}`,
-        publicId:   r.public_id,
-        type:       "image" as const,
-        category:   "general",
-        caption:    "",
-        uploadedAt: new Date().toISOString(),
-      }));
-    };
-
     fetch("/api/gallery-list")
       .then((res) => {
         if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -99,22 +75,14 @@ export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
           setItems(mapped);
           saveToLocal(mapped);
         } else {
+          // Server returned empty — keep showing the last known items from localStorage
           const fallback = loadFromLocal();
           if (fallback.length > 0) setItems(fallback);
         }
       })
-      .catch(async (err) => {
+      .catch((err) => {
         if (cancelled) return;
-        // Proxy not available (e.g. dev sandbox) — try Cloudinary directly
-        try {
-          const direct = await fetchFromCloudinaryDirect();
-          if (!cancelled && direct.length > 0) {
-            setItems(direct);
-            saveToLocal(direct);
-            return;
-          }
-        } catch { /* ignore */ }
-        // Fall back to localStorage cache
+        // On any network / server error, keep the previously cached items visible
         const fallback = loadFromLocal();
         if (fallback.length > 0) {
           setItems(fallback);
