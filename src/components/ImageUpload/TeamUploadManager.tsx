@@ -19,6 +19,8 @@ interface TeamUploadManagerProps {
   onMemberUpdate: (memberId: string, fields: { name?: string; role?: string; extra?: string }) => void;
   onDeleteMember?: (memberId: string) => void;
   canDelete?: (memberId: string) => boolean;
+  onAddMember?: () => void;
+  showAddButton?: boolean;
 }
 
 function EditableField({
@@ -110,6 +112,8 @@ export function TeamUploadManager({
   onMemberUpdate,
   onDeleteMember,
   canDelete,
+  onAddMember,
+  showAddButton = false,
 }: TeamUploadManagerProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -145,13 +149,29 @@ export function TeamUploadManager({
       <h2 className="text-xl font-bold mb-6 text-gray-900">{teamName}</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Add Member Card */}
+        {showAddButton && onAddMember && (
+          <button
+            onClick={onAddMember}
+            className="bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-[#00875a] hover:bg-green-50/50 transition-all duration-200 overflow-hidden flex flex-col items-center justify-center min-h-[280px] group"
+          >
+            <div className="w-14 h-14 rounded-full bg-gray-100 group-hover:bg-[#00875a]/10 flex items-center justify-center mb-3 transition-colors">
+              <svg className="w-7 h-7 text-gray-400 group-hover:text-[#00875a] transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold text-gray-500 group-hover:text-[#00875a] transition-colors">Add Member</span>
+          </button>
+        )}
+
         {members.map((member) => (
           <div
             key={member.id}
             className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
           >
             {/* Image area */}
-            <div className="relative h-44 bg-gray-100">
+            <div className="relative h-44 bg-gray-100 group">
               <img
                 src={member.image}
                 alt={member.name}
@@ -160,6 +180,18 @@ export function TeamUploadManager({
                   (e.currentTarget as HTMLImageElement).src = placeholder;
                 }}
               />
+              {/* Delete button on image - top right */}
+              {onDeleteMember && canDelete?.(member.id) && (
+                <button
+                  onClick={() => onDeleteMember(member.id)}
+                  className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                  title="Delete member"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
               <button
                 onClick={() => openUploadModal(member.id)}
                 className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm"
@@ -217,19 +249,7 @@ export function TeamUploadManager({
                 </div>
               )}
 
-              {/* Delete button — only shown when onDeleteMember provided and canDelete returns true */}
-              {onDeleteMember && canDelete?.(member.id) && (
-                <button
-                  onClick={() => onDeleteMember(member.id)}
-                  className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
-                  </svg>
-                  Remove
-                </button>
-              )}
+
             </div>
           </div>
         ))}
