@@ -210,8 +210,8 @@ const PostDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { slug, postId } = useParams<{ slug: string; postId: string }>();
 
-  const { studentDetails } = useGetUserInfo();
-  const userId = studentDetails?.userID || 'anonymous';
+  const { studentDetails, userID } = useGetUserInfo();
+  const userId = userID ?? 'anonymous';
   const userName = studentDetails?.firstName && studentDetails?.lastName
     ? `${studentDetails.firstName} ${studentDetails.lastName}` : 'Student';
   const userAvatar = studentDetails?.profileImageURL || undefined;
