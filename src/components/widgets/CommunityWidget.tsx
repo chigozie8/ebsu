@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import { MessageCircle, Heart, MessageSquareMore } from 'lucide-react';
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
 
 const CommunityWidget: React.FC = () => {
   const navigate = useNavigate();
@@ -10,25 +26,41 @@ const CommunityWidget: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      setLoading(true);
-      let query = supabase
-        .from('community_messages')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
+    setLoading(true);
 
-      if (selectedTopic !== 'All') {
-        query = query.eq('topic', selectedTopic);
-      }
+    let q;
+    if (selectedTopic !== 'All') {
+      q = query(
+        collection(db, 'community_messages'),
+        where('is_deleted', '==', false),
+        where('topic', '==', selectedTopic),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
+    } else {
+      q = query(
+        collection(db, 'community_messages'),
+        where('is_deleted', '==', false),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
+    }
 
-      const { data } = await query;
-      setMessages(data || []);
-      setLoading(false);
-    };
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setMessages(
+          snap.docs.map((d) => {
+            const data = d.data();
+            return { ...data, id: d.id, created_at: toIso(data.created_at) };
+          })
+        );
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
 
-    fetchMessages();
+    return () => unsub();
   }, [selectedTopic]);
 
   const topics = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];

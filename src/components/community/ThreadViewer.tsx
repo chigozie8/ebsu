@@ -1,7 +1,39 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Send, Loader2, MessageCircle, CheckCheck, Check, Smile, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase, CommunityReply } from '../../lib/supabase';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+  doc,
+  getDoc,
+  updateDoc,
+  Timestamp,
+} from 'firebase/firestore';
+import { db } from '../../config/firebase';
+
+interface CommunityReply {
+  id: string;
+  message_id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  reply: string;
+  created_at: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
 
 interface ThreadViewerProps {
   messageId: string;
@@ -108,7 +140,6 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
   const bottomRef    = useRef<HTMLDivElement>(null);
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const typingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const autoResize = () => {
     const el = textareaRef.current;
@@ -120,53 +151,67 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
   useEffect(() => {
     let mounted = true;
 
-    const fetchReplies = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('community_replies')
-          .select('*')
-          .eq('message_id', messageId)
-          .order('created_at', { ascending: true });
-        if (error) throw error;
-        if (mounted) setReplies(data ?? []);
-      } catch {
-        toast.error('Failed to load replies');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
+    setLoading(true);
 
-    fetchReplies();
+    // Firebase realtime listener for replies
+    const q = query(
+      collection(db, 'community_replies'),
+      where('message_id', '==', messageId),
+      where('is_deleted', '==', false),
+      orderBy('created_at', 'asc')
+    );
 
-    // Realtime data
-    const dataCh = supabase
-      .channel(`thread-data:${messageId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'community_replies', filter: `message_id=eq.${messageId}`,
-      }, (payload) => {
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
         if (!mounted) return;
-        if (payload.eventType === 'INSERT') setReplies((p) => [...p, payload.new as CommunityReply]);
-        if (payload.eventType === 'DELETE')  setReplies((p) => p.filter((r) => r.id !== payload.old.id));
-      })
-      .subscribe();
+        setReplies(
+          snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              message_id: data.message_id as string,
+              user_id: data.user_id as string,
+              user_name: (data.user_name as string) || 'Unknown',
+              user_avatar: data.user_avatar as string | undefined,
+              reply: (data.reply as string) || '',
+              created_at: toIso(data.created_at),
+              is_edited: (data.is_edited as boolean) || false,
+              is_deleted: (data.is_deleted as boolean) || false,
+            };
+          })
+        );
+        setLoading(false);
+      },
+      () => {
+        if (mounted) {
+          toast.error('Failed to load replies');
+          setLoading(false);
+        }
+      }
+    );
 
-    // Typing broadcast
-    broadcastRef.current = supabase.channel(`thread-typing:${messageId}`, {
-      config: { broadcast: { self: false } },
-    });
-    broadcastRef.current
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (!mounted || payload.userId === userId) return;
-        setTypingUser(payload.userName || 'Someone');
+    // Typing indicator via Firestore document
+    const typingDocRef = doc(db, 'typing_indicators', `thread_${messageId}`);
+    const typingUnsub = onSnapshot(typingDocRef, (snap) => {
+      if (!mounted || !snap.exists()) return;
+      const data = snap.data();
+      const typingUsers = (data.users as Record<string, number>) || {};
+      const now = Date.now();
+      const otherTypingUser = Object.entries(typingUsers).find(
+        ([uid, ts]) => uid !== userId && now - ts < 4000
+      );
+      if (otherTypingUser) {
+        setTypingUser(otherTypingUser[0] === userId ? null : 'Someone');
         if (typingTimer.current) clearTimeout(typingTimer.current);
         typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
-      })
-      .subscribe();
+      }
+    });
 
     return () => {
       mounted = false;
-      dataCh.unsubscribe();
-      broadcastRef.current?.unsubscribe();
+      unsub();
+      typingUnsub();
       if (typingTimer.current) clearTimeout(typingTimer.current);
     };
   }, [messageId, userId]);
@@ -199,17 +244,26 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
     try {
-      const { error } = await supabase.from('community_replies').insert([{
+      await addDoc(collection(db, 'community_replies'), {
         message_id: messageId,
         user_id: userId,
         user_name: userName,
-        user_avatar: userAvatar,
+        user_avatar: userAvatar || null,
         reply: text,
-        created_at: optimistic.created_at,
         is_edited: false,
         is_deleted: false,
-      }]);
-      if (error) throw error;
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+
+      // Increment reply_count on parent message
+      const msgRef = doc(db, 'community_messages', messageId);
+      const msgSnap = await getDoc(msgRef);
+      if (msgSnap.exists()) {
+        const current = (msgSnap.data().reply_count as number) || 0;
+        await updateDoc(msgRef, { reply_count: current + 1 });
+      }
+
       setReplies((p) => p.filter((r) => r.id !== optId));
     } catch {
       toast.error('Failed to send. Please retry.');
@@ -220,10 +274,19 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
     }
   }, [replyText, posting, messageId, userId, userName, userAvatar]);
 
-  const emitTyping = () => {
-    broadcastRef.current?.send({
-      type: 'broadcast', event: 'typing', payload: { userId, userName },
-    });
+  const emitTyping = async () => {
+    try {
+      const typingDocRef = doc(db, 'typing_indicators', `thread_${messageId}`);
+      const snap = await getDoc(typingDocRef);
+      if (snap.exists()) {
+        await updateDoc(typingDocRef, { [`users.${userId}`]: Date.now() });
+      } else {
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(typingDocRef, { users: { [userId]: Date.now() } });
+      }
+    } catch {
+      // non-critical
+    }
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
