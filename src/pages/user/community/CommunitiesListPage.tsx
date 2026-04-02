@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, MessageSquare, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Users, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCommunities } from '../../../hooks/useCommunities';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
+import type { CommunityGroup } from '../../../lib/supabase';
 
 const SkeletonCard: React.FC = () => (
   <div className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-sm border border-gray-100 animate-pulse">
