@@ -86,6 +86,9 @@ const AppRoutes = () => {
   const CommunityPage = lazy(
     () => import("../pages/user/community/CommunityPage")
   );
+  const MessagingPage = lazy(
+    () => import("../pages/user/messages/MessagingPage")
+  );
   const StudyAIPage = lazy(
     () => import("../pages/user/analytics/AnalyticsPage")
   );
@@ -264,6 +267,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/messages"
+            element={
+              <ProtectedRoute>
+                <MessagingPage />
               </ProtectedRoute>
             }
           />
