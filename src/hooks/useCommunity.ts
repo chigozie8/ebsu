@@ -150,19 +150,28 @@ export const usePostMessage = () => {
     try {
       setPosting(true);
       setError(null);
-      const { data, error: err } = await supabase.from('community_messages').insert([
-        {
-          user_id: userId,
-          user_name: userName,
-          user_avatar: userAvatar,
-          message,
-          topic,
-          ...(imageUrls && imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
-          ...(subcategory ? { subcategory } : {}),
-        },
-      ]);
 
-      if (err) throw err;
+      const payload: Record<string, unknown> = {
+        user_id: userId,
+        user_name: userName,
+        user_avatar: userAvatar,
+        message,
+        topic,
+      };
+      if (imageUrls && imageUrls.length > 0) payload.image_urls = imageUrls;
+      if (subcategory) payload.subcategory = subcategory;
+
+      console.log('[v0] postMessage payload:', payload);
+
+      const { data, error: err } = await supabase
+        .from('community_messages')
+        .insert([payload]);
+
+      if (err) {
+        console.error('[v0] postMessage supabase error:', err);
+        throw err;
+      }
+      console.log('[v0] postMessage success:', data);
       return data;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to post message';

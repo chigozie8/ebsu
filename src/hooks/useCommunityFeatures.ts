@@ -73,11 +73,16 @@ export const useStickers = (userId: string) => {
         .select('*')
         .order('category', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // Table may not exist yet — fail silently with empty sticker list
+        console.warn('[v0] Stickers table not available:', error.message);
+        setStickers([]);
+        return;
+      }
       setStickers(data || []);
     } catch (err) {
-      console.error('[v0] Error fetching stickers:', err);
-      toast.error('Failed to load stickers');
+      console.warn('[v0] Error fetching stickers:', err);
+      setStickers([]);
     } finally {
       setLoading(false);
     }
@@ -180,6 +185,8 @@ export const useImageUpload = () => {
       const fileName = `${userId}/${timestamp}-${file.name}`;
       const filePath = `community-images/${fileName}`;
 
+      console.log('[v0] uploadImage bucket:', STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images', 'path:', filePath);
+
       const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
         .upload(filePath, file, {
@@ -187,7 +194,10 @@ export const useImageUpload = () => {
           upsert: false,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[v0] uploadImage error:', uploadError);
+        throw uploadError;
+      }
 
       // Get public URL
       const { data } = supabase.storage
