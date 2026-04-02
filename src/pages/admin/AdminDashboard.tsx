@@ -34,6 +34,7 @@ import AdminWithdrawalsManager from "./tabs/AdminWithdrawalsManager";
 import AdminSendMoney from "./tabs/AdminSendMoney";
 import AdminPremiumCommunityManager from "./tabs/AdminPremiumCommunityManager";
 import AdminPremiumMembersManager from "./tabs/AdminPremiumMembersManager";
+import AdminVerificationManager from "../../components/admin/AdminVerificationManager";
 
 interface Material {
   id: string;
@@ -174,11 +175,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -2059,6 +2060,21 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
             Premium Members
+          </button>
+
+          {/* Verification Tab */}
+          <button
+            onClick={() => setActiveTab("verification")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "verification"
+                ? "bg-[#25D366] text-white shadow-md"
+                : "bg-[#f0fdf4] text-[#128C7E] hover:bg-[#dcf8c6] border-2 border-[#25D366]"
+            }`}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Verify Users
           </button>
         </div>
 
@@ -4870,6 +4886,12 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
+        {/* Verification Tab */}
+        {activeTab === "verification" && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <AdminVerificationManager />
+          </div>
+        )}
     </div>
   </div>
   );

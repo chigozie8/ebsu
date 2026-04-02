@@ -313,6 +313,224 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
+/* ══════════════════════════════════════════════
+   WHATSAPP-LEVEL MESSAGING DESIGN SYSTEM
+   ══════════════════════════════════════════════ */
+
+/* ── Color tokens ── */
+:root {
+  --wa-green:        #25D366;
+  --wa-green-dark:   #128C7E;
+  --wa-green-light:  #dcf8c6;
+  --wa-green-tint:   #f0fdf4;
+  --wa-bubble-out:   #dcf8c6;
+  --wa-bubble-in:    #ffffff;
+  --wa-chat-bg:      #e5ddd5;
+  --wa-tick-grey:    #8696a0;
+  --wa-tick-blue:    #53bdeb;
+  --wa-header-bg:    #128C7E;
+  --wa-verified:     #53bdeb;
+  --wa-danger:       #ef4444;
+  --wa-text-primary: #111b21;
+  --wa-text-sub:     #667781;
+  --wa-border:       #e9edef;
+}
+
+/* ── Chat background pattern (WhatsApp style) ── */
+.wa-chat-bg {
+  background-color: var(--wa-chat-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b2bec3' fill-opacity='0.12'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Message bubbles ── */
+.wa-bubble-out {
+  background-color: var(--wa-bubble-out);
+  color: var(--wa-text-primary);
+  border-radius: 8px 0 8px 8px;
+  position: relative;
+}
+.wa-bubble-in {
+  background-color: var(--wa-bubble-in);
+  color: var(--wa-text-primary);
+  border-radius: 0 8px 8px 8px;
+  position: relative;
+}
+
+/* Tail for outgoing */
+.wa-bubble-out::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid var(--wa-bubble-out);
+  border-top: 0px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+/* Tail for incoming */
+.wa-bubble-in::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border-right: 8px solid var(--wa-bubble-in);
+  border-top: 0px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+/* ── Tick icons ── */
+.wa-tick { color: var(--wa-tick-grey); }
+.wa-tick-seen { color: var(--wa-tick-blue); }
+
+/* ── Typing indicator ── */
+@keyframes wa-bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+.wa-typing-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background-color: var(--wa-tick-grey);
+  animation: wa-bounce 1.4s infinite ease-in-out both;
+}
+.wa-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.wa-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.wa-typing-dot:nth-child(3) { animation-delay: 0s; }
+
+/* ── Send button pulse ── */
+@keyframes wa-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(37,211,102,0); }
+  100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); }
+}
+.wa-send-pulse:hover { animation: wa-pulse 0.8s ease-out; }
+
+/* ── Skeleton shimmer ── */
+@keyframes wa-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.wa-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: wa-shimmer 1.5s infinite linear;
+  border-radius: 6px;
+}
+
+/* ── Slide-in animation for new messages ── */
+@keyframes wa-slide-in-right {
+  from { opacity: 0; transform: translateX(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes wa-slide-in-left {
+  from { opacity: 0; transform: translateX(-20px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+.wa-msg-out { animation: wa-slide-in-right 0.2s ease-out; }
+.wa-msg-in  { animation: wa-slide-in-left  0.2s ease-out; }
+
+/* ── Modal scale+fade ── */
+@keyframes wa-modal-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.wa-modal { animation: wa-modal-in 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ── Green send button ── */
+.wa-send-btn {
+  background-color: var(--wa-green);
+  color: #fff;
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s, transform 0.1s;
+}
+.wa-send-btn:hover  { background-color: var(--wa-green-dark); transform: scale(1.05); }
+.wa-send-btn:active { transform: scale(0.95); }
+.wa-send-btn:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+
+/* ── Input bar ── */
+.wa-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 24px;
+  border: none;
+  background: #fff;
+  font-size: 15px;
+  outline: none;
+  resize: none;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.wa-input::-webkit-scrollbar { display: none; }
+
+/* ── Verified badge ── */
+.wa-verified {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  background-color: var(--wa-verified);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wa-verified svg { width: 10px; height: 10px; color: #fff; }
+
+/* ── Online dot ── */
+.wa-online {
+  width: 10px; height: 10px;
+  background-color: var(--wa-green);
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+/* ── Unread badge ── */
+.wa-unread {
+  background-color: var(--wa-green);
+  color: #fff;
+  border-radius: 50%;
+  min-width: 20px; height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+}
+
+/* ── Conversation list item hover ── */
+.wa-conv-item {
+  transition: background-color 0.12s;
+  cursor: pointer;
+}
+.wa-conv-item:hover { background-color: #f5f5f5; }
+.wa-conv-item:active { background-color: #ebebeb; }
+
+/* ── Scrollbar for chat ── */
+.wa-scroll::-webkit-scrollbar { width: 6px; }
+.wa-scroll::-webkit-scrollbar-track { background: transparent; }
+.wa-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+/* ── Date chip in chat ── */
+.wa-date-chip {
+  background: rgba(225,245,254,0.92);
+  color: #54656f;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  display: inline-block;
+}
+
+/* ── Framer-motion helpers ── */
+.wa-fade { opacity: 0; }
+
 /* =============================================
    Dashboard Dark Mode — scoped to .dashboard-dark
    Does NOT affect any other page

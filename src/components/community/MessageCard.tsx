@@ -10,17 +10,18 @@ interface MessageCardProps {
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
   onThreadClick?: (messageId: string) => void;
+  onProfileClick?: (userId: string, userName: string, userAvatar?: string) => void;
   isAdmin?: boolean;
   /** Called when the user's avatar or name is clicked */
   onAvatarClick?: (userId: string, userName: string, userAvatar?: string) => void;
 }
 
 const TOPIC_BADGE: Record<string, string> = {
-  General:      'bg-slate-100 text-slate-600',
-  Academics:    'bg-blue-100 text-blue-700',
-  'Campus Life':'bg-pink-100 text-pink-700',
-  Tech:         'bg-emerald-100 text-emerald-700',
-  Events:       'bg-amber-100 text-amber-700',
+  General:       'bg-slate-100 text-slate-600',
+  Academics:     'bg-blue-100 text-blue-700',
+  'Campus Life': 'bg-pink-100 text-pink-700',
+  Tech:          'bg-emerald-100 text-emerald-700',
+  Events:        'bg-amber-100 text-amber-700',
 };
 
 const AVATAR_COLORS = [
@@ -39,8 +40,8 @@ function getAvatarColor(name: string) {
 
 function getTimeAgo(date: string) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60)   return 'just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 60)    return 'just now';
+  if (seconds < 3600)  return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return `${Math.floor(seconds / 86400)}d ago`;
 }
@@ -51,6 +52,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onDelete,
   onEdit,
   onThreadClick,
+  onProfileClick,
   isAdmin = false,
   onAvatarClick,
 }) => {
@@ -75,8 +77,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
     .slice(0, 2)
     .toUpperCase();
 
+  const handleAvatarClick = () => {
+    if (onProfileClick) {
+      onProfileClick(message.user_id, message.user_name, message.user_avatar);
+    }
+  };
+
   return (
-    <div className="p-4 sm:p-5">
+    <div className="p-4 sm:p-5 wa-msg-in">
       <div className="flex gap-3 sm:gap-4">
 
         {/* Avatar (clickable) */}
@@ -103,7 +111,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
         <div className="flex-1 min-w-0">
 
-          {/* Top row: name + time + topic + menu */}
+          {/* Top row: name + verified + time + topic + menu */}
           <div className="flex items-start gap-2 justify-between flex-wrap mb-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <button
@@ -134,7 +142,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 <span className="text-xs">{getTimeAgo(message.created_at)}</span>
               </div>
 
-              {isOwn && (
+              {(isOwn || isAdmin) && (
                 <div className="relative">
                   <button
                     onClick={() => setShowMenu(!showMenu)}
@@ -144,13 +152,15 @@ const MessageCard: React.FC<MessageCardProps> = ({
                   </button>
                   {showMenu && (
                     <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
-                      <button
-                        onClick={() => { setEditing(true); setShowMenu(false); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                        Edit
-                      </button>
+                      {isOwn && (
+                        <button
+                          onClick={() => { setEditing(true); setShowMenu(false); }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-slate-500" />
+                          Edit
+                        </button>
+                      )}
                       {isAdmin && (
                         <button
                           onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
@@ -180,14 +190,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
               <textarea
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
-                className="w-full p-3 border border-teal-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-teal-50 resize-none"
+                className="w-full p-3 border border-[#25D366] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#25D366]/50 text-sm bg-[#f0fdf4] resize-none"
                 rows={3}
                 autoFocus
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleEditSubmit}
-                  className="px-4 py-1.5 bg-teal-500 text-white text-sm rounded-lg hover:bg-teal-600 transition-colors font-semibold"
+                  className="px-4 py-1.5 bg-[#25D366] text-white text-sm rounded-lg hover:bg-[#128C7E] transition-colors font-semibold"
                 >
                   Save
                 </button>
@@ -205,15 +215,32 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </p>
           )}
 
+          {/* Images attached to the post */}
+          {(message as Community & { image_urls?: string[] }).image_urls &&
+            (message as Community & { image_urls?: string[] }).image_urls!.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {(message as Community & { image_urls?: string[] }).image_urls!.map((url, idx) => (
+                <img
+                  key={idx}
+                  src={url}
+                  alt={`attachment-${idx}`}
+                  crossOrigin="anonymous"
+                  className="rounded-lg object-cover w-full max-h-48 border border-slate-100"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Thread button */}
           {onThreadClick && !editing && (
             <div className="mt-3 flex items-center gap-3">
               <button
                 onClick={() => onThreadClick(message.id)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700 hover:bg-teal-50 px-3 py-1.5 rounded-full border border-teal-200 hover:border-teal-400 transition-all"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[#128C7E] hover:text-[#25D366] hover:bg-[#f0fdf4] px-3 py-1.5 rounded-full border border-[#25D366]/30 hover:border-[#25D366] transition-all"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                Reply in thread
+                {message.reply_count > 0 ? `${message.reply_count} replies` : 'Reply in thread'}
               </button>
             </div>
           )}
