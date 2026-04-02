@@ -1,8 +1,9 @@
 import Footer from "../../components/footer/Footer";
 import { motion } from "framer-motion";
 import { fadeInVariants3 } from "../../animation/variants";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import placeholder from "../../assets/img/team/placeholder.png";
+import { supabase } from "../../config/supabase";
 
 // =============================================
 // TypeScript Interfaces
@@ -178,8 +179,64 @@ const PressMemberCard = ({ member, index }: PressMemberCardProps) => (
 // Main Component
 // =============================================
 export default function PressTeam() {
+  const [chiefEditor, setChiefEditor] = useState<PressMember>(editorInChief);
+  const [teamMembers, setTeamMembers] = useState<PressMember[]>(pressMembers);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    supabase
+      .from("team_images")
+      .select("member_id, image_url, name, role, extra")
+      .eq("team_type", "press")
+      .then(({ data, error }) => {
+        if (error || !data || data.length === 0) return;
+
+        const map: Record<string, { image_url?: string; name?: string; role?: string; extra?: string }> = {};
+        data.forEach((row) => { map[row.member_id] = row; });
+
+        const chiefRow = map["editor-in-chief"];
+        if (chiefRow) {
+          setChiefEditor((prev) => ({
+            ...prev,
+            name:      chiefRow.name      || prev.name,
+            role:      chiefRow.role      || prev.role,
+            image:     chiefRow.image_url || prev.image,
+            level:     chiefRow.extra     || prev.level,
+          }));
+        }
+
+        setTeamMembers((prev) => {
+          const merged = prev.map((m, idx) => {
+            const patch = map[`press-${idx}`];
+            if (!patch) return m;
+            return {
+              ...m,
+              name:  patch.name      || m.name,
+              role:  patch.role      || m.role,
+              image: patch.image_url || m.image,
+              level: patch.extra     || m.level,
+            };
+          });
+
+          // Append any extra members admin added beyond defaults
+          const defaultIds = new Set(prev.map((_, idx) => `press-${idx}`));
+          const extras: PressMember[] = [];
+          Object.entries(map).forEach(([memberId, row]) => {
+            if (!defaultIds.has(memberId) && memberId !== "editor-in-chief") {
+              extras.push({
+                name:      row.name      || "Name Here",
+                role:      row.role      || "Press Member",
+                image:     row.image_url || placeholder,
+                level:     row.extra     || "",
+                specialty: undefined,
+              });
+            }
+          });
+
+          return [...merged, ...extras];
+        });
+      });
   }, []);
 
   return (
@@ -268,7 +325,7 @@ export default function PressTeam() {
 
           {/* Editor in Chief */}
           <div className="mb-12">
-            <EditorInChiefCard member={editorInChief} />
+            <EditorInChiefCard member={chiefEditor} />
           </div>
 
           {/* Press Team Grid */}
@@ -277,8 +334,8 @@ export default function PressTeam() {
               Press Team Members
             </h4>
             <div className="grid grid-cols-2 ss:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {pressMembers.map((member, index) => (
-                <PressMemberCard key={`${member.name}-${member.role}`} member={member} index={index + 2} />
+              {teamMembers.map((member, index) => (
+                <PressMemberCard key={`${member.name}-${member.role}-${index}`} member={member} index={index + 2} />
               ))}
             </div>
           </div>

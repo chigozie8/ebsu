@@ -44,6 +44,7 @@ const AppRoutes = () => {
   // New EBSUMSA pages
   const EbsumsaTeam = lazy(() => import("../pages/students/EbsumsaTeam"));
   const PressTeam = lazy(() => import("../pages/students/PressTeam"));
+  const ParliamentPage = lazy(() => import("../pages/students/ParliamentPage"));
   const Alumni = lazy(() => import("../pages/ebsumsa/Alumni"));
   const ProjectsShowcase = lazy(() => import("../pages/projects/ProjectsShowcase"));
   const ProjectDetails = lazy(() => import("../pages/projects/ProjectDetails"));
@@ -192,6 +193,7 @@ const AppRoutes = () => {
           {/* New EBSUMSA routes */}
           <Route path="/ebsumsa/team" element={<EbsumsaTeam />} />
           <Route path="/ebsumsa/press" element={<PressTeam />} />
+  <Route path="/ebsumsa/parliament" element={<ParliamentPage />} />
           <Route path="/ebsumsa/alumni" element={<Alumni />} />
           <Route path="/projects" element={<ProjectsShowcase />} />
           <Route path="/projects/:projectId" element={<ProjectDetails />} />

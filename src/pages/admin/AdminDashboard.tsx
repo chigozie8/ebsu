@@ -35,6 +35,7 @@ import AdminSendMoney from "./tabs/AdminSendMoney";
 import AdminPremiumCommunityManager from "./tabs/AdminPremiumCommunityManager";
 import AdminPremiumMembersManager from "./tabs/AdminPremiumMembersManager";
 import AdminVerificationManager from "../../components/admin/AdminVerificationManager";
+import AdminParliamentManager from "./tabs/AdminParliamentManager";
 
 interface Material {
   id: string;
@@ -175,11 +176,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "parliament" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "parliament", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1899,6 +1900,19 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
             Team Images
+          </button>
+          <button
+            onClick={() => setActiveTab("parliament")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "parliament"
+                ? "bg-emerald-700 text-white shadow-md"
+                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-2 border-emerald-700"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Parliament
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
@@ -4524,6 +4538,17 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             transition={{ duration: 0.3 }}
           >
             <AdminTeamUpload />
+          </motion.div>
+        )}
+
+        {activeTab === "parliament" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <AdminParliamentManager />
           </motion.div>
         )}
 
