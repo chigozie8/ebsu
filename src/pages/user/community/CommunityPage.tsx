@@ -18,7 +18,7 @@ import ProfileModal from '../../../components/community/ProfileModal';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import { playSound } from '../../../hooks/useSound';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// helpers
 function fmtDateChip(date: string) {
   const d = new Date(date);
   const now = new Date();
@@ -29,10 +29,11 @@ function fmtDateChip(date: string) {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-type MsgGroup = { date: string; messages: ReturnType<typeof useCommunityPosts>['posts'] };
+type Post = ReturnType<typeof useCommunityPosts>['posts'][number];
+type MsgGroup = { date: string; messages: Post[] };
 
-function groupByDate(msgs: ReturnType<typeof useCommunityPosts>['posts']): MsgGroup[] {
-  const map = new Map<string, typeof msgs>();
+function groupByDate(msgs: Post[]): MsgGroup[] {
+  const map = new Map<string, Post[]>();
   for (const m of msgs) {
     const key = new Date(m.created_at).toDateString();
     if (!map.has(key)) map.set(key, []);
@@ -41,7 +42,6 @@ function groupByDate(msgs: ReturnType<typeof useCommunityPosts>['posts']): MsgGr
   return Array.from(map.entries()).map(([date, messages]) => ({ date, messages }));
 }
 
-// ── avatar helpers ─────────────────────────────────────────────────────────
 const COLORS = ['#25D366','#075E54','#128C7E','#34B7F1','#6B7280','#EF4444','#F59E0B','#8B5CF6'];
 function colorFor(s: string) { return COLORS[s.charCodeAt(0) % COLORS.length]; }
 function initFor(name: string) {
@@ -49,30 +49,27 @@ function initFor(name: string) {
   return (p[0]?.[0] ?? '') + (p[1]?.[0] ?? '');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 const CommunityPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const userId   = studentDetails?.registrationNumber ?? '';
+  const { studentDetails, gettingStudentDetails, userID } = useGetUserInfo();
+  const userId   = userID ?? '';
   const userName = studentDetails
     ? `${studentDetails.firstName} ${studentDetails.lastName}` : 'Student';
   const userAvatar = studentDetails?.profileImageURL ?? undefined;
 
-  // ── state ──────────────────────────────────────────────────────────────────
-  const [newMessage,      setNewMessage]      = useState('');
-  const [searchQuery,     setSearchQuery]     = useState('');
-  const [searchVisible,   setSearchVisible]   = useState(false);
-  const [showStickers,    setShowStickers]    = useState(false);
-  const [profileTarget,   setProfileTarget]   = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
-  const [imageUrls,       setImageUrls]       = useState<string[]>([]);
+  const [newMessage,    setNewMessage]    = useState('');
+  const [searchQuery,   setSearchQuery]   = useState('');
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [showStickers,  setShowStickers]  = useState(false);
+  const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
+  const [imageUrls,     setImageUrls]     = useState<string[]>([]);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const feedRef     = useRef<HTMLDivElement>(null);
-  const fileInputRef= useRef<HTMLInputElement>(null);
+  const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const feedRef      = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── data hooks ─────────────────────────────────────────────────────────────
   const { community: comm, loading: loadingComm } = useCommunityBySlug(slug ?? '');
   const { isMember, toggling, toggle } = useCommunityMembership(comm?.id ?? '', userId);
   const { posts, loading: loadingPosts, error: postsError } = useCommunityPosts(comm?.id ?? null);
@@ -82,14 +79,12 @@ const CommunityPage: React.FC = () => {
   const { uploading, uploadImages } = useImageUpload();
   const { getOrCreateChat } = useGetOrCreateChat();
 
-  // ── auto-scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [posts.length]);
 
-  // ── textarea auto-resize ───────────────────────────────────────────────────
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -97,7 +92,6 @@ const CommunityPage: React.FC = () => {
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
   }, []);
 
-  // ── image upload ───────────────────────────────────────────────────────────
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
@@ -113,7 +107,6 @@ const CommunityPage: React.FC = () => {
   const removeImageUrl = (i: number) =>
     setImageUrls((prev) => prev.filter((_, idx) => idx !== i));
 
-  // ── post ───────────────────────────────────────────────────────────────────
   const canPost = (newMessage.trim().length > 0 || imageUrls.length > 0) && !posting && isMember;
 
   const handlePost = async () => {
@@ -121,9 +114,7 @@ const CommunityPage: React.FC = () => {
     const text = newMessage.trim();
     setNewMessage('');
     setImageUrls([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     try {
       await post({
         communityId: comm.id,
@@ -146,7 +137,6 @@ const CommunityPage: React.FC = () => {
     }
   };
 
-  // ── navigate to user's DM ──────────────────────────────────────────────────
   const handleMessageUser = async (targetId: string, targetName: string) => {
     setProfileTarget(null);
     try {
@@ -161,7 +151,6 @@ const CommunityPage: React.FC = () => {
     if (uid !== userId) setProfileTarget({ userId: uid, userName: uname, userAvatar: uavatar });
   };
 
-  // ── filter + group ─────────────────────────────────────────────────────────
   const filteredPosts = searchQuery.trim()
     ? posts.filter((p) =>
         p.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -174,7 +163,6 @@ const CommunityPage: React.FC = () => {
 
   const communityColor = comm?.color ?? '#075E54';
 
-  // ── loading / error states ─────────────────────────────────────────────────
   if (gettingStudentDetails || loadingComm) {
     return (
       <div className="flex items-center justify-center bg-[#f0f2f5]" style={{ height: '100dvh' }}>
@@ -195,7 +183,8 @@ const CommunityPage: React.FC = () => {
           className="flex items-center gap-2 text-sm px-4 py-2 rounded-full text-white"
           style={{ background: communityColor }}
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Communities
+          <ArrowLeft className="w-4 h-4" />
+          Back to Communities
         </button>
       </div>
     );
@@ -206,8 +195,7 @@ const CommunityPage: React.FC = () => {
   const initials = initFor(userName);
 
   return (
-    <>
-      {/* Sticker picker (portal-like, outside layout) */}
+    <React.Fragment>
       <StickerPicker
         userId={userId}
         isOpen={showStickers}
@@ -218,7 +206,6 @@ const CommunityPage: React.FC = () => {
         }}
       />
 
-      {/* Profile modal */}
       {profileTarget && (
         <ProfileModal
           targetUserId={profileTarget.userId}
@@ -230,13 +217,11 @@ const CommunityPage: React.FC = () => {
         />
       )}
 
-      {/* ── ROOT SHELL ───────────────────────────────────────────────────── */}
       <div
         className="flex flex-col overflow-hidden"
         style={{ height: '100dvh', background: '#f0f2f5' }}
       >
-
-        {/* ── HEADER ─────────────────────────────────────────────────────── */}
+        {/* HEADER */}
         <header
           className="flex-shrink-0 flex items-center gap-3 px-3 py-2.5 z-20 shadow-sm"
           style={{ background: communityColor }}
@@ -249,7 +234,6 @@ const CommunityPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
 
-          {/* Community icon */}
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0"
             style={{ background: 'rgba(255,255,255,0.15)' }}
@@ -266,7 +250,6 @@ const CommunityPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Join / Leave */}
             <button
               onClick={toggle}
               disabled={toggling}
@@ -280,7 +263,6 @@ const CommunityPage: React.FC = () => {
               {toggling ? '...' : isMember ? 'Joined' : 'Join'}
             </button>
 
-            {/* Search */}
             <button
               onClick={() => setSearchVisible((v) => !v)}
               className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
@@ -315,13 +297,11 @@ const CommunityPage: React.FC = () => {
           </div>
         )}
 
-        {/* ── BODY (composer on top + scrollable feed below) ───────────────── */}
+        {/* BODY */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
 
-          {/* ── COMPOSER ─────────────────────────────────────────────────── */}
+          {/* COMPOSER */}
           <div className="flex-shrink-0 bg-[#f0f2f5]">
-
-            {/* Image previews */}
             {imageUrls.length > 0 && (
               <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide">
                 {imageUrls.map((url, i) => (
@@ -352,9 +332,7 @@ const CommunityPage: React.FC = () => {
               </div>
             )}
 
-            {/* Input row */}
             <div className="flex items-end gap-2 px-2 py-2">
-              {/* Sender avatar */}
               {userAvatar ? (
                 <img
                   src={userAvatar}
@@ -372,7 +350,6 @@ const CommunityPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Text capsule */}
               <div className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm bg-white">
                 <button
                   onClick={() => setShowStickers(true)}
@@ -400,7 +377,6 @@ const CommunityPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Attach */}
                 <div className="flex items-center flex-shrink-0 self-end mb-0.5">
                   <input
                     ref={fileInputRef}
@@ -425,7 +401,6 @@ const CommunityPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Send button */}
               <button
                 onClick={handlePost}
                 disabled={!canPost}
@@ -444,7 +419,7 @@ const CommunityPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── FEED ─────────────────────────────────────────────────────── */}
+          {/* FEED */}
           <div
             ref={feedRef}
             className="flex-1 overflow-y-auto"
@@ -453,7 +428,6 @@ const CommunityPage: React.FC = () => {
               backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
             }}
           >
-            {/* Loading skeleton */}
             {loadingPosts && (
               <div className="flex flex-col gap-3 p-3">
                 {[...Array(5)].map((_, i) => (
@@ -468,7 +442,6 @@ const CommunityPage: React.FC = () => {
               </div>
             )}
 
-            {/* Error state */}
             {!loadingPosts && postsError && (
               <div className="flex flex-col items-center justify-center h-40 gap-3 px-4 text-center">
                 <p className="text-sm text-gray-500">{postsError}</p>
@@ -482,7 +455,6 @@ const CommunityPage: React.FC = () => {
               </div>
             )}
 
-            {/* Empty state */}
             {!loadingPosts && !postsError && filteredPosts.length === 0 && (
               <div className="flex flex-col items-center justify-center h-60 gap-3 px-6 text-center">
                 <div
@@ -504,25 +476,23 @@ const CommunityPage: React.FC = () => {
                     className="mt-1 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all active:scale-95"
                     style={{ background: communityColor }}
                   >
-                    {toggling ? '...' : 'Join & Post'}
+                    {toggling ? '...' : 'Join and Post'}
                   </button>
                 )}
               </div>
             )}
 
-            {/* Post groups by date */}
             {!loadingPosts && !postsError && grouped.map(({ date, messages }) => (
               <div key={date}>
-                {/* Date chip */}
                 <div className="flex justify-center py-3">
                   <span className="bg-white/80 backdrop-blur-sm text-[#54656f] text-[11px] font-medium px-3 py-1 rounded-full shadow-sm">
                     {fmtDateChip(messages[0].created_at)}
                   </span>
                 </div>
-
                 {messages.map((msg, idx) => {
                   const prev = messages[idx - 1];
-                  const isGrouped = prev?.user_id === msg.user_id &&
+                  const isGrouped = !!prev &&
+                    prev.user_id === msg.user_id &&
                     new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
                   return (
                     <MessageCard
@@ -541,11 +511,10 @@ const CommunityPage: React.FC = () => {
               </div>
             ))}
 
-            {/* Bottom padding so last message isn't hidden */}
             <div className="h-4" />
           </div>
 
-          {/* Guest CTA bar */}
+          {/* Guest join CTA */}
           {!isMember && !loadingPosts && (
             <div
               className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-t"
@@ -567,7 +536,7 @@ const CommunityPage: React.FC = () => {
           )}
         </div>
       </div>
-    </>
+    </React.Fragment>
   );
 };
 
