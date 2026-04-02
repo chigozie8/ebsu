@@ -76,8 +76,8 @@ const CommunityPage: React.FC = () => {
   const { post, posting } = usePostToCommunity();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage }   = useEditMessage();
-  const { uploading, uploadImages } = useImageUpload();
-  const { getOrCreateChat } = useGetOrCreateChat();
+  const { uploading, uploadImage } = useImageUpload();
+  const { getOrCreate } = useGetOrCreateChat();
 
   useEffect(() => {
     if (feedRef.current) {
@@ -99,10 +99,14 @@ const CommunityPage: React.FC = () => {
       toast.error('Max 4 images per post');
       return;
     }
-    const urls = await uploadImages(files);
-    setImageUrls((prev) => [...prev, ...urls]);
+    const uploadedUrls: string[] = [];
+    for (const file of files) {
+      const url = await uploadImage(file, userId);
+      if (url) uploadedUrls.push(url);
+    }
+    setImageUrls((prev) => [...prev, ...uploadedUrls]);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [imageUrls.length, uploadImages]);
+  }, [imageUrls.length, uploadImage, userId]);
 
   const removeImageUrl = (i: number) =>
     setImageUrls((prev) => prev.filter((_, idx) => idx !== i));
@@ -140,8 +144,8 @@ const CommunityPage: React.FC = () => {
   const handleMessageUser = async (targetId: string, targetName: string) => {
     setProfileTarget(null);
     try {
-      const chat = await getOrCreateChat(userId, targetId, userName, targetName, userAvatar);
-      if (chat?.id) navigate(`/u/chat/${chat.id}`);
+      const chatId = await getOrCreate(userId, userName, userAvatar, targetId, targetName, undefined);
+      if (chatId) navigate(`/u/chat/${chatId}`);
     } catch {
       toast.error('Could not open chat');
     }
