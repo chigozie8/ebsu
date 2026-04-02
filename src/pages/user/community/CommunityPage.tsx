@@ -14,6 +14,7 @@ import { useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
 import { useImageUpload } from '../../../hooks/useCommunityFeatures';
 import { useGetOrCreateChat } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
+import SponsoredAdCard from '../../../components/shared/SponsoredAdCard';
 import ProfileModal from '../../../components/community/ProfileModal';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import { playSound } from '../../../hooks/useSound';
@@ -66,9 +67,10 @@ const CommunityPage: React.FC = () => {
   const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
   const [imageUrls,     setImageUrls]     = useState<string[]>([]);
 
-  const textareaRef  = useRef<HTMLTextAreaElement>(null);
-  const feedRef      = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  const feedRef        = useRef<HTMLDivElement>(null);
+  const fileInputRef   = useRef<HTMLInputElement>(null);
+  const adPostCounter  = useRef(0);
 
   const { community: comm, loading: loadingComm } = useCommunityBySlug(slug ?? '');
   const { isMember, toggling, toggle } = useCommunityMembership(comm?.id ?? '', userId);
@@ -482,6 +484,7 @@ const CommunityPage: React.FC = () => {
               </div>
             )}
 
+            {!loadingPosts && !postsError && (() => { adPostCounter.current = 0; return null; })()}
             {!loadingPosts && !postsError && grouped.map(({ date, messages }) => (
               <div key={date}>
                 <div className="flex justify-center py-3">
@@ -494,18 +497,22 @@ const CommunityPage: React.FC = () => {
                   const isGrouped = !!prev &&
                     prev.user_id === msg.user_id &&
                     new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
+                  adPostCounter.current += 1;
+                  const showAd = adPostCounter.current % 5 === 0;
                   return (
-                    <MessageCard
-                      key={msg.id}
-                      message={msg}
-                      isOwn={msg.user_id === userId}
-                      prevSameUser={isGrouped}
-                      onThreadClick={() => navigate(`/u/community/${slug}/post/${msg.id}`)}
-                      onDelete={() => deleteMessage(msg.id)}
-                      onEdit={(id, text) => editMessage(id, text)}
-                      onAvatarClick={handleAvatarClick}
-                      onProfileClick={handleAvatarClick}
-                    />
+                    <React.Fragment key={msg.id}>
+                      <MessageCard
+                        message={msg}
+                        isOwn={msg.user_id === userId}
+                        prevSameUser={isGrouped}
+                        onThreadClick={() => navigate(`/u/community/${slug}/post/${msg.id}`)}
+                        onDelete={() => deleteMessage(msg.id)}
+                        onEdit={(id, text) => editMessage(id, text)}
+                        onAvatarClick={handleAvatarClick}
+                        onProfileClick={handleAvatarClick}
+                      />
+                      {showAd && <SponsoredAdCard placement="community" />}
+                    </React.Fragment>
                   );
                 })}
               </div>

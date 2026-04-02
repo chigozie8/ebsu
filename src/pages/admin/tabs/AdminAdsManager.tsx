@@ -28,8 +28,12 @@ export interface Advertisement {
   bgColor: string;
   textColor: string;
   isActive: boolean;
-  placement: "dashboard" | "home" | "both" | "all";
+  placement: "dashboard" | "home" | "both" | "all" | "community";
   imageUrl?: string;
+  priority?: number;
+  expiryDate?: string;
+  impressions?: number;
+  clicks?: number;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -42,8 +46,10 @@ const EMPTY_FORM = {
   bgColor: "#00875a",
   textColor: "#ffffff",
   isActive: true,
-  placement: "dashboard" as "dashboard" | "home" | "both" | "all",
+  placement: "dashboard" as "dashboard" | "home" | "both" | "all" | "community",
   imageUrl: "",
+  priority: 1,
+  expiryDate: "",
 };
 
 const PRESET_COLORS = [
@@ -196,6 +202,8 @@ export default function AdminAdsManager() {
       isActive: ad.isActive,
       placement: ad.placement || "dashboard",
       imageUrl: ad.imageUrl || "",
+      priority: ad.priority ?? 1,
+      expiryDate: ad.expiryDate || "",
     });
     setEditingId(ad.id);
     setImagePreview(ad.imageUrl || "");
