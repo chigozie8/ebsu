@@ -77,3 +77,38 @@ export type CommunityGuideline = {
   content: string;
   created_at: string;
 };
+
+// ── Messaging Platform Types ──────────────────────────────────────────────────
+
+export type UserProfile = {
+  user_id: string;
+  display_name: string;
+  avatar_url?: string;
+  bio?: string;
+  is_verified: boolean;
+  is_online: boolean;
+  last_seen: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Conversation = {
+  id: string;
+  participant_a: string;
+  participant_b: string;
+  last_message?: string;
+  last_message_at?: string;
+  created_at: string;
+};
+
+export type DirectMessage = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  image_url?: string;
+  is_delivered: boolean;
+  is_seen: boolean;
+  created_at: string;
+};
