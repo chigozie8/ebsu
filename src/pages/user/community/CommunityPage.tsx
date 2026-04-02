@@ -265,7 +265,7 @@ const CommunityPage: React.FC = () => {
       )}
 
       {/* ROOT */}
-      <div className="flex flex-col h-screen bg-[#f0f2f5] overflow-hidden">
+      <div className="flex flex-col bg-[#f0f2f5] overflow-hidden" style={{ height: '100dvh' }}>
 
         {/* HEADER */}
         <header className="flex-shrink-0 z-30 shadow-md" style={{ background: '#075E54' }}>
@@ -366,9 +366,131 @@ const CommunityPage: React.FC = () => {
         </header>
 
         {/* BODY */}
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
 
-          {/* Feed - WhatsApp chat background */}
+          {/* COMPOSER — at the top of the feed */}
+          <div className="flex-shrink-0" style={{ background: '#f0f2f5' }}>
+
+            {/* Image previews row */}
+            {imageUrls.length > 0 && (
+              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide">
+                {imageUrls.map((url, i) => (
+                  <div key={i} className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 border-[#25D366]/30 shadow-sm group">
+                    <img
+                      src={url}
+                      alt=""
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                    />
+                    <button
+                      onClick={() => removeImageUrl(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-[#111b21]/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input bar */}
+            <div className="flex items-end gap-2 px-2 py-2">
+              {/* My avatar */}
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  crossOrigin="anonymous"
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold self-end mb-0.5"
+                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+                >
+                  {initials}
+                </div>
+              )}
+
+              {/* Text input capsule */}
+              <div
+                className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm"
+                style={{ background: '#fff' }}
+              >
+                {/* Emoji */}
+                <button
+                  onClick={() => setShowStickerPicker(true)}
+                  className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5"
+                  aria-label="Stickers"
+                >
+                  <Smile className="w-5 h-5" style={{ color: '#8696a0' }} />
+                </button>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={newMessage}
+                  onChange={(e) => { setNewMessage(e.target.value); autoResize(); }}
+                  onKeyDown={onKeyDown}
+                  placeholder="Share something with the community..."
+                  className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end"
+                  style={{
+                    color: '#111b21',
+                    minHeight: '24px',
+                    maxHeight: '140px',
+                    overflowY: 'auto',
+                  }}
+                  rows={1}
+                />
+
+                {/* Attach */}
+                <div className="flex items-center gap-0.5 flex-shrink-0 self-end mb-0.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading || imageUrls.length >= 4}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || imageUrls.length >= 4}
+                    className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors disabled:opacity-40"
+                    aria-label="Attach image"
+                  >
+                    {uploading
+                      ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#8696a0' }} />
+                      : <Paperclip className="w-5 h-5" style={{ color: '#8696a0' }} />
+                    }
+                  </button>
+                </div>
+              </div>
+
+              {/* Send */}
+              <button
+                onClick={handlePost}
+                disabled={!canPost}
+                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 self-end transition-all duration-200 active:scale-95 disabled:cursor-not-allowed wa-send-pulse"
+                style={{
+                  background: canPost ? '#25D366' : '#aebbc1',
+                  boxShadow: canPost ? '0 2px 10px rgba(37,211,102,0.45)' : 'none',
+                }}
+                aria-label="Post message"
+              >
+                {posting
+                  ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  : <Send className="w-5 h-5 text-white" style={{ marginLeft: '2px' }} />
+                }
+              </button>
+            </div>
+          </div>
+
+          {/* Feed — WhatsApp chat background, scrollable */}
           <div
             ref={feedRef}
             className="flex-1 overflow-y-auto wa-scroll"
@@ -476,128 +598,6 @@ const CommunityPage: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* COMPOSER */}
-          <div className="flex-shrink-0" style={{ background: '#f0f2f5' }}>
-
-            {/* Image previews row */}
-            {imageUrls.length > 0 && (
-              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide">
-                {imageUrls.map((url, i) => (
-                  <div key={i} className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 border-[#25D366]/30 shadow-sm group">
-                    <img
-                      src={url}
-                      alt=""
-                      crossOrigin="anonymous"
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
-                    />
-                    <button
-                      onClick={() => removeImageUrl(i)}
-                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-[#111b21]/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Remove"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Input bar - exact WhatsApp style */}
-            <div className="flex items-end gap-2 px-2 py-2">
-              {/* My avatar */}
-              {userAvatar ? (
-                <img
-                  src={userAvatar}
-                  alt={userName}
-                  crossOrigin="anonymous"
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              ) : (
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold self-end mb-0.5"
-                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
-                >
-                  {initials}
-                </div>
-              )}
-
-              {/* Text input capsule */}
-              <div
-                className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm"
-                style={{ background: '#fff' }}
-              >
-                {/* Emoji */}
-                <button
-                  onClick={() => setShowStickerPicker(true)}
-                  className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5"
-                  aria-label="Stickers"
-                >
-                  <Smile className="w-5 h-5" style={{ color: '#8696a0' }} />
-                </button>
-
-                {/* Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={newMessage}
-                  onChange={(e) => { setNewMessage(e.target.value); autoResize(); }}
-                  onKeyDown={onKeyDown}
-                  placeholder="Message"
-                  className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end"
-                  style={{
-                    color: '#111b21',
-                    minHeight: '24px',
-                    maxHeight: '140px',
-                    overflowY: 'auto',
-                  }}
-                  rows={1}
-                />
-
-                {/* Attach */}
-                <div className="flex items-center gap-0.5 flex-shrink-0 self-end mb-0.5">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading || imageUrls.length >= 4}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || imageUrls.length >= 4}
-                    className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors disabled:opacity-40"
-                    aria-label="Attach image"
-                  >
-                    {uploading
-                      ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#8696a0' }} />
-                      : <Paperclip className="w-5 h-5" style={{ color: '#8696a0' }} />
-                    }
-                  </button>
-                </div>
-              </div>
-
-              {/* Send */}
-              <button
-                onClick={handlePost}
-                disabled={!canPost}
-                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 self-end transition-all duration-200 active:scale-95 disabled:cursor-not-allowed wa-send-pulse"
-                style={{
-                  background: canPost ? '#25D366' : '#aebbc1',
-                  boxShadow: canPost ? '0 2px 10px rgba(37,211,102,0.45)' : 'none',
-                }}
-                aria-label="Send message"
-              >
-                {posting
-                  ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  : <Send className="w-5 h-5 text-white" style={{ marginLeft: '2px' }} />
-                }
-              </button>
-            </div>
           </div>
         </div>
       </div>

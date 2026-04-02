@@ -333,7 +333,7 @@ const MessagingPage: React.FC = () => {
 
   if (gettingStudentDetails) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#f0f2f5]">
+      <div className="flex items-center justify-center bg-[#f0f2f5]" style={{ height: '100dvh' }}>
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-[#25D366]" />
           <p className="text-slate-500 text-sm">Loading...</p>
@@ -343,12 +343,15 @@ const MessagingPage: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-white overflow-hidden">
+    <div className="flex bg-white overflow-hidden" style={{ height: '100dvh' }}>
 
       {/* Sidebar: Conversation List */}
       <div className={`
-        flex-shrink-0 border-r border-[#e9edef] flex flex-col bg-white
-        ${activeConvId ? 'hidden md:flex md:w-[340px] lg:w-[380px]' : 'flex w-full md:w-[340px] lg:w-[380px]'}
+        border-r border-[#e9edef] flex flex-col bg-white
+        ${activeConvId
+          ? 'hidden md:flex md:w-[340px] lg:w-[380px] flex-shrink-0'
+          : 'flex w-full md:w-[340px] lg:w-[380px] flex-shrink-0'
+        }
       `}>
 
         {/* Sidebar Header */}
@@ -424,7 +427,7 @@ const MessagingPage: React.FC = () => {
 
       {/* Chat Area */}
       {activeConvId ? (
-        <div className={`flex-1 flex flex-col min-w-0 ${!activeConvId ? 'hidden md:flex' : 'flex'}`}>
+        <div className="flex-1 flex flex-col min-w-0 w-full">
 
           {/* Chat Header */}
           <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 shadow-sm" style={{ background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}>
@@ -508,7 +511,7 @@ const MessagingPage: React.FC = () => {
                           className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-0.5 ${isMe ? 'wa-msg-out' : 'wa-msg-in'}`}
                         >
                           <div
-                            className={`max-w-[70%] px-3 py-2 shadow-sm text-sm leading-relaxed ${
+                            className={`max-w-[80%] sm:max-w-[70%] px-3 py-2 shadow-sm text-sm leading-relaxed ${
                               isMe ? 'wa-bubble-out' : 'wa-bubble-in'
                             } ${isMe ? (nextSame ? 'rounded-br-sm' : '') : (nextSame ? 'rounded-bl-sm' : '')}`}
                           >
@@ -557,7 +560,10 @@ const MessagingPage: React.FC = () => {
           )}
 
           {/* Input area */}
-          <div className="flex-shrink-0 bg-[#f0f2f5] px-3 py-2.5 flex items-end gap-2">
+          <div
+            className="flex-shrink-0 bg-[#f0f2f5] px-3 pt-2.5 flex items-end gap-2"
+            style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}
+          >
             {/* Image upload button */}
             <input
               ref={fileInputRef}

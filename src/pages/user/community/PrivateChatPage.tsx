@@ -319,8 +319,8 @@ export default function PrivateChatPage() {
 
   return (
     <div
-      className="h-screen flex flex-col font-sans"
-      style={{ background: '#e5ddd5' }}
+      className="flex flex-col font-sans"
+      style={{ height: '100dvh', background: '#e5ddd5' }}
     >
       {/* Sticky header */}
       <header
@@ -478,8 +478,8 @@ export default function PrivateChatPage() {
 
       {/* Input bar */}
       <div
-        className="px-3 py-3 flex items-end gap-2 sticky bottom-0 z-20"
-        style={{ background: '#f0f0f0' }}
+        className="px-3 pt-2 pb-3 flex items-end gap-2 flex-shrink-0 z-20"
+        style={{ background: '#f0f0f0', paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
       >
         {/* Image upload */}
         <input
