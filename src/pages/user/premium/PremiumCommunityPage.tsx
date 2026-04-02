@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import ProfileModal from "../../../components/community/ProfileModal";
+import { useGetOrCreateChat, useUserVerification, useAnyUserVerification } from "../../../hooks/usePrivateChat";
 import {
   usePremiumMessages,
   usePostPremiumMessage,
@@ -14,7 +16,7 @@ import {
 } from "../../../hooks/usePremiumCommunity";
 import {
   ArrowLeft, Send, Heart, MessageSquare, Pin, Megaphone,
-  Trash2, ChevronDown, ChevronUp, Crown, Search, X
+  Trash2, ChevronDown, ChevronUp, Crown, Search, X, CheckCircle
 } from "lucide-react";
 
 const ADMIN_IDS = ["admin", "chigozie8"];
@@ -99,12 +101,14 @@ function ReplyThread({ message, userId, userName, userAvatar, isAdmin, onDeleteR
 }
 
 // ── Message Card ──────────────────────────────────────────
-function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onLike, onDelete, onPin, onAnnounce, onDeleteReply }:
+function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onLike, onDelete, onPin, onAnnounce, onDeleteReply, onAvatarClick }:
   { msg: PremiumMessage; userId: string; userName: string; userAvatar?: string; isAdmin: boolean; likedIds: Set<string>;
     onLike: (id: string) => void; onDelete: (id: string) => void; onPin: (id: string, cur: boolean) => void;
-    onAnnounce: (id: string, cur: boolean) => void; onDeleteReply: (rid: string, mid: string) => void }) {
+    onAnnounce: (id: string, cur: boolean) => void; onDeleteReply: (rid: string, mid: string) => void;
+    onAvatarClick?: (uid: string, uName: string, uAvatar?: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const isLiked = likedIds.has(msg.id);
+  const { verification } = useAnyUserVerification(msg.user_id);
 
   return (
     <div
@@ -124,10 +128,25 @@ function MessageCard({ msg, userId, userName, userAvatar, isAdmin, likedIds, onL
 
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Avatar name={msg.user_name} src={msg.user_avatar} size={10} />
+        <button
+          type="button"
+          onClick={() => onAvatarClick?.(msg.user_id, msg.user_name, msg.user_avatar)}
+          className="flex-shrink-0 focus:outline-none group"
+        >
+          <Avatar name={msg.user_name} src={msg.user_avatar} size={10} />
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-amber-300">{msg.user_name}</span>
+            <button
+              type="button"
+              onClick={() => onAvatarClick?.(msg.user_id, msg.user_name, msg.user_avatar)}
+              className="font-semibold text-sm text-amber-300 hover:text-amber-200 transition-colors focus:outline-none"
+            >
+              {msg.user_name}
+            </button>
+            {verification?.is_verified && (
+              <CheckCircle className="w-3.5 h-3.5 text-teal-400 flex-shrink-0" strokeWidth={2.5} />
+            )}
             {ADMIN_IDS.includes(msg.user_id) && (
               <span className="inline-flex items-center gap-1 text-xss font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#f59e0b", color: "#0d0d14" }}><Crown className="w-2.5 h-2.5" /> Admin</span>
             )}
@@ -206,6 +225,33 @@ export default function PremiumCommunityPage() {
   const { toggle: toggleLike, getUserLikes } = usePremiumLike();
   const { deleteMsg, togglePin, toggleAnnouncement, deleteReply } = useAdminPremiumActions();
 
+  // Profile modal
+  const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
+  const { getOrCreate } = useGetOrCreateChat();
+  const { upsertVerification, setOnlineStatus } = useUserVerification(userId);
+
+  useEffect(() => {
+    if (userId && userId !== "anon" && userName) {
+      upsertVerification(userId, userName, userAvatar);
+      setOnlineStatus(userId, "online");
+    }
+    return () => { if (userId && userId !== "anon") setOnlineStatus(userId, "offline"); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userName]);
+
+  const handleAvatarClick = useCallback((uid: string, uName: string, uAvatar?: string) => {
+    setProfileTarget({ userId: uid, userName: uName, userAvatar: uAvatar });
+  }, []);
+
+  const handleMessageUser = useCallback(async () => {
+    if (!profileTarget || !userId) return;
+    try {
+      const chatId = await getOrCreate(userId, userName, userAvatar, profileTarget.userId, profileTarget.userName, profileTarget.userAvatar);
+      setProfileTarget(null);
+      navigate(`/u/chat?chatId=${chatId}&otherId=${profileTarget.userId}&otherName=${encodeURIComponent(profileTarget.userName)}&otherAvatar=${encodeURIComponent(profileTarget.userAvatar ?? "")}`);
+    } catch { toast.error("Could not open chat."); }
+  }, [profileTarget, userId, userName, userAvatar, getOrCreate, navigate]);
+
   const [draft, setDraft] = useState("");
   // canPost must come after draft and posting are declared
   const canPost = !!userId && draft.trim().length > 0 && !posting;
@@ -261,6 +307,18 @@ export default function PremiumCommunityPage() {
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "#0d0d14" }}>
+      {/* Profile Modal */}
+      {profileTarget && (
+        <ProfileModal
+          targetUserId={profileTarget.userId}
+          targetUserName={profileTarget.userName}
+          targetUserAvatar={profileTarget.userAvatar}
+          viewerUserId={userId}
+          onMessage={handleMessageUser}
+          onClose={() => setProfileTarget(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-40 border-b border-white/8" style={{ background: "rgba(13,13,20,0.95)", backdropFilter: "blur(12px)" }}>
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
@@ -344,18 +402,20 @@ export default function PremiumCommunityPage() {
             {/* Pinned / Announcements */}
             {pinned.length > 0 && (
               <div className="space-y-3">
-                {pinned.map((msg) => (
-                  <MessageCard key={msg.id} msg={msg} userId={userId} userName={userName} userAvatar={userAvatar}
-                    isAdmin={isAdmin} likedIds={likedIds} onLike={handleLike} onDelete={handleDelete}
-                    onPin={togglePin} onAnnounce={toggleAnnouncement} onDeleteReply={handleDeleteReply} />
-                ))}
-                {regular.length > 0 && <div className="border-t border-white/6 pt-3" />}
-              </div>
-            )}
-            {regular.map((msg) => (
+          {pinned.map((msg) => (
               <MessageCard key={msg.id} msg={msg} userId={userId} userName={userName} userAvatar={userAvatar}
                 isAdmin={isAdmin} likedIds={likedIds} onLike={handleLike} onDelete={handleDelete}
-                onPin={togglePin} onAnnounce={toggleAnnouncement} onDeleteReply={handleDeleteReply} />
+                onPin={togglePin} onAnnounce={toggleAnnouncement} onDeleteReply={handleDeleteReply}
+                onAvatarClick={handleAvatarClick} />
+            ))}
+            {regular.length > 0 && <div className="border-t border-white/6 pt-3" />}
+          </div>
+          )}
+          {regular.map((msg) => (
+              <MessageCard key={msg.id} msg={msg} userId={userId} userName={userName} userAvatar={userAvatar}
+                isAdmin={isAdmin} likedIds={likedIds} onLike={handleLike} onDelete={handleDelete}
+                onPin={togglePin} onAnnounce={toggleAnnouncement} onDeleteReply={handleDeleteReply}
+                onAvatarClick={handleAvatarClick} />
             ))}
           </div>
         )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
@@ -8,11 +8,13 @@ import { useUpsertUserProfile } from '../../../hooks/useDirectMessages';
 import MessageCard from '../../../components/community/MessageCard';
 import GuidelinesBanner from '../../../components/community/GuidelinesBanner';
 import ThreadViewer from '../../../components/community/ThreadViewer';
+import ProfileModal from '../../../components/community/ProfileModal';
 import { SubcategoryFilter } from '../../../components/community/SubcategoryFilter';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import { Send, Search, MessageSquare, ArrowLeft, Users, TrendingUp, Flame, Image, Smile, X, Loader } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
+import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 
 const ProfileModal = lazy(() => import('../../../components/community/ProfileModal'));
 
@@ -69,6 +71,43 @@ const CommunityPage: React.FC = () => {
     ? `${studentDetails.firstName} ${studentDetails.lastName}`
     : 'Student User';
   const userAvatar = studentDetails?.profileImageURL || undefined;
+
+  // Profile modal state
+  const [profileTarget, setProfileTarget] = useState<{
+    userId: string; userName: string; userAvatar?: string;
+  } | null>(null);
+  const { getOrCreate, loading: creatingChat } = useGetOrCreateChat();
+
+  // Ensure current user exists in user_verification (upsert on mount)
+  const { upsertVerification, setOnlineStatus } = useUserVerification(userId);
+  useEffect(() => {
+    if (userId && userId !== 'anonymous' && userName !== 'Student User') {
+      upsertVerification(userId, userName, userAvatar);
+      setOnlineStatus(userId, 'online');
+    }
+    return () => {
+      if (userId && userId !== 'anonymous') setOnlineStatus(userId, 'offline');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userName]);
+
+  const handleAvatarClick = useCallback((uid: string, uName: string, uAvatar?: string) => {
+    setProfileTarget({ userId: uid, userName: uName, userAvatar: uAvatar });
+  }, []);
+
+  const handleMessageUser = useCallback(async () => {
+    if (!profileTarget || !studentDetails?.userID) return;
+    try {
+      const chatId = await getOrCreate(
+        userId, userName, userAvatar,
+        profileTarget.userId, profileTarget.userName, profileTarget.userAvatar,
+      );
+      setProfileTarget(null);
+      navigate(`/u/chat?chatId=${chatId}&otherId=${profileTarget.userId}&otherName=${encodeURIComponent(profileTarget.userName)}&otherAvatar=${encodeURIComponent(profileTarget.userAvatar ?? '')}`);
+    } catch {
+      toast.error('Could not open chat. Try again.');
+    }
+  }, [profileTarget, userId, userName, userAvatar, getOrCreate, navigate, studentDetails]);
 
   const { messages, loading } = useCommunityMessages(topic === 'All' ? undefined : topic);
   const { postMessage, posting } = usePostMessage();
@@ -155,6 +194,18 @@ const CommunityPage: React.FC = () => {
 
   return (
     <>
+      {/* Profile Modal */}
+      {profileTarget && (
+        <ProfileModal
+          targetUserId={profileTarget.userId}
+          targetUserName={profileTarget.userName}
+          targetUserAvatar={profileTarget.userAvatar}
+          viewerUserId={userId}
+          onMessage={handleMessageUser}
+          onClose={() => setProfileTarget(null)}
+        />
+      )}
+
       {selectedThreadId && (
         <ThreadViewer
           messageId={selectedThreadId}
@@ -452,6 +503,7 @@ const CommunityPage: React.FC = () => {
                               onEdit={(id, text) => editMessage(id, text)}
                               onProfileClick={handleProfileClick}
                               isAdmin={message.user_id === userId}
+                              onAvatarClick={handleAvatarClick}
                             />
                           </div>
                         ))}
@@ -473,6 +525,7 @@ const CommunityPage: React.FC = () => {
                         onThreadClick={setSelectedThreadId}
                         onProfileClick={handleProfileClick}
                         isAdmin={message.user_id === userId}
+                        onAvatarClick={handleAvatarClick}
                       />
                     </div>
                   ))}
