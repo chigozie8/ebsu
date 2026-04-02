@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Loader, MessageCircle, Check, CheckCheck, Smile } from 'lucide-react';
+import { X, Send, Loader2, MessageCircle, CheckCheck, Check, Smile, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase, CommunityReply } from '../../lib/supabase';
 
@@ -11,98 +11,105 @@ interface ThreadViewerProps {
   userAvatar?: string;
 }
 
-const AVATAR_COLORS = [
-  'from-teal-400 to-cyan-400',
-  'from-blue-400 to-indigo-400',
-  'from-pink-400 to-rose-400',
-  'from-amber-400 to-orange-400',
-  'from-emerald-400 to-teal-400',
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const GRADS = [
+  ['#00897b', '#26a69a'],
+  ['#1976d2', '#42a5f5'],
+  ['#e91e63', '#f06292'],
+  ['#f57c00', '#ffb74d'],
+  ['#388e3c', '#66bb6a'],
+  ['#7b1fa2', '#ba68c8'],
 ];
-function getAvatarColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
-}
-function getInitials(name: string) {
-  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+function grad(name: string): [string, string] {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h += name.charCodeAt(i);
+  return GRADS[h % GRADS.length] as [string, string];
 }
 
-function formatMessageTime(date: string) {
+function initials(name: string) {
+  return name.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase();
+}
+
+function fmtTime(date: string) {
   return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-function formatDateChip(date: string) {
+function fmtDateChip(date: string) {
   const d = new Date(date);
-  const today = new Date();
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString())  return 'Today';
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
 function groupByDate(replies: CommunityReply[]) {
   const groups: { date: string; items: CommunityReply[] }[] = [];
-  for (const reply of replies) {
-    const chip = formatDateChip(reply.created_at);
+  for (const r of replies) {
+    const chip = fmtDateChip(r.created_at);
     const last = groups[groups.length - 1];
-    if (last && last.date === chip) {
-      last.items.push(reply);
-    } else {
-      groups.push({ date: chip, items: [reply] });
-    }
+    if (last && last.date === chip) last.items.push(r);
+    else groups.push({ date: chip, items: [r] });
   }
   return groups;
 }
 
-// ── Tick component ─────────────────────────────────────────────────────────
-const Ticks: React.FC<{ seen?: boolean; delivered?: boolean }> = ({ seen, delivered }) => {
-  if (seen) return (
-    <span className="inline-flex items-center ml-1" title="Seen">
-      <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />
-    </span>
-  );
-  if (delivered) return (
-    <span className="inline-flex items-center ml-1 wa-tick" title="Delivered">
-      <CheckCheck className="w-3.5 h-3.5" />
-    </span>
-  );
-  return (
-    <span className="inline-flex items-center ml-1 wa-tick" title="Sent">
-      <Check className="w-3.5 h-3.5" />
-    </span>
-  );
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const Ticks: React.FC<{ seen?: boolean; optimistic?: boolean }> = ({ seen, optimistic }) => {
+  if (optimistic) return <Check className="w-3 h-3 flex-shrink-0" style={{ color: '#8696a0' }} />;
+  return seen
+    ? <CheckCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#53bdeb' }} />
+    : <CheckCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#8696a0' }} />;
 };
 
-// ── Typing indicator ────────────────────────────────────────────────────────
-const TypingIndicator: React.FC = () => (
-  <div className="flex items-end gap-2 mb-1">
-    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-      <Smile className="w-4 h-4 text-gray-400" />
-    </div>
-    <div className="wa-bubble-in px-4 py-3 max-w-[80px]">
-      <div className="flex gap-1 items-center h-4">
+const TypingBubble: React.FC<{ name: string }> = ({ name }) => {
+  const [c0, c1] = grad(name);
+  return (
+    <div className="flex items-end gap-1.5 px-3 py-1 wa-msg-in">
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0"
+        style={{ background: `linear-gradient(135deg, ${c0}, ${c1})` }}
+      >
+        {initials(name)}
+      </div>
+      <div
+        className="flex items-center gap-1 px-3.5 py-3 rounded-2xl rounded-bl-none shadow-sm"
+        style={{ background: '#fff', maxWidth: '80px' }}
+      >
         <div className="wa-typing-dot" />
         <div className="wa-typing-dot" />
         <div className="wa-typing-dot" />
       </div>
     </div>
+  );
+};
+
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+const BubbleSkeleton: React.FC<{ right?: boolean }> = ({ right }) => (
+  <div className={`flex items-end gap-2 px-3 py-1 ${right ? 'flex-row-reverse' : ''}`}>
+    {!right && <div className="w-7 h-7 rounded-full wa-skeleton flex-shrink-0" />}
+    <div className={`wa-skeleton rounded-2xl ${right ? 'rounded-br-none' : 'rounded-bl-none'} h-11 ${right ? 'w-36' : 'w-44'}`} />
   </div>
 );
 
+// ── Main component ────────────────────────────────────────────────────────────
 const ThreadViewer: React.FC<ThreadViewerProps> = ({
   messageId, onClose, userId, userName, userAvatar,
 }) => {
-  const [replies,    setReplies]   = useState<CommunityReply[]>([]);
-  const [loading,    setLoading]   = useState(true);
-  const [replyText,  setReplyText] = useState('');
-  const [posting,    setPosting]   = useState(false);
-  const [otherTyping, setOtherTyping] = useState(false);
-  const bottomRef  = useRef<HTMLDivElement>(null);
-  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const broadcastRef   = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const textareaRef    = useRef<HTMLTextAreaElement>(null);
+  const [replies,    setReplies]    = useState<CommunityReply[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [replyText,  setReplyText]  = useState('');
+  const [posting,    setPosting]    = useState(false);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
 
-  // Auto-resize textarea
+  const bottomRef    = useRef<HTMLDivElement>(null);
+  const textareaRef  = useRef<HTMLTextAreaElement>(null);
+  const typingTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
   const autoResize = () => {
     const el = textareaRef.current;
     if (!el) return;
@@ -111,171 +118,236 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
   };
 
   useEffect(() => {
+    let mounted = true;
+
+    const fetchReplies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('community_replies')
+          .select('*')
+          .eq('message_id', messageId)
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        if (mounted) setReplies(data ?? []);
+      } catch {
+        toast.error('Failed to load replies');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
     fetchReplies();
 
-    // Data channel
-    const dataChannel = supabase
-      .channel(`thread:${messageId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'community_replies', filter: `message_id=eq.${messageId}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') setReplies((p) => [...p, payload.new as CommunityReply]);
-          if (payload.eventType === 'DELETE')  setReplies((p) => p.filter((r) => r.id !== payload.old.id));
-        }
-      )
+    // Realtime data
+    const dataCh = supabase
+      .channel(`thread-data:${messageId}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'community_replies', filter: `message_id=eq.${messageId}`,
+      }, (payload) => {
+        if (!mounted) return;
+        if (payload.eventType === 'INSERT') setReplies((p) => [...p, payload.new as CommunityReply]);
+        if (payload.eventType === 'DELETE')  setReplies((p) => p.filter((r) => r.id !== payload.old.id));
+      })
       .subscribe();
 
-    // Typing broadcast channel
-    broadcastRef.current = supabase.channel(`typing:thread:${messageId}`, {
+    // Typing broadcast
+    broadcastRef.current = supabase.channel(`thread-typing:${messageId}`, {
       config: { broadcast: { self: false } },
     });
     broadcastRef.current
       .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (payload.userId !== userId) {
-          setOtherTyping(true);
-          if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-          typingTimerRef.current = setTimeout(() => setOtherTyping(false), 3000);
-        }
+        if (!mounted || payload.userId === userId) return;
+        setTypingUser(payload.userName || 'Someone');
+        if (typingTimer.current) clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
       })
       .subscribe();
 
     return () => {
-      dataChannel.unsubscribe();
+      mounted = false;
+      dataCh.unsubscribe();
       broadcastRef.current?.unsubscribe();
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      if (typingTimer.current) clearTimeout(typingTimer.current);
     };
-  }, [messageId]);
+  }, [messageId, userId]);
 
+  // Auto-scroll to bottom on new messages or typing
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [replies, otherTyping]);
+    bottomRef.current?.scrollIntoView({ behavior: replies.length <= 1 ? 'auto' : 'smooth' });
+  }, [replies, typingUser]);
 
-  const fetchReplies = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('community_replies')
-        .select('*')
-        .eq('message_id', messageId)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      setReplies(data || []);
-    } catch (err) {
-      toast.error('Failed to load replies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePostReply = useCallback(async () => {
-    if (!replyText.trim()) return;
+  const sendReply = useCallback(async () => {
+    const text = replyText.trim();
+    if (!text || posting) return;
     setPosting(true);
+
+    const optId = `opt-${Date.now()}`;
+    const optimistic: CommunityReply = {
+      id: optId,
+      message_id: messageId,
+      user_id: userId,
+      user_name: userName,
+      user_avatar: userAvatar,
+      reply: text,
+      created_at: new Date().toISOString(),
+      is_edited: false,
+      is_deleted: false,
+    };
+
+    setReplies((p) => [...p, optimistic]);
+    setReplyText('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
     try {
       const { error } = await supabase.from('community_replies').insert([{
         message_id: messageId,
         user_id: userId,
         user_name: userName,
         user_avatar: userAvatar,
-        reply: replyText.trim(),
-        created_at: new Date().toISOString(),
+        reply: text,
+        created_at: optimistic.created_at,
         is_edited: false,
         is_deleted: false,
       }]);
       if (error) throw error;
-      setReplyText('');
-      if (textareaRef.current) { textareaRef.current.style.height = 'auto'; }
-    } catch (err) {
-      toast.error('Failed to post reply');
+      setReplies((p) => p.filter((r) => r.id !== optId));
+    } catch {
+      toast.error('Failed to send. Please retry.');
+      setReplies((p) => p.filter((r) => r.id !== optId));
+      setReplyText(text);
     } finally {
       setPosting(false);
     }
-  }, [replyText, messageId, userId, userName, userAvatar]);
+  }, [replyText, posting, messageId, userId, userName, userAvatar]);
 
-  const handleTyping = () => {
+  const emitTyping = () => {
     broadcastRef.current?.send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: { userId },
+      type: 'broadcast', event: 'typing', payload: { userId, userName },
     });
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handlePostReply();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
   };
 
   const groups = groupByDate(replies);
+  const [mg0, mg1] = grad(userName);
+  const canSend = replyText.trim().length > 0 && !posting;
 
   return (
+    /* ── Backdrop ── */
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="wa-modal bg-white w-full sm:max-w-xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ height: '90vh', maxHeight: '720px' }}>
-
-        {/* ── Header ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}>
+      {/* ── Sheet ── */}
+      <div
+        className="wa-modal w-full sm:max-w-md flex flex-col overflow-hidden shadow-2xl"
+        style={{
+          height: '88dvh',
+          maxHeight: '720px',
+          background: '#fff',
+          borderRadius: '20px 20px 0 0',
+        }}
+      >
+        {/* ── Header ──────────────────────────────────────────────────── */}
+        <div
+          className="flex-shrink-0 flex items-center gap-3 px-4 py-0"
+          style={{
+            background: '#075E54',
+            height: '58px',
+            borderRadius: '20px 20px 0 0',
+          }}
+        >
+          {/* Close */}
           <button
             onClick={onClose}
-            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-white/10 active:bg-white/20 transition-colors"
+            aria-label="Close"
           >
-            <X className="w-4 h-4 text-white" />
+            <X className="w-5 h-5 text-white" />
           </button>
-          <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
+
+          {/* Icon */}
+          <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
             <MessageCircle className="w-5 h-5 text-white" />
           </div>
-          <div className="flex-1">
-            <h2 className="text-white font-bold text-sm leading-tight">Thread Replies</h2>
-            <p className="text-green-100 text-xs">{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</p>
+
+          {/* Title */}
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold text-[15px] leading-tight">Thread replies</p>
+            <p className="text-[12px] leading-tight" style={{ color: '#25D366' }}>
+              {loading ? '…' : `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
+            </p>
           </div>
         </div>
 
-        {/* ── Messages area ─────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 wa-scroll wa-chat-bg">
+        {/* ── Chat area ───────────────────────────────────────────────── */}
+        <div
+          className="flex-1 overflow-y-auto wa-scroll"
+          style={{
+            background: '#e5ddd5',
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+          }}
+        >
           {loading ? (
-            <div className="flex flex-col gap-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className={`flex ${i % 2 === 0 ? '' : 'flex-row-reverse'} gap-2`}>
-                  <div className="w-7 h-7 rounded-full wa-skeleton flex-shrink-0" />
-                  <div className={`wa-skeleton rounded-xl h-10 ${i % 2 === 0 ? 'w-48' : 'w-40'}`} />
-                </div>
+            /* Skeletons */
+            <div className="space-y-1 pt-3">
+              {[false, true, false, false, true].map((r, i) => (
+                <BubbleSkeleton key={i} right={r} />
               ))}
             </div>
+
           ) : replies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <div className="w-14 h-14 bg-white/80 rounded-full flex items-center justify-center mb-3 shadow-sm">
-                <MessageCircle className="w-7 h-7 text-[#25D366]" />
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center mb-3 shadow-sm"
+                style={{ background: 'rgba(255,255,255,0.85)' }}
+              >
+                <MessageCircle className="w-8 h-8" style={{ color: '#25D366' }} />
               </div>
-              <p className="text-[#54656f] font-semibold text-sm">No replies yet</p>
-              <p className="text-[#8696a0] text-xs mt-1">Be the first to respond!</p>
+              <p className="font-semibold text-[15px]" style={{ color: '#54656f' }}>No replies yet</p>
+              <p className="text-[13px] mt-1" style={{ color: '#8696a0' }}>Start the conversation!</p>
             </div>
+
           ) : (
-            <div className="space-y-1">
+            /* Messages */
+            <div className="py-2 space-y-px">
               {groups.map((group) => (
                 <div key={group.date}>
                   {/* Date chip */}
-                  <div className="flex justify-center my-3">
-                    <span className="wa-date-chip">{group.date}</span>
+                  <div className="flex justify-center my-2">
+                    <span
+                      className="text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm"
+                      style={{ background: 'rgba(225,245,254,0.9)', color: '#54656f' }}
+                    >
+                      {group.date}
+                    </span>
                   </div>
 
                   {group.items.map((reply, idx) => {
-                    const isMe = reply.user_id === userId;
-                    const gradient = getAvatarColor(reply.user_name);
-                    const initials = getInitials(reply.user_name);
-                    const prevSame = idx > 0 && group.items[idx - 1].user_id === reply.user_id;
-                    const nextSame = idx < group.items.length - 1 && group.items[idx + 1].user_id === reply.user_id;
+                    const isMe       = reply.user_id === userId;
+                    const isOpt      = reply.id.startsWith('opt-');
+                    const prevSame   = idx > 0 && group.items[idx - 1].user_id === reply.user_id;
+                    const nextSame   = idx < group.items.length - 1 && group.items[idx + 1].user_id === reply.user_id;
+                    const [rc0, rc1] = grad(reply.user_name);
+
+                    // Bubble corner radii — group consecutive messages
+                    const br = isMe
+                      ? nextSame ? '16px 4px 16px 16px' : '16px 0px 16px 16px'
+                      : nextSame ? '4px 16px 16px 16px' : '0px 16px 16px 16px';
 
                     return (
                       <div
                         key={reply.id}
-                        className={`flex items-end gap-1.5 mb-0.5 ${isMe ? 'flex-row-reverse' : ''} ${isMe ? 'wa-msg-out' : 'wa-msg-in'}`}
+                        className={`flex items-end gap-1.5 px-3 ${isMe ? 'flex-row-reverse' : ''} ${isMe ? 'wa-msg-out' : 'wa-msg-in'}`}
+                        style={{ marginTop: prevSame ? '2px' : '6px', opacity: isOpt ? 0.75 : 1 }}
                       >
-                        {/* Avatar — only on last message in a group */}
-                        <div className="w-7 flex-shrink-0 self-end mb-0.5">
-                          {!nextSame && !isMe && (
+                        {/* Avatar — show only on last of incoming group */}
+                        <div className="w-7 flex-shrink-0 self-end">
+                          {!isMe && !nextSame ? (
                             reply.user_avatar ? (
                               <img
                                 src={reply.user_avatar}
@@ -285,34 +357,51 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
                                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
                               />
                             ) : (
-                              <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-[9px] font-bold`}>
-                                {initials}
+                              <div
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                                style={{ background: `linear-gradient(135deg, ${rc0}, ${rc1})` }}
+                              >
+                                {initials(reply.user_name)}
                               </div>
                             )
-                          )}
+                          ) : null}
                         </div>
 
                         {/* Bubble */}
-                        <div className={`max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                          {/* Sender name (only on first in group for incoming) */}
+                        <div className={`max-w-[72%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                          {/* Sender name — first in group (incoming only) */}
                           {!isMe && !prevSame && (
-                            <span className="text-[11px] font-bold px-3 pb-0.5" style={{ color: '#128C7E' }}>
+                            <span
+                              className="text-[11px] font-bold px-1 pb-0.5 leading-tight"
+                              style={{ color: rc0 }}
+                            >
                               {reply.user_name}
                             </span>
                           )}
 
-                          <div className={`px-3 py-2 shadow-sm text-sm leading-relaxed ${isMe ? 'wa-bubble-out' : 'wa-bubble-in'} ${
-                            isMe
-                              ? nextSame ? 'rounded-br-sm' : ''
-                              : nextSame ? 'rounded-bl-sm' : ''
-                          }`}>
-                            <p className="break-words whitespace-pre-wrap">{reply.reply}</p>
-                            {/* Time + ticks */}
+                          <div
+                            className="relative shadow-sm"
+                            style={{
+                              background: isMe ? '#dcf8c6' : '#ffffff',
+                              borderRadius: br,
+                              padding: '7px 12px 5px 12px',
+                              maxWidth: '100%',
+                            }}
+                          >
+                            {/* Message text */}
+                            <p
+                              className="text-[14px] leading-relaxed break-words whitespace-pre-wrap"
+                              style={{ color: '#111b21' }}
+                            >
+                              {reply.reply}
+                            </p>
+
+                            {/* Time + tick */}
                             <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                              <span className="text-[10px]" style={{ color: isMe ? '#667781' : '#8696a0' }}>
-                                {formatMessageTime(reply.created_at)}
+                              <span className="text-[10px] leading-none" style={{ color: '#8696a0' }}>
+                                {fmtTime(reply.created_at)}
                               </span>
-                              {isMe && <Ticks delivered={true} seen={false} />}
+                              {isMe && <Ticks seen={false} optimistic={isOpt} />}
                             </div>
                           </div>
                         </div>
@@ -322,53 +411,75 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
                 </div>
               ))}
 
-              {/* Typing indicator */}
-              {otherTyping && <TypingIndicator />}
-
+              {typingUser && <TypingBubble name={typingUser} />}
               <div ref={bottomRef} className="h-1" />
             </div>
           )}
         </div>
 
-        {/* ── Composer ──────────────────────────────────────────── */}
-        <div className="flex-shrink-0 bg-[#f0f2f5] px-3 py-2.5 flex items-end gap-2">
+        {/* ── Composer ─────────────────────────────────────────────────── */}
+        <div
+          className="flex-shrink-0 flex items-end gap-2 px-2 py-2"
+          style={{ background: '#f0f2f5' }}
+        >
           {/* My avatar */}
           {userAvatar ? (
             <img
               src={userAvatar}
               alt={userName}
               crossOrigin="anonymous"
-              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+              className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           ) : (
-            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarColor(userName)} flex items-center justify-center flex-shrink-0 text-white text-[10px] font-bold`}>
-              {getInitials(userName)}
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 self-end mb-0.5"
+              style={{ background: `linear-gradient(135deg, ${mg0}, ${mg1})` }}
+            >
+              {initials(userName)}
             </div>
           )}
 
-          {/* Input */}
-          <div className="flex-1 bg-white rounded-2xl px-3 py-2 flex items-end gap-2 min-h-[40px]">
+          {/* Input capsule */}
+          <div
+            className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm"
+            style={{ background: '#fff' }}
+          >
+            <button className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5">
+              <Smile className="w-5 h-5" style={{ color: '#8696a0' }} />
+            </button>
             <textarea
               ref={textareaRef}
               value={replyText}
-              onChange={(e) => { setReplyText(e.target.value); autoResize(); handleTyping(); }}
+              onChange={(e) => { setReplyText(e.target.value); autoResize(); emitTyping(); }}
               onKeyDown={onKeyDown}
-              placeholder="Type a reply…"
-              className="flex-1 text-sm bg-transparent outline-none resize-none placeholder-gray-400 leading-relaxed"
-              style={{ minHeight: '20px', maxHeight: '120px', overflowY: 'auto' }}
+              placeholder="Message"
+              className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end"
+              style={{
+                color: '#111b21',
+                minHeight: '24px',
+                maxHeight: '120px',
+                overflowY: 'auto',
+              }}
               rows={1}
             />
           </div>
 
-          {/* Send button */}
+          {/* Send */}
           <button
-            onClick={handlePostReply}
-            disabled={posting || !replyText.trim()}
-            className="wa-send-btn wa-send-pulse"
-            style={{ background: (!posting && replyText.trim()) ? '#25D366' : '#ccc' }}
+            onClick={sendReply}
+            disabled={!canSend}
+            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 self-end transition-all duration-200 active:scale-95 disabled:cursor-not-allowed"
+            style={{
+              background: canSend ? '#25D366' : '#aebbc1',
+              boxShadow: canSend ? '0 2px 10px rgba(37,211,102,0.45)' : 'none',
+            }}
+            aria-label="Send reply"
           >
-            {posting ? <Loader className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white" />}
+            {posting
+              ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+              : <Send className="w-5 h-5 text-white" style={{ marginLeft: '1px' }} />
+            }
           </button>
         </div>
       </div>

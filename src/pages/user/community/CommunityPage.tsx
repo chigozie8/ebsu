@@ -11,41 +11,36 @@ import ThreadViewer from '../../../components/community/ThreadViewer';
 import ProfileModal from '../../../components/community/ProfileModal';
 import { SubcategoryFilter } from '../../../components/community/SubcategoryFilter';
 import { StickerPicker } from '../../../components/community/StickerPicker';
-import { Send, Search, MessageSquare, ArrowLeft, Users, TrendingUp, Flame, Image, Smile, X, Loader } from 'lucide-react';
+import {
+  Send, Search, MessageSquare, ArrowLeft, Users,
+  Smile, X, Loader2, Paperclip,
+} from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
 import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 
-const ProfileModal = lazy(() => import('../../../components/community/ProfileModal'));
-
 const TOPICS = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
-const TOPIC_META: Record<string, { color: string; dot: string }> = {
-  All:           { color: 'bg-[#25D366] text-white shadow-green-200',           dot: 'bg-[#25D366]' },
-  General:       { color: 'bg-slate-100 text-slate-700 border border-slate-200', dot: 'bg-slate-400' },
-  Academics:     { color: 'bg-blue-100 text-blue-700 border border-blue-200',    dot: 'bg-blue-500' },
-  'Campus Life': { color: 'bg-pink-100 text-pink-700 border border-pink-200',    dot: 'bg-pink-500' },
-  Tech:          { color: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
-  Events:        { color: 'bg-amber-100 text-amber-700 border border-amber-200', dot: 'bg-amber-500' },
-};
+function fmtDateChip(date: string) {
+  const d = new Date(date);
+  const now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  if (d.toDateString() === now.toDateString())  return 'Today';
+  if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+}
 
-// Skeleton loader for a single message card
-const MessageSkeleton: React.FC = () => (
-  <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5">
-    <div className="flex gap-3">
-      <div className="w-10 h-10 rounded-full wa-skeleton flex-shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="flex gap-2">
-          <div className="wa-skeleton h-3.5 w-28 rounded" />
-          <div className="wa-skeleton h-3.5 w-14 rounded" />
-        </div>
-        <div className="wa-skeleton h-3 w-full rounded" />
-        <div className="wa-skeleton h-3 w-4/5 rounded" />
-        <div className="wa-skeleton h-3 w-2/3 rounded" />
-      </div>
-    </div>
-  </div>
-);
+type Community = import('../../../lib/supabase').Community;
+function groupByDate(msgs: Community[]) {
+  const groups: { date: string; items: Community[] }[] = [];
+  for (const m of msgs) {
+    const chip = fmtDateChip(m.created_at);
+    const last = groups[groups.length - 1];
+    if (last && last.date === chip) last.items.push(m);
+    else groups.push({ date: chip, items: [m] });
+  }
+  return groups;
+}
 
 interface ProfileState {
   userId: string;
@@ -53,21 +48,43 @@ interface ProfileState {
   userAvatar?: string;
 }
 
+// ── Skeleton ─────────────────────────────────────────────────────────────────
+const MessageSkeleton: React.FC<{ idx: number }> = ({ idx }) => (
+  <div
+    className="flex gap-3 px-4 py-3 bg-white"
+    style={{ animationDelay: `${idx * 70}ms` }}
+  >
+    <div className="w-10 h-10 rounded-full flex-shrink-0 wa-skeleton" />
+    <div className="flex-1 space-y-2 pt-0.5">
+      <div className="flex gap-2 items-center">
+        <div className="h-3 w-28 rounded wa-skeleton" />
+        <div className="h-3 w-12 rounded wa-skeleton" />
+      </div>
+      <div className="h-3 w-full rounded wa-skeleton" />
+      <div className="h-3 w-4/5 rounded wa-skeleton" />
+      <div className="h-3 w-2/3 rounded wa-skeleton" />
+    </div>
+  </div>
+);
+
+
 const CommunityPage: React.FC = () => {
   const navigate = useNavigate();
-  const [topic, setTopic] = useState<string>('All');
+  const [topic, setTopic] = useState('All');
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchVisible, setSearchVisible] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | undefined>();
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [profileModal, setProfileModal] = useState<ProfileState | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
 
   const { studentDetails, gettingStudentDetails } = useGetUserInfo();
-  const userId    = studentDetails?.userID || 'anonymous';
-  const userName  = studentDetails?.firstName && studentDetails?.lastName
+  const userId = studentDetails?.userID || 'anonymous';
+  const userName = studentDetails?.firstName && studentDetails?.lastName
     ? `${studentDetails.firstName} ${studentDetails.lastName}`
     : 'Student User';
   const userAvatar = studentDetails?.profileImageURL || undefined;
@@ -117,67 +134,72 @@ const CommunityPage: React.FC = () => {
   const { uploading, uploadImage } = useImageUpload();
   const { upsert: upsertProfile } = useUpsertUserProfile();
 
-  // Sync user profile into Supabase on mount
+  // Upsert profile on mount
   useEffect(() => {
     if (studentDetails?.userID) {
-      upsertProfile(
-        studentDetails.userID,
-        userName,
-        studentDetails.profileImageURL || undefined,
-      );
+      upsertProfile(studentDetails.userID, userName, studentDetails.profileImageURL || undefined);
     }
   }, [studentDetails?.userID]);
 
-  const prevMessageCountRef = useRef<number | null>(null);
+  // Sound on new messages
+  const prevCountRef = useRef<number | null>(null);
   useEffect(() => {
     if (loading) return;
-    if (prevMessageCountRef.current !== null && messages.length > prevMessageCountRef.current) {
+    if (prevCountRef.current !== null && messages.length > prevCountRef.current) {
       const latest = messages[0];
       if (latest && latest.user_id !== userId) playSound('message');
     }
-    prevMessageCountRef.current = messages.length;
+    prevCountRef.current = messages.length;
   }, [messages, loading, userId]);
 
+  // Realtime subscription
   useEffect(() => {
-    const channel = supabase
+    const ch = supabase
       .channel('community_messages_changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'community_messages' }, () => {})
       .subscribe();
-    return () => { channel.unsubscribe(); };
+    return () => { ch.unsubscribe(); };
   }, []);
 
-  const filteredMessages = messages.filter(
-    (msg) =>
-      msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      msg.user_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  };
 
+  const filteredMessages = messages.filter((m) =>
+    m.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.user_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   const pinnedMessages  = filteredMessages.filter((m) => m.is_pinned);
   const regularMessages = filteredMessages.filter((m) => !m.is_pinned);
 
-  const handlePostMessage = async () => {
+  const handlePost = async () => {
     if (!newMessage.trim() && imageUrls.length === 0) return;
     if (!studentDetails?.userID) {
-      toast.error('Loading your profile… Please try again.');
+      toast.error('Still loading your profile — please wait a moment.');
       return;
     }
     try {
       await postMessage(userId, userName, newMessage, topic === 'All' ? 'General' : topic, userAvatar, imageUrls, selectedSubcategory);
       setNewMessage('');
       clearImages();
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
       toast.success('Posted!', {
-        duration: 2500,
-        style: { background: '#25D366', color: 'white', borderRadius: '10px', fontWeight: '600' },
+        duration: 1800,
+        style: { background: '#25D366', color: '#fff', borderRadius: '12px', fontWeight: '600' },
+        iconTheme: { primary: '#fff', secondary: '#25D366' },
       });
-    } catch (err) {
-      toast.error('Failed to post. Please try again.');
+    } catch {
+      toast.error('Failed to post. Tap to retry.');
     }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.currentTarget.files;
     if (!files) return;
-    for (let i = 0; i < files.length && imageUrls.length < 3; i++) {
+    for (let i = 0; i < files.length && imageUrls.length < 4; i++) {
       const url = await uploadImage(files[i], userId);
       if (url) addImageUrl(url);
     }
@@ -185,12 +207,16 @@ const CommunityPage: React.FC = () => {
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handlePostMessage();
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handlePost();
   };
 
-  const handleProfileClick = (uid: string, uName: string, uAvatar?: string) => {
-    setProfileModal({ userId: uid, userName: uName, userAvatar: uAvatar });
-  };
+  const canPost = !posting && (newMessage.trim().length > 0 || imageUrls.length > 0) && !gettingStudentDetails;
+
+  // Avatar initials + gradient
+  const initials = userName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+  const GRADS = [['#00897b','#26a69a'],['#1976d2','#42a5f5'],['#e91e63','#f06292'],['#f57c00','#ffb74d'],['#388e3c','#66bb6a'],['#7b1fa2','#ba68c8']];
+  let h = 0; for (const c of userId) h += c.charCodeAt(0);
+  const [g0, g1] = GRADS[h % GRADS.length];
 
   return (
     <>
@@ -220,247 +246,323 @@ const CommunityPage: React.FC = () => {
         userId={userId}
         isOpen={showStickerPicker}
         onClose={() => setShowStickerPicker(false)}
-        onSelectSticker={(sticker) => {
-          setNewMessage((prev) => prev + ` ${sticker.image_url} `);
+        onSelectSticker={(s) => {
+          setNewMessage((p) => p + ` ${s.image_url} `);
           setShowStickerPicker(false);
         }}
       />
 
       {profileModal && (
-        <Suspense fallback={null}>
-          <ProfileModal
-            targetUserId={profileModal.userId}
-            targetUserName={profileModal.userName}
-            targetUserAvatar={profileModal.userAvatar}
-            currentUserId={userId}
-            onClose={() => setProfileModal(null)}
-            onMessageClick={(targetId, targetName) => {
-              setProfileModal(null);
-              navigate(`/u/messages?with=${targetId}&name=${encodeURIComponent(targetName)}`);
-            }}
-          />
-        </Suspense>
+        <ProfileModal
+          targetUserId={profileModal.userId}
+          targetUserName={profileModal.userName}
+          targetUserAvatar={profileModal.userAvatar}
+          currentUserId={userId}
+          onClose={() => setProfileModal(null)}
+          onMessageClick={(id, name) => {
+            setProfileModal(null);
+            navigate(`/u/messages?with=${id}&name=${encodeURIComponent(name)}`);
+          }}
+        />
       )}
 
-      <div className="min-h-screen bg-slate-50 pb-12">
+      {/* ── ROOT ────────────────────────────────────────────────────── */}
+      <div className="flex flex-col h-screen bg-[#f0f2f5] overflow-hidden">
 
-        {/* ── Hero Header — WhatsApp green ─────────────────────────── */}
-        <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}>
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }}
-          />
-          <div className="relative w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-            <div className="flex items-center gap-3 mb-5">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors text-white"
-                title="Go back"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </div>
+        {/* ══ HEADER ══════════════════════════════════════════════════ */}
+        <header className="flex-shrink-0 z-30 shadow-md" style={{ background: '#075E54' }}>
 
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-white" />
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
-                    Student Community
-                  </h1>
-                </div>
-                <p className="text-green-100 text-sm sm:text-base max-w-lg">
-                  Ask questions, share ideas, and connect with fellow EBSU students.
+          {/* Top row */}
+          <div className="flex items-center h-14 px-3 gap-2.5">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors text-white flex-shrink-0"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+
+            {/* Icon + title */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="w-9 h-9 rounded-full bg-[#25D366]/30 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-[15px] leading-tight truncate">Student Community</p>
+                <p className="text-[#25D366] text-xs leading-tight font-normal">
+                  {loading ? 'loading…' : `${messages.length} discussions`}
                 </p>
               </div>
-              <div className="flex gap-3 flex-shrink-0">
-                <div className="bg-white/15 backdrop-blur rounded-xl px-4 py-2.5 text-center">
-                  <div className="flex items-center gap-1.5 text-white">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm font-semibold">{messages.length}</span>
-                  </div>
-                  <p className="text-green-100 text-xs mt-0.5">Posts</p>
-                </div>
-                <div className="bg-white/15 backdrop-blur rounded-xl px-4 py-2.5 text-center">
-                  <div className="flex items-center gap-1.5 text-white">
-                    <TrendingUp className="w-4 h-4" />
-                    <span className="text-sm font-semibold">{TOPICS.length - 1}</span>
-                  </div>
-                  <p className="text-green-100 text-xs mt-0.5">Topics</p>
-                </div>
-              </div>
             </div>
 
-            {/* Search bar */}
-            <div className="mt-6 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-green-200" />
-              <input
-                type="text"
-                placeholder="Search messages or students…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/20 text-white placeholder-green-200 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm backdrop-blur"
-              />
+            {/* Right actions */}
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <button
+                onClick={() => setSearchVisible((v) => !v)}
+                className="p-2.5 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors text-white"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => navigate('/u/messages')}
+                className="p-2.5 rounded-full hover:bg-white/10 active:bg-white/20 transition-colors text-white"
+                aria-label="Direct messages"
+              >
+                <Users className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        </div>
 
-        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          {/* Search bar slide-down */}
+          <div
+            className="transition-all duration-300 overflow-hidden"
+            style={{ maxHeight: searchVisible ? '56px' : '0', opacity: searchVisible ? 1 : 0 }}
+          >
+            <div className="px-3 pb-2.5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 pointer-events-none" />
+                <input
+                  autoFocus={searchVisible}
+                  type="text"
+                  placeholder="Search discussions…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-9 pl-9 pr-9 rounded-lg bg-white/15 text-white placeholder-white/50 border border-white/10 focus:outline-none focus:bg-white/20 text-sm transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
-          {/* ── Topic Filters ─────────────────────────────────────── */}
-          <div className="overflow-x-auto pb-1 -mx-4 sm:mx-0 px-4 sm:px-0 mb-6">
-            <div className="flex gap-2 min-w-max">
-              {TOPICS.map((t) => (
+          {/* Topic tabs */}
+          <div
+            className="flex gap-2 px-3 pb-2.5 overflow-x-auto"
+            style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            {TOPICS.map((t) => {
+              const active = topic === t;
+              return (
                 <button
                   key={t}
                   onClick={() => setTopic(t)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
-                    topic === t
-                      ? 'bg-[#25D366] text-white shadow-lg shadow-green-200 scale-105'
-                      : 'bg-white text-slate-600 border border-slate-200 hover:border-[#25D366] hover:text-[#128C7E] hover:shadow-sm'
-                  }`}
+                  className="flex-shrink-0 px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-200 border"
+                  style={
+                    active
+                      ? { background: '#25D366', color: '#fff', borderColor: '#25D366' }
+                      : { background: 'transparent', color: 'rgba(255,255,255,0.75)', borderColor: 'rgba(255,255,255,0.25)' }
+                  }
                 >
-                  {t !== 'All' && (
-                    <span className={`w-2 h-2 rounded-full ${TOPIC_META[t]?.dot ?? 'bg-gray-400'}`} />
-                  )}
-                  {t === 'All' && <Flame className="w-3.5 h-3.5" />}
                   {t}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        </header>
 
-          {/* ── Subcategories ─────────────────────────────────────── */}
-          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-            <p className="text-xs font-semibold text-slate-600 mb-3 uppercase">Filter by category</p>
-            <SubcategoryFilter
-              selectedCategory={selectedSubcategory}
-              onCategoryChange={setSelectedSubcategory}
-            />
-          </div>
+        {/* ══ BODY ════════════════════════════════════════════════════ */}
+        <div className="flex-1 overflow-hidden flex flex-col">
 
-          {/* ── Two-column layout ─────────────────────────────────── */}
-          <div className="flex flex-col lg:flex-row gap-6">
+          {/* Feed — WhatsApp chat background */}
+          <div
+            ref={feedRef}
+            className="flex-1 overflow-y-auto wa-scroll"
+            style={{
+              background: '#e5ddd5',
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            }}
+          >
+            {/* Guidelines banner */}
+            <GuidelinesBanner />
 
-            {/* LEFT — composer + guidelines */}
-            <div className="lg:w-[380px] xl:w-[420px] flex-shrink-0 space-y-4">
-
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-5 py-3.5" style={{ background: 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}>
-                  <p className="text-white font-semibold text-sm">Start a discussion</p>
-                  <p className="text-green-100 text-xs mt-0.5">Share what&apos;s on your mind</p>
+            {/* Pinned date chip + pinned bubbles */}
+            {pinnedMessages.length > 0 && (
+              <div className="pt-2">
+                <div className="flex justify-center mb-1">
+                  <span className="text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm" style={{ background: 'rgba(225,245,254,0.9)', color: '#54656f' }}>
+                    Pinned
+                  </span>
                 </div>
-                <div className="p-4 sm:p-5">
-                  <div className="flex gap-3 items-start">
-                    {userAvatar ? (
-                      <img
-                        src={userAvatar}
-                        alt={userName}
-                        crossOrigin="anonymous"
-                        className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-[#25D366]/30"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#25D366] to-[#128C7E] flex items-center justify-center flex-shrink-0 text-white text-sm font-bold ring-2 ring-[#25D366]/20">
-                        {userName.charAt(0)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-700 mb-1.5">{userName}</p>
-                      <textarea
-                        ref={textareaRef}
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={onKeyDown}
-                        placeholder="What's on your mind? (Ctrl+Enter to post)"
-                        className="w-full p-3 text-sm border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366]/50 focus:border-[#25D366] transition-all bg-slate-50 placeholder-slate-400"
-                        rows={3}
-                      />
+                {pinnedMessages.map((msg, idx) => (
+                  <MessageCard
+                    key={msg.id}
+                    message={msg}
+                    isOwn={msg.user_id === userId}
+                    onDelete={deleteMessage}
+                    onEdit={editMessage}
+                    onThreadClick={setSelectedThreadId}
+                    onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
+                    prevSameUser={idx > 0 && pinnedMessages[idx - 1].user_id === msg.user_id}
+                    nextSameUser={idx < pinnedMessages.length - 1 && pinnedMessages[idx + 1].user_id === msg.user_id}
+                  />
+                ))}
+              </div>
+            )}
 
-                      {/* Image previews */}
-                      {imageUrls.length > 0 && (
-                        <div className="mt-3 grid grid-cols-3 gap-2">
-                          {imageUrls.map((url, idx) => (
-                            <div key={idx} className="relative group">
-                              <img
-                                src={url}
-                                alt={`preview-${idx}`}
-                                crossOrigin="anonymous"
-                                className="w-full h-20 object-cover rounded-lg border border-slate-200"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                              />
-                              <button
-                                onClick={() => removeImageUrl(idx)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+            {/* Main feed */}
+            {loading ? (
+              <div className="pt-4 space-y-1">
+                {[false, true, false, false, true, false].map((r, i) => (
+                  <div key={i} className={`flex items-end gap-1.5 px-3 ${r ? 'flex-row-reverse' : ''}`}>
+                    {!r && <div className="w-8 h-8 rounded-full wa-skeleton flex-shrink-0" />}
+                    <div className={`wa-skeleton rounded-2xl h-12 ${r ? 'w-48 rounded-br-none' : 'w-56 rounded-bl-none'}`} />
                   </div>
-
-                  <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
-                    <div className="flex gap-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={uploading || imageUrls.length >= 3}
-                        className="hidden"
-                      />
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading || imageUrls.length >= 3}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-slate-600"
-                        title="Add images (max 3)"
+                ))}
+              </div>
+            ) : regularMessages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 px-8 text-center">
+                <div
+                  className="w-18 h-18 w-[72px] h-[72px] rounded-full flex items-center justify-center mb-3 shadow"
+                  style={{ background: 'rgba(255,255,255,0.85)' }}
+                >
+                  <MessageSquare className="w-8 h-8" style={{ color: '#25D366' }} />
+                </div>
+                <p className="font-semibold text-[15px]" style={{ color: '#54656f' }}>
+                  {searchQuery ? 'No results found' : 'No discussions yet'}
+                </p>
+                <p className="text-[13px] mt-1" style={{ color: '#8696a0' }}>
+                  {searchQuery ? `Nothing matched "${searchQuery}"` : 'Be the first to post!'}
+                </p>
+              </div>
+            ) : (
+              <div className="pt-2 pb-3">
+                {groupByDate(regularMessages).map((group) => (
+                  <div key={group.date}>
+                    {/* Date chip */}
+                    <div className="flex justify-center my-2">
+                      <span
+                        className="text-[11px] font-medium px-3 py-1 rounded-lg shadow-sm"
+                        style={{ background: 'rgba(225,245,254,0.9)', color: '#54656f' }}
                       >
-                        {uploading ? <Loader className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => setShowStickerPicker(true)}
-                        className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600"
-                        title="Add sticker"
-                      >
-                        <Smile className="w-4 h-4" />
-                      </button>
+                        {group.date}
+                      </span>
                     </div>
-                    <select
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#25D366]/50 bg-white text-slate-700 font-medium"
-                    >
-                      {TOPICS.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    {group.items.map((msg, idx) => (
+                      <MessageCard
+                        key={msg.id}
+                        message={msg}
+                        isOwn={msg.user_id === userId}
+                        onDelete={deleteMessage}
+                        onEdit={editMessage}
+                        onThreadClick={setSelectedThreadId}
+                        onProfileClick={(uid, uName, uAv) => setProfileModal({ userId: uid, userName: uName, userAvatar: uAv })}
+                        prevSameUser={idx > 0 && group.items[idx - 1].user_id === msg.user_id}
+                        nextSameUser={idx < group.items.length - 1 && group.items[idx + 1].user_id === msg.user_id}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ══ COMPOSER ═══════════════════════════════════════════════ */}
+          <div className="flex-shrink-0" style={{ background: '#f0f2f5' }}>
+
+            {/* Image previews row */}
+            {imageUrls.length > 0 && (
+              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {imageUrls.map((url, i) => (
+                  <div key={i} className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 border-[#25D366]/30 shadow-sm group">
+                    <img
+                      src={url}
+                      alt=""
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+                    />
                     <button
-                      onClick={handlePostMessage}
-                      disabled={posting || (!newMessage.trim() && imageUrls.length === 0) || gettingStudentDetails}
-                      className="flex items-center gap-2 px-5 py-2 text-white text-sm rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
-                      style={{ background: posting ? '#ccc' : 'linear-gradient(135deg, #128C7E 0%, #25D366 100%)' }}
+                      onClick={() => removeImageUrl(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-[#111b21]/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Remove"
                     >
-                      {posting ? <Loader className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      Post
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
-                </div>
+                ))}
               </div>
+            )}
 
-              <GuidelinesBanner />
-            </div>
+            {/* Input bar — exact WhatsApp style */}
+            <div className="flex items-end gap-2 px-2 py-2">
+              {/* My avatar */}
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  crossOrigin="anonymous"
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold self-end mb-0.5"
+                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+                >
+                  {initials}
+                </div>
+              )}
 
-            {/* RIGHT — messages feed */}
-            <div className="flex-1 min-w-0">
-              {loading ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => <MessageSkeleton key={i} />)}
+              {/* Text input capsule */}
+              <div
+                className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm"
+                style={{ background: '#fff' }}
+              >
+                {/* Emoji */}
+                <button
+                  onClick={() => setShowStickerPicker(true)}
+                  className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5"
+                  aria-label="Stickers"
+                >
+                  <Smile className="w-5 h-5" style={{ color: '#8696a0' }} />
+                </button>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={newMessage}
+                  onChange={(e) => { setNewMessage(e.target.value); autoResize(); }}
+                  onKeyDown={onKeyDown}
+                  placeholder="Message"
+                  className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end"
+                  style={{
+                    color: '#111b21',
+                    minHeight: '24px',
+                    maxHeight: '140px',
+                    overflowY: 'auto',
+                  }}
+                  rows={1}
+                />
+
+                {/* Attach */}
+                <div className="flex items-center gap-0.5 flex-shrink-0 self-end mb-0.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading || imageUrls.length >= 4}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || imageUrls.length >= 4}
+                    className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors disabled:opacity-40"
+                    aria-label="Attach image"
+                  >
+                    {uploading
+                      ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#8696a0' }} />
+                      : <Paperclip className="w-5 h-5" style={{ color: '#8696a0' }} />
+                    }
+                  </button>
                 </div>
               ) : filteredMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100">

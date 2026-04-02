@@ -528,6 +528,26 @@ input[type=number] {
   display: inline-block;
 }
 
+/* ── Scrollbar hide utility ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── ThreadViewer messages area positioning fix ── */
+.wa-thread-messages { position: relative; }
+
+/* ── ThreadViewer desktop rounded ── */
+@media (min-width: 640px) {
+  .wa-modal {
+    border-radius: 20px !important;
+  }
+}
+
+/* ── Message card hover ── */
+.wa-card-hover:hover { background-color: #f9f9f9; }
+
 /* ── Framer-motion helpers ── */
 .wa-fade { opacity: 0; }
 
