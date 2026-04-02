@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Hardcoded fallbacks ensure the client always connects even when env vars
 // are not yet injected (e.g. first load in preview, Vite define race, etc.)
-const FALLBACK_URL = 'https://fmjxxldlqirmnzkekjkf.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtanh4bGRscWlybW56a2VramtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzA0NzIsImV4cCI6MjA4OTQ0NjQ3Mn0.PX18WAPpzzg-emMbxV2bz-yR5fo-MjvVMvDQAYZeTrc';
+const FALLBACK_URL = 'https://pymwhvvosdjeycjelmef.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bXdodnZvc2RqZXljamVsbWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMTk0MjcsImV4cCI6MjA5MDY5NTQyN30.VFDBMiorgHlAWfC-V555VNWVXa_To5t6LyxD9C3IAkQ';
 
 const supabaseUrl: string =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
