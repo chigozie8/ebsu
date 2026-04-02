@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, Community, CommunityReply, CommunityReaction } from '../lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -487,3 +487,60 @@ export const usePinMessage = () => {
 
   return { togglePin, pinning, error };
 };
+
+/**
+ * Tracks typing presence via Supabase Realtime Presence.
+ * Returns typingUsers (array of names currently typing, excluding self).
+ * Call `startTyping()` on input change and `stopTyping()` on blur/send.
+ */
+export const useTypingIndicator = (channel: string, userId: string, userName: string) => {
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const stopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  useEffect(() => {
+    if (!channel || !userId) return;
+
+    const ch = supabase.channel(`typing:${channel}`, {
+      config: { presence: { key: userId } },
+    });
+
+    ch.on('presence', { event: 'sync' }, () => {
+      const state = ch.presenceState<{ user_name: string; typing: boolean }>();
+      const names: string[] = [];
+      for (const [key, presences] of Object.entries(state)) {
+        if (key === userId) continue;
+        const latest = (presences as Array<{ user_name: string; typing: boolean }>).at(-1);
+        if (latest?.typing) names.push(latest.user_name);
+      }
+      setTypingUsers(names);
+    });
+
+    ch.subscribe();
+    presenceChannelRef.current = ch;
+
+    return () => {
+      ch.unsubscribe();
+      presenceChannelRef.current = null;
+    };
+  }, [channel, userId]);
+
+  const startTyping = useCallback(() => {
+    if (!presenceChannelRef.current) return;
+    presenceChannelRef.current.track({ user_name: userName, typing: true });
+
+    if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+    stopTimeoutRef.current = setTimeout(() => {
+      presenceChannelRef.current?.track({ user_name: userName, typing: false });
+    }, 3000);
+  }, [userName]);
+
+  const stopTyping = useCallback(() => {
+    if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+    presenceChannelRef.current?.track({ user_name: userName, typing: false });
+  }, [userName]);
+
+  return { typingUsers, startTyping, stopTyping };
+};
+
+
