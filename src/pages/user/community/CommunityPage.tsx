@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { playSound } from '../../../hooks/useSound';
+import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 
 const TOPICS = ['All', 'General', 'Academics', 'Campus Life', 'Tech', 'Events'];
 
@@ -87,6 +88,43 @@ const CommunityPage: React.FC = () => {
     ? `${studentDetails.firstName} ${studentDetails.lastName}`
     : 'Student User';
   const userAvatar = studentDetails?.profileImageURL || undefined;
+
+  // Profile modal state
+  const [profileTarget, setProfileTarget] = useState<{
+    userId: string; userName: string; userAvatar?: string;
+  } | null>(null);
+  const { getOrCreate, loading: creatingChat } = useGetOrCreateChat();
+
+  // Ensure current user exists in user_verification (upsert on mount)
+  const { upsertVerification, setOnlineStatus } = useUserVerification(userId);
+  useEffect(() => {
+    if (userId && userId !== 'anonymous' && userName !== 'Student User') {
+      upsertVerification(userId, userName, userAvatar);
+      setOnlineStatus(userId, 'online');
+    }
+    return () => {
+      if (userId && userId !== 'anonymous') setOnlineStatus(userId, 'offline');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userName]);
+
+  const handleAvatarClick = useCallback((uid: string, uName: string, uAvatar?: string) => {
+    setProfileTarget({ userId: uid, userName: uName, userAvatar: uAvatar });
+  }, []);
+
+  const handleMessageUser = useCallback(async () => {
+    if (!profileTarget || !studentDetails?.userID) return;
+    try {
+      const chatId = await getOrCreate(
+        userId, userName, userAvatar,
+        profileTarget.userId, profileTarget.userName, profileTarget.userAvatar,
+      );
+      setProfileTarget(null);
+      navigate(`/u/chat?chatId=${chatId}&otherId=${profileTarget.userId}&otherName=${encodeURIComponent(profileTarget.userName)}&otherAvatar=${encodeURIComponent(profileTarget.userAvatar ?? '')}`);
+    } catch {
+      toast.error('Could not open chat. Try again.');
+    }
+  }, [profileTarget, userId, userName, userAvatar, getOrCreate, navigate, studentDetails]);
 
   const { messages, loading } = useCommunityMessages(topic === 'All' ? undefined : topic);
   const { postMessage, posting } = usePostMessage();
@@ -182,6 +220,18 @@ const CommunityPage: React.FC = () => {
 
   return (
     <>
+      {/* Profile Modal */}
+      {profileTarget && (
+        <ProfileModal
+          targetUserId={profileTarget.userId}
+          targetUserName={profileTarget.userName}
+          targetUserAvatar={profileTarget.userAvatar}
+          viewerUserId={userId}
+          onMessage={handleMessageUser}
+          onClose={() => setProfileTarget(null)}
+        />
+      )}
+
       {selectedThreadId && (
         <ThreadViewer
           messageId={selectedThreadId}
@@ -514,47 +564,75 @@ const CommunityPage: React.FC = () => {
                     }
                   </button>
                 </div>
-              </div>
+              ) : filteredMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-100">
+                  <div className="w-16 h-16 bg-[#f0fdf4] rounded-2xl flex items-center justify-center mb-4">
+                    <MessageSquare className="w-8 h-8 text-[#25D366]" />
+                  </div>
+                  <p className="text-slate-700 font-semibold text-base">No messages yet</p>
+                  <p className="text-slate-400 text-sm mt-1">Be the first to start a discussion!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
 
-              {/* Send / topic button */}
-              <div className="flex flex-col items-center gap-1 flex-shrink-0 self-end">
-                <button
-                  onClick={canPost ? handlePost : undefined}
-                  disabled={!canPost}
-                  className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95"
-                  style={{
-                    background: canPost ? '#25D366' : '#aebbc1',
-                    boxShadow: canPost ? '0 2px 10px rgba(37,211,102,0.5)' : 'none',
-                  }}
-                  aria-label="Post message"
-                >
-                  {posting
-                    ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    : <Send className="w-5 h-5 text-white" style={{ marginLeft: '1px' }} />
-                  }
-                </button>
-              </div>
-            </div>
+                  {/* Pinned Messages */}
+                  {pinnedMessages.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-5 h-5 bg-amber-400 rounded flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
+                          </svg>
+                        </div>
+                        <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">Pinned</span>
+                      </div>
+                      <div className="space-y-3">
+                        {pinnedMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className="rounded-2xl overflow-hidden border-2 border-amber-200 bg-amber-50 shadow-sm hover:shadow-md transition-shadow relative"
+                          >
+                            <div className="absolute top-3 right-3 bg-amber-400 text-white px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 z-10">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5.951-1.429 5.951 1.429a1 1 0 001.169-1.409l-7-14z" />
+                              </svg>
+                              Pinned
+                            </div>
+                            <MessageCard
+                              message={message}
+                              isOwn={message.user_id === userId}
+                              onDelete={() => deleteMessage(message.id)}
+                              onEdit={(id, text) => editMessage(id, text)}
+                              onProfileClick={handleProfileClick}
+                              isAdmin={message.user_id === userId}
+                              onAvatarClick={handleAvatarClick}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-            {/* Topic picker pill */}
-            <div className="flex items-center gap-2 px-3 pb-2 pt-0">
-              <span className="text-xs text-[#8696a0]">Topic:</span>
-              <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                {TOPICS.filter((t) => t !== 'All').map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTopic(t)}
-                    className="flex-shrink-0 px-3 py-0.5 rounded-full text-[11px] font-semibold transition-all border"
-                    style={
-                      topic === t
-                        ? { background: '#25D366', color: '#fff', borderColor: '#25D366' }
-                        : { background: '#f0f2f5', color: '#667781', borderColor: 'transparent' }
-                    }
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+                  {/* Regular Messages */}
+                  {regularMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-[#25D366]/30 transition-all"
+                    >
+                      <MessageCard
+                        message={message}
+                        isOwn={message.user_id === userId}
+                        onDelete={() => deleteMessage(message.id)}
+                        onEdit={(id, text) => editMessage(id, text)}
+                        onThreadClick={setSelectedThreadId}
+                        onProfileClick={handleProfileClick}
+                        isAdmin={message.user_id === userId}
+                        onAvatarClick={handleAvatarClick}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

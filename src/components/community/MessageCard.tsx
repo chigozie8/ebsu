@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Community } from '../../lib/supabase';
-import { MoreVertical, Trash2, Edit2, MessageCircle, Pin, Check, CheckCheck } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, MessageCircle, Pin, Clock, CheckCircle } from 'lucide-react';
 import { usePinMessage } from '../../hooks/useCommunity';
-import VerifiedBadge from './VerifiedBadge';
+import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 
 interface MessageCardProps {
   message: Community;
@@ -12,11 +12,8 @@ interface MessageCardProps {
   onThreadClick?: (messageId: string) => void;
   onProfileClick?: (userId: string, userName: string, userAvatar?: string) => void;
   isAdmin?: boolean;
-  isVerified?: boolean;
-  /** Whether the previous post was by the same user (for bubble grouping) */
-  prevSameUser?: boolean;
-  /** Whether the next post is by the same user (for bubble grouping) */
-  nextSameUser?: boolean;
+  /** Called when the user's avatar or name is clicked */
+  onAvatarClick?: (userId: string, userName: string, userAvatar?: string) => void;
 }
 
 const TOPIC_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -56,15 +53,21 @@ function timeAgo(date: string) {
 }
 
 const MessageCard: React.FC<MessageCardProps> = ({
-  message, isOwn, onDelete, onEdit, onThreadClick, onProfileClick,
-  isAdmin = false, isVerified = false,
-  prevSameUser = false, nextSameUser = false,
+  message,
+  isOwn,
+  onDelete,
+  onEdit,
+  onThreadClick,
+  onProfileClick,
+  isAdmin = false,
+  onAvatarClick,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [editing,  setEditing]  = useState(false);
   const [editText, setEditText] = useState(message.message);
   const menuRef = useRef<HTMLDivElement>(null);
   const { togglePin } = usePinMessage();
+  const { verification } = useAnyUserVerification(message.user_id);
 
   useEffect(() => {
     if (!showMenu) return;
@@ -93,36 +96,25 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const mtClass = prevSameUser ? 'mt-0.5' : 'mt-2';
 
   return (
-    <div
-      className={`flex items-end gap-1.5 px-3 ${isOwn ? 'flex-row-reverse' : ''} ${mtClass} ${isOwn ? 'wa-msg-out' : 'wa-msg-in'}`}
-    >
-      {/* ── Avatar — only show on last bubble of incoming group ───── */}
-      <div className="w-8 flex-shrink-0 self-end mb-0.5">
-        {!isOwn && !nextSameUser ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onProfileClick?.(message.user_id, message.user_name, message.user_avatar); }}
-            className="focus:outline-none"
-            aria-label={`${message.user_name}'s profile`}
-          >
-            {message.user_avatar ? (
-              <img
-                src={message.user_avatar}
-                alt={message.user_name}
-                crossOrigin="anonymous"
-                className="w-8 h-8 rounded-full object-cover shadow-sm"
-                onError={(e) => {
-                  (e.currentTarget as HTMLElement).style.display = 'none';
-                  const fb = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
-                  if (fb) fb.style.display = 'flex';
-                }}
-              />
-            ) : null}
+    <div className="p-4 sm:p-5 wa-msg-in">
+      <div className="flex gap-3 sm:gap-4">
+
+        {/* Avatar (clickable) */}
+        <button
+          type="button"
+          onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+          className="flex-shrink-0 focus:outline-none group"
+          title={`View ${message.user_name}'s profile`}
+        >
+          {message.user_avatar ? (
+            <img
+              src={message.user_avatar}
+              alt={message.user_name}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all"
+            />
+          ) : (
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm"
-              style={{
-                background: `linear-gradient(135deg, ${g0}, ${g1})`,
-                display: message.user_avatar ? 'none' : 'flex',
-              }}
+              className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center text-white text-xs font-bold ring-2 ring-slate-100 group-hover:ring-teal-300 transition-all`}
             >
               {inits}
             </div>
@@ -174,24 +166,25 @@ const MessageCard: React.FC<MessageCardProps> = ({
             </span>
           )}
 
-          {/* Menu button (own messages) */}
-          {(isOwn || isAdmin) && !editing && (
-            <div
-              className="absolute top-1 right-1"
-              ref={menuRef}
-              onClick={(e) => e.stopPropagation()}
-            >
+          {/* Top row: name + verified + time + topic + menu */}
+          <div className="flex items-start gap-2 justify-between flex-wrap mb-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
-                className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-black/10 transition-colors"
-                aria-label="Options"
+                type="button"
+                onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+                className="font-bold text-slate-900 text-sm hover:text-teal-600 transition-colors focus:outline-none"
               >
                 <MoreVertical className="w-3.5 h-3.5" style={{ color: isOwn ? '#667781' : '#aebbc1' }} />
               </button>
-              {showMenu && (
-                <div
-                  className="absolute right-0 top-full mt-1 z-30 min-w-[148px] rounded-2xl overflow-hidden"
-                  style={{ background: '#fff', boxShadow: '0 6px 28px rgba(0,0,0,0.18)', border: '1px solid #f0f2f5' }}
+              {verification?.is_verified && (
+                <CheckCircle className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" strokeWidth={2.5} />
+              )}
+              {message.is_edited && (
+                <span className="text-xs text-slate-400 italic">(edited)</span>
+              )}
+              {message.topic && message.topic !== 'General' && (
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-semibold ${TOPIC_BADGE[message.topic] ?? 'bg-slate-100 text-slate-600'}`}
                 >
                   {isOwn && (
                     <button

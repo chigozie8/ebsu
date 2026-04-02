@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Hardcoded fallbacks ensure the client always connects even when env vars
 // are not yet injected (e.g. first load in preview, Vite define race, etc.)
-const FALLBACK_URL = 'https://fmjxxldlqirmnzkekjkf.supabase.co';
-const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtanh4bGRscWlybW56a2VramtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzA0NzIsImV4cCI6MjA4OTQ0NjQ3Mn0.PX18WAPpzzg-emMbxV2bz-yR5fo-MjvVMvDQAYZeTrc';
+const FALLBACK_URL = 'https://pymwhvvosdjeycjelmef.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bXdodnZvc2RqZXljamVsbWVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMTk0MjcsImV4cCI6MjA5MDY5NTQyN30.VFDBMiorgHlAWfC-V555VNWVXa_To5t6LyxD9C3IAkQ';
 
 const supabaseUrl: string =
   (import.meta.env.VITE_SUPABASE_URL as string) ||
@@ -78,37 +78,45 @@ export type CommunityGuideline = {
   created_at: string;
 };
 
-// ── Messaging Platform Types ──────────────────────────────────────────────────
+// ── Private Chat types ─────────────────────────────────────────────────────
 
-export type UserProfile = {
+export type UserVerification = {
+  id: string;
   user_id: string;
-  display_name: string;
-  avatar_url?: string;
-  bio?: string;
+  user_name: string;
+  user_avatar?: string;
   is_verified: boolean;
-  is_online: boolean;
+  verified_at?: string;
+  verified_by?: string;
+  bio?: string;
+  online_status: 'online' | 'offline' | 'away';
   last_seen: string;
   created_at: string;
   updated_at: string;
 };
 
-export type Conversation = {
+export type PrivateChat = {
   id: string;
-  participant_a: string;
-  participant_b: string;
+  participant_1: string;
+  participant_2: string;
+  participant_1_name: string;
+  participant_2_name: string;
+  participant_1_avatar?: string;
+  participant_2_avatar?: string;
   last_message?: string;
-  last_message_at?: string;
+  last_message_at: string;
   created_at: string;
 };
 
-export type DirectMessage = {
+export type PrivateMessage = {
   id: string;
-  conversation_id: string;
+  chat_id: string;
   sender_id: string;
-  receiver_id: string;
+  sender_name: string;
+  sender_avatar?: string;
   content: string;
   image_url?: string;
-  is_delivered: boolean;
   is_seen: boolean;
+  is_delivered: boolean;
   created_at: string;
 };
