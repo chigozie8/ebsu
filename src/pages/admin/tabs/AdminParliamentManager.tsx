@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../../config/supabase";
 import { TeamUploadManager } from "../../../components/ImageUpload/TeamUploadManager";
 import placeholder from "../../../assets/img/team/placeholder.png";
@@ -38,6 +38,18 @@ export default function AdminParliamentManager() {
   const [addName,  setAddName]  = useState("");
   const [addRole,  setAddRole]  = useState("Member of Parliament");
   const [addPhone, setAddPhone] = useState("");
+  
+  // Ref for scrolling to add form
+  const addFormRef = useRef<HTMLDivElement>(null);
+  
+  const scrollToAddForm = () => {
+    addFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Focus the name input after scrolling
+    setTimeout(() => {
+      const nameInput = addFormRef.current?.querySelector('input[type="text"]') as HTMLInputElement;
+      nameInput?.focus();
+    }, 500);
+  };
   const [saving,   setSaving]   = useState(false);
 
   // Delete confirm
@@ -168,7 +180,7 @@ export default function AdminParliamentManager() {
     <div className="space-y-8">
 
       {/* Add member form */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div ref={addFormRef} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-1">Add Parliament Member</h3>
         <p className="text-xs text-gray-500 mb-5">
           Add a new member to the parliament roster. They will appear on the public Parliament page.
@@ -232,6 +244,8 @@ export default function AdminParliamentManager() {
             if (member) setDeleteTarget(member);
           }}
           canDelete={(memberId) => !FIXED_IDS.has(memberId)}
+          showAddButton={true}
+          onAddMember={scrollToAddForm}
         />
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TeamUploadManager } from '../../components/ImageUpload/TeamUploadManager';
 import placeholder from "../../assets/img/team/placeholder.png";
 import { supabase } from '../../config/supabase';
@@ -94,6 +94,13 @@ export default function AdminTeamUpload() {
   const [deleteTarget, setDeleteTarget] = useState<{ teamType: TeamType; member: TeamMember } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Add member modal state
+  const [addModal, setAddModal] = useState<{ teamType: TeamType; teamName: string } | null>(null);
+  const [addName, setAddName] = useState('');
+  const [addRole, setAddRole] = useState('');
+  const [addExtra, setAddExtra] = useState('');
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     // Load team member overrides from Supabase
     supabase
@@ -175,6 +182,53 @@ export default function AdminTeamUpload() {
   const requestDelete = (teamType: TeamType, memberId: string) => {
     const member = teams[teamType].find((m) => m.id === memberId);
     if (member) setDeleteTarget({ teamType, member });
+  };
+
+  const openAddModal = (teamType: TeamType, teamName: string) => {
+    setAddModal({ teamType, teamName });
+    setAddName('');
+    setAddRole(teamType === 'press' ? 'Reporter' : teamType === 'classRep' ? 'Class Rep' : 'Member');
+    setAddExtra('');
+  };
+
+  const submitAddMember = async () => {
+    if (!addModal || !addName.trim()) {
+      notifyUser('error', 'Please enter a name');
+      return;
+    }
+    setSaving(true);
+    const { teamType } = addModal;
+    const newId = `${teamType}-extra-${Date.now()}`;
+    try {
+      const { error } = await supabase.from('team_images').upsert(
+        {
+          id: `${teamType}_${newId}`,
+          team_type: teamType,
+          member_id: newId,
+          name: addName.trim(),
+          role: addRole.trim() || 'Member',
+          extra: addExtra.trim(),
+          image_url: null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+      if (error) throw error;
+
+      setTeams((prev) => ({
+        ...prev,
+        [teamType]: [
+          ...prev[teamType],
+          { id: newId, name: addName.trim(), role: addRole.trim() || 'Member', image: placeholder, extra: addExtra.trim() },
+        ],
+      }));
+      notifyUser('success', 'Member added successfully');
+      setAddModal(null);
+    } catch {
+      notifyUser('error', 'Failed to add member');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -295,6 +349,8 @@ export default function AdminTeamUpload() {
             onMemberUpdate={(id, fields) => handleMemberUpdate('executive', id, fields)}
             onDeleteMember={(id) => requestDelete('executive', id)}
             canDelete={(id) => !FIXED_EXECUTIVE_IDS.has(id)}
+            showAddButton={true}
+            onAddMember={() => openAddModal('executive', 'Executive Team')}
           />
         </div>
 
@@ -308,6 +364,8 @@ export default function AdminTeamUpload() {
             onMemberUpdate={(id, fields) => handleMemberUpdate('classRep', id, fields)}
             onDeleteMember={(id) => requestDelete('classRep', id)}
             canDelete={(id) => !FIXED_CLASSREP_IDS.has(id)}
+            showAddButton={true}
+            onAddMember={() => openAddModal('classRep', 'Class Representatives')}
           />
         </div>
 
@@ -321,14 +379,89 @@ export default function AdminTeamUpload() {
             onMemberUpdate={(id, fields) => handleMemberUpdate('press', id, fields)}
             onDeleteMember={(id) => requestDelete('press', id)}
             canDelete={(id) => !FIXED_PRESS_IDS.has(id)}
+            showAddButton={true}
+            onAddMember={() => openAddModal('press', 'Press Team')}
           />
         </div>
 
       </div>
-    </div>
 
-    {/* Delete confirm modal */}
-    {deleteTarget && (
+      {/* Add Member Modal */}
+      {addModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Add Member</h3>
+                <p className="text-xs text-gray-500">{addModal.teamName}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Full Name *</label>
+                <input
+                  type="text"
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  autoFocus
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Role / Title</label>
+                <input
+                  type="text"
+                  value={addRole}
+                  onChange={(e) => setAddRole(e.target.value)}
+                  placeholder="e.g. Director of ICT"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  {addModal.teamType === 'press' ? 'Level / Info' : 'Phone (optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={addExtra}
+                  onChange={(e) => setAddExtra(e.target.value)}
+                  placeholder={addModal.teamType === 'press' ? 'e.g. 400 Level' : 'e.g. 08012345678'}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setAddModal(null)}
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAddMember}
+                disabled={saving || !addName.trim()}
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving && <Spinner className="w-4 h-4 text-white" />}
+                {saving ? 'Adding...' : 'Add Member'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteTarget && (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
@@ -361,7 +494,8 @@ export default function AdminTeamUpload() {
             </button>
           </div>
         </div>
-      </div>
-    )}
+        </div>
+      )}
+    </div>
   );
 }
