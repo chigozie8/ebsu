@@ -415,31 +415,69 @@ export const useTypingIndicator = (conversationId: string, myId: string) => {
 
 // ── All user profiles ─────────────────────────────────────────────────────────
 
+export interface UserProfileWithCommunities extends UserProfile {
+  communities: { community_id: string; community_name: string; joined_at: string }[];
+}
+
 export const useAllUserProfiles = () => {
-  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [profiles, setProfiles] = useState<UserProfileWithCommunities[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    const snap = await getDocs(query(collection(db, 'user_profiles'), orderBy('display_name')));
-    setProfiles(
-      snap.docs.map((d) => {
+    try {
+      // Fetch user profiles and community data in parallel
+      const [profilesSnap, communitiesSnap, membershipsSnap] = await Promise.all([
+        getDocs(query(collection(db, 'user_profiles'), orderBy('display_name'))),
+        getDocs(collection(db, 'communities')),
+        getDocs(collection(db, 'community_memberships')),
+      ]);
+
+      // Build community name lookup map
+      const communityMap = new Map<string, string>();
+      communitiesSnap.docs.forEach((d) => {
+        communityMap.set(d.id, (d.data().name as string) || 'Unknown Community');
+      });
+
+      // Group memberships by user_id
+      const membershipsByUser = new Map<string, { community_id: string; community_name: string; joined_at: string }[]>();
+      membershipsSnap.docs.forEach((d) => {
         const data = d.data();
-        return {
-          id: d.id,
-          user_id: data.user_id as string,
-          display_name: (data.display_name as string) || '',
-          avatar_url: data.avatar_url as string | undefined,
-          bio: data.bio as string | undefined,
-          is_online: (data.is_online as boolean) || false,
-          last_seen: toIso(data.last_seen),
-          is_verified: (data.is_verified as boolean) || false,
-          created_at: toIso(data.created_at),
-          updated_at: toIso(data.updated_at),
-        };
-      })
-    );
-    setLoading(false);
+        const uid = data.user_id as string;
+        const cid = data.community_id as string;
+        if (!uid || !cid) return;
+        if (!membershipsByUser.has(uid)) membershipsByUser.set(uid, []);
+        membershipsByUser.get(uid)!.push({
+          community_id: cid,
+          community_name: communityMap.get(cid) || 'Unknown Community',
+          joined_at: toIso(data.joined_at),
+        });
+      });
+
+      setProfiles(
+        profilesSnap.docs.map((d) => {
+          const data = d.data();
+          const uid = data.user_id as string;
+          return {
+            id: d.id,
+            user_id: uid,
+            display_name: (data.display_name as string) || '',
+            avatar_url: data.avatar_url as string | undefined,
+            bio: data.bio as string | undefined,
+            is_online: (data.is_online as boolean) || false,
+            last_seen: toIso(data.last_seen),
+            is_verified: (data.is_verified as boolean) || false,
+            created_at: toIso(data.created_at),
+            updated_at: toIso(data.updated_at),
+            communities: membershipsByUser.get(uid) || [],
+          };
+        })
+      );
+    } catch (err) {
+      console.error('[useAllUserProfiles] refetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refetch(); }, [refetch]);
