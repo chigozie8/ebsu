@@ -163,8 +163,31 @@ const ImageLightbox: React.FC<{
 const ImageGrid: React.FC<{
   urls: string[];
   onPreview: (index: number) => void;
-}> = ({ urls, onPreview }) => {
+  replyCount?: number;
+  likesCount?: number;
+}> = ({ urls, onPreview, replyCount = 0, likesCount = 0 }) => {
   const count = Math.min(urls.length, 4);
+
+  // Stats overlay component for images
+  const StatsOverlay = () => (
+    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+      {/* Comments and Likes */}
+      <div className="flex items-center gap-2">
+        <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+          <MessageCircle className="w-3.5 h-3.5 text-white" />
+          <span className="text-[11px] font-semibold text-white">{replyCount}</span>
+        </span>
+        <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+          <span className="text-[11px]">❤️</span>
+          <span className="text-[11px] font-semibold text-white">{likesCount}</span>
+        </span>
+      </div>
+      {/* Zoom icon */}
+      <div className="bg-black/50 backdrop-blur-sm rounded-full p-1.5">
+        <ZoomIn className="w-3.5 h-3.5 text-white" />
+      </div>
+    </div>
+  );
 
   if (count === 1) {
     return (
@@ -181,9 +204,7 @@ const ImageGrid: React.FC<{
           style={{ maxHeight: '280px', display: 'block' }}
           onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
         />
-        <div className="absolute bottom-2 right-2 bg-black/40 rounded-full p-1">
-          <ZoomIn className="w-3.5 h-3.5 text-white" />
-        </div>
+        <StatsOverlay />
       </div>
     );
   }
@@ -250,8 +271,21 @@ const ImageGrid: React.FC<{
           ))}
         </div>
       )}
-      <div className="absolute bottom-2 right-2 bg-black/40 rounded-full p-1 pointer-events-none">
-        <ZoomIn className="w-3 h-3 text-white" />
+      {/* Stats overlay for multi-image grid */}
+      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+            <MessageCircle className="w-3.5 h-3.5 text-white" />
+            <span className="text-[11px] font-semibold text-white">{replyCount}</span>
+          </span>
+          <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
+            <span className="text-[11px]">❤️</span>
+            <span className="text-[11px] font-semibold text-white">{likesCount}</span>
+          </span>
+        </div>
+        <div className="bg-black/50 backdrop-blur-sm rounded-full p-1.5">
+          <ZoomIn className="w-3 h-3 text-white" />
+        </div>
       </div>
     </div>
   );
@@ -502,11 +536,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     </p>
                   )}
 
-                  {/* Images */}
+                  {/* Images with engagement stats overlay */}
                   {imageUrls.length > 0 && (
                     <ImageGrid
                       urls={imageUrls}
                       onPreview={(i) => setLightboxIdx(i)}
+                      replyCount={message.reply_count || 0}
+                      likesCount={message.likes_count || 0}
                     />
                   )}
                 </>
