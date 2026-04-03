@@ -60,29 +60,66 @@ export function useCloudinaryGallery(): UseCloudinaryGalleryResult {
     setLoading(true);
     setError(null);
 
-    fetch("/api/gallery-list")
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        return res.json();
-      })
-      .then((data: { items: Omit<GalleryItem, "id">[] }) => {
-        if (cancelled) return;
-        const mapped = (data.items || []).map((item, idx) => ({
+    const cloudName = (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || "dsqjg9mfg";
+    const apiKey    = (import.meta as any).env?.VITE_CLOUDINARY_API_KEY    || "731583139833111";
+    const apiSecret = (import.meta as any).env?.VITE_CLOUDINARY_API_SECRET || "";
+
+    // Call Cloudinary Search API directly from the browser using Basic auth
+    const auth = btoa(`${apiKey}:${apiSecret}`);
+
+    const searchPayload = (resourceType: string) =>
+      fetch(`https://api.cloudinary.com/v1_1/${cloudName}/resources/search`, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          expression: `folder:ebsu_gallery AND resource_type:${resourceType}`,
+          sort_by: [{ created_at: "desc" }],
+          max_results: 500,
+          with_field: ["context", "tags"],
+        }),
+      });
+
+    const mapResources = (data: any, forcedType: "image" | "video"): Omit<GalleryItem, "id">[] =>
+      (data.resources || []).map((item: any) => ({
+        url: item.secure_url,
+        publicId: item.public_id,
+        category: item.context?.custom?.category || "general",
+        caption: item.context?.custom?.caption || "",
+        type: forcedType,
+        uploadedAt: item.created_at,
+        size: item.bytes,
+      }));
+
+    Promise.all([searchPayload("image"), searchPayload("video")])
+      .then(async ([imgRes, vidRes]) => {
+        const imgData = imgRes.ok ? await imgRes.json() : { resources: [] };
+        const vidData = vidRes.ok ? await vidRes.json() : { resources: [] };
+
+        const combined = [
+          ...mapResources(imgData, "image"),
+          ...mapResources(vidData, "video"),
+        ].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+        const mapped = combined.map((item, idx) => ({
           ...item,
           id: item.publicId || String(idx),
         }));
+
+        if (cancelled) return;
         if (mapped.length > 0) {
           setItems(mapped);
           saveToLocal(mapped);
         } else {
-          // Server returned empty — keep showing the last known items from localStorage
           const fallback = loadFromLocal();
           if (fallback.length > 0) setItems(fallback);
         }
       })
       .catch((err) => {
         if (cancelled) return;
-        // On any network / server error, keep the previously cached items visible
+        // On any network error, keep the previously cached items visible
         const fallback = loadFromLocal();
         if (fallback.length > 0) {
           setItems(fallback);

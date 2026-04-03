@@ -16,11 +16,6 @@ interface ParliamentMember {
 const DEFAULT_MEMBERS: ParliamentMember[] = [
   { id: "parliament-speaker",        name: "Name Here", image: placeholder, role: "Speaker of Parliament",  extra: "" },
   { id: "parliament-deputy-speaker", name: "Name Here", image: placeholder, role: "Deputy Speaker",         extra: "" },
-  { id: "parliament-0",              name: "Name Here", image: placeholder, role: "Majority Leader",         extra: "" },
-  { id: "parliament-1",              name: "Name Here", image: placeholder, role: "Minority Leader",         extra: "" },
-  { id: "parliament-2",              name: "Name Here", image: placeholder, role: "Majority Whip",           extra: "" },
-  { id: "parliament-3",              name: "Name Here", image: placeholder, role: "Minority Whip",           extra: "" },
-  { id: "parliament-4",              name: "Name Here", image: placeholder, role: "Clerk of Parliament",     extra: "" },
 ];
 
 const FIXED_IDS = new Set(DEFAULT_MEMBERS.map((m) => m.id));
