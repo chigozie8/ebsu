@@ -263,18 +263,20 @@ export const useCommunityBySlug = (slug: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Live snapshot so member_count / post_count on the community doc
+  // always reflect the latest state in the community page header.
   useEffect(() => {
     if (!slug) { setLoading(false); return; }
 
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    setLoading(true);
+    setError(null);
 
-        const ref = collection(db, 'communities');
-        const q = query(ref, where('slug', '==', slug), limit(1));
-        const snap = await getDocs(q);
+    const ref = collection(db, 'communities');
+    const q = query(ref, where('slug', '==', slug), limit(1));
 
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
         if (snap.empty) {
           setError('Community not found');
           setCommunity(null);
@@ -282,15 +284,16 @@ export const useCommunityBySlug = (slug: string) => {
           const d = snap.docs[0];
           setCommunity(docToGroup(d.id, d.data() as Record<string, unknown>));
         }
-      } catch (err) {
-        console.error('[useCommunityBySlug] fetch error:', err);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunityBySlug] snapshot error:', err);
         setError(err instanceof Error ? err.message : 'Community not found');
-      } finally {
         setLoading(false);
       }
-    };
+    );
 
-    fetch();
+    return () => unsub();
   }, [slug]);
 
   return { community, loading, error };
@@ -303,26 +306,36 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
 
+  // Use a live onSnapshot so membership state is always accurate,
+  // even if communityId resolves after initial render.
   useEffect(() => {
     if (!communityId || !userId || userId === 'anonymous') {
       setLoading(false);
       return;
     }
 
-    const check = async () => {
-      const ref = collection(db, 'community_memberships');
-      const q = query(
-        ref,
-        where('community_id', '==', communityId),
-        where('user_id', '==', userId),
-        limit(1)
-      );
-      const snap = await getDocs(q);
-      setIsMember(!snap.empty);
-      setLoading(false);
-    };
+    setLoading(true);
+    const ref = collection(db, 'community_memberships');
+    const q = query(
+      ref,
+      where('community_id', '==', communityId),
+      where('user_id', '==', userId),
+      limit(1)
+    );
 
-    check();
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setIsMember(!snap.empty);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunityMembership] snapshot error:', err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsub();
   }, [communityId, userId]);
 
   const toggle = useCallback(async () => {
