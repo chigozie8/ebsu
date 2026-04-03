@@ -520,17 +520,57 @@ const CommunityPage: React.FC = () => {
               className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-t"
               style={{ background: '#fff', borderColor: '#e9edef' }}
             >
-              <div className="flex items-center gap-2">
+              {/* Left: icon + text */}
+              <div className="flex items-center gap-2 min-w-0">
                 <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <p className="text-sm text-gray-500">Join to post and reply in this community</p>
+                <p className="text-sm text-gray-500 leading-snug">
+                  Join to post and reply in this community
+                </p>
               </div>
+
+              {/* Right: layered bubble button — green behind, blue in front */}
               <button
                 onClick={toggle}
                 disabled={toggling}
-                className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
-                style={{ background: communityColor }}
+                aria-label="Join community"
+                className="flex-shrink-0 relative transition-all active:scale-95 disabled:opacity-60"
+                style={{ width: 64, height: 48 }}
               >
-                {toggling ? '...' : 'Join'}
+                {/* Green chat bubble — background layer */}
+                <span
+                  className="absolute flex items-center justify-center rounded-full"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    background: communityColor || '#075E54',
+                    top: 2,
+                    right: 0,
+                    zIndex: 1,
+                  }}
+                >
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </span>
+
+                {/* Blue join button — foreground layer */}
+                <span
+                  className="absolute flex items-center justify-center rounded-full shadow-md"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    background: '#2563EB',
+                    bottom: 0,
+                    left: 0,
+                    zIndex: 2,
+                  }}
+                >
+                  {toggling ? (
+                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 text-white fill-white">
+                      <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+                    </svg>
+                  )}
+                </span>
               </button>
             </div>
           )}
