@@ -334,19 +334,25 @@ export const useGetOrCreateChat = () => {
 export const usePrivateMessages = (chatId: string | null) => {
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!chatId) { setLoading(false); return; }
 
+    setLoading(true);
+    setError(null);
+
+    // Avoid composite index requirement by filtering only on chat_id
+    // and sorting client-side by created_at asc.
     const q = query(
       collection(db, 'private_messages'),
-      where('chat_id', '==', chatId),
-      orderBy('created_at', 'asc')
+      where('chat_id', '==', chatId)
     );
 
-    const unsub = onSnapshot(q, (snap) => {
-      setMessages(
-        snap.docs.map((d) => {
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const mapped: PrivateMessage[] = snap.docs.map((d) => {
           const data = d.data();
           return {
             id: d.id,
@@ -360,15 +366,25 @@ export const usePrivateMessages = (chatId: string | null) => {
             is_delivered: (data.is_delivered as boolean) || false,
             created_at: toIso(data.created_at),
           };
-        })
-      );
-      setLoading(false);
-    });
+        });
+        // Sort client-side ascending so newest is at bottom
+        mapped.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        setMessages(mapped);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[usePrivateMessages] snapshot error:', err);
+        setError(err.message || 'Failed to load messages');
+        setLoading(false);
+      }
+    );
 
     return () => unsub();
   }, [chatId]);
 
-  return { messages, loading };
+  return { messages, loading, error };
 };
 
 // ─────────────────────────────────────────────────────────

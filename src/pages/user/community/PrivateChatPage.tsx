@@ -178,7 +178,7 @@ export default function PrivateChatPage() {
   const myName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim() : 'Me';
   const myAvatar = studentDetails?.profileImageURL || undefined;
 
-  const { messages, loading } = usePrivateMessages(chatId);
+  const { messages, loading, error: messagesError } = usePrivateMessages(chatId);
   const { send, sending } = useSendPrivateMessage();
   const { markSeen } = useMarkSeen();
   const { otherIsTyping, broadcastTyping } = useTypingIndicator(chatId, myId);
@@ -374,6 +374,21 @@ export default function PrivateChatPage() {
             {[false, true, false, true, false, true].map((r, i) => (
               <MessageSkeleton key={i} isRight={r} />
             ))}
+          </div>
+        ) : messagesError ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-6">
+            <div className="w-14 h-14 bg-white/60 rounded-full flex items-center justify-center shadow-sm">
+              <RefreshCw className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-slate-600 font-semibold text-sm">Could not load messages</p>
+            <p className="text-slate-400 text-xs">Check your connection and try again</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-1 px-5 py-2 rounded-full text-sm font-semibold text-white"
+              style={{ background: '#075e54' }}
+            >
+              Retry
+            </button>
           </div>
         ) : allMessages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center">

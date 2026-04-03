@@ -107,8 +107,8 @@ export const AIChatbot = () => {
     scrollToBottom();
   }, [messages, streamingContent]);
 
-  // Hide chatbot on specific pages where it obstructs UI
-  const hiddenPaths = ["/u/premium", "/u/community"];
+  // Hide chatbot on pages where it obstructs the UI
+  const hiddenPaths = ["/u/premium", "/u/community", "/u/chat"];
   const shouldHide = hiddenPaths.some(path => location.pathname.startsWith(path));
   if (shouldHide) {
     return null;
