@@ -16,7 +16,7 @@ interface ParliamentMember {
 
 const defaultSpeaker: ParliamentMember = {
   id: "parliament-speaker",
-  name: "Name Here",
+  name: "",
   role: "Speaker of Parliament",
   image: placeholder,
   extra: "",
@@ -24,24 +24,14 @@ const defaultSpeaker: ParliamentMember = {
 
 const defaultDeputySpeaker: ParliamentMember = {
   id: "parliament-deputy-speaker",
-  name: "Name Here",
+  name: "",
   role: "Deputy Speaker",
   image: placeholder,
   extra: "",
 };
 
-const defaultMembers: ParliamentMember[] = [
-  { id: "parliament-0",  name: "Name Here", role: "Majority Leader",          image: placeholder, extra: "" },
-  { id: "parliament-1",  name: "Name Here", role: "Minority Leader",          image: placeholder, extra: "" },
-  { id: "parliament-2",  name: "Name Here", role: "Majority Whip",            image: placeholder, extra: "" },
-  { id: "parliament-3",  name: "Name Here", role: "Minority Whip",            image: placeholder, extra: "" },
-  { id: "parliament-4",  name: "Name Here", role: "Clerk of Parliament",      image: placeholder, extra: "" },
-  { id: "parliament-5",  name: "Name Here", role: "Member of Parliament",     image: placeholder, extra: "" },
-  { id: "parliament-6",  name: "Name Here", role: "Member of Parliament",     image: placeholder, extra: "" },
-  { id: "parliament-7",  name: "Name Here", role: "Member of Parliament",     image: placeholder, extra: "" },
-  { id: "parliament-8",  name: "Name Here", role: "Member of Parliament",     image: placeholder, extra: "" },
-  { id: "parliament-9",  name: "Name Here", role: "Member of Parliament",     image: placeholder, extra: "" },
-];
+// Members are loaded entirely from Supabase — no hardcoded defaults
+const defaultMembers: ParliamentMember[] = [];
 
 // ─── Speaker Card ─────────────────────────────────────────────────────────────
 const SpeakerCard = ({ member }: { member: ParliamentMember }) => (
@@ -163,42 +153,19 @@ export default function ParliamentPage() {
           }));
         }
 
-        // Check for any extra members stored beyond the defaults
-        const extraMemberKeys = Object.keys(map).filter(
-          (k) => k !== "parliament-speaker" && k !== "parliament-deputy-speaker" && !k.startsWith("parliament-") === false
-        );
+        // Build the members list purely from Supabase — exclude speaker/deputy who have their own cards
+        const reservedIds = new Set(["parliament-speaker", "parliament-deputy-speaker"]);
+        const allMembers: ParliamentMember[] = Object.entries(map)
+          .filter(([memberId]) => !reservedIds.has(memberId))
+          .map(([memberId, row]) => ({
+            id: memberId,
+            name:  row.name      || "Name Here",
+            role:  row.role      || "Member of Parliament",
+            image: row.image_url || placeholder,
+            extra: row.extra     || "",
+          }));
 
-        setMembers((prev) => {
-          const merged = prev.map((m) => {
-            const patch = map[m.id];
-            if (!patch) return m;
-            return {
-              ...m,
-              name:  patch.name      || m.name,
-              role:  patch.role      || m.role,
-              image: patch.image_url || m.image,
-              extra: patch.extra     ?? m.extra,
-            };
-          });
-
-          // Add any extra members the admin added that aren't in defaults
-          const defaultIds = new Set(prev.map((m) => m.id));
-          const addedIds = new Set(["parliament-speaker", "parliament-deputy-speaker"]);
-          const extras: ParliamentMember[] = [];
-          Object.entries(map).forEach(([memberId, row]) => {
-            if (!defaultIds.has(memberId) && !addedIds.has(memberId)) {
-              extras.push({
-                id: memberId,
-                name:  row.name      || "Name Here",
-                role:  row.role      || "Member of Parliament",
-                image: row.image_url || placeholder,
-                extra: row.extra     || "",
-              });
-            }
-          });
-
-          return [...merged, ...extras];
-        });
+        setMembers(allMembers);
       });
   }, []);
 
@@ -290,14 +257,22 @@ export default function ParliamentPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-xl font-extrabold text-gray-900">Members of Parliament</h3>
-                <p className="text-xs text-gray-400 mt-1">{members.length} members</p>
+                {members.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">{members.length} members</p>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {members.map((member, index) => (
-                <MemberCard key={member.id} member={member} index={index + 2} />
-              ))}
-            </div>
+            {members.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {members.map((member, index) => (
+                  <MemberCard key={member.id} member={member} index={index + 2} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-sm text-gray-400 py-8">
+                Parliament members will be listed here once set by the admin.
+              </p>
+            )}
           </section>
 
           {/* About + Contact */}
