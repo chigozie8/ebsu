@@ -14,6 +14,7 @@ import {
   serverTimestamp,
   Timestamp,
   getDoc,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -343,10 +344,23 @@ export const useDeleteMessage = () => {
     try {
       setDeleting(true);
       setError(null);
-      await updateDoc(doc(db, 'community_messages', messageId), {
+      const msgRef = doc(db, 'community_messages', messageId);
+      const msgSnap = await getDoc(msgRef);
+
+      await updateDoc(msgRef, {
         is_deleted: true,
         updated_at: serverTimestamp(),
       });
+
+      // Decrement the community's post_count so the list stays accurate
+      if (msgSnap.exists()) {
+        const communityId = msgSnap.data().community_id as string | undefined;
+        if (communityId) {
+          await updateDoc(doc(db, 'communities', communityId), {
+            post_count: increment(-1),
+          });
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete message');
     } finally {
