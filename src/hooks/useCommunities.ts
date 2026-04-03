@@ -215,18 +215,23 @@ export const useCommunities = () => {
       setLoading(true);
       setError(null);
 
-      const ref = collection(db, 'communities');
-      const q = query(ref, where('is_active', '==', true), orderBy('name', 'asc'));
-      const snap = await getDocs(q);
+      // Fetch all docs — filter + sort client-side to avoid composite index requirement
+      const snap = await getDocs(collection(db, 'communities'));
 
       // If collection is empty, seed default communities then re-fetch
       if (snap.empty) {
         await seedDefaultCommunities();
-        const seeded = await getDocs(q);
-        const groups = seeded.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        const seeded = await getDocs(collection(db, 'communities'));
+        const groups = seeded.docs
+          .map((d) => docToGroup(d.id, d.data() as Record<string, unknown>))
+          .filter((g) => g.is_active)
+          .sort((a, b) => a.name.localeCompare(b.name));
         setCommunities(groups);
       } else {
-        const groups = snap.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        const groups = snap.docs
+          .map((d) => docToGroup(d.id, d.data() as Record<string, unknown>))
+          .filter((g) => g.is_active)
+          .sort((a, b) => a.name.localeCompare(b.name));
         setCommunities(groups);
       }
     } catch (err) {
@@ -242,7 +247,7 @@ export const useCommunities = () => {
   return { communities, loading, error, refetch: fetch };
 };
 
-// ── Fetch a single community by slug ──────────────────────────────────────
+// ── Fetch a single community by slug ─���────────────────────────────────────
 
 export const useCommunityBySlug = (slug: string) => {
   const [community, setCommunity] = useState<CommunityGroup | null>(null);
@@ -360,19 +365,20 @@ export const useCommunityPosts = (communityId: string | null) => {
     setLoading(true);
     setError(null);
 
+    // Filter client-side to avoid composite index — only community_id indexed
     const ref = collection(db, 'community_messages');
     const q = query(
       ref,
       where('community_id', '==', communityId),
-      where('is_deleted', '==', false),
       orderBy('created_at', 'desc'),
-      limit(50)
+      limit(100)
     );
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setPosts(snap.docs.map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>)));
+        const all = snap.docs.map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>));
+        setPosts(all.filter((p) => !p.is_deleted));
         setLoading(false);
       },
       (err) => {
