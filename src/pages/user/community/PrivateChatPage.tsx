@@ -11,6 +11,7 @@ import {
 } from '../../../hooks/usePrivateChat';
 import { PrivateMessage } from '../../../hooks/usePrivateChat';
 import toast from 'react-hot-toast';
+import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
 // Cloudinary unsigned upload
 async function uploadImageToCloudinary(file: File): Promise<string> {
@@ -25,7 +26,6 @@ async function uploadImageToCloudinary(file: File): Promise<string> {
   const data = await res.json() as { secure_url: string };
   return data.secure_url;
 }
-import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
 // Helpers
 function formatTime(iso: string) {

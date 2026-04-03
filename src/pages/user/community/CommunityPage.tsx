@@ -10,9 +10,9 @@ import {
   useCommunityBySlug, useCommunityMembership,
   useCommunityPosts, usePostToCommunity,
 } from '../../../hooks/useCommunities';
-import { useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
+import { useDeleteMessage, useEditMessage, useCommunityTyping } from '../../../hooks/useCommunity';
 import { useImageUpload } from '../../../hooks/useCommunityFeatures';
-import { useGetOrCreateChat } from '../../../hooks/usePrivateChat';
+import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
 import ProfileModal from '../../../components/community/ProfileModal';
 import { StickerPicker } from '../../../components/community/StickerPicker';
@@ -58,6 +58,7 @@ const CommunityPage: React.FC = () => {
   const userName = studentDetails
     ? `${studentDetails.firstName} ${studentDetails.lastName}` : 'Student';
   const userAvatar = studentDetails?.profileImageURL ?? undefined;
+  const isAdmin  = ['admin', 'chigozie8'].includes(userId);
 
   const [newMessage,    setNewMessage]    = useState('');
   const [searchQuery,   setSearchQuery]   = useState('');
@@ -78,7 +79,23 @@ const CommunityPage: React.FC = () => {
   const { editMessage }   = useEditMessage();
   const { uploading, uploadImages } = useImageUpload();
   const { getOrCreate: getOrCreateChat } = useGetOrCreateChat();
+  const { verification: myVerification } = useUserVerification(userId);
+  const { typingUsers, broadcastTyping } = useCommunityTyping(comm?.id, userId);
 
+  // Play bubble sound when new messages arrive from others
+  const prevPostCountRef = useRef(0);
+  useEffect(() => {
+    const prevCount = prevPostCountRef.current;
+    prevPostCountRef.current = posts.length;
+    if (prevCount > 0 && posts.length > prevCount) {
+      const newest = posts[posts.length - 1];
+      if (newest && newest.user_id !== userId) {
+        playSound('message');
+      }
+    }
+  }, [posts.length, posts, userId]);
+
+  // Scroll to bottom when new posts arrive
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -124,7 +141,7 @@ const CommunityPage: React.FC = () => {
         message: text || ' ',
         imageUrls,
       });
-      playSound('send');
+      playSound('notify');
     } catch {
       toast.error('Failed to post. Please try again.');
     }
@@ -254,10 +271,28 @@ const CommunityPage: React.FC = () => {
 
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-[15px] leading-tight truncate">{comm.name}</p>
-            <p className="text-white/70 text-[11px] truncate">
-              <Users className="w-3 h-3 inline mr-0.5" />
-              {comm.member_count.toLocaleString()} members
-            </p>
+            {typingUsers.length > 0 ? (
+              <div className="flex items-center gap-1">
+                {typingUsers.slice(0, 2).map((u) => (
+                  u.avatar
+                    ? <img key={u.userId} src={u.avatar} alt={u.name} className="w-3.5 h-3.5 rounded-full object-cover border border-white/40" />
+                    : <span key={u.userId} className="w-3.5 h-3.5 rounded-full bg-white/30 text-[7px] flex items-center justify-center text-white font-bold">{u.name[0]}</span>
+                ))}
+                <p className="text-[#a8edbc] text-[11px] truncate">
+                  {typingUsers[0].name.split(' ')[0]}{typingUsers.length > 1 ? ` +${typingUsers.length - 1}` : ''} typing
+                  <span className="inline-flex gap-0.5 ml-1">
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <p className="text-white/70 text-[11px] truncate">
+                <Users className="w-3 h-3 inline mr-0.5" />
+                {comm.member_count.toLocaleString()} members &bull; {posts.length.toLocaleString()} posts
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -383,15 +418,22 @@ const CommunityPage: React.FC = () => {
                 </div>
                 {messages.map((msg, idx) => {
                   const prev = messages[idx - 1];
-                  const isGrouped = !!prev &&
+                  const next = messages[idx + 1];
+                  const isGrouped     = !!prev &&
                     prev.user_id === msg.user_id &&
                     new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
+                  const nextGrouped   = !!next &&
+                    next.user_id === msg.user_id &&
+                    new Date(next.created_at).getTime() - new Date(msg.created_at).getTime() < 5 * 60_000;
                   return (
                     <MessageCard
                       key={msg.id}
                       message={msg}
                       isOwn={msg.user_id === userId}
+                      viewerUserId={userId}
+                      isAdmin={isAdmin}
                       prevSameUser={isGrouped}
+                      nextSameUser={nextGrouped}
                       onThreadClick={() => navigate(`/u/community/${slug}/post/${msg.id}`)}
                       onDelete={() => deleteMessage(msg.id)}
                       onEdit={(id, text) => editMessage(id, text)}
@@ -405,6 +447,29 @@ const CommunityPage: React.FC = () => {
 
             <div className="h-2" />
           </div>
+
+          {/* Typing indicator strip */}
+          {typingUsers.length > 0 && (
+            <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1" style={{ background: '#f0f2f5' }}>
+              <div className="flex -space-x-1.5">
+                {typingUsers.slice(0, 3).map((u) => (
+                  u.avatar
+                    ? <img key={u.userId} src={u.avatar} alt={u.name} crossOrigin="anonymous" className="w-5 h-5 rounded-full object-cover border-2 border-[#f0f2f5]" />
+                    : <span key={u.userId} className="w-5 h-5 rounded-full bg-gray-400 text-[8px] flex items-center justify-center text-white font-bold border-2 border-[#f0f2f5]">{u.name[0]}</span>
+                ))}
+              </div>
+              <span className="text-[11px] text-gray-500">
+                {typingUsers.length === 1
+                  ? `${typingUsers[0].name.split(' ')[0]} is typing`
+                  : `${typingUsers[0].name.split(' ')[0]} and ${typingUsers.length - 1} other${typingUsers.length > 2 ? 's' : ''} are typing`}
+              </span>
+              <span className="inline-flex gap-0.5">
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
+            </div>
+          )}
 
           {/* COMPOSER — always at bottom, send inside the pill */}
           <div
@@ -478,7 +543,7 @@ const CommunityPage: React.FC = () => {
                   <textarea
                     ref={textareaRef}
                     value={newMessage}
-                    onChange={(e) => { setNewMessage(e.target.value); autoResize(); }}
+                    onChange={(e) => { setNewMessage(e.target.value); autoResize(); broadcastTyping(userName, userAvatar); }}
                     onKeyDown={onKeyDown}
                     placeholder="Share something..."
                     className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end text-[#111b21] placeholder:text-gray-400"

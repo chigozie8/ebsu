@@ -9,6 +9,8 @@ import {
   addDoc,
   deleteDoc,
   onSnapshot,
+  updateDoc,
+  increment,
   serverTimestamp,
   Timestamp,
   limit,
@@ -208,42 +210,50 @@ export const useCommunities = () => {
   const [communities, setCommunities] = useState<CommunityGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seeded, setSeeded] = useState(false);
 
-  const fetch = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Keep a manual refetch trigger
+  const [tick, setTick] = useState(0);
+  const refetch = useCallback(() => setTick((t) => t + 1), []);
 
-      // Fetch all docs — filter + sort client-side to avoid composite index requirement
-      const snap = await getDocs(collection(db, 'communities'));
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
 
-      // If collection is empty, seed default communities then re-fetch
-      if (snap.empty) {
-        await seedDefaultCommunities();
-        const seeded = await getDocs(collection(db, 'communities'));
-        const groups = seeded.docs
-          .map((d) => docToGroup(d.id, d.data() as Record<string, unknown>))
-          .filter((g) => g.is_active)
-          .sort((a, b) => a.name.localeCompare(b.name));
-        setCommunities(groups);
-      } else {
+    // Live subscription — updates whenever any community doc changes
+    const unsub = onSnapshot(
+      collection(db, 'communities'),
+      async (snap) => {
+        if (snap.empty && !seeded) {
+          // Seed once then the snapshot will fire again automatically
+          setSeeded(true);
+          try {
+            await seedDefaultCommunities();
+          } catch (seedErr) {
+            console.error('[useCommunities] seed error:', seedErr);
+          }
+          return;
+        }
+
         const groups = snap.docs
           .map((d) => docToGroup(d.id, d.data() as Record<string, unknown>))
           .filter((g) => g.is_active)
           .sort((a, b) => a.name.localeCompare(b.name));
         setCommunities(groups);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunities] snapshot error:', err);
+        setError(err.message || 'Failed to load communities');
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('[useCommunities] fetch error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load communities');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    );
 
-  useEffect(() => { fetch(); }, [fetch]);
+    return () => unsub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
-  return { communities, loading, error, refetch: fetch };
+  return { communities, loading, error, refetch };
 };
 
 // ── Fetch a single community by slug ─���────────────────────────────────────
@@ -319,6 +329,7 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
     if (!communityId || !userId || userId === 'anonymous') return;
     setToggling(true);
     try {
+      const commRef = doc(db, 'communities', communityId);
       if (isMember) {
         const ref = collection(db, 'community_memberships');
         const q = query(
@@ -329,6 +340,8 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
         );
         const snap = await getDocs(q);
         for (const d of snap.docs) await deleteDoc(d.ref);
+        // Decrement live member_count
+        await updateDoc(commRef, { member_count: increment(-1) });
         setIsMember(false);
       } else {
         await addDoc(collection(db, 'community_memberships'), {
@@ -336,6 +349,8 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
           user_id: userId,
           joined_at: serverTimestamp(),
         });
+        // Increment live member_count
+        await updateDoc(commRef, { member_count: increment(1) });
         setIsMember(true);
       }
     } catch (err) {
@@ -425,6 +440,8 @@ export const usePostToCommunity = () => {
         payload.image_urls = params.imageUrls;
       }
       await addDoc(collection(db, 'community_messages'), payload);
+      // Increment live post_count on the community doc
+      await updateDoc(doc(db, 'communities', params.communityId), { post_count: increment(1) });
     } finally {
       setPosting(false);
     }

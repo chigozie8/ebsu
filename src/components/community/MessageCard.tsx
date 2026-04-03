@@ -15,6 +15,7 @@ import { playSound } from '../../hooks/useSound';
 interface MessageCardProps {
   message: Community;
   isOwn: boolean;
+  viewerUserId?: string;
   onDelete: (messageId: string) => void;
   onEdit: (messageId: string, newMessage: string) => void;
   onThreadClick?: (messageId: string) => void;
@@ -99,6 +100,7 @@ const SafeImage: React.FC<{
 const MessageCard: React.FC<MessageCardProps> = ({
   message,
   isOwn,
+  viewerUserId,
   onDelete,
   onEdit,
   onThreadClick,
@@ -135,13 +137,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     loadReactions();
   }, [message.id]);
 
-  // Play sound on incoming new messages
-  useEffect(() => {
-    if (!isOwn) {
-      const age = Date.now() - new Date(message.created_at).getTime();
-      if (age < 5000) playSound('message');
-    }
-  }, [message.id, isOwn, message.created_at]);
+  // Sound is fired centrally from the feed via prevPostCountRef — no per-card sound needed.
 
   // Close menus on outside click
   useEffect(() => {
@@ -194,9 +190,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     .filter(([, users]) => users.length > 0)
     .map(([emoji, users]) => ({ emoji, count: users.length }));
 
-  // We need the current user id for reactions — passed implicitly via onForward/onReply context
-  // Use a placeholder; real user id will come from message isOwn logic
-  const currentUserId = isOwn ? message.user_id : '';
+  // Use the explicitly passed viewerUserId for reactions; fall back to sender if own message
+  const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
 
   return (
     <div className={`flex gap-2 px-3 ${mtClass} ${isOwn ? 'flex-row-reverse' : ''} group`}>
