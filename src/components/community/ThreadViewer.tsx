@@ -503,9 +503,9 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
             </div>
           )}
 
-          {/* Input capsule */}
+          {/* Input capsule — send button lives inside */}
           <div
-            className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm"
+            className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[44px] shadow-sm"
             style={{ background: '#fff' }}
           >
             <button className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5">
@@ -516,7 +516,7 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
               value={replyText}
               onChange={(e) => { setReplyText(e.target.value); autoResize(); emitTyping(); }}
               onKeyDown={onKeyDown}
-              placeholder="Message"
+              placeholder="Reply..."
               className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end"
               style={{
                 color: '#111b21',
@@ -526,24 +526,20 @@ const ThreadViewer: React.FC<ThreadViewerProps> = ({
               }}
               rows={1}
             />
+            {/* Send inside pill */}
+            <button
+              onClick={sendReply}
+              disabled={!canSend}
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 self-end mb-0.5 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed"
+              style={{ background: canSend ? '#25D366' : '#aebbc1' }}
+              aria-label="Send reply"
+            >
+              {posting
+                ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                : <Send className="w-4 h-4 text-white" style={{ marginLeft: '1px' }} />
+              }
+            </button>
           </div>
-
-          {/* Send */}
-          <button
-            onClick={sendReply}
-            disabled={!canSend}
-            className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 self-end transition-all duration-200 active:scale-95 disabled:cursor-not-allowed"
-            style={{
-              background: canSend ? '#25D366' : '#aebbc1',
-              boxShadow: canSend ? '0 2px 10px rgba(37,211,102,0.45)' : 'none',
-            }}
-            aria-label="Send reply"
-          >
-            {posting
-              ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-              : <Send className="w-5 h-5 text-white" style={{ marginLeft: '1px' }} />
-            }
-          </button>
         </div>
       </div>
     </div>

@@ -3,16 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Send, Search, Smile, X, Loader2, Paperclip, Users,
-  MessageSquare, RefreshCw, Lock,
+  RefreshCw, Lock,
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   useCommunityBySlug, useCommunityMembership,
   useCommunityPosts, usePostToCommunity,
 } from '../../../hooks/useCommunities';
-import { useDeleteMessage, useEditMessage } from '../../../hooks/useCommunity';
+import { useDeleteMessage, useEditMessage, useCommunityTyping } from '../../../hooks/useCommunity';
 import { useImageUpload } from '../../../hooks/useCommunityFeatures';
-import { useGetOrCreateChat } from '../../../hooks/usePrivateChat';
+import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
 import ProfileModal from '../../../components/community/ProfileModal';
 import { StickerPicker } from '../../../components/community/StickerPicker';
@@ -58,6 +58,7 @@ const CommunityPage: React.FC = () => {
   const userName = studentDetails
     ? `${studentDetails.firstName} ${studentDetails.lastName}` : 'Student';
   const userAvatar = studentDetails?.profileImageURL ?? undefined;
+  const isAdmin  = ['admin', 'chigozie8'].includes(userId);
 
   const [newMessage,    setNewMessage]    = useState('');
   const [searchQuery,   setSearchQuery]   = useState('');
@@ -77,8 +78,24 @@ const CommunityPage: React.FC = () => {
   const { deleteMessage } = useDeleteMessage();
   const { editMessage }   = useEditMessage();
   const { uploading, uploadImages } = useImageUpload();
-  const { getOrCreateChat } = useGetOrCreateChat();
+  const { getOrCreate: getOrCreateChat } = useGetOrCreateChat();
+  const { verification: myVerification } = useUserVerification(userId);
+  const { typingUsers, broadcastTyping } = useCommunityTyping(comm?.id, userId);
 
+  // Play bubble sound when new messages arrive from others
+  const prevPostCountRef = useRef(0);
+  useEffect(() => {
+    const prevCount = prevPostCountRef.current;
+    prevPostCountRef.current = posts.length;
+    if (prevCount > 0 && posts.length > prevCount) {
+      const newest = posts[posts.length - 1];
+      if (newest && newest.user_id !== userId) {
+        playSound('message');
+      }
+    }
+  }, [posts.length, posts, userId]);
+
+  // Scroll to bottom when new posts arrive
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -124,7 +141,7 @@ const CommunityPage: React.FC = () => {
         message: text || ' ',
         imageUrls,
       });
-      playSound('send');
+      playSound('notify');
     } catch {
       toast.error('Failed to post. Please try again.');
     }
@@ -137,13 +154,23 @@ const CommunityPage: React.FC = () => {
     }
   };
 
-  const handleMessageUser = async (targetId: string, targetName: string) => {
+  const handleMessageUser = async (targetId: string, targetName: string, targetAvatar?: string) => {
     setProfileTarget(null);
     try {
-      const chat = await getOrCreateChat(userId, targetId, userName, targetName, userAvatar);
-      if (chat?.id) navigate(`/u/chat/${chat.id}`);
-    } catch {
-      toast.error('Could not open chat');
+      // Correct arg order: myId, myName, myAvatar, otherId, otherName, otherAvatar
+      const chatId = await getOrCreateChat(userId, userName, userAvatar, targetId, targetName, targetAvatar);
+      if (chatId) {
+        const params = new URLSearchParams({
+          chatId,
+          otherId: targetId,
+          otherName: targetName,
+          ...(targetAvatar ? { otherAvatar: targetAvatar } : {}),
+        });
+        navigate(`/u/chat?${params.toString()}`);
+      }
+    } catch (err) {
+      console.error('[v0] handleMessageUser error:', err);
+      toast.error('Could not open chat. Please try again.');
     }
   };
 
@@ -201,7 +228,7 @@ const CommunityPage: React.FC = () => {
         isOpen={showStickers}
         onClose={() => setShowStickers(false)}
         onSelectSticker={(s) => {
-          setNewMessage((p) => p + ` ${s.image_url} `);
+          setNewMessage((p) => p + s.image_url);
           setShowStickers(false);
         }}
       />
@@ -212,7 +239,8 @@ const CommunityPage: React.FC = () => {
           targetUserName={profileTarget.userName}
           targetUserAvatar={profileTarget.userAvatar}
           viewerUserId={userId}
-          onMessage={handleMessageUser}
+          onMessage={() => handleMessageUser(profileTarget.userId, profileTarget.userName, profileTarget.userAvatar)}
+          onMessageClick={(uid, uname) => handleMessageUser(uid, uname, profileTarget.userAvatar)}
           onClose={() => setProfileTarget(null)}
         />
       )}
@@ -243,10 +271,28 @@ const CommunityPage: React.FC = () => {
 
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-[15px] leading-tight truncate">{comm.name}</p>
-            <p className="text-white/70 text-[11px] truncate">
-              <Users className="w-3 h-3 inline mr-0.5" />
-              {comm.member_count.toLocaleString()} members
-            </p>
+            {typingUsers.length > 0 ? (
+              <div className="flex items-center gap-1">
+                {typingUsers.slice(0, 2).map((u) => (
+                  u.avatar
+                    ? <img key={u.userId} src={u.avatar} alt={u.name} className="w-3.5 h-3.5 rounded-full object-cover border border-white/40" />
+                    : <span key={u.userId} className="w-3.5 h-3.5 rounded-full bg-white/30 text-[7px] flex items-center justify-center text-white font-bold">{u.name[0]}</span>
+                ))}
+                <p className="text-[#a8edbc] text-[11px] truncate">
+                  {typingUsers[0].name.split(' ')[0]}{typingUsers.length > 1 ? ` +${typingUsers.length - 1}` : ''} typing
+                  <span className="inline-flex gap-0.5 ml-1">
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1 h-1 bg-[#a8edbc] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <p className="text-white/70 text-[11px] truncate">
+                <Users className="w-3 h-3 inline mr-0.5" />
+                {comm.member_count.toLocaleString()} members &bull; {posts.length.toLocaleString()} posts
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -297,127 +343,8 @@ const CommunityPage: React.FC = () => {
           </div>
         )}
 
-        {/* BODY */}
+        {/* BODY — feed above, composer pinned to bottom */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-
-          {/* COMPOSER */}
-          <div className="flex-shrink-0 bg-[#f0f2f5]">
-            {imageUrls.length > 0 && (
-              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide">
-                {imageUrls.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 shadow-sm group"
-                    style={{ borderColor: `${communityColor}30` }}
-                  >
-                    <img
-                      src={url}
-                      alt=""
-                      crossOrigin="anonymous"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) parent.style.display = 'none';
-                      }}
-                    />
-                    <button
-                      onClick={() => removeImageUrl(i)}
-                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Remove image"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-end gap-2 px-2 py-2">
-              {userAvatar ? (
-                <img
-                  src={userAvatar}
-                  alt={userName}
-                  crossOrigin="anonymous"
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              ) : (
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold self-end mb-0.5"
-                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
-                >
-                  {initials}
-                </div>
-              )}
-
-              <div className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[42px] shadow-sm bg-white">
-                <button
-                  onClick={() => setShowStickers(true)}
-                  className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5"
-                  aria-label="Stickers"
-                >
-                  <Smile className="w-5 h-5 text-[#8696a0]" />
-                </button>
-
-                {isMember ? (
-                  <textarea
-                    ref={textareaRef}
-                    value={newMessage}
-                    onChange={(e) => { setNewMessage(e.target.value); autoResize(); }}
-                    onKeyDown={onKeyDown}
-                    placeholder="Share something with the community..."
-                    className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end text-[#111b21] placeholder:text-gray-400"
-                    style={{ minHeight: '24px', maxHeight: '140px', overflowY: 'auto' }}
-                    rows={1}
-                  />
-                ) : (
-                  <div className="flex-1 flex items-center gap-1.5 py-1 self-end">
-                    <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-400 select-none">Join this community to post</span>
-                  </div>
-                )}
-
-                <div className="flex items-center flex-shrink-0 self-end mb-0.5">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading || imageUrls.length >= 4 || !isMember}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading || imageUrls.length >= 4 || !isMember}
-                    className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors disabled:opacity-40"
-                    aria-label="Attach image"
-                  >
-                    {uploading
-                      ? <Loader2 className="w-5 h-5 text-[#8696a0] animate-spin" />
-                      : <Paperclip className="w-5 h-5 text-[#8696a0]" />
-                    }
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={handlePost}
-                disabled={!canPost}
-                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 self-end transition-all duration-200 active:scale-95 disabled:cursor-not-allowed"
-                style={{
-                  background: canPost ? communityColor : '#aebbc1',
-                  boxShadow: canPost ? `0 2px 10px ${communityColor}66` : 'none',
-                }}
-                aria-label="Post"
-              >
-                {posting
-                  ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  : <Send className="w-5 h-5 text-white" style={{ marginLeft: 2 }} />
-                }
-              </button>
-            </div>
-          </div>
 
           {/* FEED */}
           <div
@@ -467,7 +394,7 @@ const CommunityPage: React.FC = () => {
                   {searchQuery ? 'No posts match your search' : `No posts yet in ${comm.name}`}
                 </p>
                 {!searchQuery && isMember && (
-                  <p className="text-sm text-gray-500">Be the first to post something above!</p>
+                  <p className="text-sm text-gray-500">Be the first to post below!</p>
                 )}
                 {!searchQuery && !isMember && (
                   <button
@@ -491,15 +418,22 @@ const CommunityPage: React.FC = () => {
                 </div>
                 {messages.map((msg, idx) => {
                   const prev = messages[idx - 1];
-                  const isGrouped = !!prev &&
+                  const next = messages[idx + 1];
+                  const isGrouped     = !!prev &&
                     prev.user_id === msg.user_id &&
                     new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60_000;
+                  const nextGrouped   = !!next &&
+                    next.user_id === msg.user_id &&
+                    new Date(next.created_at).getTime() - new Date(msg.created_at).getTime() < 5 * 60_000;
                   return (
                     <MessageCard
                       key={msg.id}
                       message={msg}
                       isOwn={msg.user_id === userId}
+                      viewerUserId={userId}
+                      isAdmin={isAdmin}
                       prevSameUser={isGrouped}
+                      nextSameUser={nextGrouped}
                       onThreadClick={() => navigate(`/u/community/${slug}/post/${msg.id}`)}
                       onDelete={() => deleteMessage(msg.id)}
                       onEdit={(id, text) => editMessage(id, text)}
@@ -511,69 +445,164 @@ const CommunityPage: React.FC = () => {
               </div>
             ))}
 
-            <div className="h-4" />
+            <div className="h-2" />
           </div>
 
-          {/* Guest join CTA */}
-          {!isMember && !loadingPosts && (
-            <div
-              className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-t"
-              style={{ background: '#fff', borderColor: '#e9edef' }}
-            >
-              {/* Left: icon + text */}
-              <div className="flex items-center gap-2 min-w-0">
-                <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <p className="text-sm text-gray-500 leading-snug">
-                  Join to post and reply in this community
-                </p>
+          {/* Typing indicator strip */}
+          {typingUsers.length > 0 && (
+            <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1" style={{ background: '#f0f2f5' }}>
+              <div className="flex -space-x-1.5">
+                {typingUsers.slice(0, 3).map((u) => (
+                  u.avatar
+                    ? <img key={u.userId} src={u.avatar} alt={u.name} crossOrigin="anonymous" className="w-5 h-5 rounded-full object-cover border-2 border-[#f0f2f5]" />
+                    : <span key={u.userId} className="w-5 h-5 rounded-full bg-gray-400 text-[8px] flex items-center justify-center text-white font-bold border-2 border-[#f0f2f5]">{u.name[0]}</span>
+                ))}
               </div>
-
-              {/* Right: layered bubble button — green behind, blue in front */}
-              <button
-                onClick={toggle}
-                disabled={toggling}
-                aria-label="Join community"
-                className="flex-shrink-0 relative transition-all active:scale-95 disabled:opacity-60"
-                style={{ width: 64, height: 48 }}
-              >
-                {/* Green chat bubble — background layer */}
-                <span
-                  className="absolute flex items-center justify-center rounded-full"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    background: communityColor || '#075E54',
-                    top: 2,
-                    right: 0,
-                    zIndex: 1,
-                  }}
-                >
-                  <MessageSquare className="w-5 h-5 text-white" />
-                </span>
-
-                {/* Blue join button — foreground layer */}
-                <span
-                  className="absolute flex items-center justify-center rounded-full shadow-md"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    background: '#2563EB',
-                    bottom: 0,
-                    left: 0,
-                    zIndex: 2,
-                  }}
-                >
-                  {toggling ? (
-                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <svg viewBox="0 0 24 24" className="w-5 h-5 text-white fill-white">
-                      <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
-                    </svg>
-                  )}
-                </span>
-              </button>
+              <span className="text-[11px] text-gray-500">
+                {typingUsers.length === 1
+                  ? `${typingUsers[0].name.split(' ')[0]} is typing`
+                  : `${typingUsers[0].name.split(' ')[0]} and ${typingUsers.length - 1} other${typingUsers.length > 2 ? 's' : ''} are typing`}
+              </span>
+              <span className="inline-flex gap-0.5">
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </span>
             </div>
           )}
+
+          {/* COMPOSER — always at bottom, send inside the pill */}
+          <div
+            className="flex-shrink-0"
+            style={{
+              background: '#f0f2f5',
+              paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
+            }}
+          >
+            {/* Image preview strip */}
+            {imageUrls.length > 0 && (
+              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-hide">
+                {imageUrls.map((url, i) => (
+                  <div
+                    key={i}
+                    className="relative w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden border-2 shadow-sm group"
+                    style={{ borderColor: `${communityColor}30` }}
+                  >
+                    <img
+                      src={url}
+                      alt=""
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) parent.style.display = 'none';
+                      }}
+                    />
+                    <button
+                      onClick={() => removeImageUrl(i)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
+                      aria-label="Remove image"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-end gap-2 px-2 pt-1.5 pb-2">
+              {/* User avatar */}
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  crossOrigin="anonymous"
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 self-end mb-0.5"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold self-end mb-0.5"
+                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+                >
+                  {initials}
+                </div>
+              )}
+
+              {/* Pill capsule — emoji + text + paperclip + send all inside */}
+              <div className="flex-1 flex items-end gap-1 rounded-3xl px-2 py-1.5 min-h-[44px] shadow-sm bg-white">
+                <button
+                  onClick={() => setShowStickers(true)}
+                  className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors flex-shrink-0 self-end mb-0.5"
+                  aria-label="Emojis"
+                >
+                  <Smile className="w-5 h-5 text-[#8696a0]" />
+                </button>
+
+                {isMember ? (
+                  <textarea
+                    ref={textareaRef}
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      autoResize();
+                      if (e.target.value.trim()) broadcastTyping(userName, userAvatar);
+                    }}
+                    onKeyDown={onKeyDown}
+                    placeholder="Share something..."
+                    className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end text-[#111b21] placeholder:text-gray-400"
+                    style={{ minHeight: '24px', maxHeight: '120px', overflowY: 'auto' }}
+                    rows={1}
+                  />
+                ) : (
+                  <div className="flex-1 flex items-center gap-1.5 py-1 self-end">
+                    <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-400 select-none">Join to post</span>
+                  </div>
+                )}
+
+                {/* Paperclip */}
+                <div className="flex items-center flex-shrink-0 self-end mb-0.5">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading || imageUrls.length >= 4 || !isMember}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || imageUrls.length >= 4 || !isMember}
+                    className="p-1.5 rounded-full hover:bg-[#f0f2f5] transition-colors disabled:opacity-40"
+                    aria-label="Attach image"
+                  >
+                    {uploading
+                      ? <Loader2 className="w-5 h-5 text-[#8696a0] animate-spin" />
+                      : <Paperclip className="w-5 h-5 text-[#8696a0]" />
+                    }
+                  </button>
+                </div>
+
+                {/* Send button — inside the pill */}
+                <button
+                  onClick={handlePost}
+                  disabled={!canPost}
+                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 self-end mb-0.5 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed"
+                  style={{
+                    background: canPost ? communityColor : '#aebbc1',
+                  }}
+                  aria-label="Post"
+                >
+                  {posting
+                    ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    : <Send className="w-4 h-4 text-white" style={{ marginLeft: 1 }} />
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </React.Fragment>

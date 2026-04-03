@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   collection,
   query,
@@ -232,7 +232,7 @@ export const usePostMessage = () => {
   return { postMessage, posting, error };
 };
 
-// ── Post Reply ─────────────────────────────────────────────────────────────
+// ── Post Reply ─────────────���───────────────────────────────────────────────
 
 export const usePostReply = () => {
   const [posting, setPosting] = useState(false);
@@ -507,6 +507,58 @@ export const useAddReaction = () => {
   }, []);
 
   return { addReaction, adding, error };
+};
+
+// ── Community Typing Indicator ─────────────────────────────────────────────
+// Stores { users: { [userId]: { name, avatar, ts } } } in typing_indicators/{communityId}
+
+export interface TypingUser {
+  userId: string;
+  name: string;
+  avatar?: string;
+}
+
+export const useCommunityTyping = (communityId: string | undefined, myId: string) => {
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!communityId) return;
+
+    const typingDocRef = doc(db, 'typing_indicators', `community_${communityId}`);
+    const unsub = onSnapshot(typingDocRef, (snap) => {
+      if (!snap.exists()) { setTypingUsers([]); return; }
+      const data = snap.data();
+      const users = (data.users as Record<string, { name: string; avatar?: string; ts: number }>) || {};
+      const now = Date.now();
+      const active = Object.entries(users)
+        .filter(([uid, info]) => uid !== myId && now - info.ts < 5000)
+        .map(([uid, info]) => ({ userId: uid, name: info.name, avatar: info.avatar }));
+      setTypingUsers(active);
+    });
+
+    return () => {
+      unsub();
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [communityId, myId]);
+
+  const broadcastTyping = useCallback(async (name: string, avatar?: string) => {
+    if (!communityId) return;
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      const typingDocRef = doc(db, 'typing_indicators', `community_${communityId}`);
+      await setDoc(
+        typingDocRef,
+        { users: { [myId]: { name, avatar: avatar || null, ts: Date.now() } } },
+        { merge: true }
+      );
+    } catch {
+      // Non-critical
+    }
+  }, [communityId, myId]);
+
+  return { typingUsers, broadcastTyping };
 };
 
 // ── Pin Message ────────────────────────────────────────────────────────────
