@@ -75,10 +75,12 @@ export default function AdminNewsletterTab() {
           serviceId,
           templateId,
           {
-            to_name: `${sub.firstName} ${sub.lastName}`,
-            to_email: sub.email,
-            subject: subject.trim(),
-            message: message.trim(),
+            to_name:    `${sub.firstName} ${sub.lastName}`,
+            to_email:   sub.email,   // template "To Email" field must be {{to_email}}
+            user_email: sub.email,   // alias in case template uses {{user_email}}
+            reply_to:   sub.email,
+            subject:    subject.trim(),
+            message:    message.trim(),
           },
           publicKey
         );
@@ -149,6 +151,30 @@ export default function AdminNewsletterTab() {
           </div>
         </div>
       )}
+
+      {/* EmailJS template setup guide */}
+      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 flex gap-3 items-start">
+        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-blue-900">Important: EmailJS Template Setup</p>
+          <p className="text-xs text-blue-700 mt-1 leading-5">
+            For emails to go to each subscriber individually, your EmailJS template <strong>must</strong> have its <strong>To Email</strong> field set to{" "}
+            <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs font-bold">{`{{to_email}}`}</code> — not a hardcoded address.
+          </p>
+          <p className="text-xs text-blue-700 mt-2 leading-5">
+            Steps: <a href="https://dashboard.emailjs.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">EmailJS Dashboard</a>
+            {" → "}<strong>Email Templates</strong>{" → select your template → "}<strong>To Email</strong> field → type{" "}
+            <code className="bg-blue-100 px-1 py-0.5 rounded font-mono text-xs font-bold">{`{{to_email}}`}</code>{" → Save."}
+          </p>
+          <p className="text-xs text-blue-600 mt-1.5">
+            Available template variables: <code className="font-mono text-xs">{`{{to_name}}`}</code>, <code className="font-mono text-xs">{`{{to_email}}`}</code>, <code className="font-mono text-xs">{`{{subject}}`}</code>, <code className="font-mono text-xs">{`{{message}}`}</code>
+          </p>
+        </div>
+      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
