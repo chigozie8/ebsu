@@ -64,6 +64,35 @@ const playTone = (
   osc.stop(startTime + duration + 0.05);
 };
 
+// Play a soft, pleasant pluck/bell tone with subtle reverb using convolver
+const playSoftPop = (ctx: AudioContext, freq: number, startTime: number, gain: number) => {
+  const osc = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  
+  // Soft bell-like tone
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq, startTime);
+  
+  // Low-pass filter for softer sound
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(2000, startTime);
+  filter.Q.setValueAtTime(0.5, startTime);
+  
+  // Envelope for pleasant attack and decay
+  gainNode.gain.setValueAtTime(0, startTime);
+  gainNode.gain.linearRampToValueAtTime(gain, startTime + 0.008); // Quick attack
+  gainNode.gain.exponentialRampToValueAtTime(gain * 0.6, startTime + 0.08); // Slight decay
+  gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5); // Gentle release
+  
+  osc.connect(filter);
+  filter.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  
+  osc.start(startTime);
+  osc.stop(startTime + 0.6);
+};
+
 export const playSound = (type: SoundType = "notify") => {
   const ctx = getContext();
   if (!ctx) return;
@@ -71,20 +100,21 @@ export const playSound = (type: SoundType = "notify") => {
   const doPlay = () => {
     const now = ctx.currentTime;
     if (type === "message") {
-      // WhatsApp-style soft double pop
-      playTone(ctx, 1046, now,        0.12, 0.45, "sine");
-      playTone(ctx, 1318, now + 0.13, 0.14, 0.40, "sine");
-      if ("vibrate" in navigator) navigator.vibrate([80, 60, 80]);
+      // Modern WhatsApp-style soft "pop" - single pleasant digital pluck
+      // Using a D6 note (1175Hz) with soft overtone for richness
+      playSoftPop(ctx, 1175, now, 0.25);
+      playSoftPop(ctx, 1760, now + 0.002, 0.08); // Subtle harmonic
+      if ("vibrate" in navigator) navigator.vibrate(50);
     } else if (type === "notify") {
-      // Three-note ascending chime
-      playTone(ctx, 880,  now,        0.18, 0.50, "sine");
-      playTone(ctx, 1100, now + 0.14, 0.18, 0.45, "sine");
-      playTone(ctx, 1320, now + 0.28, 0.28, 0.40, "sine");
-      if ("vibrate" in navigator) navigator.vibrate(200);
+      // Clean, minimal notification ding - friendly and non-intrusive
+      // Two-note "ding" like modern messaging apps
+      playSoftPop(ctx, 988, now, 0.22); // B5
+      playSoftPop(ctx, 1318, now + 0.12, 0.18); // E6 - pleasant major third up
+      if ("vibrate" in navigator) navigator.vibrate(80);
     } else if (type === "ai-done") {
-      // Soft two-note completion chime
-      playTone(ctx, 1174, now,        0.20, 0.38, "sine");
-      playTone(ctx, 1568, now + 0.18, 0.30, 0.32, "sine");
+      // Soft completion chime - satisfying two-note resolution
+      playSoftPop(ctx, 1047, now, 0.2); // C6
+      playSoftPop(ctx, 1397, now + 0.15, 0.16); // F6
     }
   };
 

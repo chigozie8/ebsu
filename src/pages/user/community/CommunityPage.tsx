@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Send, Search, Smile, X, Loader2, Paperclip, Users,
-  RefreshCw, Lock,
+  RefreshCw, Lock, Shield, CheckCircle2,
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
@@ -66,6 +66,7 @@ const CommunityPage: React.FC = () => {
   const [showStickers,  setShowStickers]  = useState(false);
   const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
   const [imageUrls,     setImageUrls]     = useState<string[]>([]);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
@@ -245,6 +246,118 @@ const CommunityPage: React.FC = () => {
         />
       )}
 
+      {/* Join Community Terms & Conditions Modal */}
+      {showJoinModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowJoinModal(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div
+              className="px-5 py-4 flex items-center gap-3"
+              style={{ background: communityColor }}
+            >
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-white font-bold text-base">Community Guidelines</h3>
+                <p className="text-white/80 text-xs">Please read before joining</p>
+              </div>
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-5 py-4 max-h-[50vh] overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-4">
+                By joining <span className="font-semibold text-gray-900">{comm.name}</span>, you agree to follow these community guidelines:
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: communityColor }} />
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">Be Respectful</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Treat all members with kindness and respect. No harassment, bullying, or hate speech.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: communityColor }} />
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">No Spam or Self-Promotion</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Avoid excessive self-promotion, spam, or irrelevant content.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: communityColor }} />
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">Keep it Appropriate</p>
+                    <p className="text-xs text-gray-500 mt-0.5">No explicit, violent, or illegal content. Keep discussions safe for all students.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: communityColor }} />
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">Stay On Topic</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Keep discussions relevant to the community theme and purpose.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: communityColor }} />
+                  <div>
+                    <p className="font-medium text-sm text-gray-900">Report Violations</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Help keep the community safe by reporting any violations to admins.</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400 mt-4 text-center">
+                Violating these guidelines may result in removal from the community.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowJoinModal(false);
+                  await toggle();
+                  toast.success(`Welcome to ${comm.name}!`);
+                }}
+                disabled={toggling}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{ background: communityColor }}
+              >
+                {toggling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    I Agree & Join
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         className="flex flex-col overflow-hidden"
         style={{ height: '100dvh', background: '#f0f2f5' }}
@@ -297,7 +410,13 @@ const CommunityPage: React.FC = () => {
 
           <div className="flex items-center gap-1">
             <button
-              onClick={toggle}
+              onClick={() => {
+                if (isMember) {
+                  toggle(); // Leave directly
+                } else {
+                  setShowJoinModal(true); // Show T&C modal first
+                }
+              }}
               disabled={toggling}
               className="px-3 py-1 rounded-full text-xs font-semibold transition-all active:scale-95 disabled:opacity-60"
               style={
@@ -391,14 +510,12 @@ const CommunityPage: React.FC = () => {
                   {comm.icon}
                 </div>
                 <p className="font-semibold text-[#111b21]">
-                  {searchQuery ? 'No posts match your search' : `No posts yet in ${comm.name}`}
+                  {searchQuery ? 'No posts match your search' : `No messages yet`}
                 </p>
-                {!searchQuery && isMember && (
-                  <p className="text-sm text-gray-500">Be the first to post below!</p>
-                )}
+                <p className="text-sm text-gray-500">Be the first to start the conversation</p>
                 {!searchQuery && !isMember && (
                   <button
-                    onClick={toggle}
+                    onClick={() => setShowJoinModal(true)}
                     disabled={toggling}
                     className="mt-1 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all active:scale-95"
                     style={{ background: communityColor }}
@@ -406,6 +523,12 @@ const CommunityPage: React.FC = () => {
                     {toggling ? '...' : 'Join and Post'}
                   </button>
                 )}
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors mt-2"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh if messages aren&apos;t loading
+                </button>
               </div>
             )}
 

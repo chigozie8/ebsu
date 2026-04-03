@@ -107,9 +107,10 @@ export const AIChatbot = () => {
     scrollToBottom();
   }, [messages, streamingContent]);
 
-  // Hide chatbot on the premium package page
-  const isPremiumPage = location.pathname === "/u/premium";
-  if (isPremiumPage) {
+  // Hide chatbot on specific pages where it obstructs UI
+  const hiddenPaths = ["/u/premium", "/u/community"];
+  const shouldHide = hiddenPaths.some(path => location.pathname.startsWith(path));
+  if (shouldHide) {
     return null;
   }
 
