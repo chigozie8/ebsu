@@ -372,10 +372,12 @@ export const useCommunityPosts = (communityId: string | null) => {
 
   useEffect(() => {
     if (!communityId) {
+      console.log('[v0] useCommunityPosts: No communityId provided');
       setLoading(false);
       return;
     }
 
+    console.log('[v0] useCommunityPosts: Fetching posts for community:', communityId);
     setLoading(true);
     setError(null);
 
@@ -386,15 +388,21 @@ export const useCommunityPosts = (communityId: string | null) => {
     const unsub = onSnapshot(
       q,
       (snap) => {
+        console.log('[v0] useCommunityPosts: Received', snap.docs.length, 'documents');
         const all = snap.docs
-          .map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>))
+          .map((d) => {
+            const data = d.data() as Record<string, unknown>;
+            console.log('[v0] Post data:', d.id, data.message?.toString().slice(0, 50));
+            return docToCommunity(d.id, data);
+          })
           .filter((p) => !p.is_deleted)
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        console.log('[v0] useCommunityPosts: Filtered to', all.length, 'posts');
         setPosts(all);
         setLoading(false);
       },
       (err) => {
-        console.error('[useCommunityPosts] Firebase error:', err);
+        console.error('[v0] useCommunityPosts Firebase error:', err);
         setError(err.message || 'Failed to load posts');
         setLoading(false);
       }
