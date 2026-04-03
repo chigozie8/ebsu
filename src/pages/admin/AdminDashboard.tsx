@@ -36,6 +36,7 @@ import AdminPremiumCommunityManager from "./tabs/AdminPremiumCommunityManager";
 import AdminPremiumMembersManager from "./tabs/AdminPremiumMembersManager";
 import AdminVerificationManager from "../../components/admin/AdminVerificationManager";
 import AdminParliamentManager from "./tabs/AdminParliamentManager";
+import AdminPressManager from "./tabs/AdminPressManager";
 
 interface Material {
   id: string;
@@ -176,11 +177,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "parliament" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "parliament" | "press" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "parliament", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "parliament", "press", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1913,6 +1914,19 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             Parliament
+          </button>
+          <button
+            onClick={() => setActiveTab("press")}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+              activeTab === "press"
+                ? "bg-pink-600 text-white shadow-md"
+                : "bg-pink-50 text-pink-600 hover:bg-pink-100 border-2 border-pink-600"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+            Press Club
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
@@ -4549,6 +4563,30 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             transition={{ duration: 0.3 }}
           >
             <AdminParliamentManager />
+          </motion.div>
+        )}
+
+        {activeTab === "press" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-600 text-white">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                  </svg>
+                </span>
+                Press Club Social Media
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Set the official social media handles for the EBSUMSA Press Club. Links will display live on the public Press Team page.
+              </p>
+            </div>
+            <AdminPressManager />
           </motion.div>
         )}
 
