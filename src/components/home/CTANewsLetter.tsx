@@ -32,7 +32,12 @@ export default function CTANewsLetter() {
       await emailjs.send(
         serviceId,
         templateId,
-        { to_name: name, to_email: email },
+        {
+          to_name:   name,
+          to_email:  email,   // used in template "To Email" field as {{to_email}}
+          user_email: email,  // alias — some templates use {{user_email}}
+          reply_to:  email,
+        },
         publicKey
       );
     } catch {
