@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CommunityReply } from '../../lib/supabase';
+import { FirebaseCommunityReply as CommunityReply } from '../../hooks/useCommunity';
 import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 
 interface ReplyCardProps {
