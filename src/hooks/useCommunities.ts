@@ -3,7 +3,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
   getDoc,
   doc,
@@ -365,20 +364,18 @@ export const useCommunityPosts = (communityId: string | null) => {
     setLoading(true);
     setError(null);
 
-    // Filter client-side to avoid composite index — only community_id indexed
+    // Only filter by community_id server-side; sort+filter client-side to avoid composite index
     const ref = collection(db, 'community_messages');
-    const q = query(
-      ref,
-      where('community_id', '==', communityId),
-      orderBy('created_at', 'desc'),
-      limit(100)
-    );
+    const q = query(ref, where('community_id', '==', communityId), limit(200));
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const all = snap.docs.map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>));
-        setPosts(all.filter((p) => !p.is_deleted));
+        const all = snap.docs
+          .map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>))
+          .filter((p) => !p.is_deleted)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setPosts(all);
         setLoading(false);
       },
       (err) => {

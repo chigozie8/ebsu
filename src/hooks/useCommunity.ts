@@ -115,31 +115,21 @@ export const useCommunityMessages = (topic?: string, msgLimit: number = 20) => {
     setLoading(true);
     setError(null);
 
+    // Query without where+orderBy combo to avoid composite index requirement
+    // Filter and sort client-side instead
     const ref = collection(db, 'community_messages');
-    let q;
-
-    if (topic && topic !== 'All') {
-      q = query(
-        ref,
-        where('is_deleted', '==', false),
-        where('topic', '==', topic),
-        orderBy('created_at', 'desc'),
-        limit(msgLimit)
-      );
-    } else {
-      q = query(
-        ref,
-        where('is_deleted', '==', false),
-        orderBy('created_at', 'desc'),
-        limit(msgLimit)
-      );
-    }
+    const q = query(ref, orderBy('created_at', 'desc'), limit(msgLimit * 5));
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        const msgs = snap.docs.map((d) => docToMessage(d.id, d.data() as Record<string, unknown>));
-        setMessages(msgs);
+        let msgs = snap.docs
+          .map((d) => docToMessage(d.id, d.data() as Record<string, unknown>))
+          .filter((m) => !m.is_deleted);
+        if (topic && topic !== 'All') {
+          msgs = msgs.filter((m) => m.topic === topic);
+        }
+        setMessages(msgs.slice(0, msgLimit));
         setLoading(false);
       },
       (err) => {
@@ -165,18 +155,18 @@ export const useCommunityReplies = (messageId: string) => {
   useEffect(() => {
     if (!messageId) { setLoading(false); return; }
 
+    // Only filter by message_id server-side; sort+filter client-side to avoid composite index
     const ref = collection(db, 'community_replies');
-    const q = query(
-      ref,
-      where('message_id', '==', messageId),
-      where('is_deleted', '==', false),
-      orderBy('created_at', 'asc')
-    );
+    const q = query(ref, where('message_id', '==', messageId));
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setReplies(snap.docs.map((d) => docToReply(d.id, d.data() as Record<string, unknown>)));
+        const all = snap.docs
+          .map((d) => docToReply(d.id, d.data() as Record<string, unknown>))
+          .filter((r) => !r.is_deleted)
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setReplies(all);
         setLoading(false);
       },
       (err) => {
