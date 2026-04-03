@@ -225,19 +225,31 @@ export default function AdminTeamUpload() {
     if (!deleteTarget) return;
     setDeleting(true);
     const { teamType, member } = deleteTarget;
+    console.log("[v0] confirmDelete called", { teamType, memberId: member.id });
     try {
-      await supabase
+      const { error } = await supabase
         .from('team_images')
         .delete()
         .eq('id', `${teamType}_${member.id}`);
 
-      setTeams((prev) => ({
-        ...prev,
-        [teamType]: prev[teamType].filter((m) => m.id !== member.id),
-      }));
+      if (error) {
+        console.log("[v0] Supabase delete error:", error);
+        throw error;
+      }
+
+      console.log("[v0] Supabase delete success, updating state");
+      setTeams((prev) => {
+        const updated = {
+          ...prev,
+          [teamType]: prev[teamType].filter((m) => m.id !== member.id),
+        };
+        console.log("[v0] Updated teams state:", updated[teamType].length, "members remaining");
+        return updated;
+      });
       notifyUser('success', `${member.name} removed`);
       setDeleteTarget(null);
-    } catch {
+    } catch (err) {
+      console.log("[v0] Delete failed:", err);
       notifyUser('error', 'Failed to remove member');
     } finally {
       setDeleting(false);
@@ -454,36 +466,37 @@ export default function AdminTeamUpload() {
 
       {/* Delete confirm modal */}
       {deleteTarget && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
-          <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14H6L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4h6v2" />
-            </svg>
-          </div>
-          <h3 className="text-base font-bold text-gray-900 text-center mb-2">Remove Member</h3>
-          <p className="text-sm text-gray-500 text-center mb-6">
-            Remove <span className="font-semibold text-gray-800">{deleteTarget.member.name}</span> ({deleteTarget.member.role}) from the team? This only removes admin-added records — default placeholders are not affected.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-              className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmDelete}
-              disabled={deleting}
-              className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {deleting && <Spinner className="w-4 h-4 text-white" />}
-              {deleting ? 'Removing...' : 'Remove'}
-            </button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-gray-900 text-center mb-2">Remove Member</h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Remove <span className="font-semibold text-gray-800">{deleteTarget.member.name}</span> ({deleteTarget.member.role}) from the team? This only removes admin-added records — default placeholders are not affected.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting && <Spinner className="w-4 h-4 text-white" />}
+                {deleting ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
           </div>
         </div>
       )}

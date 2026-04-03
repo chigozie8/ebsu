@@ -142,16 +142,28 @@ export default function AdminParliamentManager() {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
+    console.log("[v0] Parliament confirmDelete called", { memberId: deleteTarget.id });
     try {
-      await supabase
+      const { error } = await supabase
         .from("team_images")
         .delete()
         .eq("id", `parliament_${deleteTarget.id}`);
 
-      setMembers((prev) => prev.filter((m) => m.id !== deleteTarget.id));
+      if (error) {
+        console.log("[v0] Supabase delete error:", error);
+        throw error;
+      }
+
+      console.log("[v0] Supabase delete success, updating state");
+      setMembers((prev) => {
+        const updated = prev.filter((m) => m.id !== deleteTarget.id);
+        console.log("[v0] Updated members state:", updated.length, "members remaining");
+        return updated;
+      });
       notifyUser("success", `${deleteTarget.name} removed`);
       setDeleteTarget(null);
-    } catch {
+    } catch (err) {
+      console.log("[v0] Delete failed:", err);
       notifyUser("error", "Failed to remove member");
     } finally {
       setDeleting(false);
