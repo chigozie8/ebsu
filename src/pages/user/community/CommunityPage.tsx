@@ -678,10 +678,15 @@ const CommunityPage: React.FC = () => {
                     rows={1}
                   />
                 ) : (
-                  <div className="flex-1 flex items-center gap-1.5 py-1 self-end">
+                  <button
+                    onClick={() => setShowJoinModal(true)}
+                    className="flex-1 flex items-center gap-1.5 py-1 self-end text-left"
+                  >
                     <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm text-gray-400 select-none">Join to post</span>
-                  </div>
+                    <span className="text-sm font-medium select-none" style={{ color: communityColor }}>
+                      Tap here to join &amp; post
+                    </span>
+                  </button>
                 )}
 
                 {/* Paperclip */}

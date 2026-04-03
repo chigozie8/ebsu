@@ -306,31 +306,33 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
 
-  // Use a live onSnapshot so membership state is always accurate,
-  // even if communityId resolves after initial render.
+  // Query only on user_id (single field — no composite index needed).
+  // Filter community_id client-side to avoid a Firestore composite index requirement
+  // which silently fails and permanently shows the user as a non-member.
   useEffect(() => {
     if (!communityId || !userId || userId === 'anonymous') {
+      setIsMember(false);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     const ref = collection(db, 'community_memberships');
-    const q = query(
-      ref,
-      where('community_id', '==', communityId),
-      where('user_id', '==', userId),
-      limit(1)
-    );
+    const q = query(ref, where('user_id', '==', userId));
 
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setIsMember(!snap.empty);
+        const found = snap.docs.some(
+          (d) => (d.data().community_id as string) === communityId
+        );
+        setIsMember(found);
         setLoading(false);
       },
       (err) => {
         console.error('[useCommunityMembership] snapshot error:', err);
+        // On error, default to false so the UI stays usable
+        setIsMember(false);
         setLoading(false);
       }
     );
@@ -344,15 +346,14 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
     try {
       const commRef = doc(db, 'communities', communityId);
       if (isMember) {
+        // Single-field query to avoid composite index requirement; filter client-side
         const ref = collection(db, 'community_memberships');
-        const q = query(
-          ref,
-          where('community_id', '==', communityId),
-          where('user_id', '==', userId),
-          limit(1)
-        );
+        const q = query(ref, where('user_id', '==', userId));
         const snap = await getDocs(q);
-        for (const d of snap.docs) await deleteDoc(d.ref);
+        const toDelete = snap.docs.filter(
+          (d) => (d.data().community_id as string) === communityId
+        );
+        for (const d of toDelete) await deleteDoc(d.ref);
         // Decrement live member_count
         await updateDoc(commRef, { member_count: increment(-1) });
         setIsMember(false);
