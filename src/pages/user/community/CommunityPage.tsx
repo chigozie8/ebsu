@@ -543,7 +543,11 @@ const CommunityPage: React.FC = () => {
                   <textarea
                     ref={textareaRef}
                     value={newMessage}
-                    onChange={(e) => { setNewMessage(e.target.value); autoResize(); broadcastTyping(userName, userAvatar); }}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      autoResize();
+                      if (e.target.value.trim()) broadcastTyping(userName, userAvatar);
+                    }}
                     onKeyDown={onKeyDown}
                     placeholder="Share something..."
                     className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end text-[#111b21] placeholder:text-gray-400"
