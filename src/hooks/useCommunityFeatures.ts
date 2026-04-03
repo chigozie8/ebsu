@@ -1,5 +1,11 @@
 import { useCallback, useState } from 'react';
-import { supabase, STORAGE_BUCKETS } from '../config/supabase';
+import {
+  collection, query, orderBy, getDocs,
+  addDoc, deleteDoc, doc, where, limit,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../config/firebase';
 import toast from 'react-hot-toast';
 
 export interface Subcategory {
@@ -37,13 +43,11 @@ export const useSubcategories = () => {
   const fetchSubcategories = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('community_subcategories')
-        .select('*')
-        .order('order_index', { ascending: true });
-
-      if (error) throw error;
-      setSubcategories(data || []);
+      const snap = await getDocs(
+        query(collection(db, 'community_subcategories'), orderBy('order_index', 'asc'))
+      );
+      const data: Subcategory[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Subcategory, 'id'>) }));
+      setSubcategories(data);
     } catch (err) {
       console.error('[v0] Error fetching subcategories:', err);
       toast.error('Failed to load subcategories');
@@ -68,13 +72,11 @@ export const useStickers = (userId: string) => {
   const fetchAllStickers = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('community_stickers')
-        .select('*')
-        .order('category', { ascending: true });
-
-      if (error) throw error;
-      setStickers(data || []);
+      const snap = await getDocs(
+        query(collection(db, 'community_stickers'), orderBy('category', 'asc'))
+      );
+      const data: Sticker[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Sticker, 'id'>) }));
+      setStickers(data);
     } catch (err) {
       console.error('[v0] Error fetching stickers:', err);
       toast.error('Failed to load stickers');
@@ -85,13 +87,11 @@ export const useStickers = (userId: string) => {
 
   const fetchSavedStickers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_saved_stickers')
-        .select('*, sticker:community_stickers(*)')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      setSavedStickers(data || []);
+      const snap = await getDocs(
+        query(collection(db, 'user_saved_stickers'), where('user_id', '==', userId))
+      );
+      const data: SavedSticker[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<SavedSticker, 'id'>) }));
+      setSavedStickers(data);
     } catch (err) {
       console.error('[v0] Error fetching saved stickers:', err);
     }
@@ -100,14 +100,11 @@ export const useStickers = (userId: string) => {
   const saveSticker = useCallback(
     async (stickerId: string) => {
       try {
-        const { error } = await supabase
-          .from('user_saved_stickers')
-          .insert({
-            user_id: userId,
-            sticker_id: stickerId,
-          });
-
-        if (error) throw error;
+        await addDoc(collection(db, 'user_saved_stickers'), {
+          user_id: userId,
+          sticker_id: stickerId,
+          saved_at: serverTimestamp(),
+        });
         await fetchSavedStickers();
         toast.success('Sticker saved!');
       } catch (err) {
@@ -121,13 +118,15 @@ export const useStickers = (userId: string) => {
   const removeSticker = useCallback(
     async (stickerId: string) => {
       try {
-        const { error } = await supabase
-          .from('user_saved_stickers')
-          .delete()
-          .eq('user_id', userId)
-          .eq('sticker_id', stickerId);
-
-        if (error) throw error;
+        const snap = await getDocs(
+          query(
+            collection(db, 'user_saved_stickers'),
+            where('user_id', '==', userId),
+            where('sticker_id', '==', stickerId),
+            limit(1)
+          )
+        );
+        if (!snap.empty) await deleteDoc(doc(db, 'user_saved_stickers', snap.docs[0].id));
         await fetchSavedStickers();
         toast.success('Sticker removed');
       } catch (err) {
@@ -180,21 +179,11 @@ export const useImageUpload = () => {
       const fileName = `${userId}/${timestamp}-${file.name}`;
       const filePath = `community-images/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      const fileRef = storageRef(storage, filePath);
+      await uploadBytes(fileRef, file);
+      const downloadUrl = await getDownloadURL(fileRef);
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data } = supabase.storage
-        .from(STORAGE_BUCKETS.COMMUNITY_IMAGES || 'community-images')
-        .getPublicUrl(filePath);
-
-      return data?.publicUrl || null;
+      return downloadUrl;
     } catch (err) {
       console.error('[v0] Error uploading image:', err);
       toast.error('Failed to upload image');
