@@ -1,7 +1,210 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase, CommunityGroup } from '../lib/supabase';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+  getDoc,
+  doc,
+  addDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  Timestamp,
+  limit,
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+export type CommunityGroup = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  color: string;
+  banner_url?: string;
+  member_count: number;
+  post_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Community = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  message: string;
+  topic: string;
+  community_id?: string;
+  image_urls?: string[];
+  sticker_url?: string;
+  created_at: string;
+  updated_at: string;
+  likes_count: number;
+  reply_count: number;
+  is_pinned: boolean;
+  is_edited: boolean;
+  is_deleted: boolean;
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
+
+function docToGroup(id: string, data: Record<string, unknown>): CommunityGroup {
+  return {
+    id,
+    name: (data.name as string) || '',
+    slug: (data.slug as string) || '',
+    description: (data.description as string) || '',
+    icon: (data.icon as string) || '🎓',
+    color: (data.color as string) || '#075E54',
+    banner_url: (data.banner_url as string | undefined),
+    member_count: (data.member_count as number) || 0,
+    post_count: (data.post_count as number) || 0,
+    is_active: (data.is_active as boolean) ?? true,
+    created_at: toIso(data.created_at),
+    updated_at: toIso(data.updated_at),
+  };
+}
+
+function docToCommunity(id: string, data: Record<string, unknown>): Community {
+  return {
+    id,
+    user_id: (data.user_id as string) || '',
+    user_name: (data.user_name as string) || 'Unknown',
+    user_avatar: (data.user_avatar as string | undefined),
+    message: (data.message as string) || '',
+    topic: (data.topic as string) || 'General',
+    community_id: (data.community_id as string | undefined),
+    image_urls: (data.image_urls as string[] | undefined),
+    sticker_url: (data.sticker_url as string | undefined),
+    created_at: toIso(data.created_at),
+    updated_at: toIso(data.updated_at),
+    likes_count: (data.likes_count as number) || 0,
+    reply_count: (data.reply_count as number) || 0,
+    is_pinned: (data.is_pinned as boolean) || false,
+    is_edited: (data.is_edited as boolean) || false,
+    is_deleted: (data.is_deleted as boolean) || false,
+  };
+}
+
+// ── Default communities to seed if Firestore is empty ─────────────────────
+
+const DEFAULT_COMMUNITIES: Omit<CommunityGroup, 'id' | 'created_at' | 'updated_at'>[] = [
+  {
+    name: 'General',
+    slug: 'general',
+    description: 'Open discussion for all EBSU students — announcements, questions and everything in between.',
+    icon: '💬',
+    color: '#075E54',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Academics',
+    slug: 'academics',
+    description: 'Study tips, course materials, exam prep and academic support for EBSU students.',
+    icon: '📚',
+    color: '#1a73e8',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Campus Life',
+    slug: 'campus-life',
+    description: 'Hostel, food, hangout spots, student activities and everything happening on campus.',
+    icon: '🏫',
+    color: '#e91e63',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Tech & Innovation',
+    slug: 'tech',
+    description: 'Coding, projects, tech events and opportunities for EBSU tech enthusiasts.',
+    icon: '💻',
+    color: '#43a047',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Events',
+    slug: 'events',
+    description: 'Campus events, social gatherings, competitions and student union activities.',
+    icon: '📅',
+    color: '#f57c00',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Health & Wellness',
+    slug: 'health',
+    description: 'Mental health, physical wellness, sports and healthy living on campus.',
+    icon: '❤️',
+    color: '#00acc1',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Jobs & Internships',
+    slug: 'jobs',
+    description: 'Internship opportunities, graduate jobs, career advice and professional development.',
+    icon: '💼',
+    color: '#6d4c41',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Buy & Sell',
+    slug: 'buy-sell',
+    description: 'Marketplace for EBSU students — sell books, gadgets, clothes and more.',
+    icon: '🛒',
+    color: '#7b1fa2',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+];
+
+async function seedDefaultCommunities(): Promise<void> {
+  const ref = collection(db, 'communities');
+  const now = new Date().toISOString();
+  for (const c of DEFAULT_COMMUNITIES) {
+    const existing = await getDocs(query(ref, where('slug', '==', c.slug), limit(1)));
+    if (existing.empty) {
+      await addDoc(ref, { ...c, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+    }
+  }
+  // Also ensure the 'updated_at' placeholder above resolves for immediate display
+  const fallback = DEFAULT_COMMUNITIES.map((c, i) => ({
+    ...c,
+    id: `default-${i}`,
+    created_at: now,
+    updated_at: now,
+  } as CommunityGroup));
+  return void fallback;
+}
 
 // ── Fetch all active communities ───────────────────────────────────────────
+
 export const useCommunities = () => {
   const [communities, setCommunities] = useState<CommunityGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -11,14 +214,21 @@ export const useCommunities = () => {
     try {
       setLoading(true);
       setError(null);
-      const { data, error: err } = await supabase
-        .from('communities')
-        .select('*')
-        .eq('is_active', true)
-        .order('member_count', { ascending: false });
 
-      if (err) throw err;
-      setCommunities(data || []);
+      const ref = collection(db, 'communities');
+      const q = query(ref, where('is_active', '==', true), orderBy('name', 'asc'));
+      const snap = await getDocs(q);
+
+      // If collection is empty, seed default communities then re-fetch
+      if (snap.empty) {
+        await seedDefaultCommunities();
+        const seeded = await getDocs(q);
+        const groups = seeded.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        setCommunities(groups);
+      } else {
+        const groups = snap.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        setCommunities(groups);
+      }
     } catch (err) {
       console.error('[useCommunities] fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load communities');
@@ -33,25 +243,31 @@ export const useCommunities = () => {
 };
 
 // ── Fetch a single community by slug ──────────────────────────────────────
+
 export const useCommunityBySlug = (slug: string) => {
   const [community, setCommunity] = useState<CommunityGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) { setLoading(false); return; }
+
     const fetch = async () => {
       try {
         setLoading(true);
         setError(null);
-        const { data, error: err } = await supabase
-          .from('communities')
-          .select('*')
-          .eq('slug', slug)
-          .single();
 
-        if (err) throw err;
-        setCommunity(data);
+        const ref = collection(db, 'communities');
+        const q = query(ref, where('slug', '==', slug), limit(1));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          setError('Community not found');
+          setCommunity(null);
+        } else {
+          const d = snap.docs[0];
+          setCommunity(docToGroup(d.id, d.data() as Record<string, unknown>));
+        }
       } catch (err) {
         console.error('[useCommunityBySlug] fetch error:', err);
         setError(err instanceof Error ? err.message : 'Community not found');
@@ -59,6 +275,7 @@ export const useCommunityBySlug = (slug: string) => {
         setLoading(false);
       }
     };
+
     fetch();
   }, [slug]);
 
@@ -66,6 +283,7 @@ export const useCommunityBySlug = (slug: string) => {
 };
 
 // ── Check + toggle membership ─────────────────────────────────────────────
+
 export const useCommunityMembership = (communityId: string, userId: string) => {
   const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,16 +294,20 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
       setLoading(false);
       return;
     }
+
     const check = async () => {
-      const { data } = await supabase
-        .from('community_memberships')
-        .select('id')
-        .eq('community_id', communityId)
-        .eq('user_id', userId)
-        .maybeSingle();
-      setIsMember(!!data);
+      const ref = collection(db, 'community_memberships');
+      const q = query(
+        ref,
+        where('community_id', '==', communityId),
+        where('user_id', '==', userId),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      setIsMember(!snap.empty);
       setLoading(false);
     };
+
     check();
   }, [communityId, userId]);
 
@@ -94,16 +316,22 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
     setToggling(true);
     try {
       if (isMember) {
-        await supabase
-          .from('community_memberships')
-          .delete()
-          .eq('community_id', communityId)
-          .eq('user_id', userId);
+        const ref = collection(db, 'community_memberships');
+        const q = query(
+          ref,
+          where('community_id', '==', communityId),
+          where('user_id', '==', userId),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        for (const d of snap.docs) await deleteDoc(d.ref);
         setIsMember(false);
       } else {
-        await supabase
-          .from('community_memberships')
-          .insert([{ community_id: communityId, user_id: userId }]);
+        await addDoc(collection(db, 'community_memberships'), {
+          community_id: communityId,
+          user_id: userId,
+          joined_at: serverTimestamp(),
+        });
         setIsMember(true);
       }
     } catch (err) {
@@ -117,8 +345,9 @@ export const useCommunityMembership = (communityId: string, userId: string) => {
 };
 
 // ── Posts within a community ──────────────────────────────────────────────
+
 export const useCommunityPosts = (communityId: string | null) => {
-  const [posts, setPosts] = useState<import('../lib/supabase').Community[]>([]);
+  const [posts, setPosts] = useState<Community[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -128,60 +357,39 @@ export const useCommunityPosts = (communityId: string | null) => {
       return;
     }
 
-    const fetch = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const { data, error: err } = await supabase
-          .from('community_messages')
-          .select('*')
-          .eq('community_id', communityId)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(50);
+    setLoading(true);
+    setError(null);
 
-        if (err) throw err;
-        setPosts(data || []);
-      } catch (err) {
-        console.error('[useCommunityPosts] fetch error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load posts');
-      } finally {
+    const ref = collection(db, 'community_messages');
+    const q = query(
+      ref,
+      where('community_id', '==', communityId),
+      where('is_deleted', '==', false),
+      orderBy('created_at', 'desc'),
+      limit(50)
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setPosts(snap.docs.map((d) => docToCommunity(d.id, d.data() as Record<string, unknown>)));
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[useCommunityPosts] Firebase error:', err);
+        setError(err.message || 'Failed to load posts');
         setLoading(false);
       }
-    };
+    );
 
-    fetch();
-
-    // Realtime: new posts in this community
-    const channel = supabase
-      .channel(`community_posts:${communityId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'community_messages', filter: `community_id=eq.${communityId}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setPosts((prev) => [payload.new as import('../lib/supabase').Community, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as import('../lib/supabase').Community;
-            if (updated.is_deleted) {
-              setPosts((prev) => prev.filter((p) => p.id !== updated.id));
-            } else {
-              setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-            }
-          } else if (payload.eventType === 'DELETE') {
-            setPosts((prev) => prev.filter((p) => p.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => { channel.unsubscribe(); };
+    return () => unsub();
   }, [communityId]);
 
   return { posts, loading, error };
 };
 
 // ── Post a message into a community ──────────────────────────────────────
+
 export const usePostToCommunity = () => {
   const [posting, setPosting] = useState(false);
 
@@ -195,20 +403,63 @@ export const usePostToCommunity = () => {
   }) => {
     setPosting(true);
     try {
-      const { error: err } = await supabase.from('community_messages').insert([{
+      const payload: Record<string, unknown> = {
         community_id: params.communityId,
         user_id: params.userId,
         user_name: params.userName,
-        user_avatar: params.userAvatar,
+        user_avatar: params.userAvatar || null,
         message: params.message,
         topic: 'General',
-        ...(params.imageUrls && params.imageUrls.length > 0 ? { image_urls: params.imageUrls } : {}),
-      }]);
-      if (err) throw err;
+        likes_count: 0,
+        reply_count: 0,
+        is_pinned: false,
+        is_edited: false,
+        is_deleted: false,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      };
+      if (params.imageUrls && params.imageUrls.length > 0) {
+        payload.image_urls = params.imageUrls;
+      }
+      await addDoc(collection(db, 'community_messages'), payload);
     } finally {
       setPosting(false);
     }
   }, []);
 
   return { post, posting };
+};
+
+// ── Fetch a single community by ID ────────────────────────────────────────
+
+export const useCommunityById = (communityId: string) => {
+  const [community, setCommunity] = useState<CommunityGroup | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!communityId) { setLoading(false); return; }
+
+    const fetch = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const snap = await getDoc(doc(db, 'communities', communityId));
+        if (snap.exists()) {
+          setCommunity(docToGroup(snap.id, snap.data() as Record<string, unknown>));
+        } else {
+          setError('Community not found');
+        }
+      } catch (err) {
+        console.error('[useCommunityById] fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Community not found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetch();
+  }, [communityId]);
+
+  return { community, loading, error };
 };

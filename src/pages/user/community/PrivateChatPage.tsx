@@ -9,8 +9,9 @@ import {
   useTypingIndicator,
   useAnyUserVerification,
 } from '../../../hooks/usePrivateChat';
-import { PrivateMessage } from '../../../lib/supabase';
-import { supabase } from '../../../lib/supabase';
+import { PrivateMessage } from '../../../hooks/usePrivateChat';
+import { storage } from '../../../config/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
@@ -238,11 +239,9 @@ export default function PrivateChatPage() {
       try {
         const ext = imageFile.name.split('.').pop();
         const path = `private_chat/${chatId}/${Date.now()}.${ext}`;
-        const { error } = await supabase.storage.from('community-images').upload(path, imageFile, { upsert: true });
-        if (!error) {
-          const { data: pub } = supabase.storage.from('community-images').getPublicUrl(path);
-          imgUrl = pub.publicUrl;
-        }
+        const fileRef = storageRef(storage, path);
+        await uploadBytes(fileRef, imageFile);
+        imgUrl = await getDownloadURL(fileRef);
       } catch {
         toast.error('Image upload failed');
       } finally {

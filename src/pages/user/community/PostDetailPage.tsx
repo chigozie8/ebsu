@@ -5,9 +5,14 @@ import {
   ArrowLeft, Send, Smile, Loader2, Heart, MessageSquare,
   Pin, CheckCheck, Check, MoreVertical, Trash2, Edit2,
 } from 'lucide-react';
-import { supabase, Community, CommunityReply } from '../../../lib/supabase';
+import { Community } from '../../../hooks/useCommunities';
+import { FirebaseCommunityReply as CommunityReply } from '../../../hooks/useCommunity';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import { useCommunityReplies, usePostReply, useLikeMessage } from '../../../hooks/useCommunity';
+import {
+  doc, getDoc, collection, query, where, limit, getDocs, addDoc, serverTimestamp, Timestamp,
+} from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { useAnyUserVerification } from '../../../hooks/usePrivateChat';
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
@@ -222,32 +227,54 @@ const PostDetailPage: React.FC = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [replyText, setReplyText] = useState('');
   const [posting, setPosting] = useState(false);
-  const [typingUser, setTypingUser] = useState<string | null>(null);
   const [optimisticReplies, setOptimisticReplies] = useState<CommunityReply[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-
   const { replies, loading: loadingReplies } = useCommunityReplies(postId ?? '');
   const { likeMessage, unlikeMessage } = useLikeMessage();
 
-  // Fetch post + like status
+  // Fetch post from Firebase
   useEffect(() => {
     if (!postId) return;
     const fetchPost = async () => {
       setLoadingPost(true);
-      const { data } = await supabase
-        .from('community_messages')
-        .select('*')
-        .eq('id', postId)
-        .single();
-      if (data) {
-        setPost(data as Community);
-        setLikeCount(data.likes_count ?? 0);
+      try {
+        const snap = await getDoc(doc(db, 'community_messages', postId));
+        if (snap.exists()) {
+          const d = snap.data();
+          const toIso = (ts: unknown): string => {
+            if (!ts) return new Date().toISOString();
+            if (ts instanceof Timestamp) return ts.toDate().toISOString();
+            if (typeof ts === 'string') return ts;
+            return new Date().toISOString();
+          };
+          const c: Community = {
+            id: snap.id,
+            user_id: (d.user_id as string) || '',
+            user_name: (d.user_name as string) || 'Unknown',
+            user_avatar: d.user_avatar as string | undefined,
+            message: (d.message as string) || '',
+            topic: (d.topic as string) || 'General',
+            community_id: d.community_id as string | undefined,
+            image_urls: d.image_urls as string[] | undefined,
+            sticker_url: d.sticker_url as string | undefined,
+            created_at: toIso(d.created_at),
+            updated_at: toIso(d.updated_at),
+            likes_count: (d.likes_count as number) || 0,
+            reply_count: (d.reply_count as number) || 0,
+            is_pinned: (d.is_pinned as boolean) || false,
+            is_edited: (d.is_edited as boolean) || false,
+            is_deleted: (d.is_deleted as boolean) || false,
+          };
+          setPost(c);
+          setLikeCount(c.likes_count);
+        }
+      } catch (err) {
+        console.error('[PostDetailPage] fetch post error:', err);
+      } finally {
+        setLoadingPost(false);
       }
-      setLoadingPost(false);
     };
     fetchPost();
   }, [postId]);
@@ -255,33 +282,17 @@ const PostDetailPage: React.FC = () => {
   // Check if current user already liked this post
   useEffect(() => {
     if (!postId || !userId || userId === 'anonymous') return;
-    supabase
-      .from('community_likes')
-      .select('id')
-      .eq('message_id', postId)
-      .eq('user_id', userId)
-      .maybeSingle()
-      .then(({ data }) => setLiked(!!data));
-  }, [postId, userId]);
-
-  // Typing broadcast
-  useEffect(() => {
-    if (!postId) return;
-    broadcastRef.current = supabase.channel(`post-typing:${postId}`, {
-      config: { broadcast: { self: false } },
-    });
-    broadcastRef.current
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (payload.userId === userId) return;
-        setTypingUser(payload.userName || 'Someone');
-        if (typingTimer.current) clearTimeout(typingTimer.current);
-        typingTimer.current = setTimeout(() => setTypingUser(null), 3000);
-      })
-      .subscribe();
-    return () => {
-      broadcastRef.current?.unsubscribe();
-      if (typingTimer.current) clearTimeout(typingTimer.current);
+    const checkLike = async () => {
+      const q = query(
+        collection(db, 'community_likes'),
+        where('message_id', '==', postId),
+        where('user_id', '==', userId),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      setLiked(!snap.empty);
     };
+    checkLike();
   }, [postId, userId]);
 
   // Auto-scroll on new replies
@@ -298,11 +309,7 @@ const PostDetailPage: React.FC = () => {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
   };
 
-  const emitTyping = () => {
-    broadcastRef.current?.send({
-      type: 'broadcast', event: 'typing', payload: { userId, userName },
-    });
-  };
+
 
   const handleLike = useCallback(async () => {
     if (userId === 'anonymous' || !postId) return;
@@ -330,6 +337,7 @@ const PostDetailPage: React.FC = () => {
       user_avatar: userAvatar,
       reply: text,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       is_edited: false,
       is_deleted: false,
     };
@@ -337,15 +345,17 @@ const PostDetailPage: React.FC = () => {
     setReplyText('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     try {
-      const { error } = await supabase.from('community_replies').insert([{
+      await addDoc(collection(db, 'community_replies'), {
         message_id: postId,
         user_id: userId,
         user_name: userName,
-        user_avatar: userAvatar,
+        user_avatar: userAvatar || null,
         reply: text,
-        created_at: optimistic.created_at,
-      }]);
-      if (error) throw error;
+        is_edited: false,
+        is_deleted: false,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
     } catch {
       toast.error('Failed to post comment. Try again.');
       setOptimisticReplies((p) => p.filter((r) => r.id !== optId));
@@ -472,18 +482,7 @@ const PostDetailPage: React.FC = () => {
             );
           })}
 
-          {/* Typing indicator */}
-          {typingUser && (
-            <div className="flex items-end gap-2 px-4 mt-2">
-              <div className="w-8 flex-shrink-0" />
-              <div>
-                <span className="text-[11px] font-bold px-1 pb-0.5 block" style={{ color: grad(typingUser)[0] }}>
-                  {typingUser}
-                </span>
-                <TypingDots />
-              </div>
-            </div>
-          )}
+
 
           <div ref={bottomRef} className="h-4" />
         </div>
@@ -514,7 +513,7 @@ const PostDetailPage: React.FC = () => {
           <textarea
             ref={textareaRef}
             value={replyText}
-            onChange={(e) => { setReplyText(e.target.value); autoResize(); emitTyping(); }}
+            onChange={(e) => { setReplyText(e.target.value); autoResize(); }}
             onKeyDown={onKeyDown}
             placeholder="Add a comment..."
             className="flex-1 bg-transparent resize-none outline-none text-[15px] leading-relaxed py-1 self-end text-[#111b21] placeholder-[#8696a0]"

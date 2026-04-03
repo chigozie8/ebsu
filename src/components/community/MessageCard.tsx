@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Community } from '../../lib/supabase';
+import { Community } from '../../hooks/useCommunities';
 import { MoreVertical, Trash2, Edit2, MessageCircle, Pin, CheckCheck, Check } from 'lucide-react';
 import { usePinMessage } from '../../hooks/useCommunity';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ShieldCheck } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 interface Guideline {
   id: string;
@@ -14,28 +15,29 @@ const GuidelinesBanner: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchGuidelines();
-    const channel = supabase
-      .channel('community_guidelines_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_guidelines' }, fetchGuidelines)
-      .subscribe();
-    return () => { channel.unsubscribe(); };
+    const q = query(
+      collection(db, 'community_guidelines'),
+      orderBy('created_at', 'asc')
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setGuidelines(
+          snap.docs.map((d) => ({
+            id: d.id,
+            content: (d.data().content as string) || '',
+            created_at: (d.data().created_at as string) || '',
+          }))
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error('[GuidelinesBanner] Firestore error:', err);
+        setLoading(false);
+      }
+    );
+    return () => unsub();
   }, []);
-
-  const fetchGuidelines = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('community_guidelines')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setGuidelines(data || []);
-    } catch (err) {
-      console.error('[community] Failed to fetch guidelines:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading || guidelines.length === 0) return null;
 
