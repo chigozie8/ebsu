@@ -337,13 +337,19 @@ export const usePrivateMessages = (chatId: string | null) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!chatId) { setLoading(false); return; }
-
-    setLoading(true);
+    // Reset state whenever chatId changes (including to null)
+    setMessages([]);
     setError(null);
 
-    // Avoid composite index requirement by filtering only on chat_id
-    // and sorting client-side by created_at asc.
+    if (!chatId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    // Query only on chat_id to avoid composite index requirement.
+    // Sort client-side by created_at ascending so newest is at bottom.
     const q = query(
       collection(db, 'private_messages'),
       where('chat_id', '==', chatId)
@@ -351,6 +357,7 @@ export const usePrivateMessages = (chatId: string | null) => {
 
     const unsub = onSnapshot(
       q,
+      { includeMetadataChanges: false },
       (snap) => {
         const mapped: PrivateMessage[] = snap.docs.map((d) => {
           const data = d.data();
@@ -367,15 +374,15 @@ export const usePrivateMessages = (chatId: string | null) => {
             created_at: toIso(data.created_at),
           };
         });
-        // Sort client-side ascending so newest is at bottom
         mapped.sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         setMessages(mapped);
         setLoading(false);
+        setError(null);
       },
       (err) => {
-        console.error('[usePrivateMessages] snapshot error:', err);
+        console.error('[usePrivateMessages] snapshot error:', err.code, err.message);
         setError(err.message || 'Failed to load messages');
         setLoading(false);
       }
@@ -435,15 +442,23 @@ export const useSendPrivateMessage = () => {
 
 export const useMarkSeen = () => {
   const markSeen = useCallback(async (chatId: string, viewerId: string) => {
-    const q = query(
-      collection(db, 'private_messages'),
-      where('chat_id', '==', chatId),
-      where('sender_id', '!=', viewerId),
-      where('is_seen', '==', false)
-    );
-    const snap = await getDocs(q);
-    for (const d of snap.docs) {
-      await updateDoc(d.ref, { is_seen: true, is_delivered: true });
+    if (!chatId || !viewerId) return;
+    try {
+      // Only filter on chat_id + is_seen to avoid needing a composite index.
+      // Then filter out messages sent by the viewer client-side.
+      const q = query(
+        collection(db, 'private_messages'),
+        where('chat_id', '==', chatId),
+        where('is_seen', '==', false)
+      );
+      const snap = await getDocs(q);
+      const updates = snap.docs.filter((d) => d.data().sender_id !== viewerId);
+      await Promise.all(
+        updates.map((d) => updateDoc(d.ref, { is_seen: true, is_delivered: true }))
+      );
+    } catch (err) {
+      // markSeen failures are non-critical — log and continue
+      console.error('[useMarkSeen] error:', err);
     }
   }, []);
 
