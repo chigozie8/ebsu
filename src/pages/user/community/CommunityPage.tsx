@@ -66,6 +66,7 @@ const CommunityPage: React.FC = () => {
   const [showStickers,  setShowStickers]  = useState(false);
   const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
   const [imageUrls,     setImageUrls]     = useState<string[]>([]);
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
@@ -297,7 +298,7 @@ const CommunityPage: React.FC = () => {
 
           <div className="flex items-center gap-1">
             <button
-              onClick={toggle}
+              onClick={() => setShowJoinModal(true)}
               disabled={toggling}
               className="px-3 py-1 rounded-full text-xs font-semibold transition-all active:scale-95 disabled:opacity-60"
               style={
@@ -398,12 +399,12 @@ const CommunityPage: React.FC = () => {
                 )}
                 {!searchQuery && !isMember && (
                   <button
-                    onClick={toggle}
+                    onClick={() => setShowJoinModal(true)}
                     disabled={toggling}
                     className="mt-1 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all active:scale-95"
                     style={{ background: communityColor }}
                   >
-                    {toggling ? '...' : 'Join and Post'}
+                    Join and Post
                   </button>
                 )}
               </div>
@@ -555,10 +556,13 @@ const CommunityPage: React.FC = () => {
                     rows={1}
                   />
                 ) : (
-                  <div className="flex-1 flex items-center gap-1.5 py-1 self-end">
+                  <button
+                    className="flex-1 flex items-center gap-1.5 py-1 self-end text-left"
+                    onClick={() => setShowJoinModal(true)}
+                  >
                     <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <span className="text-sm text-gray-400 select-none">Join to post</span>
-                  </div>
+                  </button>
                 )}
 
                 {/* Paperclip */}
@@ -605,6 +609,92 @@ const CommunityPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Join / Leave confirmation modal */}
+      {showJoinModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setShowJoinModal(false)}
+        >
+          <div
+            className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Community identity strip */}
+            <div
+              className="flex items-center gap-3 px-5 py-4"
+              style={{ background: communityColor }}
+            >
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.2)' }}
+              >
+                {comm.icon}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white font-bold text-base leading-tight truncate">{comm.name}</p>
+                <p className="text-white/70 text-xs mt-0.5">
+                  {comm.member_count.toLocaleString()} members
+                </p>
+              </div>
+            </div>
+
+            <div className="px-5 py-5">
+              {isMember ? (
+                <>
+                  <p className="text-[#111b21] font-semibold text-base">Leave this community?</p>
+                  <p className="text-gray-500 text-sm mt-1 leading-relaxed">
+                    You will no longer be able to post or see new messages in{' '}
+                    <span className="font-medium text-[#111b21]">{comm.name}</span>.
+                    You can rejoin at any time.
+                  </p>
+                  <div className="flex gap-3 mt-5">
+                    <button
+                      onClick={() => setShowJoinModal(false)}
+                      className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-600 transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => { await toggle(); setShowJoinModal(false); }}
+                      disabled={toggling}
+                      className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
+                      style={{ background: '#EF4444' }}
+                    >
+                      {toggling ? 'Leaving...' : 'Leave'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-[#111b21] font-semibold text-base">Join this community?</p>
+                  <p className="text-gray-500 text-sm mt-1 leading-relaxed">
+                    Joining <span className="font-medium text-[#111b21]">{comm.name}</span> lets you
+                    post, reply, and connect with other members. You can leave at any time.
+                  </p>
+                  <div className="flex gap-3 mt-5">
+                    <button
+                      onClick={() => setShowJoinModal(false)}
+                      className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-600 transition-all active:scale-95"
+                    >
+                      Not now
+                    </button>
+                    <button
+                      onClick={async () => { await toggle(); setShowJoinModal(false); }}
+                      disabled={toggling}
+                      className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
+                      style={{ background: communityColor }}
+                    >
+                      {toggling ? 'Joining...' : 'Join community'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </React.Fragment>
   );
 };
