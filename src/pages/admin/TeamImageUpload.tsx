@@ -381,6 +381,8 @@ export default function AdminTeamUpload() {
 
       </div>
 
+      {/* Modals — rendered outside the scrollable content area but inside root div */}
+
       {/* Add Member Modal */}
       {addModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -488,7 +490,6 @@ export default function AdminTeamUpload() {
               {deleting ? 'Removing...' : 'Remove'}
             </button>
           </div>
-        </div>
         </div>
       )}
     </div>
