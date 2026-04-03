@@ -4,9 +4,33 @@ import {
   addDoc, deleteDoc, doc, where, limit,
   serverTimestamp,
 } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 import toast from 'react-hot-toast';
+
+// ── Cloudinary helpers ────────────────────────────────────────────────────────
+
+function cloudinaryCloudName() {
+  return (import.meta as Record<string, unknown> & { env?: Record<string, string> }).env?.VITE_CLOUDINARY_CLOUD_NAME ?? 'dsqjg9mfg';
+}
+function cloudinaryUploadPreset() {
+  return (import.meta as Record<string, unknown> & { env?: Record<string, string> }).env?.VITE_CLOUDINARY_UPLOAD_PRESET ?? 'ebsumsa';
+}
+
+async function uploadToCloudinary(file: File): Promise<string | null> {
+  const cloudName = cloudinaryCloudName();
+  const preset    = cloudinaryUploadPreset();
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', preset);
+  fd.append('folder', 'community');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`Cloudinary upload failed: ${res.status}`);
+  const data = await res.json() as { secure_url?: string };
+  return data.secure_url ?? null;
+}
 
 export interface Subcategory {
   id: string;
@@ -156,47 +180,50 @@ export const useStickers = (userId: string) => {
   };
 };
 
-// Hook for uploading images to community messages
+// Hook for uploading images via Cloudinary (community messages + private chat)
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
 
-  const uploadImage = useCallback(async (file: File, userId: string): Promise<string | null> => {
+  /** Upload a single file, return the secure URL or null */
+  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be less than 10 MB');
+      return null;
+    }
     try {
       setUploading(true);
-
-      // Validate file
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return null;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image must be less than 5MB');
-        return null;
-      }
-
-      const timestamp = Date.now();
-      const fileName = `${userId}/${timestamp}-${file.name}`;
-      const filePath = `community-images/${fileName}`;
-
-      const fileRef = storageRef(storage, filePath);
-      await uploadBytes(fileRef, file);
-      const downloadUrl = await getDownloadURL(fileRef);
-
-      return downloadUrl;
+      const url = await uploadToCloudinary(file);
+      if (!url) throw new Error('No URL returned');
+      return url;
     } catch (err) {
-      console.error('[v0] Error uploading image:', err);
-      toast.error('Failed to upload image');
+      console.error('[v0] Cloudinary upload error:', err);
+      toast.error('Image upload failed. Please try again.');
       return null;
     } finally {
       setUploading(false);
     }
   }, []);
 
-  return {
-    uploading,
-    uploadImage,
-  };
+  /** Upload multiple files, return array of secure URLs */
+  const uploadImages = useCallback(async (files: File[]): Promise<string[]> => {
+    setUploading(true);
+    try {
+      const results = await Promise.all(files.map((f) => uploadToCloudinary(f).catch(() => null)));
+      return results.filter((u): u is string => !!u);
+    } catch (err) {
+      console.error('[v0] Cloudinary multi-upload error:', err);
+      toast.error('Some images failed to upload');
+      return [];
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  return { uploading, uploadImage, uploadImages };
 };
 
 // Hook for managing message images and subcategories

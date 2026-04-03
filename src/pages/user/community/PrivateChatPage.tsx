@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCheck, Check, Image, X, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, CheckCheck, Check, ImageIcon, X, RefreshCw, Loader2 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   usePrivateMessages,
@@ -10,9 +10,21 @@ import {
   useAnyUserVerification,
 } from '../../../hooks/usePrivateChat';
 import { PrivateMessage } from '../../../hooks/usePrivateChat';
-import { storage } from '../../../config/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import toast from 'react-hot-toast';
+
+// Cloudinary unsigned upload
+async function uploadImageToCloudinary(file: File): Promise<string> {
+  const cloudName = (import.meta as Record<string, unknown> & { env?: Record<string, string> }).env?.VITE_CLOUDINARY_CLOUD_NAME ?? 'dsqjg9mfg';
+  const preset    = (import.meta as Record<string, unknown> & { env?: Record<string, string> }).env?.VITE_CLOUDINARY_UPLOAD_PRESET ?? 'ebsumsa';
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', preset);
+  fd.append('folder', 'private_chat');
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+  if (!res.ok) throw new Error(`Upload failed ${res.status}`);
+  const data = await res.json() as { secure_url: string };
+  return data.secure_url;
+}
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
 
 // Helpers
@@ -237,11 +249,7 @@ export default function PrivateChatPage() {
     if (imageFile) {
       setUploadingImg(true);
       try {
-        const ext = imageFile.name.split('.').pop();
-        const path = `private_chat/${chatId}/${Date.now()}.${ext}`;
-        const fileRef = storageRef(storage, path);
-        await uploadBytes(fileRef, imageFile);
-        imgUrl = await getDownloadURL(fileRef);
+        imgUrl = await uploadImageToCloudinary(imageFile);
       } catch {
         toast.error('Image upload failed');
       } finally {
@@ -496,7 +504,7 @@ export default function PrivateChatPage() {
           {uploadingImg ? (
             <Loader2 className="w-5 h-5 animate-spin text-[#25D366]" />
           ) : (
-            <Image className="w-5 h-5" />
+            <ImageIcon className="w-5 h-5" />
           )}
         </button>
 
