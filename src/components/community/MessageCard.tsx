@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Community } from '../../hooks/useCommunities';
 import {
   MoreVertical, Trash2, Edit2, MessageCircle, Pin, CheckCheck, Reply, Forward,
+  X, ChevronLeft, ChevronRight, ZoomIn,
 } from 'lucide-react';
 import {
   doc, updateDoc, arrayUnion, arrayRemove, getDoc,
@@ -59,10 +60,7 @@ function timeAgo(date: string) {
   return new Date(date).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-// Reaction emojis
 const REACTION_EMOJIS = ['❤️', '😂', '👍', '😮', '😢', '🙏'];
-
-// Reaction summary — e.g. { '❤️': ['uid1','uid2'], '😂': ['uid3'] }
 type Reactions = Record<string, string[]>;
 
 function parseReactions(raw: unknown): Reactions {
@@ -70,33 +68,196 @@ function parseReactions(raw: unknown): Reactions {
   return raw as Reactions;
 }
 
-// Image component with fallback
-const SafeImage: React.FC<{
-  src: string; alt: string; className?: string; style?: React.CSSProperties;
-}> = ({ src, alt, className, style }) => {
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-  if (error) {
-    return (
-      <div className={`flex items-center justify-center bg-slate-100 ${className}`} style={style}>
-        <span className="text-xs text-slate-400">Image unavailable</span>
-      </div>
-    );
-  }
+// ── Full-screen image lightbox ──────────────────────────────────────────────
+const ImageLightbox: React.FC<{
+  images: string[];
+  startIndex: number;
+  onClose: () => void;
+}> = ({ images, startIndex, onClose }) => {
+  const [idx, setIdx] = useState(startIndex);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setIdx((i) => Math.max(0, i - 1));
+      if (e.key === 'ArrowRight') setIdx((i) => Math.min(images.length - 1, i + 1));
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [images.length, onClose]);
+
   return (
-    <div className="relative">
-      {loading && <div className={`absolute inset-0 wa-skeleton ${className}`} style={style} />}
-      <img
-        src={src} alt={alt} crossOrigin="anonymous"
-        className={className}
-        style={{ ...style, opacity: loading ? 0 : 1 }}
-        onLoad={() => setLoading(false)}
-        onError={() => { setError(true); setLoading(false); }}
-      />
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col bg-black"
+      onClick={onClose}
+    >
+      {/* Top bar */}
+      <div
+        className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="text-white/70 text-sm font-medium">
+          {images.length > 1 ? `${idx + 1} / ${images.length}` : ''}
+        </span>
+        <button
+          onClick={onClose}
+          className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
+      </div>
+
+      {/* Image */}
+      <div
+        className="flex-1 flex items-center justify-center overflow-hidden relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={images[idx]}
+          alt=""
+          crossOrigin="anonymous"
+          className="max-w-full max-h-full object-contain select-none"
+          draggable={false}
+        />
+      </div>
+
+      {/* Navigation arrows */}
+      {images.length > 1 && (
+        <div
+          className="flex-shrink-0 flex items-center justify-between px-4 py-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setIdx((i) => Math.max(0, i - 1))}
+            disabled={idx === 0}
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-30"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+          {/* Dot indicators */}
+          <div className="flex gap-1.5">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className="w-2 h-2 rounded-full transition-all"
+                style={{ background: i === idx ? '#25D366' : 'rgba(255,255,255,0.4)' }}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => setIdx((i) => Math.min(images.length - 1, i + 1))}
+            disabled={idx === images.length - 1}
+            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-30"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
+// ── Image grid inside bubble ────────────────────────────────────────────────
+const ImageGrid: React.FC<{
+  urls: string[];
+  onPreview: (index: number) => void;
+}> = ({ urls, onPreview }) => {
+  const count = Math.min(urls.length, 4);
+
+  if (count === 1) {
+    return (
+      <div
+        className="mt-1.5 rounded-xl overflow-hidden cursor-pointer relative"
+        style={{ maxWidth: '260px' }}
+        onClick={(e) => { e.stopPropagation(); onPreview(0); }}
+      >
+        <img
+          src={urls[0]}
+          alt=""
+          crossOrigin="anonymous"
+          className="w-full object-contain rounded-xl"
+          style={{ maxHeight: '280px', display: 'block' }}
+          onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+        />
+        <div className="absolute bottom-2 right-2 bg-black/40 rounded-full p-1">
+          <ZoomIn className="w-3.5 h-3.5 text-white" />
+        </div>
+      </div>
+    );
+  }
+
+  const gridClass =
+    count === 2 ? 'grid-cols-2' :
+    count === 3 ? 'grid-cols-2' :
+    'grid-cols-2';
+
+  return (
+    <div
+      className={`mt-1.5 grid gap-0.5 rounded-xl overflow-hidden cursor-pointer`}
+      style={{ maxWidth: '240px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* For 3 images: first spans full width, bottom two side-by-side */}
+      {count === 3 ? (
+        <>
+          <div className="col-span-2 relative" onClick={() => onPreview(0)}>
+            <img
+              src={urls[0]}
+              alt=""
+              crossOrigin="anonymous"
+              className="w-full object-cover"
+              style={{ height: '140px' }}
+              onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+            />
+          </div>
+          {[1, 2].map((i) => (
+            <div key={i} className="relative" onClick={() => onPreview(i)}>
+              <img
+                src={urls[i]}
+                alt=""
+                crossOrigin="anonymous"
+                className="w-full object-cover"
+                style={{ height: '100px' }}
+                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+              />
+            </div>
+          ))}
+        </>
+      ) : (
+        <div className={`grid ${gridClass} gap-0.5`}>
+          {urls.slice(0, 4).map((url, i) => (
+            <div
+              key={i}
+              className="relative overflow-hidden"
+              style={{ height: count === 2 ? '120px' : '100px' }}
+              onClick={() => onPreview(i)}
+            >
+              <img
+                src={url}
+                alt=""
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
+              />
+              {i === 3 && urls.length > 4 && (
+                <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                  <span className="text-white text-lg font-bold">+{urls.length - 4}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="absolute bottom-2 right-2 bg-black/40 rounded-full p-1 pointer-events-none">
+        <ZoomIn className="w-3 h-3 text-white" />
+      </div>
+    </div>
+  );
+};
+
+// ── Message card ────────────────────────────────────────────────────────────
 const MessageCard: React.FC<MessageCardProps> = ({
   message,
   isOwn,
@@ -112,11 +273,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onForward,
   onReply,
 }) => {
-  const [showMenu, setShowMenu]     = useState(false);
-  const [showReact, setShowReact]   = useState(false);
-  const [editing, setEditing]       = useState(false);
-  const [editText, setEditText]     = useState(message.message);
-  const [reactions, setReactions]   = useState<Reactions>({});
+  const [showMenu, setShowMenu]         = useState(false);
+  const [showReact, setShowReact]       = useState(false);
+  const [editing, setEditing]           = useState(false);
+  const [editText, setEditText]         = useState(message.message);
+  const [reactions, setReactions]       = useState<Reactions>({});
+  const [lightboxIdx, setLightboxIdx]   = useState<number | null>(null);
   const menuRef  = useRef<HTMLDivElement>(null);
   const reactRef = useRef<HTMLDivElement>(null);
 
@@ -124,22 +286,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const { verification } = useAnyUserVerification(message.user_id);
   const isVerified = verification?.is_verified;
 
-  // Load reactions
   useEffect(() => {
     const loadReactions = async () => {
       try {
         const snap = await getDoc(doc(db, 'community_messages', message.id));
-        if (snap.exists()) {
-          setReactions(parseReactions(snap.data()?.reactions));
-        }
+        if (snap.exists()) setReactions(parseReactions(snap.data()?.reactions));
       } catch { /* non-critical */ }
     };
     loadReactions();
   }, [message.id]);
 
-  // Sound is fired centrally from the feed via prevPostCountRef — no per-card sound needed.
-
-  // Close menus on outside click
   useEffect(() => {
     if (!showMenu && !showReact) return;
     const handler = (e: MouseEvent) => {
@@ -177,7 +333,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [g0, g1] = getGrad(message.user_name);
   const inits = getInitials(message.user_name);
   const tc = TOPIC_COLORS[message.topic || ''] ?? TOPIC_COLORS['General'];
-  const imageUrls = (message as Community & { image_urls?: string[] }).image_urls;
+  const imageUrls: string[] = (message as Community & { image_urls?: string[] }).image_urls ?? [];
 
   const bubbleRadius = isOwn
     ? nextSameUser ? '16px 4px 16px 16px' : '16px 0px 16px 16px'
@@ -185,130 +341,283 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const mtClass = prevSameUser ? 'mt-0.5' : 'mt-2';
 
-  // Aggregate reactions for display
   const reactionSummary = Object.entries(reactions)
     .filter(([, users]) => users.length > 0)
     .map(([emoji, users]) => ({ emoji, count: users.length }));
 
-  // Use the explicitly passed viewerUserId for reactions; fall back to sender if own message
   const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
 
   return (
-    <div className={`flex gap-2 px-3 ${mtClass} ${isOwn ? 'flex-row-reverse' : ''} group`}>
-      {/* Avatar */}
-      <div className="w-8 flex-shrink-0 self-end">
-        {!isOwn && !nextSameUser && (
-          <button
-            type="button"
-            onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
-            className="focus:outline-none"
-          >
-            {message.user_avatar ? (
-              <img
-                src={message.user_avatar}
-                alt={message.user_name}
-                crossOrigin="anonymous"
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm hover:ring-[#25D366] transition-all"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white shadow-sm hover:ring-[#25D366] transition-all"
-                style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+    <>
+      {/* Lightbox portal */}
+      {lightboxIdx !== null && imageUrls.length > 0 && (
+        <ImageLightbox
+          images={imageUrls}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
+
+      <div className={`flex gap-1.5 px-2 ${mtClass} ${isOwn ? 'flex-row-reverse' : ''}`}>
+        {/* Avatar column — fixed 32px wide */}
+        <div className="w-8 flex-shrink-0 self-end">
+          {!isOwn && !nextSameUser && (
+            <button
+              type="button"
+              onClick={() => onAvatarClick?.(message.user_id, message.user_name, message.user_avatar)}
+              className="focus:outline-none"
+            >
+              {message.user_avatar ? (
+                <img
+                  src={message.user_avatar}
+                  alt={message.user_name}
+                  crossOrigin="anonymous"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white shadow-sm"
+                  style={{ background: `linear-gradient(135deg, ${g0}, ${g1})` }}
+                >
+                  {inits}
+                </div>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Bubble + actions row */}
+        <div
+          className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : ''}`}
+          style={{ maxWidth: 'calc(100% - 40px)' }}
+        >
+          {/* Bubble column */}
+          <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} min-w-0`}>
+            {/* Sender name */}
+            {!isOwn && !prevSameUser && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onProfileClick?.(message.user_id, message.user_name, message.user_avatar); }}
+                className="px-1 pb-0.5 focus:outline-none"
               >
-                {inits}
+                <span className="text-[12px] font-bold leading-tight flex items-center gap-1" style={{ color: g0 }}>
+                  {message.user_name}
+                  {isVerified && <VerifiedBadge size="sm" />}
+                  {message.is_pinned && <Pin className="w-3 h-3 text-amber-500" />}
+                </span>
+              </button>
+            )}
+
+            {/* Reaction picker popover */}
+            {showReact && (
+              <div
+                ref={reactRef}
+                className={`mb-1 bg-white rounded-full shadow-xl border border-slate-100 px-2 py-1.5 flex gap-1 z-50 ${isOwn ? 'self-end' : 'self-start'}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => toggleReaction(emoji, currentUserId || message.user_id)}
+                    className="text-xl hover:scale-125 active:scale-110 transition-transform px-1"
+                    style={{ lineHeight: 1 }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
               </div>
             )}
-          </button>
-        )}
-      </div>
 
-      {/* Bubble container */}
-      <div
-        className={`max-w-[78%] sm:max-w-[65%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-        style={{ minWidth: 0 }}
-      >
-        {/* Sender name */}
-        {!isOwn && !prevSameUser && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onProfileClick?.(message.user_id, message.user_name, message.user_avatar); }}
-            className="px-1 pb-0.5 focus:outline-none"
-          >
-            <span className="text-[12px] font-bold leading-tight flex items-center gap-1" style={{ color: g0 }}>
-              {message.user_name}
-              {isVerified && <VerifiedBadge size="sm" />}
-              {message.is_pinned && <Pin className="w-3 h-3 text-amber-500" />}
-            </span>
-          </button>
-        )}
+            {/* Bubble */}
+            <div
+              onClick={() => { if (!editing) onThreadClick?.(message.id); }}
+              className="cursor-pointer shadow-sm active:opacity-90 transition-opacity"
+              style={{
+                background: isOwn ? '#dcf8c6' : '#ffffff',
+                borderRadius: bubbleRadius,
+                padding: '8px 10px 6px 10px',
+                // Let bubble shrink to content but never overflow viewport
+                maxWidth: '100%',
+                wordBreak: 'break-word',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {/* Topic chip */}
+              {message.topic && message.topic !== 'General' && !prevSameUser && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1.5"
+                  style={{ background: tc.bg, color: tc.text }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: tc.dot }} />
+                  {message.topic}
+                </span>
+              )}
 
-        {/* Bubble */}
-        <div className="relative">
-          {/* 3-dot menu — always visible on mobile, hover on desktop */}
-          <div
-            ref={menuRef}
-            className={`absolute top-1 ${isOwn ? 'left-1' : 'right-1'} z-10`}
-          >
+              {/* Edit mode */}
+              {editing ? (
+                <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="w-full p-2 rounded-xl text-[14px] leading-relaxed resize-none focus:outline-none"
+                    style={{
+                      border: '2px solid #25D366',
+                      background: '#f0fdf4',
+                      color: '#111b21',
+                      minHeight: '64px',
+                      minWidth: '180px',
+                    }}
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSave}
+                      className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
+                      style={{ background: '#25D366' }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditing(false); setEditText(message.message); }}
+                      className="px-3 py-1 rounded-lg text-xs font-medium"
+                      style={{ background: '#f0f2f5', color: '#667781' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Message text — no extra padding fighting the button */}
+                  {message.message && message.message.trim() && message.message.trim() !== ' ' && (
+                    <p
+                      className="text-[14px] leading-relaxed whitespace-pre-wrap"
+                      style={{ color: '#111b21', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    >
+                      {message.message}
+                      {message.is_edited && (
+                        <span className="text-[10px] ml-1 italic" style={{ color: '#8696a0' }}>(edited)</span>
+                      )}
+                    </p>
+                  )}
+
+                  {/* Images */}
+                  {imageUrls.length > 0 && (
+                    <ImageGrid
+                      urls={imageUrls}
+                      onPreview={(i) => setLightboxIdx(i)}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Time + ticks */}
+              {!editing && (
+                <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : 'justify-between'}`}>
+                  {onThreadClick && (message.reply_count > 0 || !isOwn) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onThreadClick(message.id); }}
+                      className="flex items-center gap-1"
+                    >
+                      <MessageCircle
+                        className="w-3.5 h-3.5 transition-colors"
+                        style={{ color: message.reply_count > 0 ? '#25D366' : '#d0d7db' }}
+                      />
+                      {message.reply_count > 0 && (
+                        <span className="text-[11px] font-semibold" style={{ color: '#25D366' }}>
+                          {message.reply_count}
+                        </span>
+                      )}
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                    <span className="text-[10px] leading-none" style={{ color: '#8696a0' }}>
+                      {timeAgo(message.created_at)}
+                    </span>
+                    {isOwn && <CheckCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#53bdeb' }} />}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Reaction badges below bubble */}
+            {reactionSummary.length > 0 && (
+              <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                {reactionSummary.map(({ emoji, count }) => (
+                  <button
+                    key={emoji}
+                    onClick={() => toggleReaction(emoji, currentUserId || message.user_id)}
+                    className="flex items-center gap-0.5 bg-white rounded-full px-2 py-0.5 shadow-sm border border-slate-100 text-sm hover:bg-slate-50 active:scale-90 transition-all"
+                    style={{ lineHeight: 1 }}
+                  >
+                    <span>{emoji}</span>
+                    {count > 1 && <span className="text-[11px] text-slate-500 font-medium ml-0.5">{count}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3-dot menu — sits OUTSIDE the bubble, always touchable */}
+          <div ref={menuRef} className="flex-shrink-0 self-center relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowReact(false); }}
-              className="p-1 rounded-full bg-black/5 hover:bg-black/10 active:bg-black/15 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); setShowReact(false); }}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/70 hover:bg-white active:bg-white shadow-sm border border-black/5 transition-colors"
               aria-label="Message options"
             >
-              <MoreVertical className="w-3.5 h-3.5 text-[#667781]" />
+              <MoreVertical className="w-4 h-4 text-[#667781]" />
             </button>
 
             {showMenu && (
               <div
-                className={`absolute top-full ${isOwn ? 'right-0' : 'right-0'} mt-1 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 min-w-[160px]`}
+                className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 min-w-[170px]`}
+                style={{ maxHeight: '80vh', overflowY: 'auto' }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* React */}
                 <button
                   onClick={() => { setShowReact(true); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
                 >
                   <span className="text-base">😊</span>
                   React
                 </button>
-                {/* Reply */}
                 <button
                   onClick={() => { onReply?.(message); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
                 >
-                  <Reply className="w-3.5 h-3.5 text-[#667781]" />
+                  <Reply className="w-4 h-4 text-[#667781]" />
                   Reply
                 </button>
-                {/* Forward */}
                 <button
                   onClick={() => { onForward?.(message); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
                 >
-                  <Forward className="w-3.5 h-3.5 text-[#667781]" />
+                  <Forward className="w-4 h-4 text-[#667781]" />
                   Forward
                 </button>
-                {/* Thread */}
                 <button
                   onClick={() => { onThreadClick?.(message.id); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
                 >
-                  <MessageCircle className="w-3.5 h-3.5 text-[#667781]" />
+                  <MessageCircle className="w-4 h-4 text-[#667781]" />
                   Open thread
                 </button>
                 {isOwn && (
                   <button
                     onClick={() => { setEditing(true); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-[#667781]" />
+                    <Edit2 className="w-4 h-4 text-[#667781]" />
                     Edit
                   </button>
                 )}
                 {isAdmin && (
                   <button
                     onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 active:bg-amber-50 transition-colors"
                   >
-                    <Pin className="w-3.5 h-3.5" />
+                    <Pin className="w-4 h-4" />
                     {message.is_pinned ? 'Unpin' : 'Pin'}
                   </button>
                 )}
@@ -317,9 +626,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     <div className="h-px mx-3 bg-[#f0f2f5]" />
                     <button
                       onClick={() => { onDelete(message.id); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 active:bg-red-50 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                       Delete
                     </button>
                   </>
@@ -327,170 +636,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
               </div>
             )}
           </div>
-
-          {/* Reaction picker popover */}
-          {showReact && (
-            <div
-              ref={reactRef}
-              className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-12 bg-white rounded-full shadow-xl border border-slate-100 px-2 py-1.5 flex gap-1 z-50`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {REACTION_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => toggleReaction(emoji, currentUserId || message.user_id)}
-                  className="text-xl hover:scale-125 active:scale-110 transition-transform px-1"
-                  style={{ lineHeight: 1 }}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div
-            onClick={() => { if (!editing) onThreadClick?.(message.id); }}
-            className="cursor-pointer shadow-sm active:opacity-90 transition-opacity"
-            style={{
-              background: isOwn ? '#dcf8c6' : '#ffffff',
-              borderRadius: bubbleRadius,
-              padding: '8px 12px 6px 12px',
-              maxWidth: '100%',
-            }}
-          >
-            {/* Topic chip */}
-            {message.topic && message.topic !== 'General' && !prevSameUser && (
-              <span
-                className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1.5"
-                style={{ background: tc.bg, color: tc.text }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: tc.dot }} />
-                {message.topic}
-              </span>
-            )}
-
-            {/* Edit mode */}
-            {editing ? (
-              <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                <textarea
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="w-full p-2 rounded-xl text-[14px] leading-relaxed resize-none focus:outline-none"
-                  style={{
-                    border: '2px solid #25D366',
-                    background: '#f0fdf4',
-                    color: '#111b21',
-                    minHeight: '64px',
-                    minWidth: '180px',
-                  }}
-                  rows={3}
-                  autoFocus
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleSave}
-                    className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
-                    style={{ background: '#25D366' }}
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => { setEditing(false); setEditText(message.message); }}
-                    className="px-3 py-1 rounded-lg text-xs font-medium"
-                    style={{ background: '#f0f2f5', color: '#667781' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Message text — add right padding so it doesn't overlap 3-dot */}
-                <p
-                  className="text-[14px] leading-relaxed whitespace-pre-wrap break-words"
-                  style={{ color: '#111b21', paddingRight: isOwn ? 0 : '20px', paddingLeft: isOwn ? '20px' : 0 }}
-                >
-                  {message.message}
-                  {message.is_edited && (
-                    <span className="text-[10px] ml-1 italic" style={{ color: '#8696a0' }}>(edited)</span>
-                  )}
-                </p>
-
-                {/* Images */}
-                {imageUrls && imageUrls.length > 0 && (
-                  <div
-                    className={`mt-1.5 grid gap-1 rounded-xl overflow-hidden ${imageUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {imageUrls.slice(0, 4).map((url, i) => (
-                      <div
-                        key={i}
-                        className="relative bg-[#f0f2f5] overflow-hidden rounded-lg"
-                        style={{ aspectRatio: imageUrls.length === 1 ? '16/9' : '1/1' }}
-                      >
-                        <SafeImage src={url} alt="" className="w-full h-full object-cover" />
-                        {i === 3 && imageUrls.length > 4 && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <span className="text-white text-lg font-bold">+{imageUrls.length - 4}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Time + ticks + reply count */}
-            {!editing && (
-              <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : 'justify-between'}`}>
-                {/* Reply count — always show if > 0 */}
-                {onThreadClick && (message.reply_count > 0 || !isOwn) && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onThreadClick(message.id); }}
-                    className="flex items-center gap-1 group"
-                  >
-                    <MessageCircle
-                      className="w-3.5 h-3.5 transition-colors"
-                      style={{ color: message.reply_count > 0 ? '#25D366' : '#d0d7db' }}
-                    />
-                    {message.reply_count > 0 && (
-                      <span className="text-[11px] font-semibold" style={{ color: '#25D366' }}>
-                        {message.reply_count}
-                      </span>
-                    )}
-                  </button>
-                )}
-
-                <div className="flex items-center gap-1 ml-auto">
-                  <span className="text-[10px] leading-none" style={{ color: '#8696a0' }}>
-                    {timeAgo(message.created_at)}
-                  </span>
-                  {isOwn && <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Reaction badges below bubble */}
-          {reactionSummary.length > 0 && (
-            <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-              {reactionSummary.map(({ emoji, count }) => (
-                <button
-                  key={emoji}
-                  onClick={() => toggleReaction(emoji, currentUserId || message.user_id)}
-                  className="flex items-center gap-0.5 bg-white rounded-full px-2 py-0.5 shadow-sm border border-slate-100 text-sm hover:bg-slate-50 active:scale-90 transition-all"
-                  style={{ lineHeight: 1 }}
-                >
-                  <span>{emoji}</span>
-                  {count > 1 && <span className="text-[11px] text-slate-500 font-medium ml-0.5">{count}</span>}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
