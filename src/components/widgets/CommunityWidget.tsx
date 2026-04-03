@@ -10,7 +10,17 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { Heart, MessageSquareMore, Users, CheckCheck } from 'lucide-react';
+import { Heart, MessageSquareMore, Users, CheckCheck, UserPlus } from 'lucide-react';
+
+// Static demo messages shown when Firebase has no data yet
+const DEMO_MESSAGES = [
+  { id: 'd1', user_name: 'Chukwuemeka O.', message: 'Has anyone gotten the updated timetable for this semester? I heard there were changes to the CS department schedule.', topic: 'Academics', created_at: new Date(Date.now() - 1000 * 60 * 4).toISOString(), likes_count: 7, reply_count: 3, user_avatar: undefined },
+  { id: 'd2', user_name: 'Adaeze N.', message: 'Yes! Check the faculty notice board or the department WhatsApp group. The new one was posted yesterday evening.', topic: 'Academics', created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString(), likes_count: 4, reply_count: 1, user_avatar: undefined },
+  { id: 'd3', user_name: 'Babatunde K.', message: 'The inter-faculty football match is this Friday by 3pm at the sports complex. Come out and support!', topic: 'Events', created_at: new Date(Date.now() - 1000 * 60 * 22).toISOString(), likes_count: 12, reply_count: 5, user_avatar: undefined },
+  { id: 'd4', user_name: 'Ngozi E.', message: 'Anyone know a good spot on campus to study quietly at night? The library closes at 8pm which is too early.', topic: 'Campus Life', created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), likes_count: 9, reply_count: 8, user_avatar: undefined },
+  { id: 'd5', user_name: 'Samuel A.', message: 'Try the Engineering faculty reading room, it is usually open till 10pm and quite peaceful. Just bring your ID card.', topic: 'Campus Life', created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(), likes_count: 6, reply_count: 2, user_avatar: undefined },
+  { id: 'd6', user_name: 'Ifeoma C.', message: 'Reminder that the GST 201 assignment is due next Monday. The topic is on Nigerian Economic History from 1960 to present.', topic: 'General', created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(), likes_count: 15, reply_count: 11, user_avatar: undefined },
+];
 
 function toIso(ts: unknown): string {
   if (!ts) return new Date().toISOString();
@@ -61,15 +71,26 @@ const CommunityWidget: React.FC = () => {
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setMessages(
-          snap.docs.map((d) => {
-            const data = d.data();
-            return { ...data, id: d.id, created_at: toIso(data.created_at) };
-          })
-        );
+        if (snap.docs.length > 0) {
+          setMessages(
+            snap.docs.map((d) => {
+              const data = d.data();
+              return { ...data, id: d.id, created_at: toIso(data.created_at) };
+            })
+          );
+        } else {
+          // Show demo messages so the widget always looks populated
+          const filtered = selectedTopic === 'All'
+            ? DEMO_MESSAGES
+            : DEMO_MESSAGES.filter((m) => m.topic === selectedTopic);
+          setMessages(filtered);
+        }
         setLoading(false);
       },
-      () => setLoading(false)
+      () => {
+        setMessages(DEMO_MESSAGES);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, [selectedTopic]);
@@ -160,16 +181,6 @@ const CommunityWidget: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-8 gap-3">
-            <div className="w-16 h-16 rounded-full bg-white/60 flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-              </svg>
-            </div>
-            <p className="text-sm text-gray-500 font-medium">No messages yet</p>
-            <p className="text-xs text-gray-400">Be the first to start the conversation</p>
-          </div>
         ) : (
           messages.map((msg, index) => {
             // Alternate bubble sides for a lively feel
@@ -232,7 +243,7 @@ const CommunityWidget: React.FC = () => {
         )}
       </div>
 
-      {/* Tap-to-reply hint bar */}
+      {/* Input / Join bar */}
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border-t border-gray-200">
         <div
           className="flex-1 bg-white rounded-full px-4 py-2 text-xs text-gray-400 cursor-pointer border border-gray-200"
@@ -240,14 +251,14 @@ const CommunityWidget: React.FC = () => {
         >
           Type a message...
         </div>
+        {/* Join to Post button */}
         <button
           onClick={() => navigate('/u/community')}
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-transform active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-white flex-shrink-0 transition-transform active:scale-95 shadow-sm"
           style={{ backgroundColor: BRAND }}
         >
-          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-          </svg>
+          <UserPlus className="w-3.5 h-3.5" />
+          Join to Post
         </button>
       </div>
 
