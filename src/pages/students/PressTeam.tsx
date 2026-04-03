@@ -25,85 +25,15 @@ interface PressMemberCardProps {
 // Press Team Data
 // =============================================
 const editorInChief: PressMember = {
-  name: "Name Here",
+  name: "",
   role: "Editor-in-Chief",
-  level: "500 Level",
+  level: "",
   image: placeholder,
   specialty: "News & Editorial",
 };
 
-const pressMembers: PressMember[] = [
-  {
-    name: "Name Here",
-    role: "Deputy Editor",
-    level: "500 Level",
-    image: placeholder,
-    specialty: "Feature Articles",
-  },
-  {
-    name: "Name Here",
-    role: "News Editor",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Campus News",
-  },
-  {
-    name: "Name Here",
-    role: "Social Media Manager",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Digital Content",
-  },
-  {
-    name: "Name Here",
-    role: "Graphics Designer",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Visual Design",
-  },
-  {
-    name: "Name Here",
-    role: "Photographer",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Event Photography",
-  },
-  {
-    name: "Name Here",
-    role: "Video Editor",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Video Production",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Academic News",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "300 Level",
-    image: placeholder,
-    specialty: "Sports News",
-  },
-  {
-    name: "Name Here",
-    role: "Reporter",
-    level: "200 Level",
-    image: placeholder,
-    specialty: "Health News",
-  },
-  {
-    name: "Name Here",
-    role: "Content Writer",
-    level: "400 Level",
-    image: placeholder,
-    specialty: "Blog Articles",
-  },
-];
+// Press members are loaded entirely from Supabase — no hardcoded defaults
+const pressMembers: PressMember[] = [];
 
 // =============================================
 // Editor in Chief Card Component
@@ -206,36 +136,18 @@ export default function PressTeam() {
           }));
         }
 
-        setTeamMembers((prev) => {
-          const merged = prev.map((m, idx) => {
-            const patch = map[`press-${idx}`];
-            if (!patch) return m;
-            return {
-              ...m,
-              name:  patch.name      || m.name,
-              role:  patch.role      || m.role,
-              image: patch.image_url || m.image,
-              level: patch.extra     || m.level,
-            };
-          });
+        // Build team members list purely from Supabase data (exclude editor-in-chief)
+        const allMembers: PressMember[] = Object.entries(map)
+          .filter(([memberId]) => memberId !== "editor-in-chief")
+          .map(([, row]) => ({
+            name:      row.name      || "Name Here",
+            role:      row.role      || "Press Member",
+            image:     row.image_url || placeholder,
+            level:     row.extra     || "",
+            specialty: undefined,
+          }));
 
-          // Append any extra members admin added beyond defaults
-          const defaultIds = new Set(prev.map((_, idx) => `press-${idx}`));
-          const extras: PressMember[] = [];
-          Object.entries(map).forEach(([memberId, row]) => {
-            if (!defaultIds.has(memberId) && memberId !== "editor-in-chief") {
-              extras.push({
-                name:      row.name      || "Name Here",
-                role:      row.role      || "Press Member",
-                image:     row.image_url || placeholder,
-                level:     row.extra     || "",
-                specialty: undefined,
-              });
-            }
-          });
-
-          return [...merged, ...extras];
-        });
+        setTeamMembers(allMembers);
       });
   }, []);
 
@@ -333,11 +245,17 @@ export default function PressTeam() {
             <h4 className="text-center text-lg font-bold text-gray-900 mb-6">
               Press Team Members
             </h4>
-            <div className="grid grid-cols-2 ss:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {teamMembers.map((member, index) => (
-                <PressMemberCard key={`${member.name}-${member.role}-${index}`} member={member} index={index + 2} />
-              ))}
-            </div>
+            {teamMembers.length > 0 ? (
+              <div className="grid grid-cols-2 ss:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {teamMembers.map((member, index) => (
+                  <PressMemberCard key={`${member.name}-${member.role}-${index}`} member={member} index={index + 2} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-sm text-gray-400 py-8">
+                Press team members will appear here once set by the admin.
+              </p>
+            )}
           </div>
 
           {/* Social Media Links */}
