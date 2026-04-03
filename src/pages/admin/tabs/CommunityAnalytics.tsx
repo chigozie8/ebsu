@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { collection, query, getDocs } from 'firebase/firestore';
+import { db } from '../../../config/firebase';
 import { MessageCircle, Users, TrendingUp, Calendar } from 'lucide-react';
 
 interface AnalyticsData {
@@ -33,18 +34,21 @@ const CommunityAnalytics: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch all messages with timestamps
-      const { data: messages, error: msgErr } = await supabase
-        .from('community_messages')
-        .select('created_at, topic');
-
-      if (msgErr) throw msgErr;
+      const snap = await getDocs(collection(db, 'community_messages'));
+      const messages = snap.docs.map((d) => {
+        const data = d.data();
+        const ts = data.created_at;
+        const date = ts && typeof ts.toDate === 'function'
+          ? ts.toDate().toISOString()
+          : typeof ts === 'string' ? ts : new Date().toISOString();
+        return { created_at: date, topic: (data.topic as string) || 'General', user_id: data.user_id as string };
+      });
 
       // Group messages by date and topic
       const groupedData: Record<string, { users: Set<string>; topics: TopicsStats }> = {};
       const globalTopics: TopicsStats = {};
 
-      messages?.forEach((msg: any) => {
+      messages.forEach((msg) => {
         const date = new Date(msg.created_at).toISOString().split('T')[0];
         
         if (!groupedData[date]) {

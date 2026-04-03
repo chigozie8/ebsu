@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { supabase, Community, CommunityReport } from '../../../lib/supabase';
+import {
+  collection, query, orderBy, getDocs, getDoc,
+  doc, updateDoc, addDoc, deleteDoc, where, limit,
+  onSnapshot, serverTimestamp,
+} from 'firebase/firestore';
+import { db } from '../../../config/firebase';
+import { Community } from '../../../hooks/useCommunities';
+
+interface CommunityReport {
+  id: string;
+  message_id: string;
+  reported_by: string;
+  reason?: string;
+  status: string;
+  created_at: string;
+}
 import { MessageCircle, AlertTriangle, Trash2, Eye, Search, Edit2, Send, Check, Pin } from 'lucide-react';
 
 interface ExtendedMessage extends Community {
@@ -29,66 +44,70 @@ const CommunityMonitor: React.FC = () => {
     activeUsers: 0,
   });
 
+  const toStr = (ts: unknown): string => {
+    if (!ts) return new Date().toISOString();
+    if (typeof (ts as any).toDate === 'function') return (ts as any).toDate().toISOString();
+    if (typeof ts === 'string') return ts;
+    return new Date().toISOString();
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('[v0] Fetching community data...');
 
-      // Fetch messages
-      const { data: msgData, error: msgErr } = await supabase
-        .from('community_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [msgSnap, reportSnap, guidelineSnap] = await Promise.all([
+        getDocs(query(collection(db, 'community_messages'), orderBy('created_at', 'desc'))),
+        getDocs(query(collection(db, 'community_reports'), orderBy('created_at', 'desc'))),
+        getDocs(query(collection(db, 'community_guidelines'), orderBy('created_at', 'desc'))),
+      ]);
 
-      console.log('[v0] Messages fetched:', { msgData, msgErr });
+      const messagesArray: ExtendedMessage[] = msgSnap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          user_id: data.user_id || '',
+          user_name: data.user_name || 'Unknown',
+          user_avatar: data.user_avatar,
+          message: data.message || '',
+          topic: data.topic || 'General',
+          community_id: data.community_id,
+          image_urls: data.image_urls,
+          sticker_url: data.sticker_url,
+          created_at: toStr(data.created_at),
+          updated_at: toStr(data.updated_at),
+          likes_count: data.likes_count || 0,
+          reply_count: data.reply_count || 0,
+          is_pinned: data.is_pinned || false,
+          is_edited: data.is_edited || false,
+          is_deleted: data.is_deleted || false,
+        } as ExtendedMessage;
+      });
 
-      if (msgErr) throw msgErr;
+      const reportsArray: CommunityReport[] = reportSnap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<CommunityReport, 'id'>),
+        created_at: toStr((d.data() as any).created_at),
+      }));
 
-      // Fetch reports
-      const { data: reportData, error: reportErr } = await supabase
-        .from('community_reports')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const guidelinesArray = guidelineSnap.docs.map((d) => ({
+        id: d.id,
+        content: (d.data() as any).content || '',
+        created_at: toStr((d.data() as any).created_at),
+      }));
 
-      console.log('[v0] Reports fetched:', { reportData, reportErr });
-
-      if (reportErr) throw reportErr;
-
-      // Try to fetch guidelines - if table doesn't exist, continue without error
-      let guidelineData = [];
-      const { data: gData, error: guidelineErr } = await supabase
-        .from('community_guidelines')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      console.log('[v0] Guidelines fetched:', { gData, guidelineErr });
-
-      if (guidelineErr && !guidelineErr.message.includes('Could not find the table')) {
-        throw guidelineErr;
-      }
-      
-      if (gData) {
-        guidelineData = gData;
-      }
-
-      const messagesArray = (msgData || []) as ExtendedMessage[];
-      console.log('[v0] Setting messages:', messagesArray.length, 'items');
-      
       setMessages(messagesArray);
-      setReports(reportData || []);
-      setGuidelines(guidelineData);
+      setReports(reportsArray);
+      setGuidelines(guidelinesArray);
 
-      // Calculate stats
-      const uniqueUsers = new Set(messagesArray.map((msg: any) => msg.user_id));
+      const uniqueUsers = new Set(messagesArray.map((msg) => msg.user_id));
       setStats({
         totalMessages: messagesArray.length,
-        totalReports: reportData?.length || 0,
+        totalReports: reportsArray.length,
         activeUsers: uniqueUsers.size,
       });
     } catch (err: any) {
-      console.error('[v0] Failed to fetch data:', err);
-      const errorMsg = err?.message || 'Failed to load community data';
-      toast.error(errorMsg);
+      console.error('Failed to fetch community data:', err);
+      toast.error(err?.message || 'Failed to load community data');
     } finally {
       setLoading(false);
     }
@@ -96,72 +115,51 @@ const CommunityMonitor: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-    const channel = supabase
-      .channel('admin:community')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'community_messages',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setMessages((prev) => [payload.new as ExtendedMessage, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === payload.new.id ? (payload.new as ExtendedMessage) : msg))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    // Real-time listener for new messages
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'community_messages'), orderBy('created_at', 'desc')),
+      (snap) => {
+        const msgs: ExtendedMessage[] = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            user_id: data.user_id || '',
+            user_name: data.user_name || 'Unknown',
+            user_avatar: data.user_avatar,
+            message: data.message || '',
+            topic: data.topic || 'General',
+            community_id: data.community_id,
+            image_urls: data.image_urls,
+            sticker_url: data.sticker_url,
+            created_at: toStr(data.created_at),
+            updated_at: toStr(data.updated_at),
+            likes_count: data.likes_count || 0,
+            reply_count: data.reply_count || 0,
+            is_pinned: data.is_pinned || false,
+            is_edited: data.is_edited || false,
+            is_deleted: data.is_deleted || false,
+          } as ExtendedMessage;
+        });
+        setMessages(msgs);
+        const uniqueUsers = new Set(msgs.map((m) => m.user_id));
+        setStats((prev) => ({ ...prev, totalMessages: msgs.length, activeUsers: uniqueUsers.size }));
+      }
+    );
+    return () => unsubscribe();
   }, []);
 
   const handleAddGuideline = async () => {
     if (!newGuideline.trim()) return;
-
     setPostingGuideline(true);
     try {
-      console.log('[v0] Adding guideline:', newGuideline);
-      
-      const { data, error } = await supabase.from('community_guidelines').insert([
-        {
-          content: newGuideline.trim(),
-          created_at: new Date().toISOString(),
-        },
-      ]).select();
-
-      console.log('[v0] Insert response:', { data, error });
-
-      if (error) {
-        console.error('[v0] Insert error details:', error);
-        throw error;
-      }
-
+      const docRef = await addDoc(collection(db, 'community_guidelines'), {
+        content: newGuideline.trim(),
+        created_at: serverTimestamp(),
+      });
+      setGuidelines((prev) => [{ id: docRef.id, content: newGuideline.trim(), created_at: new Date().toISOString() }, ...prev]);
       setNewGuideline('');
-      
-      // Use the returned data if available, otherwise use a temporary ID
-      if (data && data.length > 0) {
-        setGuidelines((prev) => [data[0], ...prev]);
-      } else {
-        // Fallback: fetch the guidelines again to ensure consistency
-        const { data: guidelineData } = await supabase
-          .from('community_guidelines')
-          .select('*')
-          .order('created_at', { ascending: false });
-        setGuidelines(guidelineData || []);
-      }
-      
       toast.success('Guideline added!');
     } catch (err: any) {
-      console.error('[v0] Failed to add guideline:', err);
       toast.error(err?.message || 'Failed to add guideline');
     } finally {
       setPostingGuideline(false);
@@ -170,48 +168,28 @@ const CommunityMonitor: React.FC = () => {
 
   const handleDeleteGuideline = async (guidelineId: string) => {
     if (!window.confirm('Delete this guideline?')) return;
-
     try {
-      const { error } = await supabase
-        .from('community_guidelines')
-        .delete()
-        .eq('id', guidelineId);
-
-      if (error) throw error;
-
+      await deleteDoc(doc(db, 'community_guidelines', guidelineId));
       setGuidelines((prev) => prev.filter((g) => g.id !== guidelineId));
       toast.success('Guideline deleted!');
     } catch (err) {
-      console.error('Failed to delete guideline:', err);
       toast.error('Failed to delete guideline');
     }
   };
 
   const handleDeleteMessage = async (messageId: string) => {
     if (!window.confirm('Delete this message? This action cannot be undone.')) return;
-
     try {
-      const { error } = await supabase
-        .from('community_messages')
-        .update({ is_deleted: true })
-        .eq('id', messageId);
-
-      if (error) throw error;
+      await updateDoc(doc(db, 'community_messages', messageId), { is_deleted: true });
       setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
     } catch (err) {
-      console.error('Failed to delete message:', err);
       alert('Failed to delete message');
     }
   };
 
   const handleResolveReport = async (reportId: string) => {
     try {
-      const { error } = await supabase
-        .from('community_reports')
-        .update({ status: 'resolved' })
-        .eq('id', reportId);
-
-      if (error) throw error;
+      await updateDoc(doc(db, 'community_reports', reportId), { status: 'resolved' });
       setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, status: 'resolved' } : r)));
     } catch (err) {
       console.error('Failed to resolve report:', err);
@@ -220,90 +198,60 @@ const CommunityMonitor: React.FC = () => {
 
   const handleEditMessage = async (messageId: string, newText: string) => {
     if (!newText.trim()) return;
-
     try {
-      const { error } = await supabase
-        .from('community_messages')
-        .update({ message: newText, is_edited: true, updated_at: new Date().toISOString() })
-        .eq('id', messageId);
-
-      if (error) throw error;
+      await updateDoc(doc(db, 'community_messages', messageId), {
+        message: newText,
+        is_edited: true,
+        updated_at: serverTimestamp(),
+      });
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? { ...msg, message: newText, is_edited: true } : msg
-        )
+        prev.map((msg) => (msg.id === messageId ? { ...msg, message: newText, is_edited: true } : msg))
       );
       setEditingId(null);
       setEditText('');
     } catch (err) {
-      console.error('Failed to edit message:', err);
       alert('Failed to edit message');
     }
   };
 
   const handlePinMessage = async (messageId: string, currentPinnedState: boolean) => {
     try {
-      const { error } = await supabase
-        .from('community_messages')
-        .update({ is_pinned: !currentPinnedState })
-        .eq('id', messageId);
-
-      if (error) throw error;
-
+      await updateDoc(doc(db, 'community_messages', messageId), { is_pinned: !currentPinnedState });
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId ? { ...msg, is_pinned: !currentPinnedState } : msg
-        )
+        prev.map((msg) => (msg.id === messageId ? { ...msg, is_pinned: !currentPinnedState } : msg))
       );
-
-      toast.success(!currentPinnedState ? 'Message pinned!' : 'Message unpinned!', {
-        duration: 2000,
-        position: 'top-right',
-      });
+      toast.success(!currentPinnedState ? 'Message pinned!' : 'Message unpinned!', { duration: 2000, position: 'top-right' });
     } catch (err) {
-      console.error('Failed to pin message:', err);
       toast.error('Failed to update pin status');
     }
   };
 
   const handlePostAdminMessage = async () => {
     if (!newMessage.trim()) return;
-
     setPosting(true);
     try {
-      const { error } = await supabase.from('community_messages').insert([
-        {
-          user_id: 'admin',
-          user_name: 'Admin',
-          user_avatar: null,
-          message: newMessage,
-          topic: 'General',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          is_edited: false,
-          is_deleted: false,
-          is_pinned: false,
-        },
-      ]);
-
-      if (error) throw error;
-
+      await addDoc(collection(db, 'community_messages'), {
+        user_id: 'admin',
+        user_name: 'Admin',
+        user_avatar: null,
+        message: newMessage,
+        topic: 'General',
+        is_edited: false,
+        is_deleted: false,
+        is_pinned: false,
+        likes_count: 0,
+        reply_count: 0,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
       setNewMessage('');
       toast.success('Admin message posted!', {
         duration: 3000,
         position: 'top-right',
-        style: {
-          background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
-          color: 'white',
-          borderRadius: '8px',
-          padding: '16px',
-          fontSize: '14px',
-          fontWeight: '500',
-        },
+        style: { background: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)', color: 'white', borderRadius: '8px', padding: '16px', fontSize: '14px', fontWeight: '500' },
         icon: <Check className="w-5 h-5" />,
       });
     } catch (err) {
-      console.error('Failed to post admin message:', err);
       toast.error('Failed to post message');
     } finally {
       setPosting(false);
