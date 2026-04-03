@@ -99,6 +99,110 @@ function docToCommunity(id: string, data: Record<string, unknown>): Community {
   };
 }
 
+// ── Default communities to seed if Firestore is empty ─────────────────────
+
+const DEFAULT_COMMUNITIES: Omit<CommunityGroup, 'id' | 'created_at' | 'updated_at'>[] = [
+  {
+    name: 'General',
+    slug: 'general',
+    description: 'Open discussion for all EBSU students — announcements, questions and everything in between.',
+    icon: '💬',
+    color: '#075E54',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Academics',
+    slug: 'academics',
+    description: 'Study tips, course materials, exam prep and academic support for EBSU students.',
+    icon: '📚',
+    color: '#1a73e8',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Campus Life',
+    slug: 'campus-life',
+    description: 'Hostel, food, hangout spots, student activities and everything happening on campus.',
+    icon: '🏫',
+    color: '#e91e63',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Tech & Innovation',
+    slug: 'tech',
+    description: 'Coding, projects, tech events and opportunities for EBSU tech enthusiasts.',
+    icon: '💻',
+    color: '#43a047',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Events',
+    slug: 'events',
+    description: 'Campus events, social gatherings, competitions and student union activities.',
+    icon: '📅',
+    color: '#f57c00',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Health & Wellness',
+    slug: 'health',
+    description: 'Mental health, physical wellness, sports and healthy living on campus.',
+    icon: '❤️',
+    color: '#00acc1',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Jobs & Internships',
+    slug: 'jobs',
+    description: 'Internship opportunities, graduate jobs, career advice and professional development.',
+    icon: '💼',
+    color: '#6d4c41',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+  {
+    name: 'Buy & Sell',
+    slug: 'buy-sell',
+    description: 'Marketplace for EBSU students — sell books, gadgets, clothes and more.',
+    icon: '🛒',
+    color: '#7b1fa2',
+    member_count: 0,
+    post_count: 0,
+    is_active: true,
+  },
+];
+
+async function seedDefaultCommunities(): Promise<void> {
+  const ref = collection(db, 'communities');
+  const now = new Date().toISOString();
+  for (const c of DEFAULT_COMMUNITIES) {
+    const existing = await getDocs(query(ref, where('slug', '==', c.slug), limit(1)));
+    if (existing.empty) {
+      await addDoc(ref, { ...c, created_at: serverTimestamp(), updated_at: serverTimestamp() });
+    }
+  }
+  // Also ensure the 'updated_at' placeholder above resolves for immediate display
+  const fallback = DEFAULT_COMMUNITIES.map((c, i) => ({
+    ...c,
+    id: `default-${i}`,
+    created_at: now,
+    updated_at: now,
+  } as CommunityGroup));
+  return void fallback;
+}
+
 // ── Fetch all active communities ───────────────────────────────────────────
 
 export const useCommunities = () => {
@@ -112,10 +216,19 @@ export const useCommunities = () => {
       setError(null);
 
       const ref = collection(db, 'communities');
-      const q = query(ref, where('is_active', '==', true), orderBy('member_count', 'desc'));
+      const q = query(ref, where('is_active', '==', true), orderBy('name', 'asc'));
       const snap = await getDocs(q);
-      const groups = snap.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
-      setCommunities(groups);
+
+      // If collection is empty, seed default communities then re-fetch
+      if (snap.empty) {
+        await seedDefaultCommunities();
+        const seeded = await getDocs(q);
+        const groups = seeded.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        setCommunities(groups);
+      } else {
+        const groups = snap.docs.map((d) => docToGroup(d.id, d.data() as Record<string, unknown>));
+        setCommunities(groups);
+      }
     } catch (err) {
       console.error('[useCommunities] fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load communities');
