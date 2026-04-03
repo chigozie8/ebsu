@@ -108,30 +108,60 @@ export default function AdvertisementBanner({ className = "" }: AdvertisementBan
 
   const ad = ads[currentIndex];
 
+  // Extract price from description if present (e.g., "$199" or "N5,000")
+  const priceMatch = ad.description.match(/(\$[\d,]+|₦[\d,]+|N[\d,]+|NGN[\d,]+)/i);
+  const price = priceMatch ? priceMatch[0] : null;
+  const descriptionWithoutPrice = price 
+    ? ad.description.replace(price, '').replace(/only\s*/i, '').trim() 
+    : ad.description;
+
   return (
     <div
-      className={`w-full rounded-2xl overflow-hidden shadow-md border border-black/10 group transition-transform duration-300 hover:scale-[1.012] ${className}`}
-      style={{ backgroundColor: ad.bgColor, color: ad.textColor }}
+      className={`w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200 bg-white group ${className}`}
     >
       <div
         className={`transition-opacity duration-300 ${animating ? "opacity-0" : "opacity-100"}`}
       >
-        {/* Hero image — only shown when ad has an image */}
+        {/* Green header with Sponsored label */}
+        <div 
+          className="flex items-center justify-between px-4 py-2.5"
+          style={{ backgroundColor: ad.bgColor || "#00875a" }}
+        >
+          <div className="flex items-center gap-2">
+            {/* Checkmark icon */}
+            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span className="text-white font-semibold text-sm">Sponsored</span>
+          </div>
+          {/* Dismiss button */}
+          <button
+            onClick={() => handleDismiss(ad.id)}
+            aria-label="Dismiss advertisement"
+            className="w-6 h-6 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Product image */}
         {ad.imageUrl && (
-          <div className="relative w-full overflow-hidden" style={{ height: "180px" }}>
+          <div className="relative w-full overflow-hidden bg-gray-100" style={{ height: "220px" }}>
             {/* Shimmer skeleton while loading */}
             {!imgLoaded && !imgError && (
               <div className="absolute inset-0 bg-gray-200 animate-pulse">
                 <div className="absolute inset-0"
                   style={{
-                    background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+                    background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)",
                     backgroundSize: "200% 100%",
                     animation: "shimmer 1.5s infinite",
                   }}
                 />
               </div>
             )}
-            {/* Actual image with zoom on hover */}
+            {/* Actual image with subtle zoom on hover */}
             <img
               src={imgError ? PLACEHOLDER : ad.imageUrl}
               alt={ad.title}
@@ -139,118 +169,58 @@ export default function AdvertisementBanner({ className = "" }: AdvertisementBan
               decoding="async"
               onLoad={() => setImgLoaded(true)}
               onError={() => { setImgError(true); setImgLoaded(true); }}
-              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+              className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${
                 imgLoaded ? "opacity-100" : "opacity-0"
               }`}
-              style={{ transitionProperty: "transform, opacity" }}
             />
-            {/* Gradient overlay for text readability */}
-            <div
-              className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
-              style={{
-                background: `linear-gradient(to top, ${ad.bgColor}f0, transparent)`,
-              }}
-            />
-            {/* Sponsored label */}
-            <span
-              className="absolute top-2.5 left-3 text-xss font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: "rgba(0,0,0,0.35)", color: "#fff" }}
-            >
-              Sponsored
-            </span>
-            {/* Dismiss button on image */}
-            <button
-              onClick={() => handleDismiss(ad.id)}
-              aria-label="Dismiss advertisement"
-              className="absolute top-2 right-2.5 w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:scale-95"
-              style={{ backgroundColor: "rgba(0,0,0,0.35)", color: "#fff" }}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
           </div>
         )}
 
-        <div className={`flex items-start gap-3 px-4 ${ad.imageUrl ? "pt-3 pb-4" : "pt-4 pb-4"}`}>
-          {/* Text content */}
-          <div className="flex-1 min-w-0">
-            {!ad.imageUrl && (
-              <p
-                className="text-xss font-bold uppercase tracking-wider opacity-60 mb-0.5"
-                style={{ color: ad.textColor }}
-              >
-                Sponsored
-              </p>
-            )}
-            <p className="font-bold text-sm sm:text-base leading-tight text-balance line-clamp-2">
-              {ad.title}
-            </p>
-            <p className="text-xs sm:text-sm opacity-80 mt-1 line-clamp-2 text-pretty leading-relaxed">
-              {ad.description}
-            </p>
-            {ad.ctaLabel && ad.ctaUrl && (
-              <a
-                href={ad.ctaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-200 hover:opacity-90 hover:scale-105 active:scale-95"
-                style={{ backgroundColor: ad.textColor, color: ad.bgColor }}
-              >
-                {ad.ctaLabel}
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </a>
-            )}
-          </div>
+        {/* Content area - white background */}
+        <div className="px-4 pt-4 pb-5 bg-white">
+          {/* Title */}
+          <h3 className="font-bold text-lg text-gray-900 leading-snug line-clamp-2">
+            {ad.title}
+          </h3>
+          
+          {/* Description */}
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+            {descriptionWithoutPrice}
+          </p>
 
-          {/* Right controls — only shown when no image (image has dismiss overlay) */}
-          {!ad.imageUrl && (
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <button
-                onClick={() => handleDismiss(ad.id)}
-                aria-label="Dismiss advertisement"
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ backgroundColor: "rgba(255,255,255,0.2)", color: ad.textColor }}
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
+          {/* Price if extracted */}
+          {price && (
+            <p className="mt-2 text-base font-medium text-gray-800">
+              Only <span style={{ color: ad.bgColor || "#00875a" }} className="font-bold">{price}</span>
+            </p>
           )}
 
-          {/* Prev/Next nav if multiple */}
-          {ads.length > 1 && (
-            <div className="flex items-center gap-1 flex-shrink-0 self-center">
-              <button
-                onClick={goToPrev}
-                aria-label="Previous ad"
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ backgroundColor: "rgba(255,255,255,0.2)", color: ad.textColor }}
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <button
-                onClick={goToNext}
-                aria-label="Next ad"
-                className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ backgroundColor: "rgba(255,255,255,0.2)", color: ad.textColor }}
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </div>
+          {/* CTA Button - full width */}
+          {ad.ctaLabel && ad.ctaUrl && (
+            <a
+              href={ad.ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+              style={{ backgroundColor: ad.bgColor || "#00875a" }}
+            >
+              {ad.ctaLabel}
+            </a>
           )}
         </div>
 
-        {/* Dot indicators */}
+        {/* Dot indicators for multiple ads */}
         {ads.length > 1 && (
-          <div className="flex items-center justify-center gap-1.5 pb-3">
+          <div className="flex items-center justify-center gap-2 pb-4 bg-white">
+            <button
+              onClick={goToPrev}
+              aria-label="Previous ad"
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
             {ads.map((_, i) => (
               <button
                 key={i}
@@ -258,13 +228,21 @@ export default function AdvertisementBanner({ className = "" }: AdvertisementBan
                 aria-label={`Go to ad ${i + 1}`}
                 className="rounded-full transition-all duration-200"
                 style={{
-                  width: i === currentIndex ? "20px" : "6px",
-                  height: "6px",
-                  backgroundColor: ad.textColor,
-                  opacity: i === currentIndex ? 0.9 : 0.35,
+                  width: i === currentIndex ? "18px" : "8px",
+                  height: "8px",
+                  backgroundColor: i === currentIndex ? (ad.bgColor || "#00875a") : "#d1d5db",
                 }}
               />
             ))}
+            <button
+              onClick={goToNext}
+              aria-label="Next ad"
+              className="w-7 h-7 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
           </div>
         )}
       </div>
