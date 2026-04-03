@@ -62,11 +62,6 @@ const pressTeamData: TeamMember[] = [
   { id: 'press-2',         name: 'Name Here', image: placeholder, role: 'Social Media Manager', extra: '400 Level' },
   { id: 'press-3',         name: 'Name Here', image: placeholder, role: 'Graphics Designer',    extra: '400 Level' },
   { id: 'press-4',         name: 'Name Here', image: placeholder, role: 'Photographer',         extra: '300 Level' },
-  { id: 'press-5',         name: 'Name Here', image: placeholder, role: 'Video Editor',         extra: '400 Level' },
-  { id: 'press-6',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '300 Level' },
-  { id: 'press-7',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '300 Level' },
-  { id: 'press-8',         name: 'Name Here', image: placeholder, role: 'Reporter',             extra: '200 Level' },
-  { id: 'press-9',         name: 'Name Here', image: placeholder, role: 'Content Writer',       extra: '400 Level' },
 ];
 
 const DEFAULT_DRIVE_URL = 'https://drive.google.com/file/d/1Vv_k_nvjAZ1Wi8QnpFa5wlsWCsns7918/view?usp=drivesdk';

@@ -21,11 +21,6 @@ const DEFAULT_MEMBERS: ParliamentMember[] = [
   { id: "parliament-2",              name: "Name Here", image: placeholder, role: "Majority Whip",           extra: "" },
   { id: "parliament-3",              name: "Name Here", image: placeholder, role: "Minority Whip",           extra: "" },
   { id: "parliament-4",              name: "Name Here", image: placeholder, role: "Clerk of Parliament",     extra: "" },
-  { id: "parliament-5",              name: "Name Here", image: placeholder, role: "Member of Parliament",    extra: "" },
-  { id: "parliament-6",              name: "Name Here", image: placeholder, role: "Member of Parliament",    extra: "" },
-  { id: "parliament-7",              name: "Name Here", image: placeholder, role: "Member of Parliament",    extra: "" },
-  { id: "parliament-8",              name: "Name Here", image: placeholder, role: "Member of Parliament",    extra: "" },
-  { id: "parliament-9",              name: "Name Here", image: placeholder, role: "Member of Parliament",    extra: "" },
 ];
 
 const FIXED_IDS = new Set(DEFAULT_MEMBERS.map((m) => m.id));
