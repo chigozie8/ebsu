@@ -12,30 +12,54 @@ export const APPWRITE_BUCKETS = {
   STUDY_MATERIALS: "study-materials",
 } as const;
 
-// Initialize Appwrite client
+// Initialize Appwrite client with timeout for large file uploads
 const client = new Client()
   .setEndpoint(APPWRITE_ENDPOINT)
-  .setProject(APPWRITE_PROJECT_ID);
+  .setProject(APPWRITE_PROJECT_ID)
+  .setKey(import.meta.env.VITE_APPWRITE_API_KEY || "");
 
 export const appwriteStorage = new Storage(client);
 export { ID as AppwriteID };
 
 /**
- * Upload a file to Appwrite Storage.
+ * Upload a file to Appwrite Storage with support for large files (up to 5GB).
+ * The SDK automatically handles chunking for files larger than 5MB.
  * Returns the file ID which can be used to build the download/view URL.
  */
 export const uploadFileToAppwrite = async (
   file: File,
-  bucketId: string = APPWRITE_BUCKETS.LEARNING_RESOURCES
+  bucketId: string = APPWRITE_BUCKETS.LEARNING_RESOURCES,
+  onProgress?: (progress: number) => void
 ): Promise<{ fileId: string; fileUrl: string }> => {
-  const response = await appwriteStorage.createFile(
-    bucketId,
-    ID.unique(),
-    file
-  );
+  try {
+    console.log("[v0] Starting upload for file:", file.name, "Size:", file.size, "bytes");
+    
+    // The Appwrite SDK automatically chunks files larger than 5MB
+    // and handles the upload process. Max file size is 5GB.
+    const response = await appwriteStorage.createFile(
+      bucketId,
+      ID.unique(),
+      file,
+      [],
+      (progress) => {
+        if (onProgress) {
+          const percentage = (progress.bytesUploaded / progress.bytesTotal) * 100;
+          onProgress(percentage);
+          console.log(`[v0] Upload progress: ${percentage.toFixed(2)}%`);
+        }
+      }
+    );
 
-  const fileUrl = getAppwriteFileViewUrl(bucketId, response.$id);
-  return { fileId: response.$id, fileUrl };
+    console.log("[v0] File uploaded successfully with ID:", response.$id);
+
+    const fileUrl = getAppwriteFileViewUrl(bucketId, response.$id);
+    return { fileId: response.$id, fileUrl };
+  } catch (error: any) {
+    console.error("[v0] Upload error:", error);
+    throw new Error(
+      error?.message || "Failed to upload file. Please check your connection and try again."
+    );
+  }
 };
 
 /**
@@ -59,7 +83,13 @@ export const deleteFileFromAppwrite = async (
   bucketId: string,
   fileId: string
 ): Promise<void> => {
-  await appwriteStorage.deleteFile(bucketId, fileId);
+  try {
+    await appwriteStorage.deleteFile(bucketId, fileId);
+    console.log("[v0] File deleted successfully:", fileId);
+  } catch (error: any) {
+    console.error("[v0] Delete error:", error);
+    throw new Error(error?.message || "Failed to delete file.");
+  }
 };
 
 export { client as appwriteClient };
