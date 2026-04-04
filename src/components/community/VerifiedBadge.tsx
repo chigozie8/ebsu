@@ -6,20 +6,15 @@ interface VerifiedBadgeProps {
   showPulse?: boolean;
 }
 
-const SIZE_MAP = {
-  xs: 13,
+const SIZE_MAP: Record<string, number> = {
+  xs: 14,
   sm: 16,
   md: 20,
   lg: 26,
 };
 
-// Unique IDs per size to avoid SVG filter/gradient conflicts when multiple badges render on screen
-const ID_SUFFIX: Record<string, string> = {
-  xs: 'xs',
-  sm: 'sm',
-  md: 'md',
-  lg: 'lg',
-};
+// Twitter's exact verified seal path (viewBox 0 0 24 24) — single line, no whitespace breaks
+const SEAL_PATH = "M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816z";
 
 const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   size = 'md',
@@ -27,21 +22,11 @@ const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
   showPulse = false,
 }) => {
   const px = SIZE_MAP[size];
-  const s = ID_SUFFIX[size];
+  const s = size;
 
-  /*
-   * Twitter blue verified badge — exact reproduction:
-   *   • Shape: Twitter's official 20-point rounded-star seal (M20.396 11c-.018-.646...)
-   *     drawn on a 24×24 viewBox
-   *   • Fill: vivid blue gradient top-left → bottom-right (#1D9BF0 → #0D6EFD)
-   *   • Glow: subtle blue drop-shadow to make it pop on any background
-   *   • Checkmark: thick white rounded stroke, same proportions as Twitter's icon
-   */
   return (
     <span
-      className={`inline-flex flex-shrink-0 items-center justify-center ${className} ${
-        showPulse ? 'wa-verified-badge' : ''
-      }`}
+      className={`inline-flex flex-shrink-0 items-center justify-center ${className} ${showPulse ? 'wa-verified-badge' : ''}`}
       style={{ width: px, height: px }}
       title="Verified EBSU Student"
       aria-label="Verified account"
@@ -55,52 +40,28 @@ const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
         aria-hidden="true"
       >
         <defs>
-          {/* Rich blue gradient — top-left light to bottom-right deep */}
-          <linearGradient id={`blueGrad-${s}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stopColor="#41b3f5" />
-            <stop offset="45%"  stopColor="#1D9BF0" />
-            <stop offset="100%" stopColor="#0a6fc2" />
+          <linearGradient id={`vbGrad-${s}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#5bb8f5" />
+            <stop offset="50%" stopColor="#1D9BF0" />
+            <stop offset="100%" stopColor="#0a72cc" />
           </linearGradient>
-
-          {/* Soft blue glow — makes the badge feel premium */}
-          <filter id={`blueGlow-${s}`} x="-25%" y="-25%" width="150%" height="150%">
-            <feGaussianBlur stdDeviation="0.8" result="blur" />
-            <feFlood floodColor="#1D9BF0" floodOpacity="0.55" result="color" />
-            <feComposite in="color" in2="blur" operator="in" result="glow" />
-            <feMerge>
-              <feMergeNode in="glow" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
+          <filter id={`vbGlow-${s}`} x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="0" stdDeviation="1" floodColor="#1D9BF0" floodOpacity="0.6" />
           </filter>
         </defs>
 
-        {/*
-          Twitter's exact verified seal shape — 20-point rounded star
-          Path sourced from Twitter's SVG icon (viewBox 0 0 24 24)
-        */}
+        {/* Twitter's official verified seal shape */}
         <path
-          d="M22.25 12c0-.99-.38-1.92-1.07-2.63l.01-.02
-             c.27-.29.44-.67.44-1.1 0-.9-.73-1.62-1.62-1.62-.18 0-.36.03-.52.08
-             C18.93 5.45 17.6 4.5 16.06 4.5c-.28 0-.55.04-.8.1
-             C14.6 3.62 13.37 3 12 3s-2.6.62-3.26 1.6c-.25-.06-.52-.1-.8-.1
-             -1.54 0-2.87.95-3.43 2.21-.16-.05-.34-.08-.52-.08
-             C3.1 6.63 2.37 7.36 2.37 8.25c0 .43.17.81.44 1.1l.01.02
-             C2.13 10.08 1.75 11.01 1.75 12s.38 1.92 1.07 2.63l-.01.02
-             c-.27.29-.44.67-.44 1.1 0 .9.73 1.62 1.62 1.62.18 0 .36-.03.52-.08
-             C5.07 18.55 6.4 19.5 7.94 19.5c.28 0 .55-.04.8-.1
-             C9.4 20.38 10.63 21 12 21s2.6-.62 3.26-1.6c.25.06.52.1.8.1
-             1.54 0 2.87-.95 3.43-2.21.16.05.34.08.52.08
-             .9 0 1.62-.73 1.62-1.62 0-.43-.17-.81-.44-1.1l-.01-.02
-             c.69-.71 1.07-1.64 1.07-2.63Z"
-          fill={`url(#blueGrad-${s})`}
-          filter={`url(#blueGlow-${s})`}
+          d={SEAL_PATH}
+          fill={`url(#vbGrad-${s})`}
+          filter={`url(#vbGlow-${s})`}
         />
 
-        {/* Bold white checkmark — Twitter's exact proportions */}
+        {/* Bold white checkmark centered in the seal */}
         <path
-          d="M8.5 12.5 L10.8 14.8 L15.5 9.2"
+          d="M9.5 12.5L11.2 14.3L14.5 10"
           stroke="white"
-          strokeWidth="2.2"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
