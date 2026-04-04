@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Send, Search, Smile, X, Loader2, Paperclip, Users,
-  RefreshCw, Lock, Shield, CheckCircle2,
+  RefreshCw, Lock, Shield, CheckCircle2, Forward, Reply,
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
@@ -69,6 +69,8 @@ const CommunityPage: React.FC = () => {
   const [imageUrls,     setImageUrls]     = useState<string[]>([]);
   const [showJoinModal, setShowJoinModal]     = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [replyTarget, setReplyTarget]         = useState<ReturnType<typeof useCommunityPosts>['posts'][number] | null>(null);
+  const [forwardTarget, setForwardTarget]     = useState<ReturnType<typeof useCommunityPosts>['posts'][number] | null>(null);
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
@@ -241,6 +243,132 @@ const CommunityPage: React.FC = () => {
           adminId={userId}
           onClose={() => setShowVerifyModal(false)}
         />
+      )}
+
+      {/* Reply modal */}
+      {replyTarget && (
+        <div
+          className="fixed inset-0 z-[10001] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setReplyTarget(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl w-full max-w-lg p-5 pb-safe"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Reply className="w-4 h-4 text-[#25D366]" />
+              <span className="font-semibold text-[#111b21] text-sm">Reply to {replyTarget.user_name}</span>
+            </div>
+            <div className="bg-[#f0f2f5] rounded-xl p-3 mb-3 border-l-4 border-[#25D366]">
+              <p className="text-xs text-[#667781] line-clamp-3">{replyTarget.message || '(image)'}</p>
+            </div>
+            <textarea
+              autoFocus
+              placeholder="Type your reply..."
+              className="w-full border border-gray-200 rounded-xl p-3 text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-[#25D366] text-[#111b21]"
+              rows={3}
+              id="reply-textarea"
+            />
+            <div className="flex gap-3 mt-3">
+              <button
+                onClick={() => setReplyTarget(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const ta = document.getElementById('reply-textarea') as HTMLTextAreaElement;
+                  const text = ta?.value?.trim();
+                  if (!text || !comm) return;
+                  setReplyTarget(null);
+                  try {
+                    await post({
+                      communityId: comm.id,
+                      userId,
+                      userName,
+                      userAvatar,
+                      message: `↩️ @${replyTarget.user_name}: ${text}`,
+                      imageUrls: [],
+                    });
+                    toast.success('Reply sent!');
+                  } catch {
+                    toast.error('Failed to send reply.');
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+                style={{ background: '#25D366' }}
+              >
+                Send Reply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward modal */}
+      {forwardTarget && (
+        <div
+          className="fixed inset-0 z-[10001] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setForwardTarget(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl w-full max-w-lg p-5 pb-safe"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Forward className="w-4 h-4 text-[#128C7E]" />
+              <span className="font-semibold text-[#111b21] text-sm">Forward message</span>
+            </div>
+            <div className="bg-[#f0f2f5] rounded-xl p-3 mb-3 border-l-4 border-[#128C7E]">
+              <p className="text-xs font-semibold text-[#128C7E] mb-1">Forwarded from {forwardTarget.user_name}</p>
+              <p className="text-xs text-[#667781] line-clamp-3">{forwardTarget.message || '(image)'}</p>
+            </div>
+            <textarea
+              autoFocus
+              placeholder="Add a comment (optional)..."
+              className="w-full border border-gray-200 rounded-xl p-3 text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-[#128C7E] text-[#111b21]"
+              rows={2}
+              id="forward-textarea"
+            />
+            <div className="flex gap-3 mt-3">
+              <button
+                onClick={() => setForwardTarget(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const ta = document.getElementById('forward-textarea') as HTMLTextAreaElement;
+                  const extra = ta?.value?.trim();
+                  if (!comm) return;
+                  setForwardTarget(null);
+                  try {
+                    const fwdText = extra
+                      ? `📤 Forwarded from @${forwardTarget.user_name}:\n"${forwardTarget.message || '(image)'}"\n\n${extra}`
+                      : `📤 Forwarded from @${forwardTarget.user_name}:\n"${forwardTarget.message || '(image)'}"`;
+                    await post({
+                      communityId: comm.id,
+                      userId,
+                      userName,
+                      userAvatar,
+                      message: fwdText,
+                      imageUrls: forwardTarget.image_urls ?? [],
+                    });
+                    toast.success('Message forwarded!');
+                  } catch {
+                    toast.error('Failed to forward message.');
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors"
+                style={{ background: '#128C7E' }}
+              >
+                Forward
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {profileTarget && (
@@ -582,6 +710,8 @@ const CommunityPage: React.FC = () => {
                       onEdit={(id, text) => editMessage(id, text)}
                       onAvatarClick={handleAvatarClick}
                       onProfileClick={handleAvatarClick}
+                      onReply={(m) => setReplyTarget(m)}
+                      onForward={(m) => setForwardTarget(m)}
                     />
                   );
                 })}
