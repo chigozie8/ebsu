@@ -388,19 +388,18 @@ const MessageCard: React.FC<MessageCardProps> = ({
   };
 
   const toggleReaction = useCallback(async (emoji: string, userId: string) => {
+    // Do NOT apply any optimistic local state — the onSnapshot listener is the
+    // single source of truth.  Applying state here AND letting onSnapshot fire
+    // causes the count to double.
     try {
       const msgRef  = doc(db, 'community_messages', message.id);
       const field   = `reactions.${emoji}`;
       const current = reactions[emoji] ?? [];
       if (current.includes(userId)) {
         await updateDoc(msgRef, { [field]: arrayRemove(userId) });
-        setReactions((prev) => ({ ...prev, [emoji]: prev[emoji]?.filter((u) => u !== userId) ?? [] }));
-        if (emoji === '❤️') { setLocalLikes((n) => Math.max(0, n - 1)); setIsLiked(false); }
       } else {
         await updateDoc(msgRef, { [field]: arrayUnion(userId) });
-        setReactions((prev) => ({ ...prev, [emoji]: [...(prev[emoji] ?? []), userId] }));
-        if (emoji === '❤️') { setLocalLikes((n) => n + 1); setIsLiked(true); }
-        playSound('message');
+        if (emoji !== '❤️') playSound('message'); // sound for non-heart only (heart has its own UX)
       }
     } catch (err) {
       console.error('[MessageCard] reaction error:', err);

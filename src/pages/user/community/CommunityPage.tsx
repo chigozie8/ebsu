@@ -12,7 +12,7 @@ import {
 } from '../../../hooks/useCommunities';
 import { useDeleteMessage, useEditMessage, useCommunityTyping } from '../../../hooks/useCommunity';
 import { useImageUpload } from '../../../hooks/useCommunityFeatures';
-import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
+import { useGetOrCreateChat, useUserVerification, usePresence } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
 import ProfileModal from '../../../components/community/ProfileModal';
 import VerifyUserModal from '../../../components/community/VerifyUserModal';
@@ -75,6 +75,9 @@ const CommunityPage: React.FC = () => {
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Heartbeat: keep the current user's presence up to date while they are in any community chat
+  usePresence(userId || null);
 
   const { community: comm, loading: loadingComm } = useCommunityBySlug(slug ?? '');
   const { isMember, toggling, toggle } = useCommunityMembership(comm?.id ?? '', userId);

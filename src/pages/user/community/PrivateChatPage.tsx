@@ -8,8 +8,9 @@ import {
   useMarkSeen,
   useTypingIndicator,
   useAnyUserVerification,
+  usePresence,
+  PrivateMessage,
 } from '../../../hooks/usePrivateChat';
-import { PrivateMessage } from '../../../hooks/usePrivateChat';
 import toast from 'react-hot-toast';
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
 import ChatParticipantsList from '../../../components/community/ChatParticipantsList';
@@ -183,6 +184,9 @@ export default function PrivateChatPage() {
   const myId = studentDetails?.userID || '';
   const myName = studentDetails ? `${studentDetails.firstName} ${studentDetails.lastName}`.trim() : 'Me';
   const myAvatar = studentDetails?.profileImageURL || undefined;
+
+  // Heartbeat: keep presence up-to-date while user is in this chat
+  usePresence(myId || null);
 
   const { messages, loading, error: messagesError } = usePrivateMessages(chatId);
   const { send, sending } = useSendPrivateMessage();
