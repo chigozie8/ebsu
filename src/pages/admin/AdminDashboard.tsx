@@ -4998,12 +4998,13 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </motion.div>
         </div>
       )}
-        {/* Verification Tab */}
-        {activeTab === "verification" && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <AdminVerificationManager />
-          </div>
-        )}
+
+      {/* Verification Tab */}
+      {activeTab === "verification" && (
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <AdminVerificationManager />
+        </div>
+      )}
     </div>
   </div>
   );
