@@ -204,6 +204,7 @@ export default function AdminDashboard() {
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const blogImageRef = useRef<HTMLInputElement>(null);
   const contentImageRef = useRef<HTMLInputElement>(null);
@@ -587,6 +588,20 @@ export default function AdminDashboard() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Maximum file size: 500MB (Appwrite allows up to 5GB, but we set a practical limit)
+      const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+      
+      if (file.size > MAX_FILE_SIZE) {
+        notifyUser(
+          "error",
+          `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum allowed size is 500MB.`
+        );
+        e.target.value = "";
+        setSelectedFile(null);
+        return;
+      }
+      
+      console.log("[v0] File selected:", file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       setSelectedFile(file);
     }
   };
@@ -624,14 +639,19 @@ export default function AdminDashboard() {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       notifyUser("loading", "Uploading material...");
 
-      // Upload to Appwrite Storage
+      // Upload to Appwrite Storage with progress tracking
       const { fileId, fileUrl } = await uploadFileToAppwrite(
         selectedFile,
-        APPWRITE_BUCKETS.LEARNING_RESOURCES
+        APPWRITE_BUCKETS.LEARNING_RESOURCES,
+        (progress) => {
+          setUploadProgress(progress);
+          console.log(`[v0] Upload progress: ${progress.toFixed(0)}%`);
+        }
       );
 
       const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${selectedFile.name}`;
@@ -672,9 +692,10 @@ export default function AdminDashboard() {
       fetchMaterials();
     } catch (error: any) {
       console.error("Error uploading material:", error);
-      notifyUser("error", "Failed to upload material. Please try again.");
+      notifyUser("error", error?.message || "Failed to upload material. Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -741,6 +762,7 @@ export default function AdminDashboard() {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       notifyUser("loading", "Updating material...");
@@ -761,10 +783,14 @@ export default function AdminDashboard() {
       if (selectedFile) {
         const oldMaterial = materials.find(m => m.id === editingMaterialId);
 
-        // Upload new file to Appwrite Storage
+        // Upload new file to Appwrite Storage with progress tracking
         const { fileId, fileUrl } = await uploadFileToAppwrite(
           selectedFile,
-          APPWRITE_BUCKETS.LEARNING_RESOURCES
+          APPWRITE_BUCKETS.LEARNING_RESOURCES,
+          (progress) => {
+            setUploadProgress(progress);
+            console.log(`[v0] Upload progress: ${progress.toFixed(0)}%`);
+          }
         );
 
         // Delete old file — from Appwrite if stored there, else legacy Supabase
@@ -798,9 +824,11 @@ export default function AdminDashboard() {
       fetchMaterials();
     } catch (error: any) {
       console.error("Error updating material:", error);
-      notifyUser("error", "Failed to update material. Please try again.");
+      notifyUser("error", error?.message || "Failed to update material. Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
+    }
     }
   };
 
@@ -2369,13 +2397,32 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                     onChange={handleFileChange}
                     accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
                     className="w-full p-3 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green2 file:text-white hover:file:bg-green1"
+                    disabled={isUploading}
                   />
                   {selectedFile && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Selected: {selectedFile.name}
+                      Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
                     </p>
                   )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Maximum file size: 500MB
+                  </p>
                 </div>
+
+                {isUploading && uploadProgress > 0 && (
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-gray-700">Upload Progress</label>
+                      <span className="text-sm font-semibold text-green2">{Math.round(uploadProgress)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-lg h-3 overflow-hidden">
+                      <div
+                        className="bg-green2 h-full transition-all duration-300 ease-out"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -2385,7 +2432,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                   {isUploading ? (
                     <>
                       <Spinner className="w-5 h-5 text-transparent animate-spin fill-white" />
-                      <span>{editingMaterialId ? "Updating..." : "Uploading..."}</span>
+                      <span>{editingMaterialId ? "Updating..." : "Uploading..."} ({Math.round(uploadProgress)}%)</span>
                     </>
                   ) : (
                     editingMaterialId ? "Update Material" : "Upload Material"
