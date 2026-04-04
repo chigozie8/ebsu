@@ -94,13 +94,6 @@ const ParticipantCard: React.FC<{ participant: ChatParticipant }> = ({ participa
     .slice(0, 2)
     .toUpperCase();
 
-  const isOnline = participant.online_status === 'online';
-  const isAway = participant.online_status === 'away';
-
-  // Color based on online status
-  const statusColor = isOnline ? '#31a24c' : isAway ? '#f0ad4e' : '#b0bec5';
-  const statusLabel = isOnline ? 'Active now' : isAway ? 'Away' : 'Offline';
-
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
       {/* Avatar */}
@@ -120,12 +113,6 @@ const ParticipantCard: React.FC<{ participant: ChatParticipant }> = ({ participa
             {initials}
           </div>
         )}
-        {/* Online status indicator */}
-        <div
-          className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
-          style={{ background: statusColor }}
-          title={statusLabel}
-        />
       </div>
 
       {/* Info */}
@@ -136,7 +123,9 @@ const ParticipantCard: React.FC<{ participant: ChatParticipant }> = ({ participa
           </p>
           {participant.is_verified && <VerifiedBadge size="xs" />}
         </div>
-        <p className="text-xs text-slate-500 mt-0.5">{statusLabel}</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Last seen {new Date(participant.last_seen).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+        </p>
       </div>
     </div>
   );

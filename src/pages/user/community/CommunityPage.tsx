@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Send, Search, Smile, X, Loader2, Paperclip, Users,
-  RefreshCw, Lock, Shield, CheckCircle2, Forward, Reply,
+  RefreshCw, Lock, Shield, CheckCircle2, Forward, Reply, Pin,
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
@@ -213,7 +213,9 @@ const CommunityPage: React.FC = () => {
 
   const pinnedPosts  = filteredPosts.filter((p) => p.is_pinned);
   const regularPosts = filteredPosts.filter((p) => !p.is_pinned);
-  const grouped      = groupByDate([...pinnedPosts, ...regularPosts].slice().reverse());
+  // Group only regular (unpinned) posts chronologically (oldest → newest) for a chat-like feed.
+  // Pinned posts are rendered in a dedicated banner at the top of the feed.
+  const grouped      = groupByDate(regularPosts.slice().reverse());
 
   const communityColor = comm?.color ?? '#075E54';
 
@@ -562,7 +564,7 @@ const CommunityPage: React.FC = () => {
             ) : (
               <p className="text-white/70 text-[11px] truncate">
                 <Users className="w-3 h-3 inline mr-0.5" />
-                {comm.member_count.toLocaleString()} members &bull; {posts.length.toLocaleString()} posts
+                {comm.member_count.toLocaleString()} {comm.member_count === 1 ? 'member' : 'members'} &bull; {comm.post_count.toLocaleString()} posts
               </p>
             )}
           </div>
@@ -699,6 +701,39 @@ const CommunityPage: React.FC = () => {
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh if messages aren&apos;t loading
                 </button>
+              </div>
+            )}
+
+            {/* ── Pinned Messages Banner ─────────────────────────────── */}
+            {!loadingPosts && !postsError && pinnedPosts.length > 0 && (
+              <div className="mx-3 mt-3 mb-1 rounded-2xl overflow-hidden shadow-sm border border-amber-200/60">
+                <div
+                  className="flex items-center gap-2 px-3 py-2"
+                  style={{ background: 'rgba(245,124,0,0.10)' }}
+                >
+                  <Pin className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide">
+                    Pinned {pinnedPosts.length > 1 ? `(${pinnedPosts.length})` : ''}
+                  </span>
+                </div>
+                {pinnedPosts.map((msg) => (
+                  <MessageCard
+                    key={msg.id}
+                    message={msg}
+                    isOwn={msg.user_id === userId}
+                    viewerUserId={userId}
+                    isAdmin={isAdmin}
+                    prevSameUser={false}
+                    nextSameUser={false}
+                    onThreadClick={() => navigate(`/u/community/${slug}/post/${msg.id}`)}
+                    onDelete={() => deleteMessage(msg.id)}
+                    onEdit={(id, text) => editMessage(id, text)}
+                    onAvatarClick={handleAvatarClick}
+                    onProfileClick={handleAvatarClick}
+                    onReply={(m) => setReplyTarget(m)}
+                    onForward={(m) => setForwardTarget(m)}
+                  />
+                ))}
               </div>
             )}
 
