@@ -327,7 +327,7 @@ export default function PrivateChatPage() {
   return (
     <div
       className="flex flex-col font-sans"
-      style={{ height: '100dvh', background: '#e5ddd5' }}
+      style={{ height: '100dvh', paddingTop: '64px', background: '#e5ddd5' }}
     >
       {/* Sticky header */}
       <header

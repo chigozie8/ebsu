@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Community } from '../../hooks/useCommunities';
 import {
   MoreVertical, Trash2, Edit2, MessageCircle, Pin, CheckCheck, Reply, Forward,
-  X, ChevronLeft, ChevronRight, ZoomIn,
+  X, ChevronLeft, ChevronRight, ZoomIn, Heart,
 } from 'lucide-react';
 import {
   doc, updateDoc, arrayUnion, arrayRemove, getDoc,
@@ -87,11 +88,7 @@ const ImageLightbox: React.FC<{
   }, [images.length, onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex flex-col bg-black"
-      onClick={onClose}
-    >
-      {/* Top bar */}
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-black" onClick={onClose}>
       <div
         className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-black/60"
         onClick={(e) => e.stopPropagation()}
@@ -108,7 +105,6 @@ const ImageLightbox: React.FC<{
         </button>
       </div>
 
-      {/* Image */}
       <div
         className="flex-1 flex items-center justify-center overflow-hidden relative"
         onClick={(e) => e.stopPropagation()}
@@ -122,7 +118,6 @@ const ImageLightbox: React.FC<{
         />
       </div>
 
-      {/* Navigation arrows */}
       {images.length > 1 && (
         <div
           className="flex-shrink-0 flex items-center justify-between px-4 py-3"
@@ -135,7 +130,6 @@ const ImageLightbox: React.FC<{
           >
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
-          {/* Dot indicators */}
           <div className="flex gap-1.5">
             {images.map((_, i) => (
               <button
@@ -159,40 +153,17 @@ const ImageLightbox: React.FC<{
   );
 };
 
-// ── Image grid inside bubble ────────────────────────────────────────────────
+// ── Simple image grid — NO stats overlay, just clean photos ────────────────
 const ImageGrid: React.FC<{
   urls: string[];
   onPreview: (index: number) => void;
-  replyCount?: number;
-  likesCount?: number;
-}> = ({ urls, onPreview, replyCount = 0, likesCount = 0 }) => {
+}> = ({ urls, onPreview }) => {
   const count = Math.min(urls.length, 4);
-
-  // Stats overlay component for images
-  const StatsOverlay = () => (
-    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-      {/* Comments and Likes */}
-      <div className="flex items-center gap-2">
-        <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-          <MessageCircle className="w-3.5 h-3.5 text-white" />
-          <span className="text-[11px] font-semibold text-white">{replyCount}</span>
-        </span>
-        <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-          <span className="text-[11px]">❤️</span>
-          <span className="text-[11px] font-semibold text-white">{likesCount}</span>
-        </span>
-      </div>
-      {/* Zoom icon */}
-      <div className="bg-black/50 backdrop-blur-sm rounded-full p-1.5">
-        <ZoomIn className="w-3.5 h-3.5 text-white" />
-      </div>
-    </div>
-  );
 
   if (count === 1) {
     return (
       <div
-        className="mt-1.5 rounded-xl overflow-hidden cursor-pointer relative"
+        className="mt-1.5 rounded-xl overflow-hidden cursor-pointer relative group"
         style={{ maxWidth: '260px' }}
         onClick={(e) => { e.stopPropagation(); onPreview(0); }}
       >
@@ -204,25 +175,21 @@ const ImageGrid: React.FC<{
           style={{ maxHeight: '280px', display: 'block' }}
           onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
         />
-        <StatsOverlay />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl flex items-center justify-center">
+          <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-80 transition-opacity" />
+        </div>
       </div>
     );
   }
 
-  const gridClass =
-    count === 2 ? 'grid-cols-2' :
-    count === 3 ? 'grid-cols-2' :
-    'grid-cols-2';
-
   return (
     <div
-      className={`mt-1.5 grid gap-0.5 rounded-xl overflow-hidden cursor-pointer`}
+      className="mt-1.5 rounded-xl overflow-hidden cursor-pointer"
       style={{ maxWidth: '240px' }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* For 3 images: first spans full width, bottom two side-by-side */}
       {count === 3 ? (
-        <>
+        <div className="grid grid-cols-2 gap-0.5">
           <div className="col-span-2 relative" onClick={() => onPreview(0)}>
             <img
               src={urls[0]}
@@ -245,9 +212,9 @@ const ImageGrid: React.FC<{
               />
             </div>
           ))}
-        </>
+        </div>
       ) : (
-        <div className={`grid ${gridClass} gap-0.5`}>
+        <div className="grid grid-cols-2 gap-0.5">
           {urls.slice(0, 4).map((url, i) => (
             <div
               key={i}
@@ -271,23 +238,60 @@ const ImageGrid: React.FC<{
           ))}
         </div>
       )}
-      {/* Stats overlay for multi-image grid */}
-      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-            <MessageCircle className="w-3.5 h-3.5 text-white" />
-            <span className="text-[11px] font-semibold text-white">{replyCount}</span>
-          </span>
-          <span className="flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-1">
-            <span className="text-[11px]">❤️</span>
-            <span className="text-[11px] font-semibold text-white">{likesCount}</span>
-          </span>
-        </div>
-        <div className="bg-black/50 backdrop-blur-sm rounded-full p-1.5">
-          <ZoomIn className="w-3 h-3 text-white" />
-        </div>
-      </div>
     </div>
+  );
+};
+
+// ── Floating portal menu — renders at fixed screen coords to avoid clip ─────
+const PortalMenu: React.FC<{
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+  isOwn: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}> = ({ anchorRef, isOwn, onClose, children }) => {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    const menuWidth = 190;
+    const menuHeight = 280; // estimated
+
+    let top = rect.bottom + 4;
+    let left = isOwn ? rect.right - menuWidth : rect.left;
+
+    // Clamp to viewport
+    if (top + menuHeight > window.innerHeight - 16) {
+      top = rect.top - menuHeight - 4;
+    }
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+
+    setPos({ top, left });
+  }, [anchorRef, isOwn]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (anchorRef.current && anchorRef.current.contains(e.target as Node)) return;
+      onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [anchorRef, onClose]);
+
+  return createPortal(
+    <div
+      className="fixed z-[9998] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
+      style={{ top: pos.top, left: pos.left, minWidth: 190 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>,
+    document.body
   );
 };
 
@@ -313,32 +317,46 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [editText, setEditText]         = useState(message.message);
   const [reactions, setReactions]       = useState<Reactions>({});
   const [lightboxIdx, setLightboxIdx]   = useState<number | null>(null);
-  const menuRef  = useRef<HTMLDivElement>(null);
-  const reactRef = useRef<HTMLDivElement>(null);
+  // Local like state derived from Firebase reactions (❤️ emoji)
+  const [localLikes, setLocalLikes]     = useState<number>(message.likes_count || 0);
+  const [isLiked, setIsLiked]           = useState(false);
+
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const reactRef   = useRef<HTMLDivElement>(null);
 
   const { togglePin } = usePinMessage();
   const { verification } = useAnyUserVerification(message.user_id);
   const isVerified = verification?.is_verified;
 
+  const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
+
+  // Load reactions from Firestore
   useEffect(() => {
     const loadReactions = async () => {
       try {
         const snap = await getDoc(doc(db, 'community_messages', message.id));
-        if (snap.exists()) setReactions(parseReactions(snap.data()?.reactions));
+        if (snap.exists()) {
+          const r = parseReactions(snap.data()?.reactions);
+          setReactions(r);
+          // Derive like state from ❤️ reaction array
+          const heartUsers = r['❤️'] ?? [];
+          setLocalLikes(heartUsers.length || message.likes_count || 0);
+          setIsLiked(currentUserId ? heartUsers.includes(currentUserId) : false);
+        }
       } catch { /* non-critical */ }
     };
     loadReactions();
-  }, [message.id]);
+  }, [message.id, message.likes_count, currentUserId]);
 
+  // Close reaction picker on outside click
   useEffect(() => {
-    if (!showMenu && !showReact) return;
+    if (!showReact) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
       if (reactRef.current && !reactRef.current.contains(e.target as Node)) setShowReact(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [showMenu, showReact]);
+  }, [showReact]);
 
   const handleSave = () => {
     if (editText.trim() && editText !== message.message) onEdit(message.id, editText);
@@ -353,16 +371,25 @@ const MessageCard: React.FC<MessageCardProps> = ({
       if (current.includes(userId)) {
         await updateDoc(msgRef, { [field]: arrayRemove(userId) });
         setReactions((prev) => ({ ...prev, [emoji]: prev[emoji]?.filter((u) => u !== userId) ?? [] }));
+        if (emoji === '❤️') { setLocalLikes((n) => Math.max(0, n - 1)); setIsLiked(false); }
       } else {
         await updateDoc(msgRef, { [field]: arrayUnion(userId) });
         setReactions((prev) => ({ ...prev, [emoji]: [...(prev[emoji] ?? []), userId] }));
+        if (emoji === '❤️') { setLocalLikes((n) => n + 1); setIsLiked(true); }
         playSound('message');
       }
     } catch (err) {
-      console.error('[v0] reaction error:', err);
+      console.error('[MessageCard] reaction error:', err);
     }
     setShowReact(false);
   }, [message.id, reactions]);
+
+  // Quick like via heart icon in footer
+  const handleQuickLike = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUserId) return;
+    toggleReaction('❤️', currentUserId);
+  }, [toggleReaction, currentUserId]);
 
   const [g0, g1] = getGrad(message.user_name);
   const inits = getInitials(message.user_name);
@@ -376,14 +403,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const mtClass = prevSameUser ? 'mt-0.5' : 'mt-2';
 
   const reactionSummary = Object.entries(reactions)
-    .filter(([, users]) => users.length > 0)
+    .filter(([emoji, users]) => users.length > 0 && emoji !== '❤️') // ❤️ shown in footer
     .map(([emoji, users]) => ({ emoji, count: users.length }));
 
-  const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
+  const replyCount = message.reply_count || 0;
 
   return (
     <>
-      {/* Lightbox portal */}
       {lightboxIdx !== null && imageUrls.length > 0 && (
         <ImageLightbox
           images={imageUrls}
@@ -392,8 +418,71 @@ const MessageCard: React.FC<MessageCardProps> = ({
         />
       )}
 
+      {showMenu && (
+        <PortalMenu anchorRef={menuBtnRef} isOwn={isOwn} onClose={() => setShowMenu(false)}>
+          <button
+            onClick={() => { setShowReact(true); setShowMenu(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+          >
+            <span className="text-base">😊</span>
+            React
+          </button>
+          <button
+            onClick={() => { onReply?.(message); setShowMenu(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+          >
+            <Reply className="w-4 h-4 text-[#667781]" />
+            Reply
+          </button>
+          <button
+            onClick={() => { onForward?.(message); setShowMenu(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+          >
+            <Forward className="w-4 h-4 text-[#667781]" />
+            Forward
+          </button>
+          <button
+            onClick={() => { onThreadClick?.(message.id); setShowMenu(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+          >
+            <MessageCircle className="w-4 h-4 text-[#667781]" />
+            View thread
+          </button>
+          {isOwn && (
+            <button
+              onClick={() => { setEditing(true); setShowMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+            >
+              <Edit2 className="w-4 h-4 text-[#667781]" />
+              Edit
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 transition-colors"
+            >
+              <Pin className="w-4 h-4" />
+              {message.is_pinned ? 'Unpin' : 'Pin'}
+            </button>
+          )}
+          {(isOwn || isAdmin) && (
+            <>
+              <div className="h-px mx-3 bg-[#f0f2f5]" />
+              <button
+                onClick={() => { onDelete(message.id); setShowMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </>
+          )}
+        </PortalMenu>
+      )}
+
       <div className={`flex gap-1.5 px-2 ${mtClass} ${isOwn ? 'flex-row-reverse' : ''}`}>
-        {/* Avatar column — fixed 32px wide */}
+        {/* Avatar column */}
         <div className="w-8 flex-shrink-0 self-end">
           {!isOwn && !nextSameUser && (
             <button
@@ -421,7 +510,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
           )}
         </div>
 
-        {/* Bubble + actions row */}
+        {/* Bubble + 3-dot row */}
         <div
           className={`flex items-end gap-1 ${isOwn ? 'flex-row-reverse' : ''}`}
           style={{ maxWidth: 'calc(100% - 40px)' }}
@@ -470,7 +559,6 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 background: isOwn ? '#dcf8c6' : '#ffffff',
                 borderRadius: bubbleRadius,
                 padding: '8px 10px 6px 10px',
-                // Let bubble shrink to content but never overflow viewport
                 maxWidth: '100%',
                 wordBreak: 'break-word',
                 overflowWrap: 'anywhere',
@@ -523,7 +611,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* Message text — no extra padding fighting the button */}
+                  {/* Message text */}
                   {message.message && message.message.trim() && message.message.trim() !== ' ' && (
                     <p
                       className="text-[14px] leading-relaxed whitespace-pre-wrap"
@@ -536,37 +624,69 @@ const MessageCard: React.FC<MessageCardProps> = ({
                     </p>
                   )}
 
-                  {/* Images with engagement stats overlay */}
+                  {/* Images — clean, no overlays */}
                   {imageUrls.length > 0 && (
                     <ImageGrid
                       urls={imageUrls}
                       onPreview={(i) => setLightboxIdx(i)}
-                      replyCount={message.reply_count || 0}
-                      likesCount={message.likes_count || 0}
                     />
                   )}
                 </>
               )}
 
-              {/* Time + ticks */}
+              {/* ── Footer bar: likes · comments · time · ticks ── */}
               {!editing && (
-                <div className={`flex items-center gap-2 mt-1 ${isOwn ? 'justify-end' : 'justify-between'}`}>
-                  {onThreadClick && (message.reply_count > 0 || !isOwn) && (
+                <div
+                  className={`flex items-center mt-1.5 gap-2 ${isOwn ? 'justify-end' : 'justify-between'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Left: likes + comments */}
+                  <div className="flex items-center gap-2">
+                    {/* Like button */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); onThreadClick(message.id); }}
-                      className="flex items-center gap-1"
+                      onClick={handleQuickLike}
+                      className="flex items-center gap-0.5 group"
+                      aria-label="Like"
                     >
-                      <MessageCircle
-                        className="w-3.5 h-3.5 transition-colors"
-                        style={{ color: message.reply_count > 0 ? '#25D366' : '#d0d7db' }}
+                      <Heart
+                        className="w-3.5 h-3.5 transition-all"
+                        style={{
+                          color: isLiked ? '#e91e63' : '#8696a0',
+                          fill: isLiked ? '#e91e63' : 'none',
+                        }}
                       />
-                      {message.reply_count > 0 && (
-                        <span className="text-[11px] font-semibold" style={{ color: '#25D366' }}>
-                          {message.reply_count}
+                      {localLikes > 0 && (
+                        <span
+                          className="text-[11px] font-semibold leading-none"
+                          style={{ color: isLiked ? '#e91e63' : '#8696a0' }}
+                        >
+                          {localLikes}
                         </span>
                       )}
                     </button>
-                  )}
+
+                    {/* Comment/thread count */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onThreadClick?.(message.id); }}
+                      className="flex items-center gap-0.5"
+                      aria-label="Comments"
+                    >
+                      <MessageCircle
+                        className="w-3.5 h-3.5"
+                        style={{ color: replyCount > 0 ? '#25D366' : '#8696a0' }}
+                      />
+                      {replyCount > 0 && (
+                        <span
+                          className="text-[11px] font-semibold leading-none"
+                          style={{ color: '#25D366' }}
+                        >
+                          {replyCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Right: timestamp + ticks */}
                   <div className="flex items-center gap-1 ml-auto flex-shrink-0">
                     <span className="text-[10px] leading-none" style={{ color: '#8696a0' }}>
                       {timeAgo(message.created_at)}
@@ -577,7 +697,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
               )}
             </div>
 
-            {/* Reaction badges below bubble */}
+            {/* Other emoji reaction badges below bubble (excluding ❤️ which is in footer) */}
             {reactionSummary.length > 0 && (
               <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 {reactionSummary.map(({ emoji, count }) => (
@@ -595,82 +715,16 @@ const MessageCard: React.FC<MessageCardProps> = ({
             )}
           </div>
 
-          {/* 3-dot menu — sits OUTSIDE the bubble, always touchable */}
-          <div ref={menuRef} className="flex-shrink-0 self-center relative">
+          {/* 3-dot button — portal menu avoids feed overflow clipping */}
+          <div className="flex-shrink-0 self-center">
             <button
+              ref={menuBtnRef}
               onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); setShowReact(false); }}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/70 hover:bg-white active:bg-white shadow-sm border border-black/5 transition-colors"
               aria-label="Message options"
             >
               <MoreVertical className="w-4 h-4 text-[#667781]" />
             </button>
-
-            {showMenu && (
-              <div
-                className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 min-w-[170px]`}
-                style={{ maxHeight: '80vh', overflowY: 'auto' }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => { setShowReact(true); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
-                >
-                  <span className="text-base">😊</span>
-                  React
-                </button>
-                <button
-                  onClick={() => { onReply?.(message); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
-                >
-                  <Reply className="w-4 h-4 text-[#667781]" />
-                  Reply
-                </button>
-                <button
-                  onClick={() => { onForward?.(message); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
-                >
-                  <Forward className="w-4 h-4 text-[#667781]" />
-                  Forward
-                </button>
-                <button
-                  onClick={() => { onThreadClick?.(message.id); setShowMenu(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4 text-[#667781]" />
-                  Open thread
-                </button>
-                {isOwn && (
-                  <button
-                    onClick={() => { setEditing(true); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#f5f5f5] transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4 text-[#667781]" />
-                    Edit
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 active:bg-amber-50 transition-colors"
-                  >
-                    <Pin className="w-4 h-4" />
-                    {message.is_pinned ? 'Unpin' : 'Pin'}
-                  </button>
-                )}
-                {(isOwn || isAdmin) && (
-                  <>
-                    <div className="h-px mx-3 bg-[#f0f2f5]" />
-                    <button
-                      onClick={() => { onDelete(message.id); setShowMenu(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 active:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
