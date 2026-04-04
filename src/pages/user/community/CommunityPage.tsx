@@ -15,6 +15,7 @@ import { useImageUpload } from '../../../hooks/useCommunityFeatures';
 import { useGetOrCreateChat, useUserVerification } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
 import ProfileModal from '../../../components/community/ProfileModal';
+import VerifyUserModal from '../../../components/community/VerifyUserModal';
 import { StickerPicker } from '../../../components/community/StickerPicker';
 import { playSound } from '../../../hooks/useSound';
 
@@ -66,7 +67,8 @@ const CommunityPage: React.FC = () => {
   const [showStickers,  setShowStickers]  = useState(false);
   const [profileTarget, setProfileTarget] = useState<{ userId: string; userName: string; userAvatar?: string } | null>(null);
   const [imageUrls,     setImageUrls]     = useState<string[]>([]);
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showJoinModal, setShowJoinModal]     = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
@@ -233,6 +235,13 @@ const CommunityPage: React.FC = () => {
           setShowStickers(false);
         }}
       />
+
+      {showVerifyModal && (
+        <VerifyUserModal
+          adminId={userId}
+          onClose={() => setShowVerifyModal(false)}
+        />
+      )}
 
       {profileTarget && (
         <ProfileModal
@@ -409,6 +418,17 @@ const CommunityPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Admin-only: Verify user by email */}
+            {isAdmin && (
+              <button
+                onClick={() => setShowVerifyModal(true)}
+                className="p-1.5 rounded-full hover:bg-white/15 transition-colors"
+                title="Verify a user by email"
+                aria-label="Verify user"
+              >
+                <Shield className="w-5 h-5 text-white" />
+              </button>
+            )}
             <button
               onClick={() => {
                 if (isMember) {

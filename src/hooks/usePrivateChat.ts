@@ -592,3 +592,109 @@ export const useToggleVerification = () => {
   }, []);
   return { toggle };
 };
+
+// ─────────────────────────────────────────────────────────
+// VERIFY USER BY EMAIL (admin only)
+// Looks up userInfo by email, then upserts/updates user_verification
+// ─────────────────────────────────────────────────────────
+export interface VerifyByEmailResult {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  email: string;
+  is_verified: boolean;
+}
+
+export const useVerifyByEmail = () => {
+  const [searching, setSearching] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  const findByEmail = useCallback(async (email: string): Promise<VerifyByEmailResult | null> => {
+    setSearching(true);
+    try {
+      // Look up in userInfo collection
+      const q = query(collection(db, 'userInfo'), where('email', '==', email.trim().toLowerCase()));
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+
+      const d = snap.docs[0];
+      const data = d.data() as Record<string, unknown>;
+      const userId = data.userID as string;
+      const firstName = (data.firstName as string) || '';
+      const lastName = (data.lastName as string) || '';
+      const userName = `${firstName} ${lastName}`.trim() || email;
+      const userAvatar = (data.profileImageURL as string) || undefined;
+
+      // Check current verification status
+      const vq = query(collection(db, 'user_verification'), where('user_id', '==', userId));
+      const vSnap = await getDocs(vq);
+      const is_verified = vSnap.empty ? false : ((vSnap.docs[0].data().is_verified as boolean) || false);
+
+      return { userId, userName, userAvatar, email, is_verified };
+    } catch (err) {
+      console.error('[useVerifyByEmail] search error:', err);
+      return null;
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  const verifyUser = useCallback(async (result: VerifyByEmailResult, adminId: string): Promise<boolean> => {
+    setVerifying(true);
+    try {
+      const vq = query(collection(db, 'user_verification'), where('user_id', '==', result.userId));
+      const vSnap = await getDocs(vq);
+
+      if (!vSnap.empty) {
+        await updateDoc(vSnap.docs[0].ref, {
+          is_verified: true,
+          verified_at: new Date().toISOString(),
+          verified_by: adminId,
+          updated_at: serverTimestamp(),
+        });
+      } else {
+        // Create a new verification record if one doesn't exist
+        await addDoc(collection(db, 'user_verification'), {
+          user_id: result.userId,
+          user_name: result.userName,
+          user_avatar: result.userAvatar || null,
+          is_verified: true,
+          verified_at: new Date().toISOString(),
+          verified_by: adminId,
+          bio: '',
+          online_status: 'offline',
+          last_seen: serverTimestamp(),
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('[useVerifyByEmail] verify error:', err);
+      return false;
+    } finally {
+      setVerifying(false);
+    }
+  }, []);
+
+  const revokeVerification = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const vq = query(collection(db, 'user_verification'), where('user_id', '==', userId));
+      const vSnap = await getDocs(vq);
+      if (!vSnap.empty) {
+        await updateDoc(vSnap.docs[0].ref, {
+          is_verified: false,
+          verified_at: null,
+          verified_by: null,
+          updated_at: serverTimestamp(),
+        });
+      }
+      return true;
+    } catch (err) {
+      console.error('[useVerifyByEmail] revoke error:', err);
+      return false;
+    }
+  }, []);
+
+  return { findByEmail, verifyUser, revokeVerification, searching, verifying };
+};
