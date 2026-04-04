@@ -1,0 +1,24 @@
+/* ── Dashboard quick-access card polish ── */
+/* Applied via .dash-quick-card class or auto-targeted via parent selector */
+.dash-quick-card,
+.lg\:col-span-5 .auto-rows-max > a > div,
+.lg\:col-span-5 .auto-rows-max > .wallet-card-wrapper,
+.lg\:col-span-5 .auto-rows-max > .premium-card-wrapper {
+  border-radius: 1rem !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+.dash-quick-card:hover,
+.lg\:col-span-5 .auto-rows-max > a > div:hover {
+  transform: scale(1.035);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14) !important;
+}
+.dash-quick-card:active,
+.lg\:col-span-5 .auto-rows-max > a > div:active {
+  transform: scale(0.97);
+}
+
+/* ── Ensure NavLink wrapper doesn't interfere ── */
+.lg\:col-span-5 .auto-rows-max > a {
+  display: block;
+}
