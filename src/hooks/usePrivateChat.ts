@@ -720,7 +720,6 @@ export const useChatParticipants = (chatId: string) => {
 
   useEffect(() => {
     if (!chatId) { 
-      console.log('[v0] useChatParticipants: no chatId');
       setLoading(false); 
       return; 
     }
@@ -730,21 +729,16 @@ export const useChatParticipants = (chatId: string) => {
     try {
       const chatRef = doc(db, 'private_chats', chatId);
       
-      // Subscribe to chat document to get participant IDs
       const unsub = onSnapshot(
         chatRef,
         async (snap) => {
-          console.log('[v0] useChatParticipants: snapshot received', { exists: snap.exists() });
           if (!snap.exists()) { 
-            console.log('[v0] useChatParticipants: chat document does not exist');
             setParticipants([]); 
             setLoading(false); 
             return; 
           }
           
           const chatData = snap.data();
-          console.log('[v0] useChatParticipants: chatData:', { p1: chatData?.participant_1, p2: chatData?.participant_2 });
-          
           const participant1Id = chatData.participant_1 as string;
           const participant2Id = chatData.participant_2 as string;
           const participant1Name = chatData.participant_1_name as string;
@@ -753,25 +747,14 @@ export const useChatParticipants = (chatId: string) => {
           const participant2Avatar = chatData.participant_2_avatar as string | undefined;
 
           try {
-            // Fetch verification status for both participants
-            const q1 = query(
-              collection(db, 'user_verification'),
-              where('user_id', '==', participant1Id)
-            );
-            const q2 = query(
-              collection(db, 'user_verification'),
-              where('user_id', '==', participant2Id)
-            );
-
-            console.log('[v0] useChatParticipants: fetching verification data for both participants');
+            const q1 = query(collection(db, 'user_verification'), where('user_id', '==', participant1Id));
+            const q2 = query(collection(db, 'user_verification'), where('user_id', '==', participant2Id));
             const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
             const p1Data = snap1.empty ? null : snap1.docs[0].data();
             const p2Data = snap2.empty ? null : snap2.docs[0].data();
-            
-            console.log('[v0] useChatParticipants: verification data fetched', { p1Found: !!p1Data, p2Found: !!p2Data });
 
-            const participantsList: ChatParticipant[] = [
+            setParticipants([
               {
                 id: `${chatId}_p1`,
                 user_id: participant1Id,
@@ -790,20 +773,15 @@ export const useChatParticipants = (chatId: string) => {
                 last_seen: toIso(p2Data?.last_seen),
                 is_verified: (p2Data?.is_verified as boolean) || false,
               },
-            ];
-
-            console.log('[v0] useChatParticipants: setting participants list', participantsList);
-            setParticipants(participantsList);
+            ]);
             setError(null);
           } catch (err) {
-            console.error('[v0] useChatParticipants error fetching verification:', err);
             setError(err instanceof Error ? err.message : 'Failed to load participants');
           } finally {
             setLoading(false);
           }
         },
         (err) => {
-          console.error('[v0] useChatParticipants Firebase error:', err);
           setError(err.message);
           setLoading(false);
         }
@@ -811,7 +789,6 @@ export const useChatParticipants = (chatId: string) => {
 
       return () => unsub();
     } catch (err) {
-      console.error('[v0] useChatParticipants setup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to set up participants');
       setLoading(false);
     }

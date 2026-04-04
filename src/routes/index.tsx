@@ -93,6 +93,9 @@ const AppRoutes = () => {
   const PrivateChatPage = lazy(
     () => import("../pages/user/community/PrivateChatPage")
   );
+  const DirectMessagesPage = lazy(
+    () => import("../pages/user/messages/DirectMessagesPage")
+  );
   const PostDetailPage = lazy(
     () => import("../pages/user/community/PostDetailPage")
   );
@@ -299,6 +302,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <PrivateChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/u/messages"
+            element={
+              <ProtectedRoute>
+                <DirectMessagesPage />
               </ProtectedRoute>
             }
           />

@@ -160,6 +160,15 @@ export const DashboardNavbar = () => {
                 >
                   Profile
                 </NavLink>
+                <NavLink
+                  onClick={() => setIsNavOpen(false)}
+                  to="/u/messages"
+                  className={
+                    "w-full p-3 hover:text-green1 hover:bg-gray-100 rounded-md transition"
+                  }
+                >
+                  Messages
+                </NavLink>
                 {/* Admin Link - Only visible to admin users */}
                 {(["patronkwo@gmail.com","kenronkwo@gmail.com","ebsumsapresident2526@gmail.com","ebsumsa102@gmail.com","oohveeyuu070@gmail.com"].includes((studentDetails?.email || '').toLowerCase()) || studentDetails?.email?.toLowerCase().includes("admin")) && (
                   <NavLink
