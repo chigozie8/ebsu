@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../config/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import type { CalendarEvent } from "../../pages/admin/tabs/AdminEventsManager";
+import type { CalendarEvent } from "../../types/events";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
