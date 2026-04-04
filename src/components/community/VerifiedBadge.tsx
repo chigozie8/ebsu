@@ -96,11 +96,11 @@ const VerifiedBadge: React.FC<VerifiedBadgeProps> = ({
           filter={`url(#blueGlow-${s})`}
         />
 
-        {/* Bold white checkmark — same weight & curve as Twitter's */}
+        {/* Bold white checkmark — Twitter's exact proportions */}
         <path
-          d="M9 12.75 L10.813 14.563 L15 9.75"
+          d="M8.5 12.5 L10.8 14.8 L15.5 9.2"
           stroke="white"
-          strokeWidth="2"
+          strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
