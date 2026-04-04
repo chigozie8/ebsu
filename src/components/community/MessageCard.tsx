@@ -13,6 +13,7 @@ import { usePinMessage, useDeleteMessage } from '../../hooks/useCommunity';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 import VerifiedBadge from './VerifiedBadge';
 import { playSound } from '../../hooks/useSound';
+import toast from 'react-hot-toast';
 
 interface MessageCardProps {
   message: Community;
@@ -587,13 +588,21 @@ const MessageCard: React.FC<MessageCardProps> = ({
             <button
               type="button" role="menuitem"
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => { setShowMenu(false); togglePin(message.id, message.is_pinned || false); }}
+              onClick={async () => {
+                setShowMenu(false);
+                try {
+                  await togglePin(message.id, message.is_pinned || false);
+                  toast.success(message.is_pinned ? 'Message unpinned' : 'Message pinned to top');
+                } catch {
+                  toast.error('Failed to pin message. Please try again.');
+                }
+              }}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-[13.5px] font-medium text-[#f57c00] hover:bg-amber-50 active:bg-amber-100 transition-colors"
             >
               <span className="w-6 flex justify-center">
-                <Pin className="w-4 h-4" />
+                <Pin className="w-4 h-4" style={{ fill: message.is_pinned ? '#f59e0b' : 'none' }} />
               </span>
-              <span>{message.is_pinned ? 'Unpin' : 'Pin'}</span>
+              <span>{message.is_pinned ? 'Unpin' : 'Pin to top'}</span>
             </button>
           )}
 

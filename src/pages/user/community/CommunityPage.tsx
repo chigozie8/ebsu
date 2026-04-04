@@ -3,14 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   ArrowLeft, Send, Search, Smile, X, Loader2, Paperclip, Users,
-  RefreshCw, Lock, Shield, CheckCircle2, Forward, Reply,
+  RefreshCw, Lock, Shield, CheckCircle2, Forward, Reply, Pin, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   useCommunityBySlug, useCommunityMembership,
   useCommunityPosts, usePostToCommunity,
 } from '../../../hooks/useCommunities';
-import { useDeleteMessage, useEditMessage, useCommunityTyping } from '../../../hooks/useCommunity';
+import { useDeleteMessage, useEditMessage, useCommunityTyping, usePinMessage } from '../../../hooks/useCommunity';
 import { useImageUpload } from '../../../hooks/useCommunityFeatures';
 import { useGetOrCreateChat, useUserVerification, usePresence } from '../../../hooks/usePrivateChat';
 import MessageCard from '../../../components/community/MessageCard';
@@ -71,6 +71,7 @@ const CommunityPage: React.FC = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [replyTarget, setReplyTarget]         = useState<ReturnType<typeof useCommunityPosts>['posts'][number] | null>(null);
   const [forwardTarget, setForwardTarget]     = useState<ReturnType<typeof useCommunityPosts>['posts'][number] | null>(null);
+  const [pinnedExpanded, setPinnedExpanded]   = useState(false);
 
   const textareaRef  = useRef<HTMLTextAreaElement>(null);
   const feedRef      = useRef<HTMLDivElement>(null);
@@ -104,6 +105,7 @@ const CommunityPage: React.FC = () => {
   const { post, posting } = usePostToCommunity();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage }   = useEditMessage();
+  const { togglePin }     = usePinMessage();
   const { uploading, uploadImages } = useImageUpload();
   const { getOrCreate: getOrCreateChat } = useGetOrCreateChat();
   const { verification: myVerification } = useUserVerification(userId);
@@ -213,7 +215,7 @@ const CommunityPage: React.FC = () => {
 
   const pinnedPosts  = filteredPosts.filter((p) => p.is_pinned);
   const regularPosts = filteredPosts.filter((p) => !p.is_pinned);
-  const grouped      = groupByDate([...pinnedPosts, ...regularPosts].slice().reverse());
+  const grouped      = groupByDate(regularPosts.slice().reverse());
 
   const communityColor = comm?.color ?? '#075E54';
 
@@ -634,6 +636,78 @@ const CommunityPage: React.FC = () => {
 
         {/* BODY — feed above, composer pinned to bottom */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+
+          {/* PINNED MESSAGE BANNER — sticky above feed */}
+          {pinnedPosts.length > 0 && (
+            <div className="flex-shrink-0 z-10 border-b border-amber-200/60" style={{ background: '#fffbeb' }}>
+              {/* Header row */}
+              <button
+                type="button"
+                onClick={() => setPinnedExpanded((v) => !v)}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-amber-50/70 transition-colors"
+                aria-expanded={pinnedExpanded}
+              >
+                <Pin className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" style={{ fill: '#f59e0b' }} />
+                <span className="flex-1 text-left text-[12px] font-semibold text-amber-700 truncate">
+                  {pinnedPosts.length === 1
+                    ? `📌 ${pinnedPosts[0].user_name}: ${pinnedPosts[0].message || '(image)'}`.slice(0, 80)
+                    : `📌 ${pinnedPosts.length} pinned messages`}
+                </span>
+                {pinnedPosts.length > 1 && (
+                  pinnedExpanded
+                    ? <ChevronUp className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    : <ChevronDown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                )}
+              </button>
+
+              {/* Expanded list (only when multiple pinned) */}
+              {pinnedExpanded && pinnedPosts.length > 1 && (
+                <div className="border-t border-amber-200/60 max-h-[160px] overflow-y-auto">
+                  {pinnedPosts.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-start gap-2 px-3 py-2 border-b border-amber-100/50 last:border-b-0"
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        {p.user_avatar ? (
+                          <img
+                            src={p.user_avatar}
+                            alt={p.user_name}
+                            crossOrigin="anonymous"
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                            style={{ background: communityColor }}
+                          >
+                            {p.user_name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[11px] font-bold text-amber-700">{p.user_name}</span>
+                        <p className="text-[11px] text-amber-600 truncate">{p.message || '(image)'}</p>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await togglePin(p.id, true);
+                            toast.success('Message unpinned');
+                          }}
+                          className="flex-shrink-0 p-1 rounded-full hover:bg-amber-100 transition-colors"
+                          aria-label="Unpin message"
+                        >
+                          <X className="w-3.5 h-3.5 text-amber-500" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* FEED */}
           <div
