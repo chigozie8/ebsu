@@ -18,9 +18,19 @@ import { TrashIcon } from "../../../components/icons/general/TrashIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../../animation/variants";
 
-// Re-export from shared types so existing imports keep working
-export type { EventType, CalendarEvent } from "../../../types/events";
-import type { EventType, CalendarEvent } from "../../../types/events";
+export type EventType = "exam" | "lecture" | "meeting" | "social" | "deadline";
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time?: string;
+  type: EventType;
+  description?: string;
+  lumaUrl?: string; // optional Luma event link for registration
+  createdAt?: any;
+  updatedAt?: any;
+}
 
 const EVENT_TYPES: { value: EventType; label: string; color: string }[] = [
   { value: "exam",     label: "Exam",     color: "bg-red-100 text-red-700 border-red-200"     },
