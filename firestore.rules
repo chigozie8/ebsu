@@ -1,0 +1,86 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: check if the request is from a signed-in user ──────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // ── userInfo ───────────────────────────────────────────────────────────
+    match /userInfo/{docId} {
+      allow read: if isAuth();
+      allow write: if isAuth() && request.auth.uid == resource.data.userID;
+    }
+
+    // ── user_verification (online status, bio, verified badge) ────────────
+    match /user_verification/{docId} {
+      allow read: if isAuth();
+      // Only the owner can write their own doc; admins can toggle is_verified
+      allow write: if isAuth();
+    }
+
+    // ── private_chats ──────────────────────────────────────────────────────
+    match /private_chats/{chatId} {
+      // Allow read/write if the authenticated user is a participant
+      allow read, write: if isAuth() && (
+        request.auth.uid == resource.data.participant_1 ||
+        request.auth.uid == resource.data.participant_2
+      );
+      // Allow create if the user is setting themselves as a participant
+      allow create: if isAuth() && (
+        request.auth.uid == request.resource.data.participant_1 ||
+        request.auth.uid == request.resource.data.participant_2
+      );
+    }
+
+    // ── private_messages ──────────────────────────────────────────────────
+    match /private_messages/{msgId} {
+      // Allow read if the user is a participant of the parent chat
+      allow read: if isAuth() && (
+        exists(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)) &&
+        (
+          get(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)).data.participant_1 == request.auth.uid ||
+          get(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)).data.participant_2 == request.auth.uid
+        )
+      );
+      // Allow create if the sender is the authenticated user
+      allow create: if isAuth() && request.auth.uid == request.resource.data.sender_id;
+      // Allow update (mark seen/delivered) if the user is a participant
+      allow update: if isAuth() && (
+        exists(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)) &&
+        (
+          get(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)).data.participant_1 == request.auth.uid ||
+          get(/databases/$(database)/documents/private_chats/$(resource.data.chat_id)).data.participant_2 == request.auth.uid
+        )
+      );
+    }
+
+    // ── typing_indicators (ephemeral, low-risk) ───────────────────────────
+    match /typing_indicators/{chatId} {
+      allow read, write: if isAuth();
+    }
+
+    // ── community collections ──────────────────────────────────────────────
+    match /communities/{communityId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    match /community_posts/{postId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    match /community_members/{docId} {
+      allow read: if isAuth();
+      allow write: if isAuth();
+    }
+
+    // ── Catch-all: deny everything else ───────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

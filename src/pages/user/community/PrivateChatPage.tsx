@@ -381,7 +381,7 @@ export default function PrivateChatPage() {
               <RefreshCw className="w-6 h-6 text-slate-400" />
             </div>
             <p className="text-slate-600 font-semibold text-sm">Could not load messages</p>
-            <p className="text-slate-400 text-xs">Check your connection and try again</p>
+            <p className="text-slate-400 text-xs">{messagesError.includes('permission') || messagesError.includes('Missing or insufficient') ? 'Permission denied — please contact support.' : 'Check your connection and try again.'}</p>
             <button
               onClick={() => window.location.reload()}
               className="mt-1 px-5 py-2 rounded-full text-sm font-semibold text-white"
