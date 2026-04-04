@@ -20,6 +20,7 @@ import { TrashIcon } from "../../components/icons/general/TrashIcon";
 import { motion } from "framer-motion";
 import { fadeInVariants5 } from "../../animation/variants";
 import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
+import { uploadFileToAppwrite, deleteFileFromAppwrite, APPWRITE_BUCKETS } from "../../config/appwrite";
 import { getCoursesForLevelAndSemester } from "../../data/academics/learning-resources/mbbsCourses";
 import CommunityMonitor from "./tabs/CommunityMonitor";
 import { AdminQuizManager } from "./tabs/AdminQuizManager";
@@ -627,22 +628,13 @@ export default function AdminDashboard() {
     try {
       notifyUser("loading", "Uploading material...");
 
-      // Upload to Supabase Storage with the correct folder structure
-      // Path: levels/{level}/{course}/{resourcesType}/{filename}
-      const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${Date.now()}-${selectedFile.name}`;
-      
-      const { data, error } = await supabase.storage
-        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-        .upload(filePath, selectedFile, {
-          cacheControl: '3600',
-          upsert: true,
-        });
+      // Upload to Appwrite Storage
+      const { fileId, fileUrl } = await uploadFileToAppwrite(
+        selectedFile,
+        APPWRITE_BUCKETS.LEARNING_RESOURCES
+      );
 
-      if (error) {
-        throw new Error(`Failed to upload file: ${error.message}`);
-      }
-
-      const fileUrl = getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
+      const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${selectedFile.name}`;
 
       // Save metadata to Firestore
       await addDoc(collection(db, "learningMaterials"), {
@@ -657,8 +649,11 @@ export default function AdminDashboard() {
         fileUrl: fileUrl,
         fileName: selectedFile.name,
         filePath: filePath,
+        appwriteFileId: fileId,
+        appwriteBucketId: APPWRITE_BUCKETS.LEARNING_RESOURCES,
         fileSize: selectedFile.size,
         uploadedBy: studentDetails?.email || "Admin",
+        storage: "appwrite",
         createdAt: serverTimestamp(),
       });
 
@@ -683,17 +678,24 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteMaterial = async (materialId: string, filePath?: string) => {
+  const handleDeleteMaterial = async (materialId: string, filePath?: string, appwriteFileId?: string, appwriteBucketId?: string) => {
     if (!confirm("Are you sure you want to delete this material?")) return;
 
     try {
-      // Delete from Supabase storage if filePath exists
-      if (filePath) {
+      // Delete from Appwrite Storage if stored there
+      if (appwriteFileId && appwriteBucketId) {
+        try {
+          await deleteFileFromAppwrite(appwriteBucketId, appwriteFileId);
+        } catch (appwriteErr) {
+          console.warn("Could not delete from Appwrite (may already be removed):", appwriteErr);
+        }
+      } else if (filePath) {
+        // Legacy: delete from Supabase storage
         await supabase.storage
           .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
           .remove([filePath]);
       }
-      
+
       // Delete from Firestore
       await deleteDoc(doc(db, "learningMaterials", materialId));
       notifyUser("success", "Material deleted successfully");
@@ -755,38 +757,38 @@ export default function AdminDashboard() {
         updatedAt: serverTimestamp(),
       };
 
-      // If a new file is selected, upload it and update the file info
+      // If a new file is selected, upload it to Appwrite and update the file info
       if (selectedFile) {
-        // Get the old material to delete old file
         const oldMaterial = materials.find(m => m.id === editingMaterialId);
-        
-        // Upload new file
-        const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${Date.now()}-${selectedFile.name}`;
-        
-        const { data, error } = await supabase.storage
-          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-          .upload(filePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: true,
-          });
 
-        if (error) {
-          throw new Error(`Failed to upload file: ${error.message}`);
-        }
+        // Upload new file to Appwrite Storage
+        const { fileId, fileUrl } = await uploadFileToAppwrite(
+          selectedFile,
+          APPWRITE_BUCKETS.LEARNING_RESOURCES
+        );
 
-        const fileUrl = getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, data.path);
-
-        // Delete old file if exists
-        if (oldMaterial?.filePath) {
+        // Delete old file — from Appwrite if stored there, else legacy Supabase
+        const oldAny = oldMaterial as any;
+        if (oldAny?.appwriteFileId && oldAny?.appwriteBucketId) {
+          try {
+            await deleteFileFromAppwrite(oldAny.appwriteBucketId, oldAny.appwriteFileId);
+          } catch (e) {
+            console.warn("Could not delete old Appwrite file:", e);
+          }
+        } else if (oldMaterial?.filePath) {
           await supabase.storage
             .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
             .remove([oldMaterial.filePath]);
         }
 
+        const filePath = `levels/${formData.level}/${formData.courseCode}/${formData.resourceType}/${selectedFile.name}`;
         updateData.fileUrl = fileUrl;
         updateData.fileName = selectedFile.name;
         updateData.filePath = filePath;
+        updateData.appwriteFileId = fileId;
+        updateData.appwriteBucketId = APPWRITE_BUCKETS.LEARNING_RESOURCES;
         updateData.fileSize = selectedFile.size;
+        updateData.storage = "appwrite";
       }
 
       await updateDoc(doc(db, "learningMaterials", editingMaterialId), updateData);
@@ -2528,7 +2530,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                                 Edit
                               </button>
                               <button
-                                onClick={() => handleDeleteMaterial(material.id, material.filePath)}
+                                onClick={() => handleDeleteMaterial(material.id, material.filePath, (material as any).appwriteFileId, (material as any).appwriteBucketId)}
                                 className="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
                               >
                                 Delete
