@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../config/supabase";
 import { FileMetadata } from "../../models/academics/learning-resources";
 import { db, isFirebaseConfigured } from "../../config/firebase";
 import { collection, getDocs, query, where, and } from "firebase/firestore";
 import { cachedFetch } from "../../lib/cache";
+import { getAppwriteFileDownloadUrl, APPWRITE_BUCKETS } from "../../config/appwrite";
 
 interface AdminMaterial {
   id: string;
@@ -29,7 +29,6 @@ export const useLearningResources = () => {
     course: string,
     resourcesType: string
   ) => {
-    const folderPath = `levels/${level}/${course}/${resourcesType}`;
     const cacheKey = `resources:${level}:${course}:${resourcesType}`;
 
     try {
@@ -42,7 +41,7 @@ export const useLearningResources = () => {
         async () => {
           let fileList: FileMetadata[] = [];
 
-          // 1. Fetch from Firestore (admin-uploaded materials)
+          // Fetch from Firestore (admin-uploaded materials with Appwrite storage)
           if (isFirebaseConfigured) {
             try {
               const q = query(
@@ -73,37 +72,6 @@ export const useLearningResources = () => {
             }
           }
 
-          // 2. Fetch from Supabase Storage (backwards compatibility)
-          try {
-            const { data, error: listError } = await supabase.storage
-              .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-              .list(folderPath, {
-                limit: 100,
-                sortBy: { column: "name", order: "asc" },
-              });
-
-            if (!listError && data) {
-              const storageFiles: FileMetadata[] = data
-                .filter((item) => item.name && !item.name.startsWith("."))
-                .map((item) => ({
-                  name: item.name,
-                  path: `${folderPath}/${item.name}`,
-                  size: item.metadata?.size || 0,
-                  url: getPublicUrl(
-                    STORAGE_BUCKETS.LEARNING_RESOURCES,
-                    `${folderPath}/${item.name}`
-                  ),
-                }));
-
-              const existingUrls = new Set(fileList.map((f) => f.url));
-              storageFiles.forEach((file) => {
-                if (!existingUrls.has(file.url)) fileList.push(file);
-              });
-            }
-          } catch (storageError) {
-            console.error("Error fetching from Supabase Storage:", storageError);
-          }
-
           return fileList;
         },
         10 * 60 * 1000 // 10 minute TTL
@@ -119,25 +87,20 @@ export const useLearningResources = () => {
   };
 
   // Helper function to download a file
-  const downloadFile = async (filePath: string, fileName: string) => {
+  const downloadFile = async (fileId: string, fileName: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-        .download(filePath);
-
-      if (error) {
-        throw error;
-      }
+      const downloadUrl = getAppwriteFileDownloadUrl(
+        APPWRITE_BUCKETS.LEARNING_RESOURCES,
+        fileId
+      );
 
       // Create a download link
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Error downloading file:", error);
       throw error;

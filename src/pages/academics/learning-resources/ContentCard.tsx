@@ -1,6 +1,5 @@
 import { FC, useState } from "react";
 import { convertBytes } from "../../../helpers/convertBytes";
-import { supabase, STORAGE_BUCKETS } from "../../../config/supabase";
 import { Content } from "../../../models/academics/learning-resources";
 import { notifyUser } from "../../../helpers/notifyUser";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -8,6 +7,7 @@ import { Tooltip } from "flowbite-react";
 import { customTooltipTheme } from "../../../themes/customTooltip";
 import { FileDownloadIcon } from "../../../components/icons/general/FileDownloadIcon";
 import { useGetUserInfo } from "../../../hooks/auth/useGetUserInfo";
+import { getAppwriteFileDownloadUrl, APPWRITE_BUCKETS } from "../../../config/appwrite";
 
 interface ContentCardProps extends Content {
   description?: string;
@@ -28,43 +28,30 @@ export const ContentCard: FC<ContentCardProps> = ({ name, size, path, descriptio
       setFileLoading(true);
       notifyUser("loading", "Please wait...");
       
-      // If we have a direct URL (from admin upload), use it directly
-      if (url) {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = name;
-        link.target = "_blank";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setFileLoading(false);
-        notifyUser("success", "File Downloading...");
-        return;
-      }
-
-      // Download file from Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-        .download(path);
-
-      if (error) {
-        throw error;
-      }
+      // Extract file ID from the path (Appwrite format)
+      // The path format should be like the file ID for Appwrite
+      const fileId = path; // path contains the Appwrite file ID
+      
+      const downloadUrl = getAppwriteFileDownloadUrl(
+        APPWRITE_BUCKETS.LEARNING_RESOURCES,
+        fileId
+      );
 
       // Create download link
       const link = document.createElement("a");
-      link.href = window.URL.createObjectURL(data);
+      link.href = downloadUrl;
       link.download = name;
+      link.target = "_blank";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(link.href);
       
       setFileLoading(false);
       notifyUser("success", "File Downloading...");
     } catch (error) {
       setFileLoading(false);
       notifyUser("error", "Something went wrong. Please try again");
+      console.error("Error downloading file:", error);
     }
   };
 
