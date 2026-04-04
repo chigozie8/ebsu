@@ -26,6 +26,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import AdvertisementBanner from "../../../components/shared/AdvertisementBanner";
 import WalletCard from "../../../components/widgets/WalletCard";
 import PremiumCard from "../../../components/widgets/PremiumCard";
+import EventCountdown from "../../../components/widgets/EventCountdown";
 
 // Activity types with icons and colors
 interface Activity {
@@ -44,7 +45,7 @@ const generateActivities = (studentDetails: any): Activity[] => {
       id: "1",
       type: "login",
       title: "Logged in successfully",
-      description: "Welcome back to the EBSU portal",
+      description: "Welcome back to the EBSUMSA portal",
       timestamp: new Date(),
     },
     {
@@ -256,13 +257,20 @@ export default function Dashboard() {
                       once: true,
                     }}
                     custom={1}
-                    className="shadow rounded-lg bg-white w-full row-span-1"
+                    className="shadow-md rounded-2xl bg-white w-full row-span-1 overflow-hidden"
                   >
-                    <div className="p-3 xxss:p-4">
+                    {/* Green gradient top strip */}
+                    <div className="h-14 bg-gradient-to-r from-green-700 to-emerald-500 relative flex-shrink-0">
+                      <div
+                        className="absolute inset-0 opacity-[0.12] pointer-events-none"
+                        style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }}
+                      />
+                    </div>
+                    <div className="p-3 xxss:p-4 -mt-8">
                       <div className="flex items-center justify-center">
                         {studentDetails &&
                         studentDetails?.profileImageURL.length > 0 ? (
-                          <div className=" overflow-hidden w-24 h-24 xxss:h-28 xxss:w-28 sm:w-36 sm:h-36 md:w-32 md:h-32 rounded-full">
+                          <div className="overflow-hidden w-24 h-24 xxss:h-28 xxss:w-28 sm:w-36 sm:h-36 md:w-32 md:h-32 rounded-full ring-4 ring-white shadow-md">
                             {isImageLoading ? (
                               <LoadingPlaceholder />
                             ) : (
@@ -277,11 +285,13 @@ export default function Dashboard() {
                             )}
                           </div>
                         ) : (
-                          <Lottie
-                            animationData={profile}
-                            loop={false}
-                            className="w-28 h-28 md:w-32 md:h-32 sm:w-36 sm:h-36 rounded-full object-cover"
-                          />
+                          <div className="ring-4 ring-white shadow-md rounded-full inline-flex">
+                            <Lottie
+                              animationData={profile}
+                              loop={false}
+                              className="w-28 h-28 md:w-32 md:h-32 sm:w-36 sm:h-36 rounded-full object-cover"
+                            />
+                          </div>
                         )}
                       </div>
                       <div className="mt-4 mb-5 sm:mb-8">
@@ -305,7 +315,7 @@ export default function Dashboard() {
                         to="/u/profile"
                         className="flex items-center justify-center"
                       >
-                        <button className="w-full text-white text-sm sm:text-xs transition duration-200 ease-in-out rounded-lg bg-green2 hover:bg-green2/95 p-3 font-semibold">
+                        <button className="w-full text-white text-sm sm:text-xs transition-all duration-200 ease-in-out rounded-xl bg-green2 hover:bg-green1 p-3 font-semibold shadow hover:shadow-md hover:scale-[1.02]">
                           Check Profile
                         </button>
                       </NavLink>
@@ -319,7 +329,7 @@ export default function Dashboard() {
                       once: true,
                     }}
                     custom={3}
-                    className="details bg-white shadow px-3 xxss:px-4 py-4 xxss:py-6 rounded-lg w-full lg:h-fit"
+                    className="details bg-white shadow-md px-3 xxss:px-4 py-4 xxss:py-6 rounded-2xl w-full lg:h-fit"
                   >
                     <div className="flex items-center justify-between flex-col h-full">
                       <div className="flex items-center justify-between gap-4 xxss:gap-2 mb-4 w-full flex-col xxss:flex-row">
@@ -394,6 +404,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
+                  {/* Upcoming Event Countdown */}
+                  <div className="mb-3 sm:mb-4">
+                    <EventCountdown />
+                  </div>
                   {/* Advertisement Banner */}
                   <AdvertisementBanner className="mb-3 sm:mb-4" />
                   <div className="mb-3 sm:mb-4">
@@ -407,7 +421,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={7}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#bef264] bg-[#bef264]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <BooksIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -427,7 +441,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={9}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#93c5fd] bg-[#93c5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <FilesIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -447,7 +461,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={10}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c7d2fe] bg-[#c7d2fe]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#c7d2fe] bg-[#c7d2fe]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -477,7 +491,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={11}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#6ee7b7] bg-[#6ee7b7]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <ChatIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -496,7 +510,7 @@ export default function Dashboard() {
                           whileInView="animate"
                           viewport={{ once: true }}
                           custom={14}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fde68a] bg-[#fde68a]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#fde68a] bg-[#fde68a]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -526,7 +540,7 @@ export default function Dashboard() {
                           whileInView="animate"
                           viewport={{ once: true }}
                           custom={15}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#a5f3fc] bg-[#a5f3fc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#a5f3fc] bg-[#a5f3fc]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -566,7 +580,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={12}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#fcd34d] bg-[#fcd34d]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <IDCardIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -587,7 +601,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={17}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-blue-500 bg-gradient-to-br from-cyan-400/90 to-blue-500/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-cyan-400 hover:to-blue-500 bg-gradient-to-br from-cyan-400/90 to-blue-500/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           {/* Decorative elements */}
                           <div className="absolute top-2 right-2 w-8 h-8 bg-white/10 rounded-full blur-lg group-hover:scale-150 transition-transform duration-500" />
@@ -618,7 +632,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={18}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-emerald-500 hover:to-teal-600 bg-gradient-to-br from-emerald-500/90 to-teal-600/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-gradient-to-br hover:from-emerald-500 hover:to-teal-600 bg-gradient-to-br from-emerald-500/90 to-teal-600/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center relative overflow-hidden group shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           {/* Decorative elements */}
                           <div className="absolute top-2 right-2 w-8 h-8 bg-white/10 rounded-full blur-lg group-hover:scale-150 transition-transform duration-500" />
@@ -649,7 +663,7 @@ export default function Dashboard() {
                             once: true,
                           }}
                           custom={13}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#c4b5fd] bg-[#c4b5fd]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <ResourcesIcon
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -668,7 +682,7 @@ export default function Dashboard() {
                         viewport={{ once: true }}
                         custom={16}
                         onClick={() => { setContactModal(true); setMessageSent(false); }}
-                        className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#bbf7d0] bg-[#bbf7d0]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                        className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition-all duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#bbf7d0] bg-[#bbf7d0]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                       >
                         <svg
                           className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -696,7 +710,7 @@ export default function Dashboard() {
                           whileInView="animate"
                           viewport={{ once: true }}
                           custom={17}
-                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#d1fae5] bg-[#d1fae5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                          className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] cursor-pointer transition-all duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#d1fae5] bg-[#d1fae5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                         >
                           <svg
                             className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -732,7 +746,7 @@ export default function Dashboard() {
                               once: true,
                             }}
                             custom={17}
-                            className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition duration-200 ease-in-out rounded-lg p-2 xxss:p-3 sm:p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center"
+                            className="w-full h-[140px] xxss:h-[160px] sss:h-[195px] transition-all duration-200 ease-in-out rounded-2xl p-2 xxss:p-3 sm:p-4 hover:bg-[#fca5a5] bg-[#fca5a5]/90 flex gap-3 xxss:gap-4 sm:gap-6 flex-col items-center justify-center shadow hover:shadow-lg hover:scale-[1.03]"
                           >
                             <svg
                               className="w-[36px] h-[36px] xxss:w-[44px] xxss:h-[44px] sm:w-[72px] sm:h-[72px] mmd:h-16 mmd:w-16 xl:w-20 xl:h-20"
@@ -760,11 +774,11 @@ export default function Dashboard() {
                         once: true,
                       }}
                       custom={11}
-                      className="shadow rounded-lg w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col"
+                      className="shadow-md rounded-2xl w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col overflow-hidden"
                     >
-                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
+                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base px-3 py-2 border-b border-gray-100 font-bold text-gray-800 flex items-center justify-between bg-gray-50/70">
                         <span>Recent Activities</span>
-                        <span className="text-xss xxss:text-xs font-normal text-gray-500">{activities.length} items</span>
+                        <span className="text-xss xxss:text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{activities.length}</span>
                       </div>
                       <div className="flex-1 overflow-y-auto">
                         {activities.length > 0 ? (
@@ -812,9 +826,9 @@ export default function Dashboard() {
                         once: true,
                       }}
                       custom={13}
-                      className="shadow rounded-lg w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col"
+                      className="shadow-md rounded-2xl w-full py-2 bg-white h-[280px] xxss:h-[300px] sm:h-[340px] flex flex-col overflow-hidden"
                     >
-                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base p-2 border-b border-gray-300 font-bold text-gray-800 flex items-center justify-between">
+                      <div className="text-xss xxss:text-xs sm:text-sm md:text-base px-3 py-2 border-b border-gray-100 font-bold text-gray-800 flex items-center justify-between bg-gray-50/70">
                         <span>Notifications</span>
                         {notifications.filter(n => !n.read).length > 0 && (
                           <span className="bg-red-500 text-white text-sss xxss:text-xss px-1.5 xxss:px-2 py-0.5 rounded-full">

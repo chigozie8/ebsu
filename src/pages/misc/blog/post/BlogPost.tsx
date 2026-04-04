@@ -138,13 +138,13 @@ export default function BlogPost() {
           <div className="sticky grid md:grid-cols-5 gap-4">
             <div className="md:col-span-3">
               {blogPostLoading && (
-                <div className="bg-white shadow rounded-lg p-4">
+                <div className="bg-white shadow-md rounded-2xl p-5 sm:p-6">
                   <PostSkeleton />
                 </div>
               )}
               {blogPostError && "Something went wrong!"}
               {!blogPostLoading && !blogPostError && blogPost && (
-                <div className="bg-white shadow rounded-lg p-4">
+                <div className="bg-white shadow-md rounded-2xl p-5 sm:p-6">
                   {/* Category, Read Time & Share */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -209,7 +209,7 @@ export default function BlogPost() {
                     </div>
                   </div>
                   
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-semibold w-full">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight text-balance w-full mt-1">
                     {blogPost?.title}
                   </h1>
                   
@@ -280,8 +280,8 @@ export default function BlogPost() {
                 </div>
               )}
               
-              <div className="mb-4 bg-white shadow rounded-lg p-4">
-                <h2 className="text-base sm:text-md md:text-lg font-semibold mb-2 text-green1">
+              <div className="mb-4 bg-white shadow-md rounded-2xl p-4 sm:p-5">
+                <h2 className="text-base sm:text-md md:text-lg font-bold mb-3 text-green1">
                   Related Posts
                 </h2>
                 {blogPostsLoading && (
@@ -307,8 +307,8 @@ export default function BlogPost() {
                     />
                   )}
               </div>
-              <div className="mb-4 bg-white shadow rounded-lg p-4">
-                <h2 className="text-base sm:text-md md:text-lg font-semibold mb-2 text-green1">
+              <div className="mb-4 bg-white shadow-md rounded-2xl p-4 sm:p-5">
+                <h2 className="text-base sm:text-md md:text-lg font-bold mb-3 text-green1">
                   Popular Posts
                 </h2>
                 {blogPostsLoading && (
@@ -336,8 +336,8 @@ export default function BlogPost() {
               </div>
               {/* Categories Section */}
               {categories.length > 0 && (
-                <div className="mb-4 bg-white shadow rounded-lg p-4">
-                  <h2 className="text-base sm:text-md md:text-lg font-semibold mb-3 text-green1">
+                <div className="mb-4 bg-white shadow-md rounded-2xl p-4 sm:p-5">
+                  <h2 className="text-base sm:text-md md:text-lg font-bold mb-3 text-green1">
                     Categories
                   </h2>
                   <div className="flex flex-wrap gap-2">

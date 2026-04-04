@@ -135,7 +135,7 @@ export const AIChatbot = () => {
         {
           role: "system",
           content:
-            "You are a helpful assistant for EBSU (Ebonyi State University) medical students. You help with academic questions, course information, medical topics, and general guidance. Be friendly, knowledgeable, and concise. When answering medical questions, be accurate but remind students to always consult their professors and textbooks for exam-specific information.",
+            "You are EBSUMSA Assistant — the official AI assistant for EBSUMSA (Ebonyi State University Medicine and Surgery Association). You help medical students with academic questions, course information, medical topics, exam preparation, and general guidance. Be friendly, knowledgeable, and concise. When answering medical questions, be accurate but remind students to always consult their professors and textbooks for exam-specific information.",
         },
         ...messages.map((m) => ({ role: m.role, content: m.content })),
         { role: "user", content: currentInput },
@@ -196,9 +196,11 @@ export const AIChatbot = () => {
   return (
     <>
       {/* Chat Button */}
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-12 h-12 sm:w-14 sm:h-14 bg-green2 hover:bg-green1 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-300"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.92 }}
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-12 h-12 sm:w-14 sm:h-14 bg-green2 hover:bg-green1 text-white rounded-full shadow-[0_8px_24px_rgba(0,135,90,0.4)] flex items-center justify-center transition-colors duration-200"
       >
         {isOpen ? (
           <svg
@@ -231,7 +233,7 @@ export const AIChatbot = () => {
             />
           </svg>
         )}
-      </button>
+      </motion.button>
 
       {/* Chat Window */}
       <AnimatePresence>
@@ -257,8 +259,8 @@ export const AIChatbot = () => {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">EBSU AI Assistant</h3>
-                  <p className="text-xs text-white/80">Powered by ChatGPT 5nano</p>
+                  <h3 className="font-bold text-sm">EBSUMSA Assistant</h3>
+                  <p className="text-xs text-white/75">Powered by ChatGPT 5nano</p>
                 </div>
               </div>
               <button
@@ -334,21 +336,18 @@ export const AIChatbot = () => {
                   </div>
                 </div>
               )}
-              {/* Loading indicator */}
+              {/* Loading indicator — smooth wave */}
               {isLoading && !streamingContent && (
                 <div className="flex justify-start">
-                  <div className="bg-gray-100 p-3 rounded-2xl rounded-bl-md">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                    </div>
+                  <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-md flex items-center gap-1.5">
+                    {[0, 0.15, 0.3].map((delay, i) => (
+                      <motion.span
+                        key={i}
+                        className="block w-2 h-2 rounded-full bg-gray-400"
+                        animate={{ y: [0, -5, 0] }}
+                        transition={{ duration: 0.65, repeat: Infinity, delay, ease: "easeInOut" }}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
@@ -356,21 +355,21 @@ export const AIChatbot = () => {
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex gap-2">
+            <div className="px-3 py-3 border-t border-gray-100 bg-white">
+              <div className="flex gap-2 items-center">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Type a message..."
+                  placeholder="Ask EBSUMSA Assistant..."
                   disabled={isLoading}
-                  className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green2 focus:border-transparent outline-none text-sm text-gray-800 disabled:bg-gray-100 bg-white"
+                  className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green2/25 focus:border-green2 outline-none text-sm text-gray-800 disabled:bg-gray-50 bg-gray-50 placeholder-gray-400 transition-all"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={isLoading || !input.trim()}
-                  className="bg-green2 hover:bg-green1 disabled:bg-gray-300 text-white p-3 rounded-xl transition-colors"
+                  className="bg-green2 hover:bg-green1 disabled:bg-gray-200 text-white p-2.5 rounded-xl transition-colors hover:scale-105 active:scale-95 flex-shrink-0"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
