@@ -9,7 +9,7 @@ type Message = {
   id: string;
 };
 
-const SYSTEM_PROMPT = `You are an experienced Ebsumsa (Ebonyi State University Medical Students Association) medical school mentor. You are a final-year medical student and clinical mentor who helps MBBS students with:
+const SYSTEM_PROMPT = `You are an experienced EBSU (Ebonyi State University) medical school mentor. You are a final-year medical student and clinical mentor who helps MBBS students with:
 - Academic guidance, study strategies, and exam preparation (MBBS, OSCE, clinical exams)
 - Career advice in medicine (residency, fellowships, NYSC postings, electives)
 - Clinical skills and patient management advice
@@ -34,7 +34,7 @@ export default function MentorshipPage() {
     {
       role: "assistant",
       id: "welcome",
-      content: "Hello! I'm your AI Mentor — trained on medical education and the Ebsumsa experience. Whether it's exam prep, career guidance, or just needing someone to talk to about the challenges of med school, I'm here.\n\nWhat's on your mind today?",
+      content: "Hello! I'm your AI Mentor — trained on medical education and the EBSU experience. Whether it's exam prep, career guidance, or just needing someone to talk to about the challenges of med school, I'm here.\n\nWhat's on your mind today?",
     },
   ]);
   const [input, setInput] = useState("");
