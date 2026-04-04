@@ -6,7 +6,7 @@ import {
   X, ChevronLeft, ChevronRight, ZoomIn, Heart,
 } from 'lucide-react';
 import {
-  doc, updateDoc, arrayUnion, arrayRemove, getDoc,
+  doc, updateDoc, arrayUnion, arrayRemove, getDoc, onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { usePinMessage } from '../../hooks/useCommunity';
@@ -320,6 +320,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   // Local like state derived from Firebase reactions (❤️ emoji)
   const [localLikes, setLocalLikes]     = useState<number>(message.likes_count || 0);
   const [isLiked, setIsLiked]           = useState(false);
+  // Live reply count — updated by onSnapshot so it increments immediately when someone comments
+  const [liveReplyCount, setLiveReplyCount] = useState<number>(message.reply_count || 0);
 
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const reactRef   = useRef<HTMLDivElement>(null);
@@ -330,23 +332,26 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
 
-  // Load reactions from Firestore
+  // Live subscription to the message doc — keeps reactions AND reply_count in sync
   useEffect(() => {
-    const loadReactions = async () => {
-      try {
-        const snap = await getDoc(doc(db, 'community_messages', message.id));
-        if (snap.exists()) {
-          const r = parseReactions(snap.data()?.reactions);
-          setReactions(r);
-          // Derive like state from ❤️ reaction array
-          const heartUsers = r['❤️'] ?? [];
-          setLocalLikes(heartUsers.length || message.likes_count || 0);
-          setIsLiked(currentUserId ? heartUsers.includes(currentUserId) : false);
-        }
-      } catch { /* non-critical */ }
-    };
-    loadReactions();
-  }, [message.id, message.likes_count, currentUserId]);
+    const unsub = onSnapshot(
+      doc(db, 'community_messages', message.id),
+      (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        // Reactions
+        const r = parseReactions(data?.reactions);
+        setReactions(r);
+        const heartUsers = r['❤️'] ?? [];
+        setLocalLikes(heartUsers.length || 0);
+        setIsLiked(currentUserId ? heartUsers.includes(currentUserId) : false);
+        // Live reply count
+        setLiveReplyCount((data?.reply_count as number) || 0);
+      },
+      () => { /* non-critical — keep showing last known values */ }
+    );
+    return () => unsub();
+  }, [message.id, currentUserId]);
 
   // Close reaction picker on outside click
   useEffect(() => {
@@ -406,7 +411,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     .filter(([emoji, users]) => users.length > 0 && emoji !== '❤️') // ❤️ shown in footer
     .map(([emoji, users]) => ({ emoji, count: users.length }));
 
-  const replyCount = message.reply_count || 0;
+  // liveReplyCount is kept fresh via onSnapshot — always shows the real-time comment count
+  const replyCount = liveReplyCount;
 
   return (
     <>
@@ -665,24 +671,22 @@ const MessageCard: React.FC<MessageCardProps> = ({
                       )}
                     </button>
 
-                    {/* Comment/thread count */}
+                    {/* Comment/thread count — always visible, increments live */}
                     <button
                       onClick={(e) => { e.stopPropagation(); onThreadClick?.(message.id); }}
-                      className="flex items-center gap-0.5"
-                      aria-label="Comments"
+                      className="flex items-center gap-0.5 group"
+                      aria-label={`${replyCount} comment${replyCount !== 1 ? 's' : ''}`}
                     >
                       <MessageCircle
-                        className="w-3.5 h-3.5"
+                        className="w-3.5 h-3.5 transition-colors group-active:scale-90"
                         style={{ color: replyCount > 0 ? '#25D366' : '#8696a0' }}
                       />
-                      {replyCount > 0 && (
-                        <span
-                          className="text-[11px] font-semibold leading-none"
-                          style={{ color: '#25D366' }}
-                        >
-                          {replyCount}
-                        </span>
-                      )}
+                      <span
+                        className="text-[11px] font-semibold leading-none tabular-nums"
+                        style={{ color: replyCount > 0 ? '#25D366' : '#8696a0' }}
+                      >
+                        {replyCount}
+                      </span>
                     </button>
                   </div>
 
