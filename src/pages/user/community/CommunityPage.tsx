@@ -360,7 +360,7 @@ const CommunityPage: React.FC = () => {
 
       <div
         className="flex flex-col overflow-hidden"
-        style={{ height: '100dvh', background: '#f0f2f5' }}
+        style={{ height: '100dvh', paddingTop: '64px', background: '#f0f2f5' }}
       >
         {/* HEADER */}
         <header

@@ -177,7 +177,7 @@ const ChatRow: React.FC<{
   );
 };
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+// ─── Main page ─────────────────────────────────────────────────────────────��─
 
 type Tab = 'communities' | 'messages';
 
@@ -227,7 +227,7 @@ const CommunitiesListPage: React.FC = () => {
     : chats;
 
   return (
-    <div className="flex flex-col bg-[#f0f2f5]" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-[#f0f2f5]" style={{ height: '100dvh', paddingTop: '64px' }}>
 
       {/* ── Header ── */}
       <header className="flex-shrink-0 z-20 shadow-md" style={{ background: '#075E54' }}>
