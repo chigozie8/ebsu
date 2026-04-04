@@ -14,6 +14,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
+// ── Utility Functions ──────────────────────────────────────────────────────
+
+function toIso(ts: unknown): string {
+  if (!ts) return new Date().toISOString();
+  if (ts instanceof Timestamp) return ts.toDate().toISOString();
+  if (typeof ts === 'string') return ts;
+  return new Date().toISOString();
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface UserVerification {
@@ -55,15 +64,6 @@ export interface PrivateMessage {
   is_seen: boolean;
   is_delivered: boolean;
   created_at: string;
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function toIso(ts: unknown): string {
-  if (!ts) return new Date().toISOString();
-  if (ts instanceof Timestamp) return ts.toDate().toISOString();
-  if (typeof ts === 'string') return ts;
-  return new Date().toISOString();
 }
 
 // ─────────────────────────────────────────────────────────
@@ -719,7 +719,13 @@ export const useChatParticipants = (chatId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!chatId) { setLoading(false); return; }
+    if (!chatId) { 
+      console.log('[v0] useChatParticipants: no chatId');
+      setLoading(false); 
+      return; 
+    }
+
+    console.log('[v0] useChatParticipants: setting up for chatId:', chatId);
 
     try {
       const chatRef = doc(db, 'private_chats', chatId);
@@ -728,9 +734,17 @@ export const useChatParticipants = (chatId: string) => {
       const unsub = onSnapshot(
         chatRef,
         async (snap) => {
-          if (!snap.exists()) { setParticipants([]); setLoading(false); return; }
+          console.log('[v0] useChatParticipants: snapshot received', { exists: snap.exists() });
+          if (!snap.exists()) { 
+            console.log('[v0] useChatParticipants: chat document does not exist');
+            setParticipants([]); 
+            setLoading(false); 
+            return; 
+          }
           
           const chatData = snap.data();
+          console.log('[v0] useChatParticipants: chatData:', { p1: chatData?.participant_1, p2: chatData?.participant_2 });
+          
           const participant1Id = chatData.participant_1 as string;
           const participant2Id = chatData.participant_2 as string;
           const participant1Name = chatData.participant_1_name as string;
@@ -749,10 +763,13 @@ export const useChatParticipants = (chatId: string) => {
               where('user_id', '==', participant2Id)
             );
 
+            console.log('[v0] useChatParticipants: fetching verification data for both participants');
             const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
 
             const p1Data = snap1.empty ? null : snap1.docs[0].data();
             const p2Data = snap2.empty ? null : snap2.docs[0].data();
+            
+            console.log('[v0] useChatParticipants: verification data fetched', { p1Found: !!p1Data, p2Found: !!p2Data });
 
             const participantsList: ChatParticipant[] = [
               {
@@ -775,17 +792,18 @@ export const useChatParticipants = (chatId: string) => {
               },
             ];
 
+            console.log('[v0] useChatParticipants: setting participants list', participantsList);
             setParticipants(participantsList);
             setError(null);
           } catch (err) {
-            console.error('[useChatParticipants] error fetching verification:', err);
+            console.error('[v0] useChatParticipants error fetching verification:', err);
             setError(err instanceof Error ? err.message : 'Failed to load participants');
           } finally {
             setLoading(false);
           }
         },
         (err) => {
-          console.error('[useChatParticipants] Firebase error:', err);
+          console.error('[v0] useChatParticipants Firebase error:', err);
           setError(err.message);
           setLoading(false);
         }
@@ -793,7 +811,7 @@ export const useChatParticipants = (chatId: string) => {
 
       return () => unsub();
     } catch (err) {
-      console.error('[useChatParticipants] setup error:', err);
+      console.error('[v0] useChatParticipants setup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to set up participants');
       setLoading(false);
     }
