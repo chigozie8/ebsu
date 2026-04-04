@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FirebaseCommunityReply as CommunityReply } from '../../hooks/useCommunity';
 import { MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 
@@ -20,6 +21,32 @@ const ReplyCard: React.FC<ReplyCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(reply.reply);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuBtnRef.current && menuBtnRef.current.contains(e.target as Node)) return;
+      setShowMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMenu]);
+
+  const openMenu = () => {
+    if (!menuBtnRef.current) return;
+    const rect = menuBtnRef.current.getBoundingClientRect();
+    const menuWidth = 160;
+    let left = rect.right - menuWidth;
+    let top = rect.bottom + 4;
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    if (top + 120 > window.innerHeight - 16) top = rect.top - 120 - 4;
+    setMenuPos({ top, left });
+    setShowMenu(true);
+  };
 
   const getTimeAgo = (date: string) => {
     const now = new Date();
@@ -64,7 +91,8 @@ const ReplyCard: React.FC<ReplyCardProps> = ({
               </div>
               {(isOwn || isAdmin) && (
                 <button
-                  onClick={() => setShowMenu(!showMenu)}
+                  ref={menuBtnRef}
+                  onClick={openMenu}
                   className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   <MoreHorizontal className="w-4 h-4 text-gray-600" />
@@ -104,33 +132,36 @@ const ReplyCard: React.FC<ReplyCardProps> = ({
           </div>
         </div>
 
-        {showMenu && (
-          <div className="absolute bg-white rounded-lg shadow-lg border border-gray-200 mt-2 z-10">
+        {showMenu && createPortal(
+          <div
+            className="fixed z-[9998] bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden"
+            style={{ top: menuPos.top, left: menuPos.left, minWidth: 160 }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {isOwn && (
-              <>
-                <button
-                  onClick={() => {
-                    setEditing(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  setEditing(true);
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-3 text-left text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 transition-colors"
+              >
+                <Edit2 className="w-4 h-4 text-gray-500" />
+                Edit
+              </button>
             )}
             <button
               onClick={() => {
                 onDelete(reply.id);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              className="w-full px-4 py-3 text-left text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

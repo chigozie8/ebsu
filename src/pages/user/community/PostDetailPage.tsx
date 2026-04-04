@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -8,7 +9,7 @@ import {
 import { Community } from '../../../hooks/useCommunities';
 import { FirebaseCommunityReply as CommunityReply } from '../../../hooks/useCommunity';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
-import { useCommunityReplies, usePostReply, useLikeMessage } from '../../../hooks/useCommunity';
+import { useCommunityReplies, usePostReply, useLikeMessage, useDeleteReply, useEditReply } from '../../../hooks/useCommunity';
 import {
   doc, getDoc, collection, query, where, limit, getDocs, addDoc, serverTimestamp, Timestamp,
 } from 'firebase/firestore';
@@ -163,50 +164,172 @@ const PostDetail: React.FC<{
 const CommentBubble: React.FC<{
   reply: CommunityReply;
   isOwn: boolean;
+  isAdmin?: boolean;
   isOpt?: boolean;
   prevSame: boolean;
   nextSame: boolean;
-}> = ({ reply, isOwn, isOpt, prevSame, nextSame }) => {
+  onDeleted: (id: string) => void;
+}> = ({ reply, isOwn, isAdmin, isOpt, prevSame, nextSame, onDeleted }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(reply.reply);
+  const [localReply, setLocalReply] = useState(reply.reply);
+  const [isEdited, setIsEdited] = useState(reply.is_edited);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const { deleteReply, deleting } = useDeleteReply();
+  const { editReply } = useEditReply();
   const [g0] = grad(reply.user_name);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuBtnRef.current && menuBtnRef.current.contains(e.target as Node)) return;
+      setShowMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMenu]);
+
+  const openMenu = () => {
+    if (!menuBtnRef.current) return;
+    const rect = menuBtnRef.current.getBoundingClientRect();
+    const menuWidth = 160;
+    let left = isOwn ? rect.right - menuWidth : rect.left;
+    let top = rect.bottom + 4;
+    if (left < 8) left = 8;
+    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    if (top + 120 > window.innerHeight - 16) top = rect.top - 120 - 4;
+    setMenuPos({ top, left });
+    setShowMenu(true);
+  };
+
+  const handleDelete = async () => {
+    setShowMenu(false);
+    try {
+      await deleteReply(reply.id);
+      onDeleted(reply.id);
+    } catch {
+      toast.error('Failed to delete comment.');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === localReply) { setEditing(false); return; }
+    try {
+      await editReply(reply.id, trimmed);
+      setLocalReply(trimmed);
+      setIsEdited(true);
+      setEditing(false);
+    } catch {
+      toast.error('Failed to edit comment.');
+    }
+  };
 
   const br = isOwn
     ? nextSame ? '16px 4px 16px 16px' : '16px 0px 16px 16px'
     : nextSame ? '4px 16px 16px 16px' : '0px 16px 16px 16px';
 
   return (
-    <div
-      className={`flex items-end gap-2 px-4 ${isOwn ? 'flex-row-reverse' : ''}`}
-      style={{ marginTop: prevSame ? '2px' : '8px', opacity: isOpt ? 0.7 : 1 }}
-    >
-      {/* Avatar — only on last of group */}
-      <div className="w-8 flex-shrink-0 self-end">
-        {!isOwn && !nextSame && (
-          <Avatar name={reply.user_name} avatar={reply.user_avatar} size={32} />
-        )}
-      </div>
+    <>
+      {showMenu && createPortal(
+        <div
+          className="fixed z-[9998] bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden"
+          style={{ top: menuPos.top, left: menuPos.left, minWidth: 160 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isOwn && (
+            <button
+              onClick={() => { setEditing(true); setShowMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-gray-50 transition-colors border-b border-gray-100"
+            >
+              <Edit2 className="w-4 h-4 text-gray-500" />
+              Edit
+            </button>
+          )}
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>,
+        document.body
+      )}
 
-      <div className={`max-w-[78%] sm:max-w-[65%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-        {/* Name on first of incoming group */}
-        {!isOwn && !prevSame && (
-          <span className="text-[11px] font-bold px-1 pb-0.5" style={{ color: g0 }}>
-            {reply.user_name}
-          </span>
-        )}
+      <div
+        className={`flex items-end gap-1 px-4 ${isOwn ? 'flex-row-reverse' : ''}`}
+        style={{ marginTop: prevSame ? '2px' : '8px', opacity: isOpt ? 0.7 : 1 }}
+      >
+        {/* Avatar — only on last of group */}
+        <div className="w-8 flex-shrink-0 self-end">
+          {!isOwn && !nextSame && (
+            <Avatar name={reply.user_name} avatar={reply.user_avatar} size={32} />
+          )}
+        </div>
 
-        <div className="relative shadow-sm group"
-          style={{ background: isOwn ? '#dcf8c6' : '#fff', borderRadius: br, padding: '7px 12px 5px 12px' }}>
-          <p className="text-[14px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
-            {reply.reply}
-          </p>
-          <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <span className="text-[10px] text-[#8696a0]">{fmtTime(reply.created_at)}</span>
-            {reply.is_edited && <span className="text-[10px] text-[#8696a0]">· edited</span>}
-            {isOwn && <Ticks seen={false} optimistic={isOpt} />}
+        <div className={`max-w-[72%] sm:max-w-[60%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+          {/* Name on first of incoming group */}
+          {!isOwn && !prevSame && (
+            <span className="text-[11px] font-bold px-1 pb-0.5" style={{ color: g0 }}>
+              {reply.user_name}
+            </span>
+          )}
+
+          <div className="shadow-sm"
+            style={{ background: isOwn ? '#dcf8c6' : '#fff', borderRadius: br, padding: '7px 12px 5px 12px' }}>
+            {editing ? (
+              <div className="space-y-1.5">
+                <textarea
+                  autoFocus
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  className="w-full bg-white/60 border border-[#25D366] rounded-lg p-1.5 text-[13px] resize-none focus:outline-none"
+                  rows={2}
+                />
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={handleSaveEdit}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-white"
+                    style={{ background: '#25D366' }}
+                  >Save</button>
+                  <button
+                    onClick={() => { setEditing(false); setEditText(localReply); }}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-gray-200 text-gray-700"
+                  >Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[14px] text-[#111b21] leading-relaxed break-words whitespace-pre-wrap">
+                {localReply}
+              </p>
+            )}
+            <div className={`flex items-center gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <span className="text-[10px] text-[#8696a0]">{fmtTime(reply.created_at)}</span>
+              {isEdited && <span className="text-[10px] text-[#8696a0]">· edited</span>}
+              {isOwn && <Ticks seen={false} optimistic={isOpt} />}
+            </div>
           </div>
         </div>
+
+        {/* 3-dot menu button */}
+        {(isOwn || isAdmin) && !isOpt && (
+          <div className="flex-shrink-0 self-center">
+            <button
+              ref={menuBtnRef}
+              onClick={openMenu}
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 active:bg-black/15 transition-colors"
+              aria-label="Comment options"
+            >
+              <MoreVertical className="w-4 h-4 text-[#667781]" />
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 
@@ -217,6 +340,7 @@ const PostDetailPage: React.FC = () => {
 
   const { studentDetails, userID } = useGetUserInfo();
   const userId = userID ?? 'anonymous';
+  const isAdmin = ['admin', 'chigozie8'].includes(userId);
   const userName = studentDetails?.firstName && studentDetails?.lastName
     ? `${studentDetails.firstName} ${studentDetails.lastName}` : 'Student';
   const userAvatar = studentDetails?.profileImageURL || undefined;
@@ -228,6 +352,7 @@ const PostDetailPage: React.FC = () => {
   const [replyText, setReplyText] = useState('');
   const [posting, setPosting] = useState(false);
   const [optimisticReplies, setOptimisticReplies] = useState<CommunityReply[]>([]);
+  const [deletedReplyIds, setDeletedReplyIds] = useState<Set<string>>(new Set());
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -370,10 +495,10 @@ const PostDetailPage: React.FC = () => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSend();
   };
 
-  // Merge confirmed + optimistic replies, dedup
+  // Merge confirmed + optimistic replies, dedup, filter locally deleted
   const confirmedIds = new Set(replies.map((r) => r.id));
   const allReplies = [
-    ...replies,
+    ...replies.filter((r) => !deletedReplyIds.has(r.id)),
     ...optimisticReplies.filter((r) => !confirmedIds.has(r.id)),
   ];
 
@@ -475,9 +600,11 @@ const PostDetailPage: React.FC = () => {
                 key={reply.id}
                 reply={reply}
                 isOwn={reply.user_id === userId}
+                isAdmin={isAdmin}
                 isOpt={reply.id.startsWith('opt-')}
                 prevSame={prevSame}
                 nextSame={nextSame}
+                onDeleted={(id) => setDeletedReplyIds((prev) => new Set(prev).add(id))}
               />
             );
           })}
