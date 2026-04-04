@@ -66,15 +66,6 @@ export interface PrivateMessage {
   created_at: string;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function toIso(ts: unknown): string {
-  if (!ts) return new Date().toISOString();
-  if (ts instanceof Timestamp) return ts.toDate().toISOString();
-  if (typeof ts === 'string') return ts;
-  return new Date().toISOString();
-}
-
 // ─────────────────────────────────────────────────────────
 // USER VERIFICATION
 // ─────────────────────────────────────────────────────────
