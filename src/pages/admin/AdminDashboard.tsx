@@ -3154,7 +3154,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               )}
             </motion.div>
           </div>
-)}
+        )}
 
         {/* Projects Tab */}
         {activeTab === "projects" && (
@@ -4550,7 +4550,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </motion.div>
             </div>
           )}
-        </div>
+          </div>
         )}
 
         {/* Community Tab */}

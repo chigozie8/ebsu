@@ -586,8 +586,10 @@ export const usePinMessage = () => {
         updated_at: serverTimestamp(),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to pin message');
+      const msg = err instanceof Error ? err.message : 'Failed to pin message';
+      setError(msg);
       console.error('[usePinMessage] Firebase error:', err);
+      throw err;
     } finally {
       setPinning(false);
     }
