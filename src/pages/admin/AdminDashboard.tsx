@@ -829,6 +829,7 @@ export default function AdminDashboard() {
       setIsUploading(false);
       setUploadProgress(0);
     }
+    }
   };
 
   const resetMaterialForm = () => {
