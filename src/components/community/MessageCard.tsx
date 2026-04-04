@@ -243,58 +243,72 @@ const ImageGrid: React.FC<{
 };
 
 // ── Floating portal menu — renders at fixed screen coords to avoid clip ─────
+// Strategy: keep a ref on the menu container AND the trigger button.
+// The outside-click handler checks if the click lands inside EITHER element —
+// if so, we leave the menu open so that button clicks inside it register first.
 const PortalMenu: React.FC<{
   anchorRef: React.RefObject<HTMLButtonElement | null>;
   isOwn: boolean;
   onClose: () => void;
   children: React.ReactNode;
 }> = ({ anchorRef, isOwn, onClose, children }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
+  // Position the menu relative to the trigger button
   useEffect(() => {
     if (!anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
-    const menuWidth = 190;
-    const menuHeight = 280; // estimated
+    const MENU_W = 200;
+    const MENU_H = 320;
 
-    let top = rect.bottom + 4;
-    let left = isOwn ? rect.right - menuWidth : rect.left;
+    let top = rect.bottom + 6;
+    let left = isOwn ? rect.right - MENU_W : rect.left;
 
-    // Clamp to viewport
-    if (top + menuHeight > window.innerHeight - 16) {
-      top = rect.top - menuHeight - 4;
-    }
+    if (top + MENU_H > window.innerHeight - 12) top = Math.max(8, rect.top - MENU_H - 6);
     if (left < 8) left = 8;
-    if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+    if (left + MENU_W > window.innerWidth - 8) left = window.innerWidth - MENU_W - 8;
 
     setPos({ top, left });
   }, [anchorRef, isOwn]);
 
+  // Outside-click / outside-touch handler
+  // We attach it on the NEXT frame so the same tap that opened the menu
+  // isn't immediately treated as an outside click.
   useEffect(() => {
-    // Defer adding the listener by one tick so the opening click doesn't
-    // immediately trigger close (the same mousedown event would otherwise fire).
-    let timer: ReturnType<typeof setTimeout>;
-    timer = setTimeout(() => {
-      const handler = (e: MouseEvent | TouchEvent) => {
-        if (anchorRef.current && anchorRef.current.contains(e.target as Node)) return;
-        onClose();
-      };
-      document.addEventListener('mousedown', handler);
-      document.addEventListener('touchstart', handler);
-      return () => {
-        document.removeEventListener('mousedown', handler);
-        document.removeEventListener('touchstart', handler);
-      };
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [anchorRef, onClose]);
+    let rafId: number;
+    let active = false;
+
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (!active) return;
+      const target = e.target as Node;
+      // If the click is inside the menu itself OR on the trigger button — do nothing.
+      if (menuRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
+    }
+
+    rafId = requestAnimationFrame(() => {
+      active = true;
+      document.addEventListener('mousedown', handleOutside, true);
+      document.addEventListener('touchstart', handleOutside, true);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      active = false;
+      document.removeEventListener('mousedown', handleOutside, true);
+      document.removeEventListener('touchstart', handleOutside, true);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);          // intentionally empty — we never want this to re-run
 
   return createPortal(
     <div
+      ref={menuRef}
+      role="menu"
       className="fixed z-[9998] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
-      style={{ top: pos.top, left: pos.left, minWidth: 190 }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
+      style={{ top: pos.top, left: pos.left, minWidth: 200 }}
     >
       {children}
     </div>,
@@ -340,7 +354,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const { verification } = useAnyUserVerification(message.user_id);
   const isVerified = verification?.is_verified;
 
-  const currentUserId = viewerUserId || (isOwn ? message.user_id : '');
+  // currentUserId: prefer the explicitly-passed viewerUserId, then fall back to
+  // the message author id when the viewer IS the author (isOwn), and for others
+  // fall back to the message sender so at minimum reactions always have an actor.
+  const currentUserId = viewerUserId || message.user_id;
 
   // Live subscription to the message doc — keeps reactions AND reply_count in sync
   useEffect(() => {
@@ -473,37 +490,52 @@ const MessageCard: React.FC<MessageCardProps> = ({
       {showMenu && (
         <PortalMenu anchorRef={menuBtnRef} isOwn={isOwn} onClose={() => setShowMenu(false)}>
           <button
-            onClick={() => { setShowReact(true); setShowMenu(false); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+            type="button"
+            role="menuitem"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => { setShowMenu(false); setTimeout(() => setShowReact(true), 0); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#efefef] transition-colors"
           >
             <span className="text-base">😊</span>
             React
           </button>
           <button
-            onClick={() => { onReply?.(message); setShowMenu(false); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+            type="button"
+            role="menuitem"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => { setShowMenu(false); onReply?.(message); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#efefef] transition-colors"
           >
             <Reply className="w-4 h-4 text-[#667781]" />
             Reply
           </button>
           <button
-            onClick={() => { onForward?.(message); setShowMenu(false); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+            type="button"
+            role="menuitem"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => { setShowMenu(false); onForward?.(message); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#efefef] transition-colors"
           >
             <Forward className="w-4 h-4 text-[#667781]" />
             Forward
           </button>
           <button
-            onClick={() => { onThreadClick?.(message.id); setShowMenu(false); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+            type="button"
+            role="menuitem"
+            onPointerDown={(e) => e.preventDefault()}
+            onClick={() => { setShowMenu(false); onThreadClick?.(message.id); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#efefef] transition-colors"
           >
             <MessageCircle className="w-4 h-4 text-[#667781]" />
             View thread
           </button>
           {isOwn && (
             <button
-              onClick={() => { setEditing(true); setShowMenu(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] transition-colors"
+              type="button"
+              role="menuitem"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => { setShowMenu(false); setEditing(true); }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#111b21] hover:bg-[#f5f5f5] active:bg-[#efefef] transition-colors"
             >
               <Edit2 className="w-4 h-4 text-[#667781]" />
               Edit
@@ -511,8 +543,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
           )}
           {isAdmin && (
             <button
-              onClick={() => { togglePin(message.id, message.is_pinned || false); setShowMenu(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 transition-colors"
+              type="button"
+              role="menuitem"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => { setShowMenu(false); togglePin(message.id, message.is_pinned || false); }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#f57c00] hover:bg-amber-50 active:bg-amber-100 transition-colors"
             >
               <Pin className="w-4 h-4" />
               {message.is_pinned ? 'Unpin' : 'Pin'}
@@ -522,9 +557,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
             <>
               <div className="h-px mx-3 bg-[#f0f2f5]" />
               <button
-                onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
+                type="button"
+                role="menuitem"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => { setShowMenu(false); setShowDeleteConfirm(true); }}
                 disabled={deleting}
-                className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors disabled:opacity-50"
+                className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
                 {deleting ? 'Deleting...' : 'Delete'}
