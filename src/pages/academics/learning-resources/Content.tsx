@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
-import { supabase, STORAGE_BUCKETS, getPublicUrl } from "../../../config/supabase";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { useLearningResourcesContext } from "../../../context/LearningResources";
 import { Spinner } from "../../../components/loaders/Spinner";
@@ -43,15 +42,13 @@ export default function Content() {
   const [error, setError] = useState(false);
 
   const fetchFiles = async () => {
-    const folderPath = `levels/${level}/${id}/${resourcesType}`;
-    
     try {
       setError(false);
       setLoading(true);
       
       let fileList: FileMetadata[] = [];
 
-      // 1. First fetch from Firestore (admin-uploaded materials with metadata)
+      // Fetch from Firestore (admin-uploaded materials with Appwrite storage)
       if (isFirebaseConfigured) {
         try {
           const q = query(
@@ -80,39 +77,8 @@ export default function Content() {
           });
         } catch (firestoreError) {
           console.error("Error fetching from Firestore:", firestoreError);
+          throw firestoreError;
         }
-      }
-
-      // 2. Also fetch directly from Supabase Storage (for backwards compatibility)
-      try {
-        const { data, error: listError } = await supabase.storage
-          .from(STORAGE_BUCKETS.LEARNING_RESOURCES)
-          .list(folderPath, {
-            limit: 100,
-            sortBy: { column: 'name', order: 'asc' },
-          });
-
-        if (!listError && data) {
-          // Map files to FileMetadata format
-          const storageFiles: FileMetadata[] = data
-            .filter(item => item.name && !item.name.startsWith('.'))
-            .map((item) => ({
-              name: item.name,
-              path: `${folderPath}/${item.name}`,
-              size: item.metadata?.size || 0,
-              url: getPublicUrl(STORAGE_BUCKETS.LEARNING_RESOURCES, `${folderPath}/${item.name}`),
-            }));
-
-          // Add storage files that aren't already in the list (avoid duplicates)
-          const existingUrls = new Set(fileList.map(f => f.url));
-          storageFiles.forEach(file => {
-            if (!existingUrls.has(file.url)) {
-              fileList.push(file);
-            }
-          });
-        }
-      } catch (storageError) {
-        console.error("Error fetching from Supabase Storage:", storageError);
       }
 
       setFiles(fileList);
