@@ -71,10 +71,15 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-// Tick component (WhatsApp-style)
+/**
+ * WhatsApp-style tick rules (only shown on my own messages):
+ *  - 1 grey tick  → sent but NOT delivered (recipient offline / not yet received)
+ *  - 2 grey ticks → delivered (recipient online or message reached device) but not yet read
+ *  - 2 blue ticks → read by recipient
+ */
 function Tick({ msg, isMine }: { msg: PrivateMessage; isMine: boolean }) {
   if (!isMine) return null;
-  if (msg.is_seen) return <CheckCheck className="w-3.5 h-3.5 text-[#53bdeb]" />;
+  if (msg.is_seen)      return <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />;
   if (msg.is_delivered) return <CheckCheck className="w-3.5 h-3.5 text-slate-400" />;
   return <Check className="w-3.5 h-3.5 text-slate-400" />;
 }
@@ -426,9 +431,14 @@ export default function PrivateChatPage() {
                     <div
                       className={`max-w-[75%] sm:max-w-[60%] rounded-2xl px-3.5 py-2 shadow-sm relative ${
                         isMine
-                          ? 'bg-[#dcf8c6] rounded-br-sm'
-                          : 'bg-white rounded-bl-sm'
+                          ? 'rounded-br-sm'   /* my messages — WhatsApp green */
+                          : 'rounded-bl-sm'   /* their messages — white */
                       } ${isFailed ? 'ring-2 ring-red-400' : ''}`}
+                      style={{
+                        background: isMine ? '#dcf8c6' : '#ffffff',
+                        /* Subtle directional tail shadow */
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.12)',
+                      }}
                       onClick={() => isFailed && retryMessage(msg)}
                     >
                       {/* Image attachment */}
@@ -442,7 +452,10 @@ export default function PrivateChatPage() {
 
                       {/* Text */}
                       {msg.content && msg.content !== 'Image' && (
-                        <p className="text-[0.875rem] text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
+                        <p
+                          className="text-[0.875rem] leading-relaxed whitespace-pre-wrap break-words"
+                          style={{ color: '#111' }}
+                        >
                           {msg.content}
                         </p>
                       )}
@@ -458,7 +471,12 @@ export default function PrivateChatPage() {
                       {/* Time + ticks */}
                       {!isFailed && (
                         <div className="flex items-center gap-1 mt-0.5 justify-end">
-                          <span className="text-[0.65rem] text-slate-400">{formatTime(msg.created_at)}</span>
+                          <span
+                            className="text-[0.65rem]"
+                            style={{ color: isMine ? '#6aaf7e' : '#8e9ca0' }}
+                          >
+                            {formatTime(msg.created_at)}
+                          </span>
                           {isOptimistic ? (
                             <Check className="w-3.5 h-3.5 text-slate-300" />
                           ) : (
