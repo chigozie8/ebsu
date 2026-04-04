@@ -588,20 +588,40 @@ export default function AdminDashboard() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Maximum file size: 500MB (Appwrite allows up to 5GB, but we set a practical limit)
+      // Maximum file size: 500MB (Appwrite supports up to 5GB with chunking)
       const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+      const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
       
       if (file.size > MAX_FILE_SIZE) {
         notifyUser(
           "error",
-          `File is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum allowed size is 500MB.`
+          `File is too large (${fileSizeMB}MB). Maximum allowed size is 500MB.`
         );
         e.target.value = "";
         setSelectedFile(null);
         return;
       }
       
-      console.log("[v0] File selected:", file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      // Validate file type
+      const allowedTypes = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!allowedTypes.includes(fileExtension)) {
+        notifyUser(
+          "error",
+          `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`
+        );
+        e.target.value = "";
+        setSelectedFile(null);
+        return;
+      }
+      
+      console.log(`[Admin] File selected: ${file.name} (${fileSizeMB}MB)`);
+      
+      // Show info for large files
+      if (file.size > 50 * 1024 * 1024) { // > 50MB
+        notifyUser("info", `Large file selected (${fileSizeMB}MB). Upload may take a few minutes.`);
+      }
+      
       setSelectedFile(file);
     }
   };
@@ -641,8 +661,15 @@ export default function AdminDashboard() {
     setIsUploading(true);
     setUploadProgress(0);
 
+    const fileSizeMB = (selectedFile.size / 1024 / 1024).toFixed(2);
+    const isLargeFile = selectedFile.size > 50 * 1024 * 1024; // > 50MB
+
     try {
-      notifyUser("loading", "Uploading material...");
+      notifyUser("loading", isLargeFile 
+        ? `Uploading large file (${fileSizeMB}MB)... This may take a few minutes.`
+        : "Uploading material...");
+
+      console.log(`[Admin] Starting upload: ${selectedFile.name} (${fileSizeMB}MB)`);
 
       // Upload to Appwrite Storage with progress tracking
       const { fileId, fileUrl } = await uploadFileToAppwrite(
@@ -650,7 +677,6 @@ export default function AdminDashboard() {
         APPWRITE_BUCKETS.LEARNING_RESOURCES,
         (progress) => {
           setUploadProgress(progress);
-          console.log(`[v0] Upload progress: ${progress.toFixed(0)}%`);
         }
       );
 
@@ -2402,17 +2428,22 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                   {selectedFile && (
                     <p className="text-xs text-gray-500 mt-1">
                       Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)}MB)
+                      {selectedFile.size > 100 * 1024 * 1024 && (
+                        <span className="text-amber-600 ml-1">- Large file, upload may take a few minutes</span>
+                      )}
                     </p>
                   )}
                   <p className="text-xs text-gray-400 mt-1">
-                    Maximum file size: 500MB
+                    Supported: PDF, DOC, DOCX, PPT, PPTX, TXT (max 500MB)
                   </p>
                 </div>
 
-                {isUploading && uploadProgress > 0 && (
+                {isUploading && (
                   <div className="w-full">
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-medium text-gray-700">Upload Progress</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        {uploadProgress < 100 ? "Uploading..." : "Finalizing..."}
+                      </label>
                       <span className="text-sm font-semibold text-green2">{Math.round(uploadProgress)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-lg h-3 overflow-hidden">
@@ -2421,6 +2452,9 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      Please do not close this page while uploading
+                    </p>
                   </div>
                 )}
 
