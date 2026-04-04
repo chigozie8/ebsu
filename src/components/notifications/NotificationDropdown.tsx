@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNotifications } from "../../hooks/notifications/useNotifications";
 import { BellIcon } from "../icons/nav/BellIcon";
@@ -39,6 +40,22 @@ const getNotificationIcon = (type: INotification["type"]) => {
           </svg>
         </div>
       );
+    case "message":
+      return (
+        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
+          <svg className="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+          </svg>
+        </div>
+      );
+    case "reply":
+      return (
+        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+          </svg>
+        </div>
+      );
     default:
       return (
         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -53,6 +70,7 @@ const getNotificationIcon = (type: INotification["type"]) => {
 export const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const {
     notifications,
     loading,
@@ -79,6 +97,9 @@ export const NotificationDropdown = () => {
       markAsRead(notification.id);
     }
     setIsOpen(false);
+    if (notification.link) {
+      navigate(notification.link);
+    }
   };
 
   return (

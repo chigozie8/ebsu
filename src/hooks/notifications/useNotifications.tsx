@@ -14,8 +14,14 @@ import { useGetUserInfo } from "../auth/useGetUserInfo";
 import { INotification } from "../../models/notifications";
 import { playSound } from "../useSound";
 
-// Play a notification chime using the shared useSound hook
-const playNotificationSound = () => playSound("notify");
+// Play the correct sound based on notification type
+const playNotificationSound = (type?: string) => {
+  if (type === "message" || type === "reply") {
+    playSound("message");
+  } else {
+    playSound("notify");
+  }
+};
 
 // Sample notifications for when Firebase is not configured or empty
 const sampleNotifications: INotification[] = [
@@ -134,7 +140,9 @@ export const useNotifications = () => {
             prevUnreadCountRef.current !== null &&
             newUnreadCount > prevUnreadCountRef.current
           ) {
-            playNotificationSound();
+            // Find the newest unread notification to determine sound type
+            const newestUnread = notificationsList.find((n) => !n.read);
+            playNotificationSound(newestUnread?.type);
           }
           prevUnreadCountRef.current = newUnreadCount;
           setNotifications(notificationsList);
