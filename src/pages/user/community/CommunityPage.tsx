@@ -79,6 +79,25 @@ const CommunityPage: React.FC = () => {
   const { community: comm, loading: loadingComm } = useCommunityBySlug(slug ?? '');
   const { isMember, toggling, toggle } = useCommunityMembership(comm?.id ?? '', userId);
   const { posts, loading: loadingPosts, error: postsError } = useCommunityPosts(comm?.id ?? null);
+
+  // Check if user is banned from posting
+  const [isBanned, setIsBanned] = useState(false);
+  const [banUntil, setBanUntil] = useState<string | null>(null);
+  useEffect(() => {
+    if (!userId || userId === 'anonymous' || isAdmin) return;
+    import('firebase/firestore').then(({ collection, query, where, getDocs }) => {
+      import('../../../config/firebase').then(({ db }) => {
+        getDocs(query(collection(db, 'community_bans'), where('user_id', '==', userId))).then((snap) => {
+          if (snap.empty) { setIsBanned(false); setBanUntil(null); return; }
+          const data = snap.docs[0].data();
+          const until = data.ban_until as string | undefined;
+          if (until && new Date(until) < new Date()) { setIsBanned(false); setBanUntil(null); return; }
+          setIsBanned(true);
+          setBanUntil(until ?? null);
+        });
+      });
+    });
+  }, [userId, isAdmin]);
   const { post, posting } = usePostToCommunity();
   const { deleteMessage } = useDeleteMessage();
   const { editMessage }   = useEditMessage();
@@ -129,7 +148,7 @@ const CommunityPage: React.FC = () => {
   const removeImageUrl = (i: number) =>
     setImageUrls((prev) => prev.filter((_, idx) => idx !== i));
 
-  const canPost = (newMessage.trim().length > 0 || imageUrls.length > 0) && !posting && isMember;
+  const canPost = (newMessage.trim().length > 0 || imageUrls.length > 0) && !posting && isMember && !isBanned;
 
   const handlePost = async () => {
     if (!canPost || !comm) return;
@@ -174,7 +193,7 @@ const CommunityPage: React.FC = () => {
         navigate(`/u/chat?${params.toString()}`);
       }
     } catch (err) {
-      console.error('[v0] handleMessageUser error:', err);
+      console.error('handleMessageUser error:', err);
       toast.error('Could not open chat. Please try again.');
     }
   };
@@ -812,7 +831,14 @@ const CommunityPage: React.FC = () => {
                   <Smile className="w-5 h-5 text-[#8696a0]" />
                 </button>
 
-                {isMember ? (
+                {isBanned ? (
+                  <div className="flex-1 flex items-center gap-1.5 py-1 self-end">
+                    <Shield className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-red-400 select-none">
+                      You are banned{banUntil ? ` until ${new Date(banUntil).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}` : ''}
+                    </span>
+                  </div>
+                ) : isMember ? (
                   <textarea
                     ref={textareaRef}
                     value={newMessage}
