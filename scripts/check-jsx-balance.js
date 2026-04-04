@@ -1,6 +1,15 @@
 const { readFileSync } = require('fs');
+const { resolve } = require('path');
 
-const src = readFileSync('/vercel/share/v0-project/src/pages/admin/AdminDashboard.tsx', 'utf8');
+const candidates = [
+  '/vercel/share/v0-project/src/pages/admin/AdminDashboard.tsx',
+  '/home/user/src/pages/admin/AdminDashboard.tsx',
+  '/home/src/pages/admin/AdminDashboard.tsx',
+];
+const { existsSync } = require('fs');
+const filePath = candidates.find(p => existsSync(p));
+if (!filePath) { console.error('Cannot find AdminDashboard.tsx. cwd=' + process.cwd()); process.exit(1); }
+const src = readFileSync(filePath, 'utf8');
 const lines = src.split('\n');
 
 const START = 1833; // line index (0-based) = line 1834 in editor
