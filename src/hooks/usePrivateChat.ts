@@ -3,7 +3,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
   addDoc,
   updateDoc,
@@ -12,8 +11,6 @@ import {
   getDoc,
   serverTimestamp,
   Timestamp,
-  or,
-  and,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -223,19 +220,20 @@ export const useMyChats = (userId: string) => {
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
 
-    // Query chats where user is participant_1 or participant_2
+    // Query chats where user is participant_1 or participant_2.
+    // No orderBy to avoid requiring a composite Firestore index — sort client-side.
     const q1 = query(
       collection(db, 'private_chats'),
-      where('participant_1', '==', userId),
-      orderBy('last_message_at', 'desc')
+      where('participant_1', '==', userId)
     );
     const q2 = query(
       collection(db, 'private_chats'),
-      where('participant_2', '==', userId),
-      orderBy('last_message_at', 'desc')
+      where('participant_2', '==', userId)
     );
 
     const allChats: Map<string, PrivateChat> = new Map();
+    // Track which of the two listeners have fired at least once
+    const fired = { q1: false, q2: false };
 
     const mapDoc = (d: { id: string; data: () => Record<string, unknown> }): PrivateChat => ({
       id: d.id,
@@ -251,22 +249,41 @@ export const useMyChats = (userId: string) => {
     });
 
     const sortAndSet = () => {
+      // Only stop loading once both listeners have responded at least once
       const sorted = Array.from(allChats.values()).sort(
         (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
       );
       setChats(sorted);
-      setLoading(false);
+      if (fired.q1 && fired.q2) setLoading(false);
     };
 
-    const unsub1 = onSnapshot(q1, (snap) => {
-      snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
-      sortAndSet();
-    });
+    const unsub1 = onSnapshot(
+      q1,
+      (snap) => {
+        fired.q1 = true;
+        snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
+        sortAndSet();
+      },
+      (err) => {
+        console.error('[useMyChats] q1 error:', err.code, err.message);
+        fired.q1 = true;
+        if (fired.q1 && fired.q2) setLoading(false);
+      }
+    );
 
-    const unsub2 = onSnapshot(q2, (snap) => {
-      snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
-      sortAndSet();
-    });
+    const unsub2 = onSnapshot(
+      q2,
+      (snap) => {
+        fired.q2 = true;
+        snap.docs.forEach((d) => allChats.set(d.id, mapDoc({ id: d.id, data: () => d.data() as Record<string, unknown> })));
+        sortAndSet();
+      },
+      (err) => {
+        console.error('[useMyChats] q2 error:', err.code, err.message);
+        fired.q2 = true;
+        if (fired.q1 && fired.q2) setLoading(false);
+      }
+    );
 
     return () => { unsub1(); unsub2(); };
   }, [userId]);
@@ -465,7 +482,7 @@ export const useMarkSeen = () => {
   return { markSeen };
 };
 
-// ─────────────────────────────────────────────────────────
+// ───────────────────────────────���─────────────────────────
 // TYPING INDICATOR (ephemeral via Firestore doc)
 // ─────────────────────────────────────────────────────────
 
