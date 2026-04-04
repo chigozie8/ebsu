@@ -9,7 +9,7 @@ import {
   doc, updateDoc, arrayUnion, arrayRemove, getDoc, onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../../config/firebase';
-import { usePinMessage } from '../../hooks/useCommunity';
+import { usePinMessage, useDeleteMessage } from '../../hooks/useCommunity';
 import { useAnyUserVerification } from '../../hooks/usePrivateChat';
 import VerifiedBadge from './VerifiedBadge';
 import { playSound } from '../../hooks/useSound';
@@ -322,11 +322,14 @@ const MessageCard: React.FC<MessageCardProps> = ({
   const [isLiked, setIsLiked]           = useState(false);
   // Live reply count — updated by onSnapshot so it increments immediately when someone comments
   const [liveReplyCount, setLiveReplyCount] = useState<number>(message.reply_count || 0);
+  // Delete confirmation dialog
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const reactRef   = useRef<HTMLDivElement>(null);
 
   const { togglePin } = usePinMessage();
+  const { deleteMessage, deleting } = useDeleteMessage();
   const { verification } = useAnyUserVerification(message.user_id);
   const isVerified = verification?.is_verified;
 
@@ -416,6 +419,42 @@ const MessageCard: React.FC<MessageCardProps> = ({
 
   return (
     <>
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000]">
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4 animate-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-[#111b21] mb-2">Delete message?</h3>
+            <p className="text-sm text-[#667781] mb-6">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium text-[#111b21] hover:bg-[#f5f5f5] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await deleteMessage(message.id);
+                    onDelete(message.id);
+                    setShowDeleteConfirm(false);
+                  } catch (err) {
+                    console.error('[MessageCard] Delete error:', err);
+                  }
+                }}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg text-[13px] font-medium text-white bg-[#ea4335] hover:bg-[#d33527] transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {lightboxIdx !== null && imageUrls.length > 0 && (
         <ImageLightbox
           images={imageUrls}
@@ -476,11 +515,12 @@ const MessageCard: React.FC<MessageCardProps> = ({
             <>
               <div className="h-px mx-3 bg-[#f0f2f5]" />
               <button
-                onClick={() => { onDelete(message.id); setShowMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors"
+                onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
+                disabled={deleting}
+                className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-[#ea4335] hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <Trash2 className="w-4 h-4" />
-                Delete
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </>
           )}

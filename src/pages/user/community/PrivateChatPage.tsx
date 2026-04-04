@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCheck, Check, ImageIcon, X, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, CheckCheck, Check, ImageIcon, X, RefreshCw, Loader2, Users } from 'lucide-react';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
 import {
   usePrivateMessages,
@@ -12,6 +12,7 @@ import {
 import { PrivateMessage } from '../../../hooks/usePrivateChat';
 import toast from 'react-hot-toast';
 import VerifiedBadge from '../../../components/community/VerifiedBadge';
+import ChatParticipantsList from '../../../components/community/ChatParticipantsList';
 
 // Cloudinary unsigned upload
 async function uploadImageToCloudinary(file: File): Promise<string> {
@@ -195,6 +196,7 @@ export default function PrivateChatPage() {
   const [uploadingImg, setUploadingImg] = useState(false);
   const [optimisticMessages, setOptimisticMessages] = useState<PrivateMessage[]>([]);
   const [failedMessages, setFailedMessages] = useState<Set<string>>(new Set());
+  const [showParticipants, setShowParticipants] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -364,6 +366,15 @@ export default function PrivateChatPage() {
             }` : ''}
           </p>
         </div>
+
+        {/* Participants button */}
+        <button
+          onClick={() => setShowParticipants(!showParticipants)}
+          className="p-1.5 rounded-full hover:bg-white/10 transition-colors text-white flex-shrink-0"
+          title="Show participants"
+        >
+          <Users className="w-5 h-5" />
+        </button>
       </header>
 
       {/* Messages area */}
@@ -569,6 +580,15 @@ export default function PrivateChatPage() {
           )}
         </button>
       </div>
+
+      {/* Chat Participants List */}
+      {chatId && (
+        <ChatParticipantsList
+          chatId={chatId}
+          isOpen={showParticipants}
+          onClose={() => setShowParticipants(false)}
+        />
+      )}
     </div>
   );
 }

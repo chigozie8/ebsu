@@ -698,3 +698,106 @@ export const useVerifyByEmail = () => {
 
   return { findByEmail, verifyUser, revokeVerification, searching, verifying };
 };
+
+// ─────────────────────────────────────────────────────────
+// CHAT PARTICIPANTS
+// ─────────────────────────────────────────────────────────
+
+export interface ChatParticipant {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_avatar?: string;
+  online_status: 'online' | 'offline' | 'away';
+  last_seen: string;
+  is_verified?: boolean;
+}
+
+export const useChatParticipants = (chatId: string) => {
+  const [participants, setParticipants] = useState<ChatParticipant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!chatId) { setLoading(false); return; }
+
+    try {
+      const chatRef = doc(db, 'private_chats', chatId);
+      
+      // Subscribe to chat document to get participant IDs
+      const unsub = onSnapshot(
+        chatRef,
+        async (snap) => {
+          if (!snap.exists()) { setParticipants([]); setLoading(false); return; }
+          
+          const chatData = snap.data();
+          const participant1Id = chatData.participant_1 as string;
+          const participant2Id = chatData.participant_2 as string;
+          const participant1Name = chatData.participant_1_name as string;
+          const participant2Name = chatData.participant_2_name as string;
+          const participant1Avatar = chatData.participant_1_avatar as string | undefined;
+          const participant2Avatar = chatData.participant_2_avatar as string | undefined;
+
+          try {
+            // Fetch verification status for both participants
+            const q1 = query(
+              collection(db, 'user_verification'),
+              where('user_id', '==', participant1Id)
+            );
+            const q2 = query(
+              collection(db, 'user_verification'),
+              where('user_id', '==', participant2Id)
+            );
+
+            const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+            const p1Data = snap1.empty ? null : snap1.docs[0].data();
+            const p2Data = snap2.empty ? null : snap2.docs[0].data();
+
+            const participantsList: ChatParticipant[] = [
+              {
+                id: `${chatId}_p1`,
+                user_id: participant1Id,
+                user_name: participant1Name,
+                user_avatar: participant1Avatar,
+                online_status: (p1Data?.online_status as 'online' | 'offline' | 'away') || 'offline',
+                last_seen: toIso(p1Data?.last_seen),
+                is_verified: (p1Data?.is_verified as boolean) || false,
+              },
+              {
+                id: `${chatId}_p2`,
+                user_id: participant2Id,
+                user_name: participant2Name,
+                user_avatar: participant2Avatar,
+                online_status: (p2Data?.online_status as 'online' | 'offline' | 'away') || 'offline',
+                last_seen: toIso(p2Data?.last_seen),
+                is_verified: (p2Data?.is_verified as boolean) || false,
+              },
+            ];
+
+            setParticipants(participantsList);
+            setError(null);
+          } catch (err) {
+            console.error('[useChatParticipants] error fetching verification:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load participants');
+          } finally {
+            setLoading(false);
+          }
+        },
+        (err) => {
+          console.error('[useChatParticipants] Firebase error:', err);
+          setError(err.message);
+          setLoading(false);
+        }
+      );
+
+      return () => unsub();
+    } catch (err) {
+      console.error('[useChatParticipants] setup error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to set up participants');
+      setLoading(false);
+    }
+  }, [chatId]);
+
+  return { participants, loading, error };
+};
