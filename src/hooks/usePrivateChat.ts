@@ -455,7 +455,7 @@ export const useSendPrivateMessage = () => {
 
 // ─────────────────────────────────────────────────────────
 // MARK MESSAGES AS SEEN
-// ─────────────────────────────────────────────────────────
+// ──────────────────────────────────────────���──────────────
 
 export const useMarkSeen = () => {
   const markSeen = useCallback(async (chatId: string, viewerId: string) => {
@@ -544,10 +544,10 @@ export const useAllUserProfiles = () => {
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    const q = query(collection(db, 'user_verification'), orderBy('user_name'));
-    const snap = await getDocs(q);
-    setProfiles(
-      snap.docs.map((d) => {
+    try {
+      // No orderBy to avoid requiring a composite Firestore index — sort client-side
+      const snap = await getDocs(collection(db, 'user_verification'));
+      const profiles: UserVerification[] = snap.docs.map((d) => {
         const data = d.data();
         return {
           id: d.id,
@@ -563,9 +563,15 @@ export const useAllUserProfiles = () => {
           created_at: toIso(data.created_at),
           updated_at: toIso(data.updated_at),
         };
-      })
-    );
-    setLoading(false);
+      });
+      // Sort client-side to avoid Firestore index requirement
+      profiles.sort((a, b) => a.user_name.localeCompare(b.user_name));
+      setProfiles(profiles);
+    } catch (err) {
+      console.error('[useAllUserProfiles] fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refetch(); }, [refetch]);
@@ -723,8 +729,6 @@ export const useChatParticipants = (chatId: string) => {
       setLoading(false); 
       return; 
     }
-
-    console.log('[v0] useChatParticipants: setting up for chatId:', chatId);
 
     try {
       const chatRef = doc(db, 'private_chats', chatId);

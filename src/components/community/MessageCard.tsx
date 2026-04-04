@@ -271,22 +271,29 @@ const PortalMenu: React.FC<{
   }, [anchorRef, isOwn]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent | TouchEvent) => {
-      if (anchorRef.current && anchorRef.current.contains(e.target as Node)) return;
-      onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
+    // Defer adding the listener by one tick so the opening click doesn't
+    // immediately trigger close (the same mousedown event would otherwise fire).
+    let timer: ReturnType<typeof setTimeout>;
+    timer = setTimeout(() => {
+      const handler = (e: MouseEvent | TouchEvent) => {
+        if (anchorRef.current && anchorRef.current.contains(e.target as Node)) return;
+        onClose();
+      };
+      document.addEventListener('mousedown', handler);
+      document.addEventListener('touchstart', handler);
+      return () => {
+        document.removeEventListener('mousedown', handler);
+        document.removeEventListener('touchstart', handler);
+      };
+    }, 0);
+    return () => clearTimeout(timer);
   }, [anchorRef, onClose]);
 
   return createPortal(
     <div
       className="fixed z-[9998] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden"
       style={{ top: pos.top, left: pos.left, minWidth: 190 }}
+      onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       {children}

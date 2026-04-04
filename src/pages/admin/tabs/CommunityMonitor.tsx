@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import {
-  collection, query, orderBy, getDocs, getDoc,
-  doc, updateDoc, addDoc, deleteDoc, where, onSnapshot,
-  serverTimestamp,
+  collection, query, getDocs, getDoc,
+  doc, updateDoc, addDoc, deleteDoc, where,
+  serverTimestamp, increment,
 } from 'firebase/firestore';
 import { db } from '../../../config/firebase';
 import {
@@ -80,8 +80,6 @@ function Avatar({ name, src, size = 36 }: { name: string; src?: string; size?: n
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
-
-type AdminTab = 'communities' | 'messages' | 'verification';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMMUNITY GROUPS MANAGER
@@ -419,39 +417,46 @@ function MessagesManager() {
     });
   }, []);
 
-  // Real-time listener for messages
-  useEffect(() => {
+  // Load messages — use getDocs (no composite index needed) then sort client-side
+  const loadMessages = useCallback(async () => {
     setLoading(true);
-    const ref = collection(db, 'community_messages');
-    const q = selectedCommunity === 'all'
-      ? query(ref, orderBy('created_at', 'desc'))
-      : query(ref, where('community_id', '==', selectedCommunity), orderBy('created_at', 'desc'));
-
-    const unsub = onSnapshot(q, (snap) => {
-      const msgs: Community[] = snap.docs.map((d) => ({
-        id: d.id,
-        user_id: (d.data().user_id as string) || '',
-        user_name: (d.data().user_name as string) || 'Unknown',
-        user_avatar: d.data().user_avatar as string | undefined,
-        message: (d.data().message as string) || '',
-        topic: (d.data().topic as string) || 'General',
-        community_id: d.data().community_id as string | undefined,
-        image_urls: d.data().image_urls as string[] | undefined,
-        sticker_url: d.data().sticker_url as string | undefined,
-        created_at: toStr(d.data().created_at),
-        updated_at: toStr(d.data().updated_at),
-        likes_count: (d.data().likes_count as number) || 0,
-        reply_count: (d.data().reply_count as number) || 0,
-        is_pinned: (d.data().is_pinned as boolean) || false,
-        is_edited: (d.data().is_edited as boolean) || false,
-        is_deleted: (d.data().is_deleted as boolean) || false,
-      }));
-      setMessages(msgs.filter((m) => !m.is_deleted));
+    try {
+      const ref = collection(db, 'community_messages');
+      const q = selectedCommunity === 'all'
+        ? query(ref)
+        : query(ref, where('community_id', '==', selectedCommunity));
+      const snap = await getDocs(q);
+      const msgs: Community[] = snap.docs
+        .map((d) => ({
+          id: d.id,
+          user_id: (d.data().user_id as string) || '',
+          user_name: (d.data().user_name as string) || 'Unknown',
+          user_avatar: d.data().user_avatar as string | undefined,
+          message: (d.data().message as string) || '',
+          topic: (d.data().topic as string) || 'General',
+          community_id: d.data().community_id as string | undefined,
+          image_urls: d.data().image_urls as string[] | undefined,
+          sticker_url: d.data().sticker_url as string | undefined,
+          created_at: toStr(d.data().created_at),
+          updated_at: toStr(d.data().updated_at),
+          likes_count: (d.data().likes_count as number) || 0,
+          reply_count: (d.data().reply_count as number) || 0,
+          is_pinned: (d.data().is_pinned as boolean) || false,
+          is_edited: (d.data().is_edited as boolean) || false,
+          is_deleted: (d.data().is_deleted as boolean) || false,
+        }))
+        .filter((m) => !m.is_deleted)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setMessages(msgs);
+    } catch (err) {
+      console.error('[MessagesManager] load error:', err);
+      toast.error('Failed to load messages');
+    } finally {
       setLoading(false);
-    });
-
-    return () => unsub();
+    }
   }, [selectedCommunity]);
+
+  useEffect(() => { loadMessages(); }, [loadMessages]);
 
   const deleteMsg = async (id: string) => {
     if (!window.confirm('Delete this message?')) return;
@@ -460,6 +465,7 @@ function MessagesManager() {
         is_deleted: true, updated_at: serverTimestamp(),
       });
       toast.success('Message deleted');
+      loadMessages();
     } catch {
       toast.error('Failed to delete');
     }
@@ -474,6 +480,7 @@ function MessagesManager() {
       setEditingId(null);
       setEditText('');
       toast.success('Message updated');
+      loadMessages();
     } catch {
       toast.error('Failed to update');
     }
@@ -485,6 +492,7 @@ function MessagesManager() {
         is_pinned: !pinned, updated_at: serverTimestamp(),
       });
       toast.success(!pinned ? 'Message pinned' : 'Message unpinned');
+      loadMessages();
     } catch {
       toast.error('Failed to update pin');
     }
@@ -508,6 +516,7 @@ function MessagesManager() {
       });
       setNewMessage('');
       toast.success('Admin message posted!');
+      loadMessages();
     } catch {
       toast.error('Failed to post message');
     } finally {
@@ -589,7 +598,14 @@ function MessagesManager() {
           <Pin className="w-3.5 h-3.5" />
           Pinned only
         </button>
-        <span className="text-xs text-gray-500 ml-auto">{filtered.length} messages</span>
+        <button
+          onClick={loadMessages}
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          title="Refresh messages"
+        >
+          <RefreshCw className="w-4 h-4 text-gray-500" />
+        </button>
+        <span className="text-xs text-gray-500">{filtered.length} messages</span>
       </div>
 
       {/* Messages */}
@@ -1000,8 +1016,371 @@ function VerificationManager() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MEMBERS MANAGER (see users in each community, remove, ban/unban)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface MemberRecord {
+  docId: string;       // community_memberships doc ID
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  joinedAt: string;
+  isBanned: boolean;
+  banUntil?: string;
+  banReason?: string;
+}
+
+function MembersManager() {
+  const [communities, setCommunities] = useState<CommunityGroup[]>([]);
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [members, setMembers] = useState<MemberRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [actionUserId, setActionUserId] = useState<string | null>(null);
+  const [searchQ, setSearchQ] = useState('');
+  const [banDays, setBanDays] = useState(3);
+  const [banReason, setBanReason] = useState('');
+  const [showBanForm, setShowBanForm] = useState<string | null>(null);
+
+  // Load community list once
+  useEffect(() => {
+    getDocs(collection(db, 'communities')).then((snap) => {
+      const list = snap.docs.map((d) => ({
+        id: d.id,
+        name: (d.data().name as string) || '',
+        slug: (d.data().slug as string) || '',
+        description: '', icon: (d.data().icon as string) || '💬',
+        color: (d.data().color as string) || '#075E54',
+        banner_url: undefined,
+        member_count: (d.data().member_count as number) || 0,
+        post_count: (d.data().post_count as number) || 0,
+        is_active: true, created_at: '', updated_at: '',
+      } as CommunityGroup)).sort((a, b) => a.name.localeCompare(b.name));
+      setCommunities(list);
+      if (list.length > 0) setSelectedId(list[0].id);
+    });
+  }, []);
+
+  const loadMembers = useCallback(async () => {
+    if (!selectedId) return;
+    setLoading(true);
+    try {
+      // Memberships for this community
+      const memSnap = await getDocs(
+        query(collection(db, 'community_memberships'), where('community_id', '==', selectedId))
+      );
+
+      // Bans — fetch all bans and filter client-side to avoid composite index
+      const banSnap = await getDocs(collection(db, 'community_bans'));
+      const bansMap = new Map<string, { until?: string; reason?: string }>();
+      banSnap.docs.forEach((d) => {
+        const data = d.data();
+        const until = data.ban_until ? toStr(data.ban_until) : undefined;
+        // Only treat as active ban if ban_until is in the future (or undefined = permanent)
+        const isActive = !until || new Date(until) > new Date();
+        if (isActive) {
+          bansMap.set(data.user_id as string, { until, reason: data.reason as string | undefined });
+        }
+      });
+
+      const records: MemberRecord[] = memSnap.docs.map((d) => {
+        const data = d.data();
+        const uid = data.user_id as string;
+        const ban = bansMap.get(uid);
+        return {
+          docId: d.id,
+          userId: uid,
+          userName: (data.user_name as string) || uid,
+          userAvatar: data.user_avatar as string | undefined,
+          joinedAt: toStr(data.joined_at),
+          isBanned: !!ban,
+          banUntil: ban?.until,
+          banReason: ban?.reason,
+        };
+      }).sort((a, b) => a.userName.localeCompare(b.userName));
+
+      setMembers(records);
+    } catch (err) {
+      console.error('[MembersManager] load error:', err);
+      toast.error('Failed to load members');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedId]);
+
+  useEffect(() => { if (selectedId) loadMembers(); }, [selectedId, loadMembers]);
+
+  const removeFromGroup = async (m: MemberRecord) => {
+    if (!window.confirm(`Remove ${m.userName} from this community?`)) return;
+    setActionUserId(m.userId);
+    try {
+      await deleteDoc(doc(db, 'community_memberships', m.docId));
+      // Decrement member_count
+      await updateDoc(doc(db, 'communities', selectedId), { member_count: increment(-1) });
+      toast.success(`${m.userName} removed from community`);
+      loadMembers();
+    } catch {
+      toast.error('Failed to remove member');
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const banUser = async (m: MemberRecord) => {
+    setActionUserId(m.userId);
+    try {
+      const banUntil = new Date();
+      banUntil.setDate(banUntil.getDate() + banDays);
+
+      // Upsert ban document — check if one exists first
+      const existing = await getDocs(
+        query(collection(db, 'community_bans'), where('user_id', '==', m.userId))
+      );
+      if (!existing.empty) {
+        await updateDoc(existing.docs[0].ref, {
+          ban_until: banUntil.toISOString(),
+          reason: banReason || 'Admin ban',
+          banned_at: serverTimestamp(),
+        });
+      } else {
+        await addDoc(collection(db, 'community_bans'), {
+          user_id: m.userId,
+          user_name: m.userName,
+          ban_until: banUntil.toISOString(),
+          reason: banReason || 'Admin ban',
+          banned_at: serverTimestamp(),
+        });
+      }
+      toast.success(`${m.userName} banned for ${banDays} day${banDays > 1 ? 's' : ''}`);
+      setShowBanForm(null);
+      setBanReason('');
+      loadMembers();
+    } catch {
+      toast.error('Failed to ban user');
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const unbanUser = async (m: MemberRecord) => {
+    setActionUserId(m.userId);
+    try {
+      const existing = await getDocs(
+        query(collection(db, 'community_bans'), where('user_id', '==', m.userId))
+      );
+      await Promise.all(existing.docs.map((d) => deleteDoc(d.ref)));
+      toast.success(`${m.userName} unbanned`);
+      loadMembers();
+    } catch {
+      toast.error('Failed to unban user');
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const filtered = members.filter((m) =>
+    m.userName.toLowerCase().includes(searchQ.toLowerCase()) ||
+    m.userId.toLowerCase().includes(searchQ.toLowerCase())
+  );
+
+  const selectedComm = communities.find((c) => c.id === selectedId);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-[#128C7E]" />
+            Community Members
+          </h3>
+          <p className="text-xs text-gray-500 mt-0.5">View, remove, or ban users from communities</p>
+        </div>
+        <button
+          onClick={loadMembers}
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className="w-4 h-4 text-gray-500" />
+        </button>
+      </div>
+
+      {/* Community selector */}
+      <div className="flex flex-wrap gap-3">
+        <select
+          value={selectedId}
+          onChange={(e) => { setSelectedId(e.target.value); setSearchQ(''); }}
+          className="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/40"
+        >
+          {communities.map((c) => (
+            <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+          ))}
+        </select>
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search members..."
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#25D366]/40"
+          />
+        </div>
+      </div>
+
+      {/* Stats strip */}
+      {selectedComm && (
+        <div className="flex gap-4 p-4 bg-white rounded-2xl border border-gray-200">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+            style={{ background: selectedComm.color + '22' }}
+          >
+            {selectedComm.icon}
+          </div>
+          <div>
+            <p className="font-semibold text-gray-900">{selectedComm.name}</p>
+            <p className="text-xs text-gray-500">
+              {members.length} member{members.length !== 1 ? 's' : ''} &bull;{' '}
+              {members.filter((m) => m.isBanned).length} banned
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Members list */}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-[#25D366]" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 text-sm">
+          {members.length === 0 ? 'No members in this community yet.' : 'No members match your search.'}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="col-span-5">Member</div>
+            <div className="col-span-3 hidden sm:block">Joined</div>
+            <div className="col-span-4 sm:col-span-4 text-right">Actions</div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {filtered.map((m) => (
+              <div key={m.docId}>
+                <div className="grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-gray-50/80 transition-colors">
+                  <div className="col-span-5 flex items-center gap-3 min-w-0">
+                    <Avatar name={m.userName} src={m.userAvatar} size={36} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{m.userName}</p>
+                        {m.isBanned && (
+                          <span className="text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <AlertTriangle className="w-2.5 h-2.5" /> Banned
+                          </span>
+                        )}
+                      </div>
+                      {m.isBanned && m.banUntil && (
+                        <p className="text-[10px] text-red-400 mt-0.5">
+                          Until {new Date(m.banUntil).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="col-span-3 hidden sm:block">
+                    <span className="text-xs text-gray-400">{fmtShort(m.joinedAt)}</span>
+                  </div>
+
+                  <div className="col-span-7 sm:col-span-4 flex items-center justify-end gap-1.5 flex-wrap">
+                    {/* Remove from group */}
+                    <button
+                      onClick={() => removeFromGroup(m)}
+                      disabled={actionUserId === m.userId}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 disabled:opacity-50 transition-colors"
+                      title="Remove from this community"
+                    >
+                      {actionUserId === m.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                      Remove
+                    </button>
+
+                    {/* Ban / Unban */}
+                    {m.isBanned ? (
+                      <button
+                        onClick={() => unbanUser(m)}
+                        disabled={actionUserId === m.userId}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 disabled:opacity-50 transition-colors"
+                      >
+                        {actionUserId === m.userId ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+                        Unban
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setShowBanForm(showBanForm === m.userId ? null : m.userId)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-colors"
+                      >
+                        <ShieldOff className="w-3 h-3" />
+                        Ban
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Ban form */}
+                {showBanForm === m.userId && (
+                  <div className="mx-5 mb-4 p-4 bg-red-50 border border-red-200 rounded-xl space-y-3">
+                    <p className="text-xs font-semibold text-red-700">Ban {m.userName} from all communities</p>
+                    <div className="flex flex-wrap gap-3">
+                      <div>
+                        <label className="text-xs text-gray-600 block mb-1">Duration (days)</label>
+                        <select
+                          value={banDays}
+                          onChange={(e) => setBanDays(Number(e.target.value))}
+                          className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none"
+                        >
+                          {[1, 3, 7, 14, 30, 90, 365].map((d) => (
+                            <option key={d} value={d}>{d} day{d > 1 ? 's' : ''}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1 min-w-[140px]">
+                        <label className="text-xs text-gray-600 block mb-1">Reason (optional)</label>
+                        <input
+                          value={banReason}
+                          onChange={(e) => setBanReason(e.target.value)}
+                          placeholder="e.g. Spam, harassment..."
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => banUser(m)}
+                        disabled={actionUserId === m.userId}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        {actionUserId === m.userId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldOff className="w-3.5 h-3.5" />}
+                        Confirm Ban
+                      </button>
+                      <button
+                        onClick={() => { setShowBanForm(null); setBanReason(''); }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN EXPORT — CommunityMonitor
 // ─────────────────────────────────────────────────────────────────────────────
+
+type AdminTab = 'communities' | 'messages' | 'members' | 'verification';
 
 const CommunityMonitor: React.FC = () => {
   const [tab, setTab] = useState<AdminTab>('communities');
@@ -1009,6 +1388,7 @@ const CommunityMonitor: React.FC = () => {
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
     { key: 'communities', label: 'Communities', icon: <Hash className="w-4 h-4" /> },
     { key: 'messages', label: 'Messages', icon: <MessageCircle className="w-4 h-4" /> },
+    { key: 'members', label: 'Members', icon: <Users className="w-4 h-4" /> },
     { key: 'verification', label: 'Verification', icon: <BadgeCheck className="w-4 h-4" /> },
   ];
 
@@ -1035,6 +1415,7 @@ const CommunityMonitor: React.FC = () => {
       {/* Tab content */}
       {tab === 'communities' && <CommunitiesManager />}
       {tab === 'messages' && <MessagesManager />}
+      {tab === 'members' && <MembersManager />}
       {tab === 'verification' && <VerificationManager />}
     </div>
   );
