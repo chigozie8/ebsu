@@ -166,6 +166,57 @@ export const useUserVerification = (userId: string) => {
   return { verification, loading, upsertVerification, toggleVerified, setOnlineStatus };
 };
 
+// ─────────────────────────────────────────────────────────
+// PRESENCE — heartbeat + offline-on-leave
+// Writes online_status + last_seen every 30 s while the page is visible.
+// Sets offline when the component unmounts or the page hides (tab switch, etc.)
+// ─────────────────────────────────────────────────────────
+
+async function writePresence(uid: string, status: 'online' | 'offline') {
+  const q    = query(collection(db, 'user_verification'), where('user_id', '==', uid));
+  const snap = await getDocs(q);
+  if (!snap.empty) {
+    await updateDoc(snap.docs[0].ref, {
+      online_status: status,
+      last_seen:     serverTimestamp(),
+      updated_at:    serverTimestamp(),
+    });
+  }
+}
+
+export function usePresence(userId: string | null | undefined) {
+  useEffect(() => {
+    if (!userId) return;
+
+    // Mark online immediately
+    writePresence(userId, 'online').catch(() => {});
+
+    // Heartbeat every 30 s
+    const timer = setInterval(() => {
+      writePresence(userId, 'online').catch(() => {});
+    }, 30_000);
+
+    // Mark offline when page hides or component unmounts
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') writePresence(userId, 'offline').catch(() => {});
+    };
+    const onShow = () => {
+      if (document.visibilityState === 'visible') writePresence(userId, 'online').catch(() => {});
+    };
+
+    document.addEventListener('visibilitychange', onHide);
+    document.addEventListener('visibilitychange', onShow);
+    window.addEventListener('beforeunload', () => writePresence(userId, 'offline').catch(() => {}));
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onHide);
+      document.removeEventListener('visibilitychange', onShow);
+      writePresence(userId, 'offline').catch(() => {});
+    };
+  }, [userId]);
+}
+
 export const useAnyUserVerification = (userId: string | null) => {
   const [verification, setVerification] = useState<UserVerification | null>(null);
   const [loading, setLoading] = useState(false);
@@ -455,7 +506,7 @@ export const useSendPrivateMessage = () => {
 
 // ─────────────────────────────────────────────────────────
 // MARK MESSAGES AS SEEN
-// ──────────────────────────────────────────���──────────────
+// ──────────────────────────────────────────�����──────────────
 
 export const useMarkSeen = () => {
   const markSeen = useCallback(async (chatId: string, viewerId: string) => {

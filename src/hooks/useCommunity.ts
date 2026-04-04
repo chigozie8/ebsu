@@ -261,13 +261,9 @@ export const usePostReply = () => {
         updated_at: serverTimestamp(),
       });
 
-      // Increment reply_count on the parent message
+      // Atomically increment reply_count on the parent message
       const msgRef = doc(db, 'community_messages', messageId);
-      const msgSnap = await getDoc(msgRef);
-      if (msgSnap.exists()) {
-        const current = (msgSnap.data().reply_count as number) || 0;
-        await updateDoc(msgRef, { reply_count: current + 1 });
-      }
+      await updateDoc(msgRef, { reply_count: increment(1) });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to post reply';
       setError(msg);

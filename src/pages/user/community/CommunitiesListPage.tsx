@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useCommunities, CommunityGroup } from '../../../hooks/useCommunities';
 import { useGetUserInfo } from '../../../hooks/auth/useGetUserInfo';
-import { useMyChats, useGetOrCreateChat, PrivateChat } from '../../../hooks/usePrivateChat';
+import { useMyChats, useGetOrCreateChat, useAnyUserVerification, PrivateChat } from '../../../hooks/usePrivateChat';
 
 // ─── Skeleton loaders ────────────────────────────────────────────────────────
 
@@ -143,9 +143,14 @@ const ChatRow: React.FC<{
   myId: string;
   onClick: () => void;
 }> = ({ chat, myId, onClick }) => {
-  const isP1 = chat.participant_1 === myId;
-  const otherName   = isP1 ? chat.participant_2_name   : chat.participant_1_name;
+  const isP1        = chat.participant_1 === myId;
+  const otherId     = isP1 ? chat.participant_2      : chat.participant_1;
+  const otherName   = isP1 ? chat.participant_2_name : chat.participant_1_name;
   const otherAvatar = isP1 ? chat.participant_2_avatar : chat.participant_1_avatar;
+
+  // Live presence for the other participant
+  const { verification } = useAnyUserVerification(otherId);
+  const isOnline = verification?.online_status === 'online';
 
   return (
     <button
@@ -155,7 +160,10 @@ const ChatRow: React.FC<{
     >
       <div className="relative flex-shrink-0">
         <Avatar name={otherName || 'User'} src={otherAvatar} size={12} />
-        <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#25D366] border-2 border-white rounded-full" />
+        {/* Online dot — only shown when the other person is genuinely online */}
+        {isOnline && (
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#25D366] border-2 border-white rounded-full" />
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -177,7 +185,7 @@ const ChatRow: React.FC<{
   );
 };
 
-// ─── Main page ─────────────────────────────────────────────────────────────��─
+// ─── Main page ─────────────────────────────────────────────────────────────���─
 
 type Tab = 'communities' | 'messages';
 
@@ -272,9 +280,9 @@ const CommunitiesListPage: React.FC = () => {
                 : 'text-white/60 hover:text-white/90'}`}
           >
             <MessageCircle className="w-4 h-4" />
-            Messages
+            Direct Messages
             {chats.length > 0 && (
-              <span className="absolute top-1.5 right-[calc(50%-30px)] bg-[#25D366] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
+              <span className="absolute top-1.5 right-[calc(50%-55px)] bg-[#25D366] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
                 {chats.length > 9 ? '9+' : chats.length}
               </span>
             )}
@@ -388,9 +396,9 @@ const CommunitiesListPage: React.FC = () => {
                     <MessageCircle className="w-9 h-9" style={{ color: '#075E54' }} />
                   </div>
                   <div>
-                    <p className="font-bold text-[#111b21] text-base">No messages yet</p>
+                    <p className="font-bold text-[#111b21] text-base">Peer to Peer — No messages yet</p>
                     <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                      Go to any community, tap a member&apos;s avatar, and send them a private message.
+                      Tap any member&apos;s avatar inside a community chat and choose &quot;Message&quot; to start a private one-on-one conversation here.
                     </p>
                   </div>
                 </div>
