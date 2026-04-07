@@ -117,26 +117,19 @@ export default function WeatherWidget({ customIndex = 19 }: { customIndex?: numb
   const [currentTime, setCurrentTime] = useState(new Date());
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // EBSU is located in Abakaliki, Ebonyi State, Nigeria
-  // Coordinates: 6.3249° N, 8.1137° E
-  const EBSU_LAT = 6.3249;
-  const EBSU_LON = 8.1137;
-
   useEffect(() => {
     const fetchWeather = async () => {
       try {
         setLoading(true);
         setError(false);
 
-        // Using Open-Meteo API (free, no API key required)
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${EBSU_LAT}&longitude=${EBSU_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&timezone=Africa%2FLagos`
-        );
+        // Proxy through our own server to avoid CORS/CSP restrictions
+        const response = await fetch("/api/weather");
 
         if (!response.ok) throw new Error("Failed to fetch weather");
 
         const data = await response.json();
-        
+
         setWeather({
           temperature: Math.round(data.current.temperature_2m),
           weatherCode: data.current.weather_code,
