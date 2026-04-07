@@ -855,6 +855,7 @@ export default function AdminDashboard() {
       setIsUploading(false);
       setUploadProgress(0);
     }
+    }
   };
 
   const resetMaterialForm = () => {
@@ -4002,7 +4003,6 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
 
         {/* Course Outlines Tab */}
         {activeTab === "outlines" && (
-          <>
           <div className="space-y-6">
             {/* Stats Overview */}
             <motion.div
@@ -4550,7 +4550,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               </motion.div>
             </div>
           )}
-          </>
+        </div>
         )}
 
         {/* Community Tab */}
