@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { IoSearch, IoClose, IoChevronBack, IoChevronForward, IoFilter, IoPricetagOutline } from "react-icons/io5";
 import { EngagementStats } from "./components/EngagementStats";
 import { Tags } from "./components/Tags";
+import { Helmet } from "react-helmet-async";
 
 const POSTS_PER_PAGE = 6;
 
@@ -115,8 +116,40 @@ export default function Blog() {
 
   return (
     <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>Blog | EBSUMSA — Ebonyi State University Medicine &amp; Surgery Association</title>
+        <meta name="description" content="Read the latest medical articles, academic news, and student stories from the EBSUMSA community at Ebonyi State University." />
+        <meta property="og:title" content="EBSUMSA Blog" />
+        <meta property="og:description" content="Medical knowledge, student stories, and academic insights from EBSUMSA." />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="EBSUMSA Blog" />
+        <meta name="twitter:description" content="Medical knowledge, student stories, and academic insights from EBSUMSA." />
+      </Helmet>
+
+      {/* Blog hero header strip */}
+      <div className="bg-gradient-to-br from-green-800 via-green-700 to-emerald-600 pt-[70px] sm:pt-[85px]">
+        <div className="box-width px-4 sm:px-8 md:px-14 py-10 sm:py-14">
+          <div className="relative">
+            <div
+              className="absolute inset-0 opacity-10 pointer-events-none"
+              style={{ backgroundImage: "radial-gradient(circle at 1.5px 1.5px, white 1.5px, transparent 0)", backgroundSize: "28px 28px" }}
+            />
+            <p className="relative z-10 text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-2">
+              EBSUMSA Blog
+            </p>
+            <h1 className="relative z-10 text-white text-2xl sm:text-3xl md:text-4xl font-extrabold leading-tight text-balance mb-3">
+              Medical Knowledge, Student Stories &amp; More
+            </h1>
+            <p className="relative z-10 text-white/70 text-sm sm:text-base max-w-xl leading-relaxed">
+              Stay updated with the latest articles, announcements, and academic insights from the EBSUMSA community.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="box-width">
-        <div className="px-3 py-[70px] sm:px-8 md:px-14 sm:py-[85px]">
+        <div className="px-3 py-8 sm:px-8 md:px-14 sm:py-10">
           {/* Search Bar and Category Filter */}
           <div className="mb-6 space-y-4">
             {/* Search Input */}
@@ -254,7 +287,7 @@ export default function Blog() {
                         to={`/blog/posts/${encodeURIComponent(post.title)}/${post.no}/${post.postType}`}
                         key={i}
                       >
-                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all group h-full flex flex-col">
+                        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-200 group h-full flex flex-col shadow-sm hover:-translate-y-0.5">
                           <div className="aspect-video overflow-hidden">
                             <img
                               src={post.sampleImg}
@@ -351,7 +384,7 @@ export default function Blog() {
           {/* Regular Blog Content - Only show when not filtering */}
           {!isFiltering && (
             <>
-              <h2 className="py-3 text-green2 border-b border-b-gray-200 w-full font-semibold text-lg ss:text-xll md:text-2xl mb-4">
+              <h2 className="py-3 text-green2 border-b border-b-gray-100 w-full font-bold text-lg ss:text-xll md:text-2xl mb-5">
                 Top Articles
               </h2>
               {blogPosts && blogPosts.length > 0 && (
@@ -360,8 +393,8 @@ export default function Blog() {
                     <TopPosts blogPosts={blogPosts} />
                     <OthersPosts blogPosts={blogPosts} />
                   </div>
-                  <h2 className="text-green2 py-3 border-b border-b-gray-200 w-full font-semibold text-lg ss:text-xll md:text-2xl mb-4">
-                    Don't Miss
+                  <h2 className="text-green2 py-3 border-b border-b-gray-100 w-full font-bold text-lg ss:text-xll md:text-2xl mb-5">
+                    {"Don't Miss"}
                   </h2>
                   <FeaturedPosts blogPosts={blogPosts} />
                 </>
