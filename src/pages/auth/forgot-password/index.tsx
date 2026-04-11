@@ -4,27 +4,27 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../../config/firebase";
 import { Link } from "react-router-dom";
 import { notifyUser } from "../../../helpers/notifyUser";
-import { Mail, ArrowRight, CheckCircle2, ArrowLeft, Lock } from "lucide-react";
+import { Mail, ArrowRight, CheckCircle2, ArrowLeft, Lock, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ── Particle dots (pure SVG, animated with CSS) ─────────────────────────────
-const PARTICLES = Array.from({ length: 70 }, (_, i) => ({
+// ── Deterministic particle data ───────────────────────────────────────────────
+const PARTICLES = Array.from({ length: 55 }, (_, i) => ({
   id: i,
-  cx: `${((i * 31.7 + 7) % 96) + 2}%`,
-  cy: `${((i * 47.3 + 11) % 92) + 4}%`,
-  r: 0.28 + (i % 5) * 0.18,
+  cx: `${((i * 31.7 + 7) % 93) + 3.5}%`,
+  cy: `${((i * 47.3 + 11) % 88) + 6}%`,
+  r: 1.5 + (i % 5) * 1.1,
   delay: `${(i * 0.41) % 5}s`,
-  dur: `${3.5 + (i % 6)}s`,
+  dur: `${4 + (i % 6)}s`,
+  opacity: 0.06 + (i % 4) * 0.04,
 }));
 
-// ── Orbit ring config ────────────────────────────────────────────────────────
+// ── Orbit ring config ─────────────────────────────────────────────────────────
 const RINGS = [
-  { cx: "50%", cy: "50%", rx: "26%", ry: "8%",  dur: "9s",  delay: "0s",    color: "#00e87a", opacity: 0.28 },
-  { cx: "50%", cy: "50%", rx: "20%", ry: "6%",  dur: "6s",  delay: "1s",    color: "#00ff9d", opacity: 0.22 },
-  { cx: "50%", cy: "50%", rx: "34%", ry: "11%", dur: "13s", delay: "0.5s",  color: "#00c86e", opacity: 0.18 },
-  { cx: "50%", cy: "50%", rx: "15%", ry: "4.5%",dur: "7s",  delay: "2s",    color: "#4fffb0", opacity: 0.20 },
-  { cx: "50%", cy: "50%", rx: "42%", ry: "14%", dur: "17s", delay: "1.5s",  color: "#00d472", opacity: 0.14 },
-  { cx: "50%", cy: "50%", rx: "10%", ry: "3%",  dur: "5s",  delay: "0.8s",  color: "#00ff8c", opacity: 0.25 },
+  { rx: "28%", ry: "9%",  dur: "10s", delay: "0s",   color: "#00875a", strokeOpacity: 0.10 },
+  { rx: "20%", ry: "6%",  dur: "7s",  delay: "1s",   color: "#00b86e", strokeOpacity: 0.08 },
+  { rx: "36%", ry: "12%", dur: "14s", delay: "0.5s", color: "#00a360", strokeOpacity: 0.07 },
+  { rx: "15%", ry: "5%",  dur: "6s",  delay: "2s",   color: "#00875a", strokeOpacity: 0.09 },
+  { rx: "44%", ry: "15%", dur: "18s", delay: "1.5s", color: "#00d97e", strokeOpacity: 0.05 },
 ];
 
 function AnimatedBackground() {
@@ -36,16 +36,12 @@ function AnimatedBackground() {
       style={{ zIndex: 0 }}
     >
       <defs>
-        <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#001e10" />
-          <stop offset="100%" stopColor="#000a05" />
-        </radialGradient>
         <radialGradient id="orbGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#00e87a" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#004d30" stopOpacity="0" />
+          <stop offset="0%" stopColor="#00875a" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#00875a" stopOpacity="0" />
         </radialGradient>
-        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.8" result="blur" />
+        <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -53,88 +49,77 @@ function AnimatedBackground() {
         </filter>
         <style>{`
           @keyframes fp-float {
-            0%, 100% { transform: translateY(0);   opacity: 0; }
-            20%       { opacity: 1; }
-            80%       { opacity: 0.8; }
-            100%      { transform: translateY(-55px); opacity: 0; }
+            0%,100% { transform: translateY(0);   opacity: 0; }
+            20%      { opacity: 1; }
+            80%      { opacity: 0.7; }
+            100%     { transform: translateY(-40px); opacity: 0; }
           }
+          @keyframes fp-orbitCW  { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
+          @keyframes fp-orbitCCW { from { transform: rotate(360deg); } to { transform: rotate(0deg);    } }
           @keyframes fp-pulse {
-            0%, 100% { r: 90px;  opacity: 0.16; }
-            50%       { r: 130px; opacity: 0.24; }
+            0%,100% { opacity: 0.6; }
+            50%     { opacity: 1; }
           }
-          @keyframes fp-orbit0 { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
-          @keyframes fp-orbit1 { from { transform: rotate(360deg); } to { transform: rotate(0deg);    } }
-          @keyframes fp-orbit2 { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
-          @keyframes fp-orbit3 { from { transform: rotate(360deg); } to { transform: rotate(0deg);    } }
-          @keyframes fp-orbit4 { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
-          @keyframes fp-orbit5 { from { transform: rotate(360deg); } to { transform: rotate(0deg);    } }
           @keyframes pingRing {
-            0%   { transform: scale(1); opacity: 0.55; }
-            100% { transform: scale(2); opacity: 0; }
+            0%   { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(2.2); opacity: 0; }
           }
         `}</style>
       </defs>
 
-      {/* Background fill */}
-      <rect width="100%" height="100%" fill="url(#bgGrad)" />
+      {/* White fill */}
+      <rect width="100%" height="100%" fill="#ffffff" />
 
-      {/* Subtle grid lines */}
-      {Array.from({ length: 10 }, (_, i) => (
-        <line key={`v${i}`} x1={`${i * 11.1}%`} y1="0" x2={`${i * 11.1}%`} y2="100%"
-          stroke="#00ff6a" strokeWidth="0.4" opacity="0.06" />
-      ))}
-      {Array.from({ length: 10 }, (_, i) => (
-        <line key={`h${i}`} x1="0" y1={`${i * 11.1}%`} x2="100%" y2={`${i * 11.1}%`}
-          stroke="#00ff6a" strokeWidth="0.4" opacity="0.06" />
-      ))}
+      {/* Soft dot grid */}
+      {Array.from({ length: 22 }, (_, col) =>
+        Array.from({ length: 16 }, (_, row) => (
+          <circle
+            key={`dot-${col}-${row}`}
+            cx={`${(col / 21) * 100}%`}
+            cy={`${(row / 15) * 100}%`}
+            r="1"
+            fill="#00875a"
+            opacity="0.07"
+          />
+        ))
+      )}
 
-      {/* Central glowing orb */}
-      <circle cx="50%" cy="50%" r="110" fill="url(#orbGrad)">
-        <animate attributeName="r" values="90;130;90" dur="6s" repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.8;1;0.8" dur="6s" repeatCount="indefinite" />
+      {/* Central orb glow */}
+      <circle cx="50%" cy="50%" r="160" fill="url(#orbGrad)">
+        <animate attributeName="r" values="140;190;140" dur="7s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.7;1;0.7" dur="7s" repeatCount="indefinite" />
       </circle>
-      <circle cx="50%" cy="50%" r="55" fill="rgba(0,232,122,0.14)">
-        <animate attributeName="r" values="45;70;45" dur="4s" repeatCount="indefinite" />
-      </circle>
 
-      {/* Orbit rings — transform-origin set to centre via inline style on group */}
+      {/* Orbit rings */}
       {RINGS.map((ring, i) => (
         <g
           key={i}
           style={{
             transformOrigin: "50% 50%",
-            animation: `fp-orbit${i} ${ring.dur} linear infinite ${ring.delay}`,
+            animation: `${i % 2 === 0 ? "fp-orbitCW" : "fp-orbitCCW"} ${ring.dur} linear infinite ${ring.delay}`,
           }}
         >
           <ellipse
-            cx={ring.cx} cy={ring.cy}
+            cx="50%" cy="50%"
             rx={ring.rx} ry={ring.ry}
             fill="none"
             stroke={ring.color}
-            strokeWidth="0.8"
-            opacity={ring.opacity}
-          />
-          {/* travelling dot on each ring */}
-          <circle r="2.2" fill={ring.color} opacity="0.9" filter="url(#glow)">
-            <animateMotion dur={ring.dur} repeatCount="indefinite" begin={ring.delay}>
-              <mpath xlinkHref={`#ring-path-${i}`} />
-            </animateMotion>
-          </circle>
-          <path
-            id={`ring-path-${i}`}
-            d={`M 50% 50% m -${ring.rx} 0 a ${ring.rx} ${ring.ry} 0 1 1 0.001 0`}
-            fill="none"
+            strokeWidth="1"
+            opacity={ring.strokeOpacity}
           />
         </g>
       ))}
 
       {/* Floating particles */}
-      <g filter="url(#glow)">
+      <g filter="url(#softGlow)">
         {PARTICLES.map((p) => (
           <circle
             key={p.id}
-            cx={p.cx} cy={p.cy} r={p.r}
-            fill="#00e87a"
+            cx={p.cx}
+            cy={p.cy}
+            r={p.r}
+            fill="#00875a"
+            opacity={p.opacity}
             style={{
               animation: `fp-float ${p.dur} ease-in-out infinite ${p.delay}`,
             }}
@@ -147,9 +132,9 @@ function AnimatedBackground() {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ForgotPassword() {
-  const [email, setEmail]   = useState("");
+  const [email, setEmail]     = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent]     = useState(false);
+  const [sent, setSent]       = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,13 +158,13 @@ export default function ForgotPassword() {
         try {
           await sendPasswordResetEmail(auth, email.trim());
           setSent(true);
-          notifyUser("success", "Reset link sent! Check your inbox and spam folder.");
+          notifyUser("success", "Reset link sent! Check your inbox.");
         } catch (fe: unknown) {
           const f = fe as { message?: string };
           notifyUser("error", `Error: ${f.message}`);
         }
       } else {
-        notifyUser("error", `Error (${err.code}): ${err.message}`);
+        notifyUser("error", `Error: ${err.message}`);
       }
     } finally {
       setLoading(false);
@@ -187,96 +172,102 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#000a05] flex flex-col items-center justify-center px-4 py-12 sm:px-6">
+    <div className="relative min-h-screen w-full overflow-hidden bg-white flex flex-col items-center justify-center px-4 py-16 sm:px-6">
 
       {/* Animated SVG background */}
       <AnimatedBackground />
 
-      {/* Vignette overlay */}
+      {/* Very light green tint overlay — left side only on desktop */}
       <div
         aria-hidden="true"
         className="absolute inset-0 pointer-events-none"
         style={{
           zIndex: 1,
-          background: "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 20%, rgba(0,8,4,0.55) 65%, rgba(0,8,4,0.92) 100%)",
+          background:
+            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0,135,90,0.04) 0%, transparent 70%)",
         }}
       />
 
-      {/* Scan-line texture */}
+      {/* Corner accent blobs */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none opacity-[0.04]"
-        style={{
-          zIndex: 1,
-          backgroundImage:
-            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,120,0.12) 2px, rgba(0,255,120,0.12) 4px)",
-        }}
+        className="absolute top-0 right-0 w-80 h-80 pointer-events-none rounded-full"
+        style={{ zIndex: 1, background: "rgba(0,135,90,0.06)", filter: "blur(100px)", transform: "translate(30%,-30%)" }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 w-72 h-72 pointer-events-none rounded-full"
+        style={{ zIndex: 1, background: "rgba(0,185,110,0.07)", filter: "blur(90px)", transform: "translate(-30%,30%)" }}
       />
 
-      {/* Corner ambient glows */}
-      <div aria-hidden="true" className="absolute top-0 left-0 w-96 h-96 pointer-events-none"
-        style={{ zIndex: 1, background: "rgba(0,135,90,0.15)", filter: "blur(130px)" }} />
-      <div aria-hidden="true" className="absolute bottom-0 right-0 w-80 h-80 pointer-events-none"
-        style={{ zIndex: 1, background: "rgba(0,217,126,0.1)", filter: "blur(110px)" }} />
-
       {/* Page content */}
-      <div className="relative w-full max-w-md flex flex-col items-center" style={{ zIndex: 2 }}>
+      <div className="relative w-full max-w-[420px] flex flex-col items-center" style={{ zIndex: 2 }}>
 
-        {/* Logo */}
+        {/* Logo + Brand */}
         <motion.div
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center gap-2 mb-8"
+          className="flex flex-col items-center gap-3 mb-8"
         >
-          <div className="relative">
+          <div className="relative flex items-center justify-center w-20 h-20">
             <div
               aria-hidden="true"
-              className="absolute inset-0 rounded-full scale-[1.4]"
-              style={{ background: "rgba(0,135,90,0.4)", filter: "blur(22px)" }}
+              className="absolute inset-0 rounded-full"
+              style={{ background: "rgba(0,135,90,0.12)", filter: "blur(16px)", transform: "scale(1.3)" }}
             />
-            <img
-              src={logo}
-              alt="EBSU MSA Logo"
-              className="relative w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-2xl"
-            />
+            <div
+              className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
+              style={{
+                background: "white",
+                boxShadow: "0 4px 24px rgba(0,135,90,0.14), 0 0 0 1.5px rgba(0,135,90,0.1)",
+              }}
+            >
+              <img
+                src={logo}
+                alt="EBSU MSA Logo"
+                className="w-14 h-14 object-contain"
+              />
+            </div>
           </div>
           <div className="text-center">
-            <p className="text-[#00d97e] text-[10px] font-bold tracking-[0.35em] uppercase">EBSU MSA</p>
-            <p className="text-white/25 text-[9px] tracking-widest uppercase mt-0.5">Student Portal</p>
+            <p className="text-[13px] font-bold tracking-[0.25em] uppercase" style={{ color: "#00875a" }}>
+              EBSU MSA
+            </p>
+            <p className="text-gray-400 text-[11px] tracking-wider uppercase mt-0.5">
+              Student Portal
+            </p>
           </div>
         </motion.div>
 
-        {/* Glass card */}
+        {/* Card */}
         <motion.div
-          initial={{ opacity: 0, y: 32, scale: 0.96 }}
+          initial={{ opacity: 0, y: 28, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="w-full rounded-3xl overflow-hidden"
           style={{
-            background: "rgba(2,18,10,0.78)",
-            backdropFilter: "blur(32px) saturate(180%)",
-            WebkitBackdropFilter: "blur(32px) saturate(180%)",
-            border: "1px solid rgba(0,215,126,0.14)",
-            boxShadow: "0 0 0 1px rgba(0,215,126,0.06), 0 32px 80px rgba(0,0,0,0.7), 0 0 80px rgba(0,135,90,0.09)",
+            background: "white",
+            boxShadow:
+              "0 0 0 1.5px rgba(0,135,90,0.1), 0 8px 40px rgba(0,135,90,0.08), 0 32px 80px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Top shimmer bar */}
+          {/* Green top bar */}
           <div
-            className="h-[2px] w-full"
+            className="h-1.5 w-full"
             style={{
-              background: "linear-gradient(90deg, transparent, #00d97e 35%, #00ff9d 50%, #00d97e 65%, transparent)",
+              background: "linear-gradient(90deg, #00875a 0%, #00d97e 50%, #00875a 100%)",
             }}
           />
 
-          <div className="px-6 sm:px-8 pt-7 pb-8">
+          <div className="px-7 sm:px-8 pt-7 pb-8">
 
             {/* Back link */}
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-white/35 hover:text-[#00d97e] transition-colors duration-200 mb-7 group"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#00875a] transition-colors duration-200 mb-7 group"
             >
-              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform duration-200" />
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
               Back to Login
             </Link>
 
@@ -285,14 +276,14 @@ export default function ForgotPassword() {
                 /* ── Success state ── */
                 <motion.div
                   key="success"
-                  initial={{ opacity: 0, scale: 0.92 }}
+                  initial={{ opacity: 0, scale: 0.94 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.45 }}
+                  exit={{ opacity: 0, scale: 0.94 }}
+                  transition={{ duration: 0.4 }}
                   className="space-y-6"
                 >
                   <div className="flex justify-center">
-                    <div className="relative flex items-center justify-center w-20 h-20">
+                    <div className="relative flex items-center justify-center w-24 h-24">
                       {[1, 2].map((i) => (
                         <span
                           key={i}
@@ -300,42 +291,44 @@ export default function ForgotPassword() {
                           className="absolute rounded-full"
                           style={{
                             inset: `-${i * 10}px`,
-                            border: "1px solid rgba(0,215,126,0.28)",
-                            animation: `pingRing ${1.2 + i * 0.4}s ease-out infinite`,
-                            animationDelay: `${i * 0.35}s`,
+                            border: "1.5px solid rgba(0,135,90,0.22)",
+                            animation: `pingRing ${1.3 + i * 0.45}s ease-out infinite`,
+                            animationDelay: `${i * 0.4}s`,
                           }}
                         />
                       ))}
                       <div
-                        className="relative w-16 h-16 rounded-full flex items-center justify-center"
+                        className="relative w-18 h-18 w-[72px] h-[72px] rounded-2xl flex items-center justify-center"
                         style={{
-                          background: "linear-gradient(135deg, #00875a, #00d97e)",
-                          boxShadow: "0 0 48px rgba(0,215,126,0.45)",
+                          background: "linear-gradient(135deg, #00875a 0%, #00d97e 100%)",
+                          boxShadow: "0 12px 40px rgba(0,135,90,0.35)",
                         }}
                       >
-                        <CheckCircle2 className="w-8 h-8 text-white" />
+                        <CheckCircle2 className="w-9 h-9 text-white" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-center space-y-2">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  <div className="text-center space-y-2 pt-2">
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
                       Check your inbox!
                     </h2>
-                    <p className="text-white/45 text-sm leading-relaxed">
-                      Reset link sent to{" "}
-                      <span className="font-semibold text-[#00d97e] break-all">{email}</span>
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      We sent a reset link to{" "}
+                      <span className="font-semibold break-all" style={{ color: "#00875a" }}>
+                        {email}
+                      </span>
                     </p>
                   </div>
 
                   <div
                     className="rounded-2xl p-5 space-y-3"
                     style={{
-                      background: "rgba(0,135,90,0.1)",
-                      border: "1px solid rgba(0,215,126,0.14)",
+                      background: "rgba(0,135,90,0.04)",
+                      border: "1px solid rgba(0,135,90,0.12)",
                     }}
                   >
-                    <p className="text-[10px] font-bold text-[#00d97e]/55 uppercase tracking-[0.2em]">
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(0,135,90,0.55)" }}>
                       Next steps
                     </p>
                     {[
@@ -350,7 +343,7 @@ export default function ForgotPassword() {
                         >
                           {i + 1}
                         </span>
-                        <p className="text-sm text-white/65 leading-relaxed">{step}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed">{step}</p>
                       </div>
                     ))}
                   </div>
@@ -359,22 +352,22 @@ export default function ForgotPassword() {
                     className="rounded-xl px-4 py-3 flex items-start gap-2.5"
                     style={{
                       background: "rgba(251,191,36,0.06)",
-                      border: "1px solid rgba(251,191,36,0.16)",
+                      border: "1px solid rgba(251,191,36,0.2)",
                     }}
                   >
-                    <span className="text-amber-400 text-sm flex-shrink-0 mt-0.5">&#9888;</span>
-                    <p className="text-xs text-amber-200/65 leading-relaxed">
-                      <span className="font-semibold text-amber-300">Not in inbox?</span>{" "}
+                    <span className="text-amber-500 text-sm flex-shrink-0 mt-0.5">&#9888;</span>
+                    <p className="text-xs text-amber-700/80 leading-relaxed">
+                      <span className="font-semibold text-amber-600">Not in inbox?</span>{" "}
                       Check your spam or junk folder. Link expires in 1 hour.
                     </p>
                   </div>
 
                   <button
                     onClick={() => { setSent(false); setEmail(""); }}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
+                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] hover:opacity-90"
                     style={{
                       background: "linear-gradient(135deg, #00875a 0%, #00d97e 100%)",
-                      boxShadow: "0 8px 32px rgba(0,215,126,0.25)",
+                      boxShadow: "0 8px 28px rgba(0,135,90,0.28)",
                     }}
                   >
                     Try a different email
@@ -385,10 +378,10 @@ export default function ForgotPassword() {
                 /* ── Form state ── */
                 <motion.div
                   key="form"
-                  initial={{ opacity: 0, x: -16 }}
+                  initial={{ opacity: 0, x: -14 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 16 }}
-                  transition={{ duration: 0.4 }}
+                  exit={{ opacity: 0, x: 14 }}
+                  transition={{ duration: 0.38 }}
                   className="space-y-6"
                 >
                   <div className="space-y-2">
@@ -396,21 +389,21 @@ export default function ForgotPassword() {
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{
-                          background: "rgba(0,215,126,0.11)",
-                          border: "1px solid rgba(0,215,126,0.2)",
+                          background: "rgba(0,135,90,0.09)",
+                          border: "1px solid rgba(0,135,90,0.15)",
                         }}
                       >
-                        <Lock className="w-4 h-4 text-[#00d97e]" />
+                        <Lock className="w-4 h-4" style={{ color: "#00875a" }} />
                       </div>
-                      <span className="text-[10px] font-bold text-[#00d97e] uppercase tracking-widest">
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#00875a" }}>
                         Secure Reset
                       </span>
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight tracking-tight">
+                    <h2 className="text-2xl sm:text-[1.65rem] font-bold text-gray-900 leading-tight tracking-tight">
                       Forgot your password?
                     </h2>
-                    <p className="text-white/40 text-sm leading-relaxed">
-                      Enter your registered email and we&apos;ll send a secure link straight to your inbox.
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      Enter your registered email and we&apos;ll send a secure reset link straight to your inbox.
                     </p>
                   </div>
 
@@ -418,12 +411,15 @@ export default function ForgotPassword() {
                     <div className="space-y-1.5">
                       <label
                         htmlFor="fp-email"
-                        className="block text-xs font-semibold text-white/45 uppercase tracking-wider"
+                        className="block text-xs font-semibold text-gray-500 uppercase tracking-wider"
                       >
                         Email Address
                       </label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00d97e]/45 pointer-events-none" />
+                        <Mail
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                          style={{ color: "rgba(0,135,90,0.5)" }}
+                        />
                         <input
                           type="email"
                           id="fp-email"
@@ -432,24 +428,24 @@ export default function ForgotPassword() {
                           placeholder="you@example.com"
                           required
                           autoComplete="email"
-                          className="w-full pl-11 pr-4 py-3.5 text-sm text-white placeholder-white/20 rounded-xl outline-none transition-all duration-200"
+                          className="w-full pl-11 pr-4 py-3.5 text-sm text-gray-800 placeholder-gray-300 rounded-xl outline-none transition-all duration-200"
                           style={{
-                            background: "rgba(0,215,126,0.05)",
-                            border: "1px solid rgba(0,215,126,0.16)",
+                            background: "#f8fdfb",
+                            border: "1.5px solid #e0f0ea",
                           }}
                           onFocus={(e) => {
-                            e.currentTarget.style.border = "1px solid rgba(0,215,126,0.52)";
-                            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,215,126,0.08)";
-                            e.currentTarget.style.background = "rgba(0,215,126,0.08)";
+                            e.currentTarget.style.border = "1.5px solid rgba(0,135,90,0.5)";
+                            e.currentTarget.style.boxShadow = "0 0 0 3.5px rgba(0,135,90,0.08)";
+                            e.currentTarget.style.background = "#f0faf5";
                           }}
                           onBlur={(e) => {
-                            e.currentTarget.style.border = "1px solid rgba(0,215,126,0.16)";
+                            e.currentTarget.style.border = "1.5px solid #e0f0ea";
                             e.currentTarget.style.boxShadow = "none";
-                            e.currentTarget.style.background = "rgba(0,215,126,0.05)";
+                            e.currentTarget.style.background = "#f8fdfb";
                           }}
                         />
                       </div>
-                      <p className="text-[11px] text-white/22 pl-1">
+                      <p className="text-[11px] text-gray-400 pl-1">
                         Use the email linked to your EBSU MSA account
                       </p>
                     </div>
@@ -457,7 +453,7 @@ export default function ForgotPassword() {
                     <button
                       type="submit"
                       disabled={loading || !email.trim()}
-                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         background:
                           loading || !email.trim()
@@ -466,7 +462,7 @@ export default function ForgotPassword() {
                         boxShadow:
                           loading || !email.trim()
                             ? "none"
-                            : "0 8px 32px rgba(0,215,126,0.28)",
+                            : "0 8px 28px rgba(0,135,90,0.28)",
                       }}
                     >
                       {loading ? (
@@ -501,16 +497,21 @@ export default function ForgotPassword() {
 
                   {/* Trust badges */}
                   <div className="flex flex-wrap justify-center gap-2 pt-1">
-                    {["256-bit SSL", "Instant Delivery", "Secure Link"].map((label) => (
+                    {[
+                      { label: "256-bit SSL", icon: <ShieldCheck className="w-3 h-3" /> },
+                      { label: "Instant Delivery", icon: <Mail className="w-3 h-3" /> },
+                      { label: "Secure Link", icon: <Lock className="w-3 h-3" /> },
+                    ].map(({ label, icon }) => (
                       <span
                         key={label}
-                        className="text-[10px] font-medium px-3 py-1 rounded-full"
+                        className="inline-flex items-center gap-1.5 text-[10px] font-medium px-3 py-1.5 rounded-full"
                         style={{
-                          background: "rgba(0,200,80,0.07)",
-                          border: "1px solid rgba(0,200,80,0.13)",
-                          color: "rgba(0,215,126,0.55)",
+                          background: "rgba(0,135,90,0.06)",
+                          border: "1px solid rgba(0,135,90,0.12)",
+                          color: "rgba(0,135,90,0.7)",
                         }}
                       >
+                        {icon}
                         {label}
                       </span>
                     ))}
@@ -525,12 +526,11 @@ export default function ForgotPassword() {
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="text-center text-[10px] mt-5"
-          style={{ color: "rgba(0,215,126,0.2)" }}
+          transition={{ delay: 0.9 }}
+          className="text-center text-[10px] text-gray-400 mt-6"
         >
           Crafted with passion by{" "}
-          <span style={{ color: "rgba(0,215,126,0.4)" }}>Ken</span>
+          <span className="font-semibold" style={{ color: "#00875a" }}>Ken</span>
         </motion.p>
       </div>
     </div>
