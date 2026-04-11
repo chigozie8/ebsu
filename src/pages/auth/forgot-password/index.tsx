@@ -3,14 +3,138 @@ import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../../config/firebase";
 import { Link } from "react-router-dom";
-import { Spinner } from "../../../components/loaders/Spinner";
 import { notifyUser } from "../../../helpers/notifyUser";
-import { Mail, ArrowRight, CheckCircle2, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Mail, ArrowRight, CheckCircle2, ArrowLeft, Lock, ShieldCheck } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
+// ── Deterministic particle data ───────────────────────────────────────────────
+const PARTICLES = Array.from({ length: 55 }, (_, i) => ({
+  id: i,
+  cx: `${((i * 31.7 + 7) % 93) + 3.5}%`,
+  cy: `${((i * 47.3 + 11) % 88) + 6}%`,
+  r: 1.5 + (i % 5) * 1.1,
+  delay: `${(i * 0.41) % 5}s`,
+  dur: `${4 + (i % 6)}s`,
+  opacity: 0.06 + (i % 4) * 0.04,
+}));
+
+// ── Orbit ring config ─────────────────────────────────────────────────────────
+const RINGS = [
+  { rx: "28%", ry: "9%",  dur: "10s", delay: "0s",   color: "#00875a", strokeOpacity: 0.10 },
+  { rx: "20%", ry: "6%",  dur: "7s",  delay: "1s",   color: "#00b86e", strokeOpacity: 0.08 },
+  { rx: "36%", ry: "12%", dur: "14s", delay: "0.5s", color: "#00a360", strokeOpacity: 0.07 },
+  { rx: "15%", ry: "5%",  dur: "6s",  delay: "2s",   color: "#00875a", strokeOpacity: 0.09 },
+  { rx: "44%", ry: "15%", dur: "18s", delay: "1.5s", color: "#00d97e", strokeOpacity: 0.05 },
+];
+
+function AnimatedBackground() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute inset-0 w-full h-full"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ zIndex: 0 }}
+    >
+      <defs>
+        <radialGradient id="orbGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#00875a" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#00875a" stopOpacity="0" />
+        </radialGradient>
+        <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <style>{`
+          @keyframes fp-float {
+            0%,100% { transform: translateY(0);   opacity: 0; }
+            20%      { opacity: 1; }
+            80%      { opacity: 0.7; }
+            100%     { transform: translateY(-40px); opacity: 0; }
+          }
+          @keyframes fp-orbitCW  { from { transform: rotate(0deg);   } to { transform: rotate(360deg);  } }
+          @keyframes fp-orbitCCW { from { transform: rotate(360deg); } to { transform: rotate(0deg);    } }
+          @keyframes fp-pulse {
+            0%,100% { opacity: 0.6; }
+            50%     { opacity: 1; }
+          }
+          @keyframes pingRing {
+            0%   { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(2.2); opacity: 0; }
+          }
+        `}</style>
+      </defs>
+
+      {/* White fill */}
+      <rect width="100%" height="100%" fill="#ffffff" />
+
+      {/* Soft dot grid */}
+      {Array.from({ length: 22 }, (_, col) =>
+        Array.from({ length: 16 }, (_, row) => (
+          <circle
+            key={`dot-${col}-${row}`}
+            cx={`${(col / 21) * 100}%`}
+            cy={`${(row / 15) * 100}%`}
+            r="1"
+            fill="#00875a"
+            opacity="0.07"
+          />
+        ))
+      )}
+
+      {/* Central orb glow */}
+      <circle cx="50%" cy="50%" r="160" fill="url(#orbGrad)">
+        <animate attributeName="r" values="140;190;140" dur="7s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.7;1;0.7" dur="7s" repeatCount="indefinite" />
+      </circle>
+
+      {/* Orbit rings */}
+      {RINGS.map((ring, i) => (
+        <g
+          key={i}
+          style={{
+            transformOrigin: "50% 50%",
+            animation: `${i % 2 === 0 ? "fp-orbitCW" : "fp-orbitCCW"} ${ring.dur} linear infinite ${ring.delay}`,
+          }}
+        >
+          <ellipse
+            cx="50%" cy="50%"
+            rx={ring.rx} ry={ring.ry}
+            fill="none"
+            stroke={ring.color}
+            strokeWidth="1"
+            opacity={ring.strokeOpacity}
+          />
+        </g>
+      ))}
+
+      {/* Floating particles */}
+      <g filter="url(#softGlow)">
+        {PARTICLES.map((p) => (
+          <circle
+            key={p.id}
+            cx={p.cx}
+            cy={p.cy}
+            r={p.r}
+            fill="#00875a"
+            opacity={p.opacity}
+            style={{
+              animation: `fp-float ${p.dur} ease-in-out infinite ${p.delay}`,
+            }}
+          />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail]     = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [sent, setSent]       = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,20 +146,25 @@ export default function ForgotPassword() {
         handleCodeInApp: false,
       });
       setSent(true);
-      notifyUser("success", "Reset link sent! Check your inbox — also check your spam/junk folder.");
-    } catch (error: any) {
-      if (error.code === "auth/user-not-found" || error.code === "auth/invalid-email") {
+      notifyUser("success", "Reset link sent! Check your inbox and spam folder.");
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
         notifyUser("error", "No account found with that email address.");
-      } else if (error.code === "auth/unauthorized-continue-uri" || error.code === "auth/invalid-continue-uri") {
+      } else if (
+        err.code === "auth/unauthorized-continue-uri" ||
+        err.code === "auth/invalid-continue-uri"
+      ) {
         try {
           await sendPasswordResetEmail(auth, email.trim());
           setSent(true);
-          notifyUser("success", "Reset link sent! Check your inbox — also check your spam/junk folder.");
-        } catch (fallbackErr: any) {
-          notifyUser("error", `Error: ${fallbackErr.message}`);
+          notifyUser("success", "Reset link sent! Check your inbox.");
+        } catch (fe: unknown) {
+          const f = fe as { message?: string };
+          notifyUser("error", `Error: ${f.message}`);
         }
       } else {
-        notifyUser("error", `Error (${error.code}): ${error.message}`);
+        notifyUser("error", `Error: ${err.message}`);
       }
     } finally {
       setLoading(false);
@@ -43,215 +172,366 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Left Panel — Brand Side */}
-      <div className="relative hidden lg:flex lg:w-1/2 xl:w-[45%] bg-green1 flex-col items-center justify-center p-12 overflow-hidden">
-        {/* Decorative rings */}
-        <div className="absolute top-[-80px] left-[-80px] w-[340px] h-[340px] rounded-full border border-white/10" />
-        <div className="absolute top-[-40px] left-[-40px] w-[240px] h-[240px] rounded-full border border-white/10" />
-        <div className="absolute bottom-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full border border-white/10" />
-        <div className="absolute bottom-[-60px] right-[-60px] w-[280px] h-[280px] rounded-full border border-white/10" />
-        {/* Dot grid accent */}
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
+    <div className="relative min-h-screen w-full overflow-hidden bg-white flex flex-col items-center justify-center px-4 py-16 sm:px-6">
 
-        <div className="relative z-10 flex flex-col items-center text-center gap-8 max-w-sm">
-          <img src={logo} alt="EBSU MSA Logo" className="w-24 h-24 object-contain drop-shadow-xl" />
+      {/* Animated SVG background */}
+      <AnimatedBackground />
 
-          <div className="space-y-3">
-            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight tracking-tight">
-              Forgot your password?
-            </h1>
-            <p className="text-white/75 text-base leading-relaxed">
-              No worries — it happens to everyone. Enter your email and we&apos;ll send you a secure reset link in seconds.
+      {/* Very light green tint overlay — left side only on desktop */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: 1,
+          background:
+            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0,135,90,0.04) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Corner accent blobs */}
+      <div
+        aria-hidden="true"
+        className="absolute top-0 right-0 w-80 h-80 pointer-events-none rounded-full"
+        style={{ zIndex: 1, background: "rgba(0,135,90,0.06)", filter: "blur(100px)", transform: "translate(30%,-30%)" }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-0 w-72 h-72 pointer-events-none rounded-full"
+        style={{ zIndex: 1, background: "rgba(0,185,110,0.07)", filter: "blur(90px)", transform: "translate(-30%,30%)" }}
+      />
+
+      {/* Page content */}
+      <div className="relative w-full max-w-[420px] flex flex-col items-center" style={{ zIndex: 2 }}>
+
+        {/* Logo + Brand */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col items-center gap-3 mb-8"
+        >
+          <div className="relative flex items-center justify-center w-20 h-20">
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 rounded-full"
+              style={{ background: "rgba(0,135,90,0.12)", filter: "blur(16px)", transform: "scale(1.3)" }}
+            />
+            <div
+              className="relative w-20 h-20 rounded-2xl flex items-center justify-center"
+              style={{
+                background: "white",
+                boxShadow: "0 4px 24px rgba(0,135,90,0.14), 0 0 0 1.5px rgba(0,135,90,0.1)",
+              }}
+            >
+              <img
+                src={logo}
+                alt="EBSU MSA Logo"
+                className="w-14 h-14 object-contain"
+              />
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-[13px] font-bold tracking-[0.25em] uppercase" style={{ color: "#00875a" }}>
+              EBSU MSA
+            </p>
+            <p className="text-gray-400 text-[11px] tracking-wider uppercase mt-0.5">
+              Student Portal
             </p>
           </div>
+        </motion.div>
 
-          {/* Feature pills */}
-          <div className="flex flex-col gap-3 w-full mt-2">
-            {[
-              { icon: <ShieldCheck className="w-4 h-4" />, text: "Bank-level encryption" },
-              { icon: <Mail className="w-4 h-4" />, text: "Instant email delivery" },
-              { icon: <CheckCircle2 className="w-4 h-4" />, text: "Reset in under 2 minutes" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 text-white text-sm font-medium backdrop-blur-sm">
-                <span className="flex-shrink-0 text-white/80">{item.icon}</span>
-                {item.text}
-              </div>
-            ))}
-          </div>
+        {/* Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 28, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full rounded-3xl overflow-hidden"
+          style={{
+            background: "white",
+            boxShadow:
+              "0 0 0 1.5px rgba(0,135,90,0.1), 0 8px 40px rgba(0,135,90,0.08), 0 32px 80px rgba(0,0,0,0.06)",
+          }}
+        >
+          {/* Green top bar */}
+          <div
+            className="h-1.5 w-full"
+            style={{
+              background: "linear-gradient(90deg, #00875a 0%, #00d97e 50%, #00875a 100%)",
+            }}
+          />
 
-          <p className="text-white/40 text-xs mt-4">EBSU MSA Student Portal &mdash; Secure Authentication</p>
-        </div>
-      </div>
+          <div className="px-7 sm:px-8 pt-7 pb-8">
 
-      {/* Right Panel — Form Side */}
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen px-4 py-10 sm:px-8 bg-white">
-        {/* Mobile Logo */}
-        <div className="flex lg:hidden flex-col items-center mb-8">
-          <img src={logo} alt="EBSU MSA Logo" className="w-16 h-16 object-contain mb-3" />
-          <span className="text-sm font-semibold text-green1 tracking-wide uppercase">EBSU MSA</span>
-        </div>
+            {/* Back link */}
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#00875a] transition-colors duration-200 mb-7 group"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform duration-200" />
+              Back to Login
+            </Link>
 
-        <div className="w-full max-w-[440px]">
-          {/* Back link */}
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-green1 transition-colors mb-8 group"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Login
-          </Link>
-
-          {sent ? (
-            /* ── Success State ── */
-            <div className="space-y-6">
-              {/* Success badge */}
-              <div className="flex justify-center">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-green1/10 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-green1/20 flex items-center justify-center">
-                      <CheckCircle2 className="w-9 h-9 text-green1" />
+            <AnimatePresence mode="wait">
+              {sent ? (
+                /* ── Success state ── */
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.94 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-6"
+                >
+                  <div className="flex justify-center">
+                    <div className="relative flex items-center justify-center w-24 h-24">
+                      {[1, 2].map((i) => (
+                        <span
+                          key={i}
+                          aria-hidden="true"
+                          className="absolute rounded-full"
+                          style={{
+                            inset: `-${i * 10}px`,
+                            border: "1.5px solid rgba(0,135,90,0.22)",
+                            animation: `pingRing ${1.3 + i * 0.45}s ease-out infinite`,
+                            animationDelay: `${i * 0.4}s`,
+                          }}
+                        />
+                      ))}
+                      <div
+                        className="relative w-18 h-18 w-[72px] h-[72px] rounded-2xl flex items-center justify-center"
+                        style={{
+                          background: "linear-gradient(135deg, #00875a 0%, #00d97e 100%)",
+                          boxShadow: "0 12px 40px rgba(0,135,90,0.35)",
+                        }}
+                      >
+                        <CheckCircle2 className="w-9 h-9 text-white" />
+                      </div>
                     </div>
                   </div>
-                  {/* Pulse ring */}
-                  <span className="absolute inset-0 rounded-full border-2 border-green1/30 animate-ping" />
-                </div>
-              </div>
 
-              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Check your inbox</h2>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  We&apos;ve sent a password reset link to{" "}
-                  <span className="font-bold text-green1 break-all">{email}</span>
-                </p>
-              </div>
-
-              {/* Steps */}
-              <div className="bg-gray-50 rounded-2xl p-5 space-y-4 border border-gray-100">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">What to do next</p>
-                {[
-                  "Open the email from EBSU MSA",
-                  "Click the \"Reset Password\" link",
-                  "Create a strong new password",
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green1 text-white text-xs font-bold flex items-center justify-center mt-0.5">
-                      {i + 1}
-                    </span>
-                    <p className="text-sm text-gray-700 leading-relaxed">{step}</p>
+                  <div className="text-center space-y-2 pt-2">
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+                      Check your inbox!
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      We sent a reset link to{" "}
+                      <span className="font-semibold break-all" style={{ color: "#00875a" }}>
+                        {email}
+                      </span>
+                    </p>
                   </div>
-                ))}
-              </div>
 
-              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
-                <span className="text-amber-500 text-base mt-0.5">&#9888;</span>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  <span className="font-semibold">Don&apos;t see it?</span> Check your spam or junk folder. The link expires in 1 hour.
-                </p>
-              </div>
-
-              <button
-                onClick={() => { setSent(false); setEmail(""); }}
-                className="w-full py-3.5 px-4 rounded-xl bg-green1 text-white font-semibold text-sm hover:bg-[#006644] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-green1/20"
-              >
-                Try a different email
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            /* ── Form State ── */
-            <div className="space-y-7">
-              <div className="space-y-2">
-                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight leading-tight">
-                  Reset your password
-                </h2>
-                <p className="text-gray-500 text-sm leading-relaxed">
-                  Enter the email address linked to your EBSU MSA account and we&apos;ll send you a reset link.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Email field */}
-                <div className="space-y-1.5">
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-800">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-green1 focus:ring-4 focus:ring-green1/10 focus:outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 text-sm bg-white"
-                      placeholder="you@example.com"
-                      required
-                    />
+                  <div
+                    className="rounded-2xl p-5 space-y-3"
+                    style={{
+                      background: "rgba(0,135,90,0.04)",
+                      border: "1px solid rgba(0,135,90,0.12)",
+                    }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(0,135,90,0.55)" }}>
+                      Next steps
+                    </p>
+                    {[
+                      "Open the email from EBSU MSA",
+                      'Click the "Reset Password" link',
+                      "Create a strong new password",
+                    ].map((step, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <span
+                          className="flex-shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center text-white mt-0.5"
+                          style={{ background: "linear-gradient(135deg, #00875a, #00d97e)" }}
+                        >
+                          {i + 1}
+                        </span>
+                        <p className="text-sm text-gray-600 leading-relaxed">{step}</p>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs text-gray-400">Use the email address linked to your student account</p>
-                </div>
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading || !email.trim()}
-                  className="w-full py-3.5 px-4 rounded-xl bg-green1 text-white font-semibold text-sm hover:bg-[#006644] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-green1/20"
+                  <div
+                    className="rounded-xl px-4 py-3 flex items-start gap-2.5"
+                    style={{
+                      background: "rgba(251,191,36,0.06)",
+                      border: "1px solid rgba(251,191,36,0.2)",
+                    }}
+                  >
+                    <span className="text-amber-500 text-sm flex-shrink-0 mt-0.5">&#9888;</span>
+                    <p className="text-xs text-amber-700/80 leading-relaxed">
+                      <span className="font-semibold text-amber-600">Not in inbox?</span>{" "}
+                      Check your spam or junk folder. Link expires in 1 hour.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => { setSent(false); setEmail(""); }}
+                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] hover:opacity-90"
+                    style={{
+                      background: "linear-gradient(135deg, #00875a 0%, #00d97e 100%)",
+                      boxShadow: "0 8px 28px rgba(0,135,90,0.28)",
+                    }}
+                  >
+                    Try a different email
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              ) : (
+                /* ── Form state ── */
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0, x: -14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 14 }}
+                  transition={{ duration: 0.38 }}
+                  className="space-y-6"
                 >
-                  {loading ? (
-                    <>
-                      <Spinner className="w-4 h-4 text-transparent animate-spin fill-white" />
-                      Sending reset link...
-                    </>
-                  ) : (
-                    <>
-                      Send Reset Link
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{
+                          background: "rgba(0,135,90,0.09)",
+                          border: "1px solid rgba(0,135,90,0.15)",
+                        }}
+                      >
+                        <Lock className="w-4 h-4" style={{ color: "#00875a" }} />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#00875a" }}>
+                        Secure Reset
+                      </span>
+                    </div>
+                    <h2 className="text-2xl sm:text-[1.65rem] font-bold text-gray-900 leading-tight tracking-tight">
+                      Forgot your password?
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      Enter your registered email and we&apos;ll send a secure reset link straight to your inbox.
+                    </p>
+                  </div>
 
-              {/* Security note */}
-              <div className="flex items-start gap-3 rounded-xl border border-green1/20 bg-green1/5 px-4 py-3.5">
-                <ShieldCheck className="w-4 h-4 text-green1 flex-shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-green1">Secure Reset</p>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Reset links expire in 1 hour. Never share your reset link with anyone.
-                  </p>
-                </div>
-              </div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="fp-email"
+                        className="block text-xs font-semibold text-gray-500 uppercase tracking-wider"
+                      >
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                          style={{ color: "rgba(0,135,90,0.5)" }}
+                        />
+                        <input
+                          type="email"
+                          id="fp-email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          required
+                          autoComplete="email"
+                          className="w-full pl-11 pr-4 py-3.5 text-sm text-gray-800 placeholder-gray-300 rounded-xl outline-none transition-all duration-200"
+                          style={{
+                            background: "#f8fdfb",
+                            border: "1.5px solid #e0f0ea",
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.border = "1.5px solid rgba(0,135,90,0.5)";
+                            e.currentTarget.style.boxShadow = "0 0 0 3.5px rgba(0,135,90,0.08)";
+                            e.currentTarget.style.background = "#f0faf5";
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.border = "1.5px solid #e0f0ea";
+                            e.currentTarget.style.boxShadow = "none";
+                            e.currentTarget.style.background = "#f8fdfb";
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-gray-400 pl-1">
+                        Use the email linked to your EBSU MSA account
+                      </p>
+                    </div>
 
-              {/* Divider + sign up */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-100" />
-                <span className="text-xs text-gray-400 font-medium">or</span>
-                <div className="flex-1 h-px bg-gray-100" />
-              </div>
+                    <button
+                      type="submit"
+                      disabled={loading || !email.trim()}
+                      className="w-full py-3.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        background:
+                          loading || !email.trim()
+                            ? "rgba(0,135,90,0.4)"
+                            : "linear-gradient(135deg, #00875a 0%, #00d97e 100%)",
+                        boxShadow:
+                          loading || !email.trim()
+                            ? "none"
+                            : "0 8px 28px rgba(0,135,90,0.28)",
+                      }}
+                    >
+                      {loading ? (
+                        <>
+                          <svg
+                            aria-hidden="true"
+                            className="w-4 h-4 animate-spin"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12" cy="12" r="10"
+                              stroke="currentColor" strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            />
+                          </svg>
+                          Sending Reset Link...
+                        </>
+                      ) : (
+                        <>
+                          Send Reset Link
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
 
-              <p className="text-center text-sm text-gray-500">
-                New student?{" "}
-                <a href="/signup" className="font-semibold text-green1 hover:text-[#006644] transition-colors">
-                  Create an account
-                </a>
-              </p>
-            </div>
-          )}
-
-          {/* Footer credit */}
-          <div className="mt-10 pt-6 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400">
-              Crafted with care by{" "}
-              <span className="font-bold text-green1">Ken</span> — EBSUMSA Lead Developer
-            </p>
+                  {/* Trust badges */}
+                  <div className="flex flex-wrap justify-center gap-2 pt-1">
+                    {[
+                      { label: "256-bit SSL", icon: <ShieldCheck className="w-3 h-3" /> },
+                      { label: "Instant Delivery", icon: <Mail className="w-3 h-3" /> },
+                      { label: "Secure Link", icon: <Lock className="w-3 h-3" /> },
+                    ].map(({ label, icon }) => (
+                      <span
+                        key={label}
+                        className="inline-flex items-center gap-1.5 text-[10px] font-medium px-3 py-1.5 rounded-full"
+                        style={{
+                          background: "rgba(0,135,90,0.06)",
+                          border: "1px solid rgba(0,135,90,0.12)",
+                          color: "rgba(0,135,90,0.7)",
+                        }}
+                      >
+                        {icon}
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
+
+        {/* Credit */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.9 }}
+          className="text-center text-[10px] text-gray-400 mt-6"
+        >
+          Crafted with passion by{" "}
+          <span className="font-semibold" style={{ color: "#00875a" }}>Ken</span>
+        </motion.p>
       </div>
     </div>
   );
