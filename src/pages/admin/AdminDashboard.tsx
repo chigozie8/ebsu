@@ -855,7 +855,6 @@ export default function AdminDashboard() {
       setIsUploading(false);
       setUploadProgress(0);
     }
-    }
   };
 
   const resetMaterialForm = () => {
@@ -4465,6 +4464,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
                 );
               })()}
             </motion.div>
+          </div>
           </div>
 
           {/* Preview Modal */}
