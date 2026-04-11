@@ -5003,7 +5003,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </h3>
             <p className="text-gray-600 text-center mb-6">
               Are you sure you want to delete the ID card registration for{" "}
-              <span className="font-medium text-gray-900">{deleteIdCardModal.cardName}</span>?
+              <span className="font-medium text-gray-900">{deleteIdCardModal.cardName}</span>{'?'}
               This action cannot be undone.
             </p>
             <div className="flex gap-3">
