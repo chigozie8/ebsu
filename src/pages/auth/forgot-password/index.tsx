@@ -91,7 +91,7 @@ export default function ForgotPassword() {
       </div>
 
       {/* Right Panel — Form Side */}
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen px-4 py-10 sm:px-8 bg-white">
+      <div className="flex-1 flex flex-col items-center justify-center min-h-screen px-4 pt-16 pb-10 sm:px-8 bg-white">
         {/* Mobile Logo */}
         <div className="flex lg:hidden flex-col items-center mb-8">
           <img src={logo} alt="EBSU MSA Logo" className="w-16 h-16 object-contain mb-3" />
