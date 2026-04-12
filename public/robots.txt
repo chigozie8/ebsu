@@ -1,0 +1,16 @@
+# ============================================================
+# robots.txt — EBSUMSA E-Learning Platform
+# https://www.ebsumsa.com.ng/
+# ============================================================
+
+User-agent: *
+Allow: /
+
+# Block private/user-only routes from being indexed
+Disallow: /dashboard
+Disallow: /u/
+Disallow: /admin
+Disallow: /payment
+
+# Sitemap location (critical for Google Search Console)
+Sitemap: https://www.ebsumsa.com.ng/sitemap.xml
