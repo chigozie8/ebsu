@@ -3,6 +3,7 @@ import { WebIcon } from "../icons/socials/WebIcon";
 import { XIcon } from "../icons/socials/XIcon";
 import { InstagramIcon } from "../icons/socials/InstagramIcon";
 import { YouTubeIcon } from "../icons/socials/YouTubeIcon";
+import { Link } from "react-router-dom";
 
 export default function Footer() {
   return (
@@ -45,19 +46,19 @@ export default function Footer() {
               </h2>
               <ul className="text-white font-medium text-ss md:text-sm flex flex-col gap-2 sm:gap-4">
                 <li className="">
-                  <a href="/u/community" className="hover:underline">
+                  <Link to="/u/community" className="hover:underline">
                     Active Community
-                  </a>
+                  </Link>
                 </li>
                 <li className="">
-                  <a href="/course-outlines" className="hover:underline">
+                  <Link to="/course-outlines" className="hover:underline">
                     Course Outlines
-                  </a>
-                </li>{" "}
+                  </Link>
+                </li>
                 <li>
-                  <a href="/learning-resources" className="hover:underline">
+                  <Link to="/learning-resources" className="hover:underline">
                     Learning Resources
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -67,19 +68,19 @@ export default function Footer() {
               </h2>
               <ul className="text-white font-medium text-ss md:text-sm flex flex-col gap-2 sm:gap-4">
                 <li className="">
-                  <a href="/about/about-us" className="hover:underline">
+                  <Link to="/about/about-us" className="hover:underline">
                     About Us
-                  </a>
+                  </Link>
                 </li>
                 <li className="">
-                  <a href="/blog" className="hover:underline">
+                  <Link to="/blog" className="hover:underline">
                     Blog
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="/students/project-team" className="hover:underline">
+                  <Link to="/students/project-team" className="hover:underline">
                     Project Team
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

@@ -49,10 +49,10 @@ export default function Services() {
                         once: true,
                       }}
                       custom={index}
-                      className="bg-white rounded-lg shadow-4 hover:shadow-md transition-shadow duration-250 ease-in-out p-12 h-[270px] sm:h-[300px] flex flex-col justify-center items-center"
+                      className="bg-white rounded-lg shadow-4 hover:shadow-md transition-shadow duration-250 ease-in-out p-8 sm:p-12 min-h-[240px] sm:min-h-[280px] flex flex-col justify-center items-center"
                     >
                       <div
-                        className={`${color === "dark-green" ? "bg-green1" : "bg-green5"} bg-green1 rounded-full p-3 mb-2`}
+                        className={`${color === "dark-green" ? "bg-green1" : "bg-green5"} rounded-full p-3 mb-2`}
                       >
                         <img src={icon} alt={title} className="w-[25px]" />
                       </div>
@@ -73,10 +73,10 @@ export default function Services() {
                       once: true,
                     }}
                     custom={index}
-                    className="bg-white rounded-lg shadow-4 hover:shadow-md transition-shadow duration-250 ease-in-out p-12 h-[270px] sm:h-[300px] flex flex-col justify-center items-center"
+                    className="bg-white rounded-lg shadow-4 hover:shadow-md transition-shadow duration-250 ease-in-out p-8 sm:p-12 min-h-[240px] sm:min-h-[280px] flex flex-col justify-center items-center"
                   >
                     <div
-                      className={`${color === "dark-green" ? "bg-green1" : "bg-green5"} bg-green1 rounded-full p-3 mb-2`}
+                      className={`${color === "dark-green" ? "bg-green1" : "bg-green5"} rounded-full p-3 mb-2`}
                     >
                       <img src={icon} alt={title} className="w-[25px]" />
                     </div>

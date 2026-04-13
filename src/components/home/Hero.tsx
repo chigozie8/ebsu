@@ -47,7 +47,7 @@ export default function Hero() {
                 once: true,
               }}
               custom={5}
-              className="text-ss ss:text-sm md:text-xs text-gray-700 font-medium mb-4"
+              className="text-ss ss:text-sm md:text-sm text-gray-700 font-medium mb-4 leading-relaxed"
             >
               Access a comprehensive collection of course outlines, past exam questions, handouts, and learning materials curated specifically for medical students. Stay informed with the latest news and articles, and join a vibrant, supportive community of peers dedicated to academic excellence.
             </motion.p>
