@@ -32,11 +32,23 @@ export default function useLoginUser() {
       reset();
       notifyUser("success", `Login Successful. Good to have you back!`);
     } catch (error: any) {
-      console.log(error);
-      if (error.code == "auth/invalid-credential") {
-        notifyUser("error", "Invalid Email or Password.");
+      const code: string = error?.code ?? "";
+      if (
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
+      ) {
+        notifyUser("error", "Invalid email or password. Please try again.");
+      } else if (code === "auth/invalid-email") {
+        notifyUser("error", "The email address is not valid.");
+      } else if (code === "auth/user-disabled") {
+        notifyUser("error", "This account has been disabled. Contact support.");
+      } else if (code === "auth/too-many-requests") {
+        notifyUser("error", "Too many failed attempts. Please wait and try again.");
+      } else if (code === "auth/network-request-failed") {
+        notifyUser("error", "Network error. Check your connection and try again.");
       } else {
-        notifyUser("error", "Something went wrong. Please try again");
+        notifyUser("error", "Something went wrong. Please try again.");
       }
       setLoading(false);
     }
