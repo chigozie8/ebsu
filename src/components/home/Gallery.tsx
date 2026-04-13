@@ -216,73 +216,79 @@ function StatPill({ count, label }: { count: number; label: string }) {
 function AnimatedGalleryIcon() {
   return (
     <motion.div
-      className="relative w-8 h-8 flex items-center justify-center"
-      initial="idle"
-      animate="idle"
-      whileHover="active"
+      className="relative w-7 h-7 flex items-center justify-center"
+      whileHover="hover"
+      animate="rest"
     >
-      {/* Outer ring pulse */}
+      {/* Pulsing background ring — animates continuously on hover */}
       <motion.span
-        className="absolute inset-0 rounded-lg bg-green1/20"
+        className="absolute inset-0 rounded-lg bg-green1/25"
         variants={{
-          idle: { scale: 1, opacity: 0.6 },
-          active: {
-            scale: [1, 1.35, 1],
-            opacity: [0.6, 0, 0.6],
-            transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" },
+          rest: { scale: 1, opacity: 0.5 },
+          hover: {
+            scale: [1, 1.4, 1],
+            opacity: [0.5, 0, 0.5],
+            transition: { duration: 1, repeat: Infinity, ease: "easeOut" },
           },
         }}
       />
 
+      {/* SVG drawn with motion.path so pathLength animations work */}
       <svg
         viewBox="0 0 24 24"
-        width="20"
-        height="20"
+        width="18"
+        height="18"
         fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="relative z-10 text-green1"
+        className="relative z-10"
         aria-hidden="true"
       >
-        {/* Frame rectangle */}
-        <motion.rect
-          x="3" y="3" width="18" height="18" rx="3"
+        {/* Frame */}
+        <motion.path
+          d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Z"
+          stroke="#00875a"
+          strokeWidth="1.6"
           variants={{
-            idle: { pathLength: 1, opacity: 1 },
-            active: {
-              pathLength: [1, 0.5, 1],
-              opacity: [1, 0.7, 1],
-              transition: { duration: 1.2, ease: "easeInOut", repeat: Infinity },
+            rest: { pathLength: 1, opacity: 1 },
+            hover: {
+              pathLength: [1, 0.4, 1],
+              opacity: [1, 0.6, 1],
+              transition: { duration: 1.2, repeat: Infinity, ease: "easeInOut" },
             },
           }}
         />
-        {/* Mountain / landscape line */}
-        <motion.polyline
-          points="3,16 7,11 11,14 15,9 21,16"
+        {/* Mountain landscape */}
+        <motion.path
+          d="M3 16 7.5 11l4 3.5 4-5L21 16"
+          stroke="#00875a"
+          strokeWidth="1.6"
+          fill="none"
           variants={{
-            idle: { pathLength: 1, opacity: 1, y: 0 },
-            active: {
-              pathLength: [1, 0.2, 1],
-              opacity: [1, 0.5, 1],
-              y: [0, 1, 0],
-              transition: { duration: 1.2, ease: "easeInOut", repeat: Infinity, delay: 0.1 },
+            rest: { pathLength: 1, opacity: 1 },
+            hover: {
+              pathLength: [0, 1],
+              opacity: [0.4, 1],
+              transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: 0.15 },
             },
           }}
         />
-        {/* Sun / circle */}
+        {/* Sun dot */}
         <motion.circle
-          cx="8.5" cy="8.5" r="1.5"
+          cx="8.5"
+          cy="8.5"
+          r="1.5"
+          fill="#00875a"
+          stroke="none"
           variants={{
-            idle: { scale: 1, opacity: 1 },
-            active: {
-              scale: [1, 1.5, 1],
-              opacity: [1, 0.4, 1],
-              transition: { duration: 1.1, ease: "easeInOut", repeat: Infinity, delay: 0.15 },
+            rest: { scale: 1, opacity: 1 },
+            hover: {
+              scale: [1, 1.8, 1],
+              opacity: [1, 0.3, 1],
+              transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: 0.1 },
             },
           }}
-          style={{ transformOrigin: "8.5px 8.5px" }}
+          style={{ transformBox: "fill-box", transformOrigin: "center" }}
         />
       </svg>
     </motion.div>
