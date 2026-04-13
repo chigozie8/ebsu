@@ -212,6 +212,83 @@ function StatPill({ count, label }: { count: number; label: string }) {
   );
 }
 
+// ---------- Animated Gallery SVG Icon ----------
+function AnimatedGalleryIcon() {
+  return (
+    <motion.div
+      className="relative w-8 h-8 flex items-center justify-center"
+      initial="idle"
+      animate="idle"
+      whileHover="active"
+    >
+      {/* Outer ring pulse */}
+      <motion.span
+        className="absolute inset-0 rounded-lg bg-green1/20"
+        variants={{
+          idle: { scale: 1, opacity: 0.6 },
+          active: {
+            scale: [1, 1.35, 1],
+            opacity: [0.6, 0, 0.6],
+            transition: { duration: 1.1, repeat: Infinity, ease: "easeInOut" },
+          },
+        }}
+      />
+
+      <svg
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="relative z-10 text-green1"
+        aria-hidden="true"
+      >
+        {/* Frame rectangle */}
+        <motion.rect
+          x="3" y="3" width="18" height="18" rx="3"
+          variants={{
+            idle: { pathLength: 1, opacity: 1 },
+            active: {
+              pathLength: [1, 0.5, 1],
+              opacity: [1, 0.7, 1],
+              transition: { duration: 1.2, ease: "easeInOut", repeat: Infinity },
+            },
+          }}
+        />
+        {/* Mountain / landscape line */}
+        <motion.polyline
+          points="3,16 7,11 11,14 15,9 21,16"
+          variants={{
+            idle: { pathLength: 1, opacity: 1, y: 0 },
+            active: {
+              pathLength: [1, 0.2, 1],
+              opacity: [1, 0.5, 1],
+              y: [0, 1, 0],
+              transition: { duration: 1.2, ease: "easeInOut", repeat: Infinity, delay: 0.1 },
+            },
+          }}
+        />
+        {/* Sun / circle */}
+        <motion.circle
+          cx="8.5" cy="8.5" r="1.5"
+          variants={{
+            idle: { scale: 1, opacity: 1 },
+            active: {
+              scale: [1, 1.5, 1],
+              opacity: [1, 0.4, 1],
+              transition: { duration: 1.1, ease: "easeInOut", repeat: Infinity, delay: 0.15 },
+            },
+          }}
+          style={{ transformOrigin: "8.5px 8.5px" }}
+        />
+      </svg>
+    </motion.div>
+  );
+}
+
 type FilterTab = "all" | "image" | "video";
 
 // ---------- Main Gallery ----------
@@ -318,8 +395,8 @@ export default function Gallery() {
                   custom={0}
                   className="flex items-center gap-2 mb-3"
                 >
-                  <span className="inline-flex items-center gap-1.5 bg-green1/10 text-green1 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider border border-green1/20">
-                    <IoCamera className="text-sm" />
+                  <span className="inline-flex items-center gap-2 bg-green1/10 text-green1 text-xs font-semibold pl-1 pr-3 py-1 rounded-full uppercase tracking-wider border border-green1/20">
+                    <AnimatedGalleryIcon />
                     Our Gallery
                   </span>
                 </motion.div>
