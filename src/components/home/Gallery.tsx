@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   IoClose,
@@ -212,6 +212,8 @@ function StatPill({ count, label }: { count: number; label: string }) {
   );
 }
 
+type FilterTab = "all" | "image" | "video";
+
 // ---------- Main Gallery ----------
 export default function Gallery() {
   const { items, loading } = useCloudinaryGallery();
@@ -221,6 +223,7 @@ export default function Gallery() {
   const [direction, setDirection] = useState(0);
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -80px 0px" });
@@ -229,15 +232,25 @@ export default function Gallery() {
   const imageCount = items.filter((i) => i.type === "image").length;
   const videoCount = items.filter((i) => i.type === "video").length;
 
+  const filteredItems =
+    activeFilter === "all"
+      ? items
+      : items.filter((i) => i.type === activeFilter);
+
+  const handleFilterChange = (tab: FilterTab) => {
+    setActiveFilter(tab);
+    setVisibleCount(20);
+  };
+
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const target = e.target as HTMLDivElement;
       const nearBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 200;
-      if (nearBottom && visibleCount < items.length) {
-        setVisibleCount((prev) => Math.min(prev + 20, items.length));
+      if (nearBottom && visibleCount < filteredItems.length) {
+        setVisibleCount((prev) => Math.min(prev + 20, filteredItems.length));
       }
     },
-    [visibleCount, items.length]
+    [visibleCount, filteredItems.length]
   );
 
   const openModal = (index: number, mode: "lightbox" | "grid" = "grid") => {
@@ -245,6 +258,7 @@ export default function Gallery() {
     setViewMode(mode);
     setIsModalOpen(true);
     setVisibleCount(20);
+    setActiveFilter("all");
     document.body.style.overflow = "hidden";
   };
 
@@ -487,68 +501,126 @@ export default function Gallery() {
             style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)" }}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
-              <div className="flex items-center gap-4">
-                <span className="text-white/80 font-semibold text-sm">
-                  Gallery
-                  <span className="text-white/40 font-normal ml-1.5">
-                    ({imageCount} photo{imageCount !== 1 ? "s" : ""}
-                    {videoCount > 0 ? `, ${videoCount} video${videoCount !== 1 ? "s" : ""}` : ""})
-                  </span>
-                </span>
+            <div className="flex flex-col border-b border-white/10">
+              {/* Top bar: title + view toggle + close */}
+              <div className="flex items-center justify-between px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-white font-semibold text-sm">Gallery</span>
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2 rounded-lg transition-colors text-sm ${
+                      viewMode === "grid"
+                        ? "bg-green1/30 text-green5"
+                        : "text-white/50 hover:text-white hover:bg-white/10"
+                    }`}
+                    aria-label="Grid view"
+                  >
+                    <IoGrid className="text-lg" />
+                  </button>
+                </div>
                 <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-lg transition-colors text-sm ${
-                    viewMode === "grid"
-                      ? "bg-green1/30 text-green5"
-                      : "text-white/50 hover:text-white hover:bg-white/10"
-                  }`}
-                  aria-label="Grid view"
+                  onClick={closeModal}
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors text-white"
+                  aria-label="Close gallery"
                 >
-                  <IoGrid className="text-lg" />
+                  <IoClose className="text-xl" />
                 </button>
               </div>
-              <button
-                onClick={closeModal}
-                className="p-2 rounded-full hover:bg-white/10 transition-colors text-white"
-                aria-label="Close gallery"
-              >
-                <IoClose className="text-xl" />
-              </button>
+
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1.5 px-5 pb-3">
+                {(
+                  [
+                    { key: "all" as FilterTab, label: "All", count: items.length },
+                    { key: "image" as FilterTab, label: "Photos", count: imageCount, icon: <IoCamera className="text-sm" /> },
+                    { key: "video" as FilterTab, label: "Videos", count: videoCount, icon: <IoVideocam className="text-sm" /> },
+                  ] as { key: FilterTab; label: string; count: number; icon?: React.ReactNode }[]
+                ).map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleFilterChange(tab.key)}
+                    disabled={tab.count === 0}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed ${
+                      activeFilter === tab.key
+                        ? "bg-green1 text-white shadow-md shadow-green1/30"
+                        : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
+                    }`}
+                    aria-pressed={activeFilter === tab.key}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                    <span
+                      className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${
+                        activeFilter === tab.key
+                          ? "bg-white/20 text-white"
+                          : "bg-white/10 text-white/50"
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Modal Content */}
             {viewMode === "grid" ? (
               <div className="flex-1 overflow-y-auto p-5" onScroll={handleScroll}>
                 <div className="max-w-7xl mx-auto">
-                  <p className="text-white/30 text-xs mb-5 text-center">
-                    Showing {Math.min(visibleCount, items.length)} of {items.length} items
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {items.slice(0, visibleCount).map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        variants={gridItemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        custom={index % 20}
-                        className="relative group aspect-square overflow-hidden rounded-xl ring-1 ring-white/10 cursor-pointer"
-                        onClick={() => {
-                          setSelectedIndex(index);
-                          setDirection(0);
-                          setViewMode("lightbox");
-                        }}
-                      >
-                        <MediaCard item={item} onClick={() => {
-                          setSelectedIndex(index);
-                          setDirection(0);
-                          setViewMode("lightbox");
-                        }} showOverlay />
-                      </motion.div>
-                    ))}
-                  </div>
-                  {visibleCount < items.length && (
-                    <p className="text-white/30 text-xs text-center mt-6">Scroll down to load more...</p>
+                  {filteredItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        {activeFilter === "video" ? (
+                          <IoVideocam className="text-2xl text-white/40" />
+                        ) : (
+                          <IoCamera className="text-2xl text-white/40" />
+                        )}
+                      </div>
+                      <p className="text-white/40 text-sm">
+                        No {activeFilter === "video" ? "videos" : "photos"} yet
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-white/30 text-xs mb-5 text-center">
+                        Showing {Math.min(visibleCount, filteredItems.length)} of {filteredItems.length}{" "}
+                        {activeFilter === "all" ? "items" : activeFilter === "video" ? "videos" : "photos"}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        {filteredItems.slice(0, visibleCount).map((item, index) => {
+                          // find the real index in the full items array for lightbox navigation
+                          const realIndex = items.findIndex((i) => i.id === item.id);
+                          return (
+                            <motion.div
+                              key={item.id}
+                              variants={gridItemVariants}
+                              initial="hidden"
+                              animate="visible"
+                              custom={index % 20}
+                              className="relative group aspect-square overflow-hidden rounded-xl ring-1 ring-white/10 cursor-pointer"
+                              onClick={() => {
+                                setSelectedIndex(realIndex);
+                                setDirection(0);
+                                setViewMode("lightbox");
+                              }}
+                            >
+                              <MediaCard
+                                item={item}
+                                onClick={() => {
+                                  setSelectedIndex(realIndex);
+                                  setDirection(0);
+                                  setViewMode("lightbox");
+                                }}
+                                showOverlay
+                              />
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                      {visibleCount < filteredItems.length && (
+                        <p className="text-white/30 text-xs text-center mt-6">Scroll down to load more...</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
