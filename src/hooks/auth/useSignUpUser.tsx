@@ -60,10 +60,19 @@ export default function useSignUpUser() {
         "Sign up successful. Welcome to the Medicine and Surgery Portal."
       );
     } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
-        notifyUser("error", "Email Account already in use");
+      const code: string = error?.code ?? "";
+      if (code === "auth/email-already-in-use") {
+        notifyUser("error", "This email is already registered. Try logging in.");
+      } else if (code === "auth/invalid-email") {
+        notifyUser("error", "The email address is not valid.");
+      } else if (code === "auth/weak-password") {
+        notifyUser("error", "Password is too weak. Use at least 6 characters.");
+      } else if (code === "auth/too-many-requests") {
+        notifyUser("error", "Too many attempts. Please wait and try again.");
+      } else if (code === "auth/network-request-failed") {
+        notifyUser("error", "Network error. Check your connection and try again.");
       } else {
-        notifyUser("error", "Something went wrong. Please try again");
+        notifyUser("error", "Something went wrong. Please try again.");
       }
       setLoading(false);
     }
