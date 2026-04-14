@@ -17,9 +17,8 @@ export default function Blog() {
     homeBlogPostsError,
   } = useFetchBlogPosts();
 
-  useEffect(() => {
-    fetchHomeBlogPosts();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchHomeBlogPosts(); }, []);
 
   const items = [1, 2, 3];
 
@@ -77,8 +76,6 @@ export default function Blog() {
             <div className="w-full">
               <div className="grid items-center sm:grid-cols-2 mmd:grid-cols-3 gap-5 mb-4">
                 {homeBlogPosts
-                  .filter((post) => post.postType !== "featured")
-                  .sort(() => 0.5 - Math.random())
                   .slice(0, 3)
                   .map(({ title, sampleImg, contents, postType, no }, i) => (
                     <Link
