@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { BadNetworkIcon } from "../icons/general/BadNetworkIcon";
-import { playSound } from "../../hooks/useSound";
 
 export default function NetworkBanner() {
   const [status, setStatus] = useState<"offline" | "restored" | null>(null);
@@ -9,12 +8,10 @@ export default function NetworkBanner() {
     let timer: ReturnType<typeof setTimeout>;
 
     const handleOffline = () => {
-      playSound("message");
       setStatus("offline");
     };
 
     const handleOnline = () => {
-      playSound("notify");
       setStatus("restored");
       // Auto-dismiss the "back online" banner after 3 s
       timer = setTimeout(() => setStatus(null), 3000);
