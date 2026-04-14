@@ -65,7 +65,7 @@ export default function Blog() {
                 Sorry, could not load posts at the moment.{" "}
                 <button
                   className="underline hover:no-underline text-green1"
-                  onClick={fetchHomeBlogPosts}
+                  onClick={() => fetchHomeBlogPosts(true)}
                 >
                   Retry
                 </button>
@@ -133,7 +133,7 @@ export default function Blog() {
                 No posts available yet.{" "}
                 <button
                   className="underline hover:no-underline text-green1"
-                  onClick={fetchHomeBlogPosts}
+                  onClick={() => fetchHomeBlogPosts(true)}
                 >
                   Retry
                 </button>

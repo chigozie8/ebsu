@@ -25,7 +25,7 @@ export default function Blog() {
 
   useEffect(() => {
     fetchBlogPosts();
-  }, []);
+  }, [fetchBlogPosts]);
 
   // Get unique categories from all posts
   const categories = useMemo(() => {
@@ -381,7 +381,7 @@ export default function Blog() {
                     Sorry, couldn't load posts at the moment.{" "}
                     <button
                       className="underline hover:no-underline text-green1"
-                      onClick={() => fetchBlogPosts()}
+                      onClick={() => fetchBlogPosts(true)}
                     >
                       Retry
                     </button>
