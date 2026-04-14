@@ -27,7 +27,9 @@ export const useFetchBlogPosts = () => {
     setBlogPostsError(false);
 
     if (!isFirebaseConfigured) {
-      setBlogPosts(localBlogPosts as IBlogPost[]);
+      const fallback = localBlogPosts as IBlogPost[];
+      if (fallback.length === 0) setBlogPostsError(true);
+      else setBlogPosts(fallback);
       setBlogPostsLoading(false);
       return;
     }
@@ -36,15 +38,14 @@ export const useFetchBlogPosts = () => {
       const snap = await getDocs(query(collection(db, "blogPosts")));
       const firebasePosts: IBlogPost[] = [];
       snap.forEach((d) => {
-        const data = d.data();
-        if (data.contents && Array.isArray(data.contents)) {
-          firebasePosts.push({ ...data, id: d.id } as IBlogPost);
-        }
+        firebasePosts.push({ ...d.data(), id: d.id } as IBlogPost);
       });
       const all = mergeWithLocal(firebasePosts).sort((a, b) => b.no - a.no);
-      setBlogPosts(all);
-    } catch {
-      setBlogPosts(localBlogPosts as IBlogPost[]);
+      if (all.length === 0) setBlogPostsError(true);
+      else setBlogPosts(all);
+    } catch (err) {
+      console.error("[v0] fetchBlogPosts error:", err);
+      setBlogPostsError(true);
     } finally {
       setBlogPostsLoading(false);
     }
@@ -55,25 +56,38 @@ export const useFetchBlogPosts = () => {
     setHomeBlogPostsError(false);
 
     if (!isFirebaseConfigured) {
-      setHomeBlogPosts([...localBlogPosts].sort((a, b) => b.no - a.no) as IBlogPost[]);
+      console.log("[v0] Firebase not configured, using local posts:", localBlogPosts.length);
+      const fallback = [...localBlogPosts].sort((a, b) => b.no - a.no) as IBlogPost[];
+      if (fallback.length === 0) {
+        setHomeBlogPostsError(true);
+      } else {
+        setHomeBlogPosts(fallback);
+      }
       setHomeBlogPostsLoading(false);
       return;
     }
 
     try {
+      console.log("[v0] Fetching blog posts from Firebase...");
       const snap = await getDocs(query(collection(db, "blogPosts")));
+      console.log("[v0] Firebase snap size:", snap.size);
       const firebasePosts: IBlogPost[] = [];
       snap.forEach((d) => {
         const data = d.data();
-        if (data.contents && Array.isArray(data.contents)) {
-          firebasePosts.push({ ...data, id: d.id } as IBlogPost);
-        }
+        console.log("[v0] Post doc:", d.id, "title:", data.title, "keys:", Object.keys(data).join(", "));
+        firebasePosts.push({ ...data, id: d.id } as IBlogPost);
       });
-      // Sort newest first — no random shuffle so posts are stable across renders
+      console.log("[v0] Total firebase posts fetched:", firebasePosts.length);
       const all = mergeWithLocal(firebasePosts).sort((a, b) => b.no - a.no);
-      setHomeBlogPosts(all);
-    } catch {
-      setHomeBlogPosts([...localBlogPosts].sort((a, b) => b.no - a.no) as IBlogPost[]);
+      console.log("[v0] Final merged posts count:", all.length);
+      if (all.length === 0) {
+        setHomeBlogPostsError(true);
+      } else {
+        setHomeBlogPosts(all);
+      }
+    } catch (err) {
+      console.error("[v0] fetchHomeBlogPosts error:", err);
+      setHomeBlogPostsError(true);
     } finally {
       setHomeBlogPostsLoading(false);
     }
