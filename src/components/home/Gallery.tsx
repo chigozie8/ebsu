@@ -143,6 +143,11 @@ function MediaCard({
 
 // ---------- LightboxMedia ----------
 function LightboxMedia({ item, direction }: { item: GalleryItem; direction: number }) {
+  const [loaded, setLoaded] = useState(false);
+
+  // Reset loaded state when item changes
+  useEffect(() => { setLoaded(false); }, [item.id]);
+
   if (item.type === "video") {
     return (
       <motion.video
@@ -155,23 +160,33 @@ function LightboxMedia({ item, direction }: { item: GalleryItem; direction: numb
         exit="exit"
         controls
         autoPlay
-        className="max-w-full max-h-[calc(100vh-180px)] object-contain rounded-2xl shadow-2xl"
+        className="max-w-full w-full max-h-[calc(100dvh-160px)] object-contain rounded-xl shadow-2xl"
       />
     );
   }
+
   return (
-    <motion.img
-      key={item.id}
-      src={item.url}
-      alt={item.caption || "Gallery image"}
-      variants={imageVariants}
-      custom={direction}
-      initial="enter"
-      animate="center"
-      exit="exit"
-      decoding="async"
-      className="max-w-full max-h-[calc(100vh-180px)] object-contain rounded-2xl shadow-2xl"
-    />
+    <div className="relative flex items-center justify-center w-full h-full">
+      {/* Spinner shown until image is loaded */}
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
+      )}
+      <motion.img
+        key={item.id}
+        src={item.url}
+        alt={item.caption || "Gallery image"}
+        variants={imageVariants}
+        custom={direction}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        className={`max-w-full w-auto max-h-[calc(100dvh-160px)] object-contain rounded-xl shadow-2xl transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
   );
 }
 
@@ -246,12 +261,12 @@ function LightboxView({
 
   return (
     <div
-      className="flex-1 flex flex-col items-center justify-center relative select-none overflow-hidden"
+      className="flex-1 flex flex-col relative select-none overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Media */}
-      <div className="flex-1 flex items-center justify-center w-full px-16 py-6">
+      {/* Media — fills all available space */}
+      <div className="flex-1 flex items-center justify-center w-full py-4 px-4 sm:px-6 min-h-0">
         <AnimatePresence mode="wait" custom={direction}>
           <LightboxMedia
             key={items[selectedIndex]?.id}
@@ -261,62 +276,31 @@ function LightboxView({
         </AnimatePresence>
       </div>
 
-      {/* Prev / Next buttons */}
-      {items.length > 1 && (
-        <>
-          <button
-            onClick={() => navigateMedia(-1)}
-            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-3.5 rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
-            aria-label="Previous photo"
-          >
-            <IoChevronBack className="text-xl sm:text-2xl" />
-          </button>
-          <button
-            onClick={() => navigateMedia(1)}
-            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-3.5 rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
-            aria-label="Next photo"
-          >
-            <IoChevronForward className="text-xl sm:text-2xl" />
-          </button>
-        </>
-      )}
-
       {/* Caption */}
       {items[selectedIndex]?.caption && (
-        <p className="pb-10 px-16 text-white/60 text-sm text-center max-w-lg leading-relaxed">
+        <p className="px-4 pb-10 text-white/60 text-xs sm:text-sm text-center max-w-lg mx-auto leading-relaxed">
           {items[selectedIndex].caption}
         </p>
       )}
 
-      {/* Counter + swipe hint */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3">
-        <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 text-white/50 text-xs border border-white/10">
-          {selectedIndex + 1} / {items.length}
-        </div>
-        <div className="hidden sm:block bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white/30 text-xs border border-white/10">
-          ← → keys to navigate
-        </div>
-        <div className="sm:hidden bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white/30 text-xs border border-white/10">
-          Swipe to navigate
-        </div>
-      </div>
-
-      {/* Dot indicators (max 10 shown) */}
-      {items.length > 1 && items.length <= 30 && (
-        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => navigateMedia(i - selectedIndex)}
-              className={`rounded-full transition-all duration-300 touch-manipulation ${
-                i === selectedIndex
-                  ? "w-4 h-1.5 bg-white"
-                  : "w-1.5 h-1.5 bg-white/30 hover:bg-white/60"
-              }`}
-              aria-label={`Go to photo ${i + 1}`}
-            />
-          ))}
-        </div>
+      {/* Prev / Next buttons — vertically centered on the media area, outside the image */}
+      {items.length > 1 && (
+        <>
+          <button
+            onClick={() => navigateMedia(-1)}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3.5 rounded-full bg-black/40 hover:bg-black/60 active:bg-black/70 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
+            aria-label="Previous"
+          >
+            <IoChevronBack className="text-lg sm:text-2xl" />
+          </button>
+          <button
+            onClick={() => navigateMedia(1)}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2.5 sm:p-3.5 rounded-full bg-black/40 hover:bg-black/60 active:bg-black/70 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
+            aria-label="Next"
+          >
+            <IoChevronForward className="text-lg sm:text-2xl" />
+          </button>
+        </>
       )}
     </div>
   );
@@ -417,6 +401,8 @@ export default function Gallery() {
   const [viewMode, setViewMode] = useState<"lightbox" | "grid">("grid");
   const [visibleCount, setVisibleCount] = useState(20);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  // Snapshot of items used inside the lightbox so filter changes go to grid first
+  const [lightboxItems, setLightboxItems] = useState<GalleryItem[]>([]);
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "0px 0px -80px 0px" });
@@ -433,6 +419,8 @@ export default function Gallery() {
   const handleFilterChange = (tab: FilterTab) => {
     setActiveFilter(tab);
     setVisibleCount(20);
+    // always switch to grid when changing filter so results are visible
+    setViewMode("grid");
   };
 
   const handleScroll = useCallback(
@@ -446,12 +434,14 @@ export default function Gallery() {
     [visibleCount, filteredItems.length]
   );
 
-  const openModal = (index: number, mode: "lightbox" | "grid" = "grid") => {
+  const openModal = (index: number, mode: "lightbox" | "grid" = "grid", sourceItems?: GalleryItem[]) => {
     setSelectedIndex(index);
     setViewMode(mode);
     setIsModalOpen(true);
     setVisibleCount(20);
     setActiveFilter("all");
+    // Snapshot the items the lightbox should navigate within
+    setLightboxItems(sourceItems ?? items);
     document.body.style.overflow = "hidden";
   };
 
@@ -466,12 +456,12 @@ export default function Gallery() {
       setDirection(newDirection);
       setSelectedIndex((prev) => {
         const next = prev + newDirection;
-        if (next < 0) return items.length - 1;
-        if (next >= items.length) return 0;
+        if (next < 0) return lightboxItems.length - 1;
+        if (next >= lightboxItems.length) return 0;
         return next;
       });
     },
-    [items.length]
+    [lightboxItems.length]
   );
 
   const handleKeyDown = useCallback(
@@ -644,7 +634,7 @@ export default function Gallery() {
                     whileInView="animate"
                     viewport={{ once: true }}
                     custom={7}
-                    className="relative overflow-hidden rounded-2xl cursor-pointer ring-1 ring-black/5 bg-gray-50"
+                    className="col-span-full sm:col-span-1 relative overflow-hidden rounded-2xl cursor-pointer ring-1 ring-black/5 bg-gray-50"
                     onClick={() => openModal(0, "grid")}
                     whileHover={{ y: -2, scale: 1.01 }}
                     transition={{ duration: 0.25 }}
@@ -695,25 +685,31 @@ export default function Gallery() {
           >
             {/* Modal Header */}
             <div className="flex flex-col border-b border-white/10">
-              {/* Top bar: title + view toggle + close */}
-              <div className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-white font-semibold text-sm">Gallery</span>
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={`p-2 rounded-lg transition-colors text-sm ${
-                      viewMode === "grid"
-                        ? "bg-green1/30 text-green5"
-                        : "text-white/50 hover:text-white hover:bg-white/10"
-                    }`}
-                    aria-label="Grid view"
-                  >
-                    <IoGrid className="text-lg" />
-                  </button>
+              {/* Top bar: back (lightbox only) + title + close */}
+              <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {viewMode === "lightbox" ? (
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-medium transition-colors"
+                      aria-label="Back to grid"
+                    >
+                      <IoGrid className="text-sm" />
+                      <span>Grid</span>
+                    </button>
+                  ) : (
+                    <span className="text-white font-semibold text-sm">Gallery</span>
+                  )}
                 </div>
+                {/* Counter in header when in lightbox */}
+                {viewMode === "lightbox" && (
+                  <span className="text-white/40 text-xs">
+                    {selectedIndex + 1} / {lightboxItems.length}
+                  </span>
+                )}
                 <button
                   onClick={closeModal}
-                  className="p-2 rounded-full hover:bg-white/10 transition-colors text-white"
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors text-white touch-manipulation"
                   aria-label="Close gallery"
                 >
                   <IoClose className="text-xl" />
@@ -781,8 +777,12 @@ export default function Gallery() {
                       </p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                         {filteredItems.slice(0, visibleCount).map((item, index) => {
-                          // find the real index in the full items array for lightbox navigation
-                          const realIndex = items.findIndex((i) => i.id === item.id);
+                          const openLightbox = () => {
+                            setLightboxItems(filteredItems);
+                            setSelectedIndex(index);
+                            setDirection(0);
+                            setViewMode("lightbox");
+                          };
                           return (
                             <motion.div
                               key={item.id}
@@ -791,19 +791,11 @@ export default function Gallery() {
                               animate="visible"
                               custom={index % 20}
                               className="relative group aspect-square overflow-hidden rounded-xl ring-1 ring-white/10 cursor-pointer"
-                              onClick={() => {
-                                setSelectedIndex(realIndex);
-                                setDirection(0);
-                                setViewMode("lightbox");
-                              }}
+                              onClick={openLightbox}
                             >
                               <MediaCard
                                 item={item}
-                                onClick={() => {
-                                  setSelectedIndex(realIndex);
-                                  setDirection(0);
-                                  setViewMode("lightbox");
-                                }}
+                                onClick={openLightbox}
                                 showOverlay
                               />
                             </motion.div>
@@ -820,7 +812,7 @@ export default function Gallery() {
             ) : (
               /* Lightbox */
               <LightboxView
-                items={items}
+                items={lightboxItems}
                 selectedIndex={selectedIndex}
                 direction={direction}
                 navigateMedia={navigateMedia}
