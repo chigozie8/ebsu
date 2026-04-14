@@ -17,8 +17,7 @@ export default function Blog() {
     homeBlogPostsError,
   } = useFetchBlogPosts();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchHomeBlogPosts(); }, []);
+  useEffect(() => { fetchHomeBlogPosts(); }, [fetchHomeBlogPosts]);
 
   const items = [1, 2, 3];
 
