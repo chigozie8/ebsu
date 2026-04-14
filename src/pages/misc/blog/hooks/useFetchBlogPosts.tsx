@@ -5,49 +5,55 @@ import { db, isFirebaseConfigured } from "../../../../config/firebase";
 import { notifyUser } from "../../../../helpers/notifyUser";
 import { localBlogPosts } from "../../../../data/misc/blog/posts";
 
-// ---------- Module-level cache ----------
-// One shared Promise across all hook instances — Firebase is queried exactly once
-// per page load. Every component that calls useFetchBlogPosts() shares the result.
-let _cachedPostsPromise: Promise<IBlogPost[]> | null = null;
+// ---------- Module-level singleton cache ----------
+// Firebase is queried at most once per page load.
+// _cachedPosts is only set when we have a non-empty result.
+// _cachedPostsPromise holds the in-flight request so parallel callers
+// share one network round-trip instead of each firing their own.
 let _cachedPosts: IBlogPost[] | null = null;
+let _cachedPostsPromise: Promise<IBlogPost[]> | null = null;
 
 const mergeWithLocal = (firebasePosts: IBlogPost[]): IBlogPost[] => {
   const firebaseNos = new Set(firebasePosts.map((p) => p.no));
-  const filtered = (localBlogPosts as IBlogPost[]).filter((p) => !firebaseNos.has(p.no));
-  return [...firebasePosts, ...filtered];
+  const extras = (localBlogPosts as IBlogPost[]).filter((p) => !firebaseNos.has(p.no));
+  return [...firebasePosts, ...extras];
 };
 
-const loadAllPosts = (): Promise<IBlogPost[]> => {
-  // Return cached result immediately if already resolved
-  if (_cachedPosts) return Promise.resolve(_cachedPosts);
-  // Reuse in-flight request if one is already running
+const loadAllPosts = async (): Promise<IBlogPost[]> => {
+  // Serve from cache immediately when we have real posts
+  if (_cachedPosts && _cachedPosts.length > 0) return _cachedPosts;
+  // Piggyback on an already in-flight request
   if (_cachedPostsPromise) return _cachedPostsPromise;
 
   if (!isFirebaseConfigured) {
     const fallback = (localBlogPosts as IBlogPost[]).sort((a, b) => b.no - a.no);
-    _cachedPosts = fallback;
-    return Promise.resolve(fallback);
+    if (fallback.length > 0) _cachedPosts = fallback;
+    return fallback;
   }
 
-  _cachedPostsPromise = getDocs(query(collection(db, "blogPosts")))
-    .then((snap) => {
+  // Fire the request and store the promise so concurrent callers reuse it
+  _cachedPostsPromise = (async () => {
+    try {
+      const snap = await getDocs(query(collection(db, "blogPosts")));
       const firebasePosts: IBlogPost[] = [];
       snap.forEach((d) => firebasePosts.push({ ...d.data(), id: d.id } as IBlogPost));
       const all = mergeWithLocal(firebasePosts).sort((a, b) => b.no - a.no);
-      _cachedPosts = all;
+      // Only cache when we actually got posts back
+      if (all.length > 0) _cachedPosts = all;
       return all;
-    })
-    .catch(() => {
-      // On failure clear the promise so a retry can start fresh
+    } catch (err) {
+      console.error("[blog] Firebase fetch failed:", err);
+      return (localBlogPosts as IBlogPost[]).sort((a, b) => b.no - a.no);
+    } finally {
+      // Always clear the in-flight reference so future calls can retry cleanly
       _cachedPostsPromise = null;
-      const fallback = (localBlogPosts as IBlogPost[]).sort((a, b) => b.no - a.no);
-      return fallback;
-    });
+    }
+  })();
 
   return _cachedPostsPromise;
 };
 
-/** Call this to bust the cache and force a fresh fetch on next use */
+/** Bust the cache — next call to any fetch function will re-query Firebase */
 export const invalidateBlogPostsCache = () => {
   _cachedPosts = null;
   _cachedPostsPromise = null;
@@ -55,24 +61,46 @@ export const invalidateBlogPostsCache = () => {
 
 // ---------- Hook ----------
 export const useFetchBlogPosts = () => {
-  const [blogPosts, setBlogPosts] = useState<IBlogPost[] | null>(_cachedPosts);
-  const [homeBlogPosts, setHomeBlogPosts] = useState<IBlogPost[] | null>(_cachedPosts);
+  // Initialise state from cache so components that mount after the first
+  // fetch render immediately with data and no loading flash
+  const [blogPosts, setBlogPosts] = useState<IBlogPost[] | null>(
+    _cachedPosts && _cachedPosts.length > 0 ? _cachedPosts : null
+  );
+  const [homeBlogPosts, setHomeBlogPosts] = useState<IBlogPost[] | null>(
+    _cachedPosts && _cachedPosts.length > 0 ? _cachedPosts : null
+  );
   const [blogPost, setBlogPost] = useState<TBlogPost | null>(null);
 
-  const [blogPostsLoading, setBlogPostsLoading] = useState(!_cachedPosts);
-  const [homeBlogPostsLoading, setHomeBlogPostsLoading] = useState(!_cachedPosts);
+  const hasCachedData = Boolean(_cachedPosts && _cachedPosts.length > 0);
+  const [blogPostsLoading, setBlogPostsLoading] = useState(!hasCachedData);
+  const [homeBlogPostsLoading, setHomeBlogPostsLoading] = useState(!hasCachedData);
   const [blogPostsError, setBlogPostsError] = useState(false);
   const [homeBlogPostsError, setHomeBlogPostsError] = useState(false);
   const [blogPostLoading, setBlogPostLoading] = useState(true);
   const [blogPostError, setBlogPostError] = useState(false);
 
-  const fetchHomeBlogPosts = useCallback(async () => {
+  // If another component already populated the cache before this one mounted,
+  // skip all loading states immediately
+  useEffect(() => {
+    if (_cachedPosts && _cachedPosts.length > 0) {
+      setHomeBlogPosts(_cachedPosts);
+      setBlogPosts(_cachedPosts);
+      setHomeBlogPostsLoading(false);
+      setBlogPostsLoading(false);
+    }
+  }, []);
+
+  const fetchHomeBlogPosts = useCallback(async (forceRefresh = false) => {
+    if (forceRefresh) invalidateBlogPostsCache();
     setHomeBlogPostsLoading(true);
     setHomeBlogPostsError(false);
     try {
       const all = await loadAllPosts();
-      if (all.length === 0) setHomeBlogPostsError(true);
-      else setHomeBlogPosts(all);
+      if (all.length === 0) {
+        setHomeBlogPostsError(true);
+      } else {
+        setHomeBlogPosts(all);
+      }
     } catch {
       setHomeBlogPostsError(true);
     } finally {
@@ -80,13 +108,17 @@ export const useFetchBlogPosts = () => {
     }
   }, []);
 
-  const fetchBlogPosts = useCallback(async () => {
+  const fetchBlogPosts = useCallback(async (forceRefresh = false) => {
+    if (forceRefresh) invalidateBlogPostsCache();
     setBlogPostsLoading(true);
     setBlogPostsError(false);
     try {
       const all = await loadAllPosts();
-      if (all.length === 0) setBlogPostsError(true);
-      else setBlogPosts(all);
+      if (all.length === 0) {
+        setBlogPostsError(true);
+      } else {
+        setBlogPosts(all);
+      }
     } catch {
       setBlogPostsError(true);
     } finally {
@@ -113,16 +145,6 @@ export const useFetchBlogPosts = () => {
       notifyUser("error", "An error occurred. Please try again.");
     } finally {
       setBlogPostLoading(false);
-    }
-  }, []);
-
-  // If cache already populated, skip the loading state entirely
-  useEffect(() => {
-    if (_cachedPosts) {
-      setHomeBlogPosts(_cachedPosts);
-      setBlogPosts(_cachedPosts);
-      setHomeBlogPostsLoading(false);
-      setBlogPostsLoading(false);
     }
   }, []);
 
