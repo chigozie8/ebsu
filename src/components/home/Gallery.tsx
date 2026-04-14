@@ -212,6 +212,116 @@ function StatPill({ count, label }: { count: number; label: string }) {
   );
 }
 
+// ---------- Lightbox View (with swipe support) ----------
+function LightboxView({
+  items,
+  selectedIndex,
+  direction,
+  navigateMedia,
+}: {
+  items: GalleryItem[];
+  selectedIndex: number;
+  direction: number;
+  navigateMedia: (dir: number) => void;
+}) {
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      navigateMedia(dx < 0 ? 1 : -1);
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  return (
+    <div
+      className="flex-1 flex flex-col items-center justify-center relative select-none overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Media */}
+      <div className="flex-1 flex items-center justify-center w-full px-16 py-6">
+        <AnimatePresence mode="wait" custom={direction}>
+          <LightboxMedia
+            key={items[selectedIndex]?.id}
+            item={items[selectedIndex]}
+            direction={direction}
+          />
+        </AnimatePresence>
+      </div>
+
+      {/* Prev / Next buttons */}
+      {items.length > 1 && (
+        <>
+          <button
+            onClick={() => navigateMedia(-1)}
+            className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-3.5 rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
+            aria-label="Previous photo"
+          >
+            <IoChevronBack className="text-xl sm:text-2xl" />
+          </button>
+          <button
+            onClick={() => navigateMedia(1)}
+            className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-3.5 rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-all duration-200 backdrop-blur-sm shadow-lg border border-white/10 touch-manipulation"
+            aria-label="Next photo"
+          >
+            <IoChevronForward className="text-xl sm:text-2xl" />
+          </button>
+        </>
+      )}
+
+      {/* Caption */}
+      {items[selectedIndex]?.caption && (
+        <p className="pb-10 px-16 text-white/60 text-sm text-center max-w-lg leading-relaxed">
+          {items[selectedIndex].caption}
+        </p>
+      )}
+
+      {/* Counter + swipe hint */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3">
+        <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 text-white/50 text-xs border border-white/10">
+          {selectedIndex + 1} / {items.length}
+        </div>
+        <div className="hidden sm:block bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white/30 text-xs border border-white/10">
+          ← → keys to navigate
+        </div>
+        <div className="sm:hidden bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 text-white/30 text-xs border border-white/10">
+          Swipe to navigate
+        </div>
+      </div>
+
+      {/* Dot indicators (max 10 shown) */}
+      {items.length > 1 && items.length <= 30 && (
+        <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          {items.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => navigateMedia(i - selectedIndex)}
+              className={`rounded-full transition-all duration-300 touch-manipulation ${
+                i === selectedIndex
+                  ? "w-4 h-1.5 bg-white"
+                  : "w-1.5 h-1.5 bg-white/30 hover:bg-white/60"
+              }`}
+              aria-label={`Go to photo ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Animated Gallery SVG Icon ----------
 function AnimatedGalleryIcon() {
   return (
@@ -709,44 +819,12 @@ export default function Gallery() {
               </div>
             ) : (
               /* Lightbox */
-              <div className="flex-1 flex flex-col items-center justify-center relative px-4 py-6">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <LightboxMedia
-                    key={items[selectedIndex]?.id}
-                    item={items[selectedIndex]}
-                    direction={direction}
-                  />
-                </AnimatePresence>
-
-                {items.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => navigateMedia(-1)}
-                      className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-sm shadow-lg border border-white/10"
-                      aria-label="Previous"
-                    >
-                      <IoChevronBack className="text-xl sm:text-2xl" />
-                    </button>
-                    <button
-                      onClick={() => navigateMedia(1)}
-                      className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-sm shadow-lg border border-white/10"
-                      aria-label="Next"
-                    >
-                      <IoChevronForward className="text-xl sm:text-2xl" />
-                    </button>
-                  </>
-                )}
-
-                {items[selectedIndex]?.caption && (
-                  <p className="mt-4 text-white/60 text-sm text-center max-w-lg">
-                    {items[selectedIndex].caption}
-                  </p>
-                )}
-
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-1.5 text-white/50 text-xs border border-white/10">
-                  {selectedIndex + 1} / {items.length}
-                </div>
-              </div>
+              <LightboxView
+                items={items}
+                selectedIndex={selectedIndex}
+                direction={direction}
+                navigateMedia={navigateMedia}
+              />
             )}
           </motion.div>
         )}
