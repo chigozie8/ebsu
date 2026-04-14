@@ -55,7 +55,7 @@ export const useFetchBlogPosts = () => {
     setHomeBlogPostsError(false);
 
     if (!isFirebaseConfigured) {
-      setHomeBlogPosts([...localBlogPosts].sort(() => 0.5 - Math.random()) as IBlogPost[]);
+      setHomeBlogPosts([...localBlogPosts].sort((a, b) => b.no - a.no) as IBlogPost[]);
       setHomeBlogPostsLoading(false);
       return;
     }
@@ -69,10 +69,11 @@ export const useFetchBlogPosts = () => {
           firebasePosts.push({ ...data, id: d.id } as IBlogPost);
         }
       });
-      const all = mergeWithLocal(firebasePosts).sort(() => 0.5 - Math.random());
+      // Sort newest first — no random shuffle so posts are stable across renders
+      const all = mergeWithLocal(firebasePosts).sort((a, b) => b.no - a.no);
       setHomeBlogPosts(all);
     } catch {
-      setHomeBlogPosts([...localBlogPosts].sort(() => 0.5 - Math.random()) as IBlogPost[]);
+      setHomeBlogPosts([...localBlogPosts].sort((a, b) => b.no - a.no) as IBlogPost[]);
     } finally {
       setHomeBlogPostsLoading(false);
     }
