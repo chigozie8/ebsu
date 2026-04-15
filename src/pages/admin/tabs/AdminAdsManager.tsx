@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from "react";
+import { IoClose, IoSparkles } from "react-icons/io5";
 import { db } from "../../../config/firebase";
 import {
   collection,
@@ -56,6 +57,100 @@ const PRESET_COLORS = [
   { bg: "#f0fdf4", text: "#166534", label: "Mint Light" },
   { bg: "#eff6ff", text: "#1e40af", label: "Sky Light" },
 ];
+
+// ---------- Live PromoToast Preview ----------
+function PromoToastPreview({
+  title,
+  description,
+  ctaLabel,
+  imageUrl,
+  bgColor,
+  textColor,
+}: {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  imageUrl: string;
+  bgColor: string;
+  textColor: string;
+}) {
+  const accent = bgColor || "#25D366";
+  const txtCol = textColor || "#ffffff";
+
+  return (
+    <div className="mt-5 border-t border-gray-100 pt-5">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse" />
+        Live Toast Preview
+      </p>
+
+      {/* Simulated phone frame */}
+      <div className="bg-gray-100 rounded-2xl p-3 relative">
+        <p className="text-[10px] text-gray-400 text-center mb-3">As it appears on the website</p>
+
+        {/* Mock toast card */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden mx-auto max-w-[280px]">
+          {/* Shimmer top bar */}
+          <div className="h-1 w-full" style={{ backgroundColor: accent }} />
+
+          <div className="px-3 pt-3 pb-3">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ backgroundColor: accent, boxShadow: `0 2px 8px ${accent}40` }}
+                >
+                  {imageUrl ? (
+                    <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <IoSparkles className="text-sm" style={{ color: txtCol }} />
+                  )}
+                </div>
+                <div>
+                  <p
+                    className="text-[9px] font-bold uppercase tracking-widest"
+                    style={{ color: accent }}
+                  >
+                    Featured
+                  </p>
+                  <p className="text-xs font-bold text-gray-900 leading-tight">
+                    {title || "Ad Title"}
+                  </p>
+                </div>
+              </div>
+              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <IoClose className="text-gray-400 text-[10px]" />
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-[10px] text-gray-500 leading-relaxed mb-2.5 line-clamp-2">
+              {description || "Your ad description will appear here."}
+            </p>
+
+            {/* CTA */}
+            {ctaLabel && (
+              <div
+                className="w-full text-center text-[10px] font-semibold py-1.5 rounded-lg"
+                style={{ backgroundColor: accent, color: txtCol }}
+              >
+                {ctaLabel}
+              </div>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-0.5 w-1/2" style={{ backgroundColor: `${accent}50` }} />
+        </div>
+
+        <p className="text-[9px] text-gray-400 text-center mt-2">
+          Appears after 6 seconds on the home page
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminAdsManager() {
   const [ads, setAds] = useState<Advertisement[]>([]);
@@ -309,6 +404,18 @@ export default function AdminAdsManager() {
                 </span>
               )}
             </div>
+
+            {/* PromoToast live preview — shown when placement targets home */}
+            {(form.placement === "home" || form.placement === "both" || form.placement === "all") && (
+              <PromoToastPreview
+                title={form.title}
+                description={form.description}
+                ctaLabel={form.ctaLabel}
+                imageUrl={imagePreview || form.imageUrl}
+                bgColor={form.bgColor}
+                textColor={form.textColor}
+              />
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Title */}
