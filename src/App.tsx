@@ -5,6 +5,7 @@ import AppProvider from "./provider";
 import { AIChatbot } from "./components/chatbot/AIChatbot";
 import PWAInstallPrompt from "./components/pwa/PWAInstallPrompt";
 import NetworkBanner from "./components/network/NetworkBanner";
+import PromoToast from "./components/promo/PromoToast";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <CustomToaster />
           <AIChatbot />
           <PWAInstallPrompt />
+          <PromoToast />
         </AppProvider>
       </ErrorBoundary>
     </>
