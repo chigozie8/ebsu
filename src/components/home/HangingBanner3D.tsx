@@ -180,13 +180,14 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
         className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none"
         style={{ height: '300px', visibility: 'hidden' }}
       >
-        {/* Backdrop — subtle gradient wash behind everything */}
+        {/* Backdrop — neutral dark blur, zero colour tint */}
         <div
           ref={backdropRef}
           style={{
             position: 'absolute', inset: 0,
-            background: `linear-gradient(180deg, ${bgDark}e8 0%, ${bgDark}40 55%, transparent 100%)`,
-            backdropFilter: 'blur(2px)',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
           }}
         />
 
