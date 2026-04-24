@@ -28,7 +28,7 @@ export interface Advertisement {
   bgColor: string;
   textColor: string;
   isActive: boolean;
-  placement: "dashboard" | "home" | "both" | "all";
+  placement: "dashboard" | "home" | "popup" | "both" | "all";
   imageUrl?: string;
   createdAt?: any;
   updatedAt?: any;
@@ -42,7 +42,7 @@ const EMPTY_FORM = {
   bgColor: "#00875a",
   textColor: "#ffffff",
   isActive: true,
-  placement: "dashboard" as "dashboard" | "home" | "both" | "all",
+  placement: "dashboard" as "dashboard" | "home" | "popup" | "both" | "all",
   imageUrl: "",
 };
 
@@ -510,7 +510,7 @@ export default function AdminAdsManager() {
                   Placement
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(["dashboard", "home", "both", "all"] as const).map((p) => (
+                  {(["dashboard", "home", "popup", "both", "all"] as const).map((p) => (
                     <button
                       key={p}
                       type="button"
@@ -523,6 +523,7 @@ export default function AdminAdsManager() {
                     >
                       {p === "dashboard" && "Dashboard Only"}
                       {p === "home" && "Home Page Only"}
+                      {p === "popup" && "Popup Only"}
                       {p === "both" && "Dashboard + Home"}
                       {p === "all" && "All Pages"}
                     </button>
@@ -645,6 +646,7 @@ export default function AdminAdsManager() {
                       <span className="px-2 py-0.5 rounded-full text-xss font-medium bg-gray-100 text-gray-500 border border-gray-200">
                         {ad.placement === "dashboard" && "Dashboard Only"}
                         {ad.placement === "home" && "Home Page Only"}
+                        {ad.placement === "popup" && "Popup Only"}
                         {ad.placement === "both" && "Dashboard + Home"}
                         {ad.placement === "all" && "All Pages"}
                       </span>

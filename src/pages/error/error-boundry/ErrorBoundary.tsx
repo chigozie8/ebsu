@@ -23,6 +23,30 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     console.error('Error caught by ErrorBoundary:', error, errorInfo.componentStack);
   }
 
+  /**
+   * Sanitize error message to hide technical details
+   */
+  getSafeErrorMessage = (): string => {
+    if (!this.state.error) return 'An unexpected error occurred';
+    
+    const msg = this.state.error.message;
+    
+    // Hide URLs and file paths
+    if (msg.includes('Failed to fetch') || msg.includes('.js') || msg.includes('assets/')) {
+      return 'Failed to load resources. Please try refreshing.';
+    }
+    
+    if (msg.includes('CORS') || msg.includes('cross-origin')) {
+      return 'Unable to connect to the service.';
+    }
+    
+    if (msg.length > 100) {
+      return 'An error occurred. Please refresh the page.';
+    }
+    
+    return msg;
+  };
+
   handleReload = () => window.location.reload();
 
   handleGoHome = () => {
@@ -62,10 +86,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
               An unexpected error occurred. Try reloading the page — if the problem persists, go back home.
             </p>
 
-            {/* Error message pill */}
+            {/* Safe error message pill */}
             {this.state.error?.message && (
-              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 mb-6 font-mono break-all text-left">
-                {this.state.error.message}
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 mb-6 font-inter break-words text-left">
+                {this.getSafeErrorMessage()}
               </p>
             )}
 
