@@ -30,7 +30,6 @@ import AdminNotificationsTab from "./tabs/AdminNotificationsTab";
 import AdminAlumniManager from "./tabs/AdminAlumniManager";
 import AdminNewsletterTab from "./tabs/AdminNewsletterTab";
 import AdminGalleryManager from "./tabs/AdminGalleryManager";
-import AdminAdsManager from "./tabs/AdminAdsManager";
 import AdminWithdrawalsManager from "./tabs/AdminWithdrawalsManager";
 import AdminSendMoney from "./tabs/AdminSendMoney";
 import AdminPremiumCommunityManager from "./tabs/AdminPremiumCommunityManager";
@@ -38,7 +37,7 @@ import AdminPremiumMembersManager from "./tabs/AdminPremiumMembersManager";
 import AdminVerificationManager from "../../components/admin/AdminVerificationManager";
 import AdminParliamentManager from "./tabs/AdminParliamentManager";
 import AdminPressManager from "./tabs/AdminPressManager";
-import AdminBannerManager from "./tabs/AdminBannerManager";
+import AdminMarketingManager from "./tabs/AdminMarketingManager";
 
 interface Material {
   id: string;
@@ -179,11 +178,11 @@ export default function AdminDashboard() {
   const { studentDetails, gettingStudentDetails, loading: authLoading } = useGetUserInfo();
   
   // Get initial tab from URL params or default to "materials"
-  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "parliament" | "press" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "ads" | "banners" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
+  type AdminTab = "materials" | "idcards" | "blog" | "projects" | "courses" | "levels" | "outlines" | "community" | "quizzes" | "teamimages" | "parliament" | "press" | "gallery" | "notifications" | "messages" | "events" | "alumni" | "newsletter" | "marketing" | "withdrawals" | "sendmoney" | "premiumcommunity" | "premiummembers" | "verification";
 
   const getInitialTab = (): AdminTab => {
     const tabParam = searchParams.get("tab");
-    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "parliament", "press", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "ads", "banners", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
+    const validTabs: AdminTab[] = ["materials", "idcards", "blog", "projects", "courses", "levels", "outlines", "community", "quizzes", "teamimages", "parliament", "press", "gallery", "notifications", "messages", "events", "alumni", "newsletter", "marketing", "withdrawals", "sendmoney", "premiumcommunity", "premiummembers", "verification"];
     if (tabParam && validTabs.includes(tabParam as AdminTab)) {
       return tabParam as AdminTab;
     }
@@ -1850,13 +1849,13 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
         </motion.div>
 
         {/* Quick Access - Marketing */}
-        <div className="mb-4 p-3 bg-gradient-to-r from-rose-50 to-purple-50 rounded-xl border border-rose-200">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Quick Access - Marketing & Banners</p>
+        <div className="mb-4 p-3 bg-rose-50 rounded-xl border border-rose-200">
+          <p className="text-xs font-semibold text-gray-600 mb-2">Quick Access</p>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setActiveTab("ads")}
+              onClick={() => setActiveTab("marketing")}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-                activeTab === "ads"
+                activeTab === "marketing"
                   ? "bg-rose-600 text-white shadow-md"
                   : "bg-white text-rose-600 hover:bg-rose-100 border-2 border-rose-300"
               }`}
@@ -1864,20 +1863,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
               </svg>
-              Popup Ads
-            </button>
-            <button
-              onClick={() => setActiveTab("banners")}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-                activeTab === "banners"
-                  ? "bg-purple-600 text-white shadow-md"
-                  : "bg-white text-purple-600 hover:bg-purple-100 border-2 border-purple-300"
-              }`}
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-              </svg>
-              Hanging Banners
+              Marketing & Ads
             </button>
           </div>
         </div>
@@ -2105,11 +2091,11 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             </svg>
             Events
           </button>
-          {/* Advertisements Tab */}
+          {/* Marketing Tab */}
           <button
-            onClick={() => setActiveTab("ads")}
+            onClick={() => setActiveTab("marketing")}
             className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-              activeTab === "ads"
+              activeTab === "marketing"
                 ? "bg-rose-600 text-white shadow-md"
                 : "bg-rose-50 text-rose-600 hover:bg-rose-100 border-2 border-rose-600"
             }`}
@@ -2117,21 +2103,7 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
             </svg>
-            Advertisements
-          </button>
-          {/* Hanging Banner Tab */}
-          <button
-            onClick={() => setActiveTab("banners")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
-              activeTab === "banners"
-                ? "bg-purple-600 text-white shadow-md"
-                : "bg-purple-50 text-purple-600 hover:bg-purple-100 border-2 border-purple-600"
-            }`}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Hanging Banners
+            Marketing & Ads
           </button>
           {/* Withdrawals Tab */}
           <button
@@ -4973,37 +4945,20 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
         </motion.div>
       )}
 
-      {/* Advertisements Tab */}
-      {activeTab === "ads" && (
+      {/* Marketing Tab — Popup Ads + Hanging Banners */}
+      {activeTab === "marketing" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Advertisements</h2>
+            <h2 className="text-xl font-bold text-gray-900">Marketing & Promotions</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Create and manage banner advertisements visible to students on their dashboard. Activate, pause, or delete ads at any time.
+              Manage popup advertisements and hanging banners shown to students. Use the sub-tabs below to switch between Popup Ads and Hanging Banners.
             </p>
           </div>
-          <AdminAdsManager />
-        </motion.div>
-      )}
-
-      {/* Hanging Banners Tab */}
-      {activeTab === "banners" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Hanging Banners</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Create beautiful 3D hanging banners with animated rope effects. Customize text, colors, duration, and see a live preview before deployment.
-            </p>
-          </div>
-          <AdminBannerManager />
+          <AdminMarketingManager />
         </motion.div>
       )}
 

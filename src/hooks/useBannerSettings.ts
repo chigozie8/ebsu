@@ -4,7 +4,7 @@ import { supabase } from '../config/supabase';
 export interface BannerConfig {
   id: string;
   text: string;
-  duration: number; // in seconds (5-60)
+  duration: number;
   bg_color: string;
   text_color: string;
   font_size: number;
@@ -25,87 +25,76 @@ const DEFAULT_BANNER: BannerConfig = {
   is_active: false,
 };
 
+function rowToBanner(row: Record<string, unknown>): BannerConfig {
+  return {
+    id: row.id as string,
+    text: row.text as string,
+    duration: row.duration as number,
+    bg_color: row.bg_color as string,
+    text_color: row.text_color as string,
+    font_size: (row.font_size as number) || 28,
+    font_weight: (row.font_weight as 'normal' | 'bold' | 'bolder') || 'bold',
+    is_active: row.is_active as boolean,
+    created_at: row.created_at as string | undefined,
+    updated_at: row.updated_at as string | undefined,
+  };
+}
+
 export const useBannerSettings = () => {
   const [banner, setBanner] = useState<BannerConfig>(DEFAULT_BANNER);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch banner config from Supabase
   useEffect(() => {
+    let cancelled = false;
+
     const fetchBanner = async () => {
       try {
         setLoading(true);
-        console.log("[v0] useBannerSettings: Fetching active banner from Supabase...");
-        const { data, error } = await supabase
+        setError(null);
+
+        const { data, error: queryError } = await supabase
           .from('hanging_banners')
           .select('*')
           .eq('is_active', true)
           .single();
 
-        console.log("[v0] useBannerSettings: Query result - data:", data, "error:", error);
+        if (cancelled) return;
 
-        if (error && error.code !== 'PGRST116') {
-          // PGRST116 means no rows found, which is fine
-          throw error;
+        // PGRST116 = no rows found — totally fine, just means no active banner
+        if (queryError && queryError.code !== 'PGRST116') {
+          // Table might not exist yet — fail silently, don't crash the app
+          setBanner(DEFAULT_BANNER);
+          return;
         }
 
         if (data) {
-          console.log("[v0] useBannerSettings: Setting active banner:", data);
-          setBanner({
-            id: data.id,
-            text: data.text,
-            duration: data.duration,
-            bg_color: data.bg_color,
-            text_color: data.text_color,
-            font_size: data.font_size || 28,
-            font_weight: data.font_weight || 'bold',
-            is_active: data.is_active,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-          });
+          setBanner(rowToBanner(data as Record<string, unknown>));
         } else {
-          console.log("[v0] useBannerSettings: No active banner found, using default");
           setBanner(DEFAULT_BANNER);
         }
-      } catch (err) {
-        console.error('[v0] useBannerSettings: Error fetching banner:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch banner');
-        setBanner(DEFAULT_BANNER);
+      } catch {
+        // Any network or unexpected error — silently fall back to default
+        if (!cancelled) setBanner(DEFAULT_BANNER);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchBanner();
 
-    // Set up real-time subscription using Supabase v2 channel API
+    // Real-time subscription (Supabase v2 channel API)
     const channel = supabase
-      .channel('hanging_banners_changes')
+      .channel('hanging_banners_realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hanging_banners',
-        },
+        { event: '*', schema: 'public', table: 'hanging_banners' },
         (payload) => {
-          console.log('Banner updated:', payload);
-          const newData = payload.new as Record<string, unknown>;
-          if (newData?.is_active) {
-            setBanner({
-              id: newData.id as string,
-              text: newData.text as string,
-              duration: newData.duration as number,
-              bg_color: newData.bg_color as string,
-              text_color: newData.text_color as string,
-              font_size: (newData.font_size as number) || 28,
-              font_weight: (newData.font_weight as 'normal' | 'bold' | 'bolder') || 'bold',
-              is_active: newData.is_active as boolean,
-              created_at: newData.created_at as string,
-              updated_at: newData.updated_at as string,
-            });
+          const row = payload.new as Record<string, unknown>;
+          if (row?.is_active) {
+            setBanner(rowToBanner(row));
           } else {
-            // If banner was deactivated, refetch to get the currently active one
+            // A banner was deactivated — re-fetch to find if another is now active
             fetchBanner();
           }
         }
@@ -113,6 +102,7 @@ export const useBannerSettings = () => {
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
     };
   }, []);
