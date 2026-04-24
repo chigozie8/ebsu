@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../config/supabase';
 
 export interface BannerConfig {
   id: string;
@@ -35,11 +35,14 @@ export const useBannerSettings = () => {
     const fetchBanner = async () => {
       try {
         setLoading(true);
+        console.log("[v0] useBannerSettings: Fetching active banner from Supabase...");
         const { data, error } = await supabase
           .from('hanging_banners')
           .select('*')
           .eq('is_active', true)
           .single();
+
+        console.log("[v0] useBannerSettings: Query result - data:", data, "error:", error);
 
         if (error && error.code !== 'PGRST116') {
           // PGRST116 means no rows found, which is fine
@@ -47,6 +50,7 @@ export const useBannerSettings = () => {
         }
 
         if (data) {
+          console.log("[v0] useBannerSettings: Setting active banner:", data);
           setBanner({
             id: data.id,
             text: data.text,
@@ -60,10 +64,11 @@ export const useBannerSettings = () => {
             updated_at: data.updated_at,
           });
         } else {
+          console.log("[v0] useBannerSettings: No active banner found, using default");
           setBanner(DEFAULT_BANNER);
         }
       } catch (err) {
-        console.error('Error fetching banner:', err);
+        console.error('[v0] useBannerSettings: Error fetching banner:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch banner');
         setBanner(DEFAULT_BANNER);
       } finally {

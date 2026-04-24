@@ -1,19 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Hardcoded fallbacks ensure the client always connects even when env vars
+// are not yet injected (e.g. first load in preview, Vite define race, etc.)
+const FALLBACK_URL = 'https://syfyjowpqzqtizlnrtal.supabase.co';
+const FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5Znlqb3dwcXpxdGl6bG5ydGFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNDkxMTYsImV4cCI6MjA5MDcyNTExNn0.9dFXwi6uRPg1TpUO-oevRlWcrt6bY6DT4Z3fi4_eht4';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || FALLBACK_KEY;
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('[Supabase] Missing environment variables. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in project Vars.');
-}
-
-export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client using service role key — bypasses RLS, use only for admin/storage operations
 export const supabaseAdmin = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseServiceKey || supabaseAnonKey || 'placeholder'
+  supabaseUrl,
+  supabaseServiceKey || supabaseAnonKey
 );
 
 // Storage bucket names
