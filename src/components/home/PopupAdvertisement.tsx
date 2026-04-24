@@ -7,6 +7,11 @@ import { Link } from "react-router-dom";
 const PLACEHOLDER =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='none' stroke='%23d1d5db' stroke-width='1.2'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpath d='M21 15l-5-5L5 21'/%3E%3C/svg%3E";
 
+// Placements visible on the home page popup
+const HOME_POPUP_PLACEMENTS = ["popup", "popup-home", "all"];
+// Placements visible on the dashboard popup
+const DASHBOARD_POPUP_PLACEMENTS = ["popup-dashboard", "all"];
+
 interface Advertisement {
   id: string;
   title: string;
@@ -20,7 +25,12 @@ interface Advertisement {
   imageUrl?: string;
 }
 
-export default function PopupAdvertisement() {
+interface PopupAdvertisementProps {
+  /** "home" (default) shows home+popup placements; "dashboard" shows dashboard popup placements */
+  placement?: "home" | "dashboard";
+}
+
+export default function PopupAdvertisement({ placement = "home" }: PopupAdvertisementProps) {
   const [popupAds, setPopupAds] = useState<Advertisement[]>([]);
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -33,8 +43,9 @@ export default function PopupAdvertisement() {
       try {
         const snap = await getDocs(collection(db, "advertisements"));
         const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
+        const allowedPlacements = placement === "dashboard" ? DASHBOARD_POPUP_PLACEMENTS : HOME_POPUP_PLACEMENTS;
         const activePopupAds = data.filter(
-          (a) => a.isActive === true && ["popup", "all"].includes(a.placement)
+          (a) => a.isActive === true && allowedPlacements.includes(a.placement)
         );
         setPopupAds(activePopupAds);
       } catch {

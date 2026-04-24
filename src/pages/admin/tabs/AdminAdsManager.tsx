@@ -28,7 +28,7 @@ export interface Advertisement {
   bgColor: string;
   textColor: string;
   isActive: boolean;
-  placement: "dashboard" | "home" | "popup" | "both" | "all";
+  placement: "dashboard" | "home" | "popup" | "popup-home" | "popup-dashboard" | "both" | "all";
   imageUrl?: string;
   createdAt?: any;
   updatedAt?: any;
@@ -42,7 +42,7 @@ const EMPTY_FORM = {
   bgColor: "#00875a",
   textColor: "#ffffff",
   isActive: true,
-  placement: "dashboard" as "dashboard" | "home" | "popup" | "both" | "all",
+  placement: "dashboard" as "dashboard" | "home" | "popup" | "popup-home" | "popup-dashboard" | "both" | "all",
   imageUrl: "",
 };
 
@@ -506,26 +506,34 @@ export default function AdminAdsManager() {
 
               {/* Placement */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Placement
                 </label>
+                <p className="text-xss text-gray-400 mb-2">Where should this ad appear?</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {(["dashboard", "home", "popup", "both", "all"] as const).map((p) => (
+                  {(
+                    [
+                      { value: "dashboard",        label: "Dashboard Only",       note: "Logged-in users" },
+                      { value: "home",             label: "Home Page Only",       note: "All visitors" },
+                      { value: "popup",            label: "Popup Only",           note: "Home page popup" },
+                      { value: "popup-home",       label: "Popup + Home",         note: "Banner & popup" },
+                      { value: "popup-dashboard",  label: "Popup + Dashboard",    note: "Logged-in + popup" },
+                      { value: "both",             label: "Dashboard + Home",     note: "No popup" },
+                      { value: "all",              label: "All Pages + Popup",    note: "Everywhere" },
+                    ] as const
+                  ).map((p) => (
                     <button
-                      key={p}
+                      key={p.value}
                       type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, placement: p }))}
-                      className={`py-2 rounded-xl text-xs font-semibold border transition-colors ${
-                        form.placement === p
+                      onClick={() => setForm((prev) => ({ ...prev, placement: p.value }))}
+                      className={`py-2 px-2 rounded-xl text-left transition-colors border ${
+                        form.placement === p.value
                           ? "bg-[#00875a] text-white border-[#00875a]"
                           : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                       }`}
                     >
-                      {p === "dashboard" && "Dashboard Only"}
-                      {p === "home" && "Home Page Only"}
-                      {p === "popup" && "Popup Only"}
-                      {p === "both" && "Dashboard + Home"}
-                      {p === "all" && "All Pages"}
+                      <p className="text-xs font-semibold leading-tight">{p.label}</p>
+                      <p className={`text-xss mt-0.5 ${form.placement === p.value ? "text-white/70" : "text-gray-400"}`}>{p.note}</p>
                     </button>
                   ))}
                 </div>
@@ -645,10 +653,12 @@ export default function AdminAdsManager() {
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-xss font-medium bg-gray-100 text-gray-500 border border-gray-200">
                         {ad.placement === "dashboard" && "Dashboard Only"}
-                        {ad.placement === "home" && "Home Page Only"}
+                        {ad.placement === "home" && "Home Only"}
                         {ad.placement === "popup" && "Popup Only"}
+                        {ad.placement === "popup-home" && "Popup + Home"}
+                        {ad.placement === "popup-dashboard" && "Popup + Dashboard"}
                         {ad.placement === "both" && "Dashboard + Home"}
-                        {ad.placement === "all" && "All Pages"}
+                        {ad.placement === "all" && "All Pages + Popup"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

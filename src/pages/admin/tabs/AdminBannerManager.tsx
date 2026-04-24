@@ -43,6 +43,22 @@ const PRESET_COLORS = [
 const FONT_SIZES = [18, 24, 28, 32, 36, 42];
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60];
 
+const SETUP_SQL = `CREATE TABLE IF NOT EXISTS public.hanging_banners (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  text TEXT NOT NULL,
+  duration INTEGER NOT NULL DEFAULT 15 CHECK (duration BETWEEN 5 AND 60),
+  bg_color VARCHAR(7) NOT NULL DEFAULT '#00875a',
+  text_color VARCHAR(7) NOT NULL DEFAULT '#ffffff',
+  font_size INTEGER NOT NULL DEFAULT 28 CHECK (font_size BETWEEN 18 AND 48),
+  font_weight VARCHAR(20) NOT NULL DEFAULT 'bold' CHECK (font_weight IN ('normal','bold','bolder')),
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE public.hanging_banners ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view banners" ON public.hanging_banners FOR SELECT USING (true);
+CREATE POLICY "Allow all operations" ON public.hanging_banners FOR ALL USING (true) WITH CHECK (true);`;
+
 export default function AdminBannerManager() {
   const [banners, setBanners] = useState<BannerConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +67,8 @@ export default function AdminBannerManager() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [previewActive, setPreviewActive] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [tableNotFound, setTableNotFound] = useState(false);
+  const [sqlCopied, setSqlCopied] = useState(false);
 
   // Fetch banners
   useEffect(() => {
@@ -59,13 +77,22 @@ export default function AdminBannerManager() {
 
   const fetchBanners = async () => {
     setLoading(true);
+    setTableNotFound(false);
     try {
       const { data, error } = await supabase
         .from('hanging_banners')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        // 42P01 = relation/table does not exist
+        if (error.code === '42P01' || error.message?.toLowerCase().includes('does not exist')) {
+          setTableNotFound(true);
+        } else {
+          notifyUser('error', 'Failed to load banners: ' + error.message);
+        }
+        return;
+      }
       setBanners(data || []);
     } catch (err) {
       console.error('Error fetching banners:', err);
@@ -73,6 +100,13 @@ export default function AdminBannerManager() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopySQL = () => {
+    navigator.clipboard.writeText(SETUP_SQL).then(() => {
+      setSqlCopied(true);
+      setTimeout(() => setSqlCopied(false), 2500);
+    });
   };
 
   const handleSave = async () => {
@@ -171,6 +205,64 @@ export default function AdminBannerManager() {
     setEditingId(null);
     setPreviewActive(false);
   };
+
+  // Table doesn't exist yet — show the setup SQL
+  if (tableNotFound) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+          <svg className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-sm font-bold text-rose-800">Database table not found</p>
+            <p className="text-xs text-rose-700 mt-1">
+              The <code className="bg-rose-100 px-1 rounded font-mono">hanging_banners</code> table does not exist in your Supabase project yet.
+              Copy the SQL below, go to your <strong>Supabase Dashboard → SQL Editor</strong>, paste it and click <strong>Run</strong>.
+              Then come back and refresh.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-xl overflow-hidden border border-gray-700">
+          <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+            <span className="text-xs font-mono text-gray-400">SQL — Run in Supabase SQL Editor</span>
+            <button
+              onClick={handleCopySQL}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#00875a] text-white text-xs font-semibold hover:bg-[#00875a]/90 transition-colors"
+            >
+              {sqlCopied ? (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy SQL
+                </>
+              )}
+            </button>
+          </div>
+          <pre className="text-xs text-green-400 font-mono p-4 overflow-x-auto leading-relaxed whitespace-pre-wrap">{SETUP_SQL}</pre>
+        </div>
+
+        <button
+          onClick={fetchBanners}
+          className="flex items-center gap-2 px-4 py-2 bg-[#00875a] text-white rounded-xl text-sm font-semibold hover:bg-[#00875a]/90 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Retry after running SQL
+        </button>
+      </div>
+    );
+  }
 
   return (
     <motion.div variants={fadeInVariants5} initial="hidden" animate="visible" className="space-y-6">
