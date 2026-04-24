@@ -10,23 +10,23 @@ export interface BannerConfig {
   id?: string;
   text: string;
   duration: number;
-  bgColor: string;
-  textColor: string;
-  fontSize: number;
-  fontWeight: 'normal' | 'bold' | 'bolder';
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  bg_color: string;
+  text_color: string;
+  font_size: number;
+  font_weight: 'normal' | 'bold' | 'bolder';
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const EMPTY_FORM: BannerConfig = {
   text: 'Merry Christmas 🎄',
   duration: 15,
-  bgColor: '#00875a',
-  textColor: '#ffffff',
-  fontSize: 28,
-  fontWeight: 'bold',
-  isActive: false,
+  bg_color: '#00875a',
+  text_color: '#ffffff',
+  font_size: 28,
+  font_weight: 'bold',
+  is_active: false,
 };
 
 const PRESET_COLORS = [
@@ -63,7 +63,7 @@ export default function AdminBannerManager() {
       const { data, error } = await supabase
         .from('hanging_banners')
         .select('*')
-        .order('createdAt', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setBanners(data || []);
@@ -89,7 +89,7 @@ export default function AdminBannerManager() {
           .from('hanging_banners')
           .update({
             ...form,
-            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .eq('id', editingId);
 
@@ -99,8 +99,8 @@ export default function AdminBannerManager() {
         // Create new banner
         const { error } = await supabase.from('hanging_banners').insert({
           ...form,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         });
 
         if (error) throw error;
@@ -146,18 +146,18 @@ export default function AdminBannerManager() {
     setTogglingId(banner.id);
     try {
       // If activating this banner, deactivate all others
-      if (!banner.isActive) {
-        await supabase.from('hanging_banners').update({ isActive: false }).neq('id', banner.id);
+      if (!banner.is_active) {
+        await supabase.from('hanging_banners').update({ is_active: false }).neq('id', banner.id);
       }
 
       const { error } = await supabase
         .from('hanging_banners')
-        .update({ isActive: !banner.isActive })
+        .update({ is_active: !banner.is_active })
         .eq('id', banner.id);
 
       if (error) throw error;
       await fetchBanners();
-      notifyUser('success', banner.isActive ? 'Banner deactivated' : 'Banner activated');
+      notifyUser('success', banner.is_active ? 'Banner deactivated' : 'Banner activated');
     } catch (err) {
       console.error('Error toggling banner:', err);
       notifyUser('error', 'Failed to toggle banner');
@@ -182,7 +182,7 @@ export default function AdminBannerManager() {
             <HangingBanner3D
               config={{
                 ...form,
-                isActive: true,
+                is_active: true,
               }}
               onComplete={() => console.log('Banner animation complete')}
             />
@@ -234,15 +234,15 @@ export default function AdminBannerManager() {
           {/* Font Size */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Font Size: {form.fontSize}px
+              Font Size: {form.font_size}px
             </label>
             <div className="flex flex-wrap gap-2">
               {FONT_SIZES.map((size) => (
                 <button
                   key={size}
-                  onClick={() => setForm((prev) => ({ ...prev, fontSize: size }))}
+                  onClick={() => setForm((prev) => ({ ...prev, font_size: size }))}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    form.fontSize === size
+                    form.font_size === size
                       ? 'bg-green1 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
@@ -260,9 +260,9 @@ export default function AdminBannerManager() {
               {(['normal', 'bold', 'bolder'] as const).map((weight) => (
                 <button
                   key={weight}
-                  onClick={() => setForm((prev) => ({ ...prev, fontWeight: weight }))}
+                  onClick={() => setForm((prev) => ({ ...prev, font_weight: weight }))}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                    form.fontWeight === weight
+                    form.font_weight === weight
                       ? 'bg-green1 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
@@ -281,9 +281,9 @@ export default function AdminBannerManager() {
               {PRESET_COLORS.map((color) => (
                 <button
                   key={color.bg}
-                  onClick={() => setForm((prev) => ({ ...prev, bgColor: color.bg, textColor: color.text }))}
+                  onClick={() => setForm((prev) => ({ ...prev, bg_color: color.bg, text_color: color.text }))}
                   className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border-2 ${
-                    form.bgColor === color.bg && form.textColor === color.text
+                    form.bg_color === color.bg && form.text_color === color.text
                       ? 'border-gray-800 scale-105'
                       : 'border-transparent'
                   }`}
@@ -306,12 +306,12 @@ export default function AdminBannerManager() {
               <div className="flex gap-2">
                 <input
                   type="color"
-                  value={form.bgColor}
-                  onChange={(e) => setForm((prev) => ({ ...prev, bgColor: e.target.value }))}
+                  value={form.bg_color}
+                  onChange={(e) => setForm((prev) => ({ ...prev, bg_color: e.target.value }))}
                   className="w-full h-10 rounded-lg cursor-pointer border border-gray-300"
                 />
                 <span className="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
-                  {form.bgColor}
+                  {form.bg_color}
                 </span>
               </div>
             </div>
@@ -321,12 +321,12 @@ export default function AdminBannerManager() {
               <div className="flex gap-2">
                 <input
                   type="color"
-                  value={form.textColor}
-                  onChange={(e) => setForm((prev) => ({ ...prev, textColor: e.target.value }))}
+                  value={form.text_color}
+                  onChange={(e) => setForm((prev) => ({ ...prev, text_color: e.target.value }))}
                   className="w-full h-10 rounded-lg cursor-pointer border border-gray-300"
                 />
                 <span className="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
-                  {form.textColor}
+                  {form.text_color}
                 </span>
               </div>
             </div>
@@ -391,26 +391,26 @@ export default function AdminBannerManager() {
                       <div
                         className="px-3 py-1.5 rounded-lg text-sm font-medium w-fit text-white"
                         style={{
-                          backgroundColor: banner.bgColor,
-                          color: banner.textColor,
+                          backgroundColor: banner.bg_color,
+                          color: banner.text_color,
                         }}
                       >
                         {banner.text}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{banner.duration}s</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{banner.fontSize}px</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{banner.font_size}px</td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(banner)}
                         disabled={togglingId === banner.id}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                          banner.isActive
+                          banner.is_active
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         } disabled:opacity-50`}
                       >
-                        {banner.isActive ? 'Active' : 'Inactive'}
+                        {banner.is_active ? 'Active' : 'Inactive'}
                       </button>
                     </td>
                     <td className="px-6 py-4">

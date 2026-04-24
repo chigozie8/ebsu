@@ -9,7 +9,7 @@ export default function HangingBannerContainer() {
   const [displayBanner, setDisplayBanner] = useState(false);
 
   useEffect(() => {
-    if (!banner.isActive || loading) return;
+    if (!banner.is_active || loading) return;
 
     // Delay showing banner by 100ms to ensure component is mounted
     const timer = setTimeout(() => {
@@ -17,9 +17,9 @@ export default function HangingBannerContainer() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [banner.isActive, loading]);
+  }, [banner.is_active, loading]);
 
-  if (!displayBanner || !banner.isActive) {
+  if (!displayBanner || !banner.is_active) {
     return null;
   }
 

@@ -5,24 +5,24 @@ export interface BannerConfig {
   id: string;
   text: string;
   duration: number; // in seconds (5-60)
-  bgColor: string;
-  textColor: string;
-  fontSize: number;
-  fontWeight: 'normal' | 'bold' | 'bolder';
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  bg_color: string;
+  text_color: string;
+  font_size: number;
+  font_weight: 'normal' | 'bold' | 'bolder';
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const DEFAULT_BANNER: BannerConfig = {
   id: 'default',
   text: 'Welcome to EBSUMSA',
   duration: 15,
-  bgColor: '#00875a',
-  textColor: '#ffffff',
-  fontSize: 28,
-  fontWeight: 'bold',
-  isActive: false,
+  bg_color: '#00875a',
+  text_color: '#ffffff',
+  font_size: 28,
+  font_weight: 'bold',
+  is_active: false,
 };
 
 export const useBannerSettings = () => {
@@ -38,7 +38,7 @@ export const useBannerSettings = () => {
         const { data, error } = await supabase
           .from('hanging_banners')
           .select('*')
-          .eq('isActive', true)
+          .eq('is_active', true)
           .single();
 
         if (error && error.code !== 'PGRST116') {
@@ -51,13 +51,13 @@ export const useBannerSettings = () => {
             id: data.id,
             text: data.text,
             duration: data.duration,
-            bgColor: data.bgColor,
-            textColor: data.textColor,
-            fontSize: data.fontSize || 28,
-            fontWeight: data.fontWeight || 'bold',
-            isActive: data.isActive,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
+            bg_color: data.bg_color,
+            text_color: data.text_color,
+            font_size: data.font_size || 28,
+            font_weight: data.font_weight || 'bold',
+            is_active: data.is_active,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
           });
         } else {
           setBanner(DEFAULT_BANNER);
@@ -78,18 +78,18 @@ export const useBannerSettings = () => {
       .from('hanging_banners')
       .on('*', (payload) => {
         console.log('Banner updated:', payload);
-        if (payload.new?.isActive) {
+        if (payload.new?.is_active) {
           setBanner({
             id: payload.new.id,
             text: payload.new.text,
             duration: payload.new.duration,
-            bgColor: payload.new.bgColor,
-            textColor: payload.new.textColor,
-            fontSize: payload.new.fontSize || 28,
-            fontWeight: payload.new.fontWeight || 'bold',
-            isActive: payload.new.isActive,
-            createdAt: payload.new.createdAt,
-            updatedAt: payload.new.updatedAt,
+            bg_color: payload.new.bg_color,
+            text_color: payload.new.text_color,
+            font_size: payload.new.font_size || 28,
+            font_weight: payload.new.font_weight || 'bold',
+            is_active: payload.new.is_active,
+            created_at: payload.new.created_at,
+            updated_at: payload.new.updated_at,
           });
         }
       })
