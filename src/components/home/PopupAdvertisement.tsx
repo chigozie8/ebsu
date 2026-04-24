@@ -31,14 +31,17 @@ export default function PopupAdvertisement() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
+        console.log("[v0] PopupAdvertisement: Fetching ads from Firebase...");
         const snap = await getDocs(collection(db, "advertisements"));
         const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Advertisement[];
+        console.log("[v0] PopupAdvertisement: All ads fetched:", data.length, data);
         const activePopupAds = data.filter(
           (a) => a.isActive === true && ["popup", "all"].includes(a.placement)
         );
+        console.log("[v0] PopupAdvertisement: Active popup ads:", activePopupAds.length, activePopupAds);
         setPopupAds(activePopupAds);
       } catch (err) {
-        console.error("PopupAdvertisement fetch error:", err);
+        console.error("[v0] PopupAdvertisement fetch error:", err);
       } finally {
         setLoading(false);
       }
