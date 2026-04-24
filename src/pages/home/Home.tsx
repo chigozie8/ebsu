@@ -7,10 +7,12 @@ import Footer from "../../components/footer/Footer";
 import CTANewsLetter from "../../components/home/CTANewsLetter";
 import HomeAdsSection from "../../components/home/HomeAdsSection";
 import PopupAdvertisement from "../../components/home/PopupAdvertisement";
+import HangingBannerContainer from "../../components/home/HangingBannerContainer";
 
 export default function Home() {
   return (
     <>
+      <HangingBannerContainer />
       <PopupAdvertisement />
       <Hero />
       <HomeAdsSection />
