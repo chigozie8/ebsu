@@ -6,11 +6,11 @@ import gsap from 'gsap';
 interface BannerConfig {
   text: string;
   duration: number; // in seconds
-  bgColor: string;
-  textColor: string;
-  fontSize: number;
-  fontWeight: 'normal' | 'bold' | 'bolder';
-  isActive: boolean;
+  bg_color: string;
+  text_color: string;
+  font_size: number;
+  font_weight: 'normal' | 'bold' | 'bolder';
+  is_active: boolean;
 }
 
 interface HangingBanner3DProps {
@@ -25,7 +25,7 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (!config.isActive || !bannerRef.current) return;
+    if (!config.is_active || !bannerRef.current) return;
 
     setIsVisible(true);
 
@@ -159,12 +159,12 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
           style={{
             position: 'absolute',
             top: '120px',
-            backgroundColor: config.bgColor,
-            color: config.textColor,
+            backgroundColor: config.bg_color,
+            color: config.text_color,
             padding: '24px 48px',
             borderRadius: '12px',
-            fontSize: `${config.fontSize}px`,
-            fontWeight: config.fontWeight,
+            fontSize: `${config.font_size}px`,
+            fontWeight: config.font_weight,
             whiteSpace: 'nowrap',
             maxWidth: '90vw',
             textAlign: 'center',
@@ -173,8 +173,8 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
               0 0 50px rgba(0, 0, 0, 0.1),
               inset 0 1px 0 rgba(255, 255, 255, 0.2)
             `,
-            background: `linear-gradient(135deg, ${config.bgColor} 0%, ${adjustBrightness(config.bgColor, -20)} 100%)`,
-            border: `2px solid ${adjustBrightness(config.bgColor, -30)}`,
+            background: `linear-gradient(135deg, ${config.bg_color} 0%, ${adjustBrightness(config.bg_color, -20)} 100%)`,
+            border: `2px solid ${adjustBrightness(config.bg_color, -30)}`,
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
             letterSpacing: '1px',
             transform: 'translateZ(0)',

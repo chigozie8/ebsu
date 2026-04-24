@@ -1849,6 +1849,39 @@ const [collaboratorImage, setCollaboratorImage] = useState<File | null>(null);
           </p>
         </motion.div>
 
+        {/* Quick Access - Marketing */}
+        <div className="mb-4 p-3 bg-gradient-to-r from-rose-50 to-purple-50 rounded-xl border border-rose-200">
+          <p className="text-xs font-semibold text-gray-600 mb-2">Quick Access - Marketing & Banners</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab("ads")}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+                activeTab === "ads"
+                  ? "bg-rose-600 text-white shadow-md"
+                  : "bg-white text-rose-600 hover:bg-rose-100 border-2 border-rose-300"
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+              </svg>
+              Popup Ads
+            </button>
+            <button
+              onClick={() => setActiveTab("banners")}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 ${
+                activeTab === "banners"
+                  ? "bg-purple-600 text-white shadow-md"
+                  : "bg-white text-purple-600 hover:bg-purple-100 border-2 border-purple-300"
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+              </svg>
+              Hanging Banners
+            </button>
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="mb-2 text-xs text-gray-500 sm:hidden">Scroll or tap to see all tabs</div>
         <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
