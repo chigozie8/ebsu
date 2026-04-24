@@ -73,30 +73,42 @@ export const useBannerSettings = () => {
 
     fetchBanner();
 
-    // Set up real-time subscription
-    const subscription = supabase
-      .from('hanging_banners')
-      .on('*', (payload) => {
-        console.log('Banner updated:', payload);
-        if (payload.new?.is_active) {
-          setBanner({
-            id: payload.new.id,
-            text: payload.new.text,
-            duration: payload.new.duration,
-            bg_color: payload.new.bg_color,
-            text_color: payload.new.text_color,
-            font_size: payload.new.font_size || 28,
-            font_weight: payload.new.font_weight || 'bold',
-            is_active: payload.new.is_active,
-            created_at: payload.new.created_at,
-            updated_at: payload.new.updated_at,
-          });
+    // Set up real-time subscription using Supabase v2 channel API
+    const channel = supabase
+      .channel('hanging_banners_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hanging_banners',
+        },
+        (payload) => {
+          console.log('Banner updated:', payload);
+          const newData = payload.new as Record<string, unknown>;
+          if (newData?.is_active) {
+            setBanner({
+              id: newData.id as string,
+              text: newData.text as string,
+              duration: newData.duration as number,
+              bg_color: newData.bg_color as string,
+              text_color: newData.text_color as string,
+              font_size: (newData.font_size as number) || 28,
+              font_weight: (newData.font_weight as 'normal' | 'bold' | 'bolder') || 'bold',
+              is_active: newData.is_active as boolean,
+              created_at: newData.created_at as string,
+              updated_at: newData.updated_at as string,
+            });
+          } else {
+            // If banner was deactivated, refetch to get the currently active one
+            fetchBanner();
+          }
         }
-      })
+      )
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, []);
 
