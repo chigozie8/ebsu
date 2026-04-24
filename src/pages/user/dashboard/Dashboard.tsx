@@ -26,6 +26,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import AdvertisementBanner from "../../../components/shared/AdvertisementBanner";
 import WalletCard from "../../../components/widgets/WalletCard";
 import PremiumCard from "../../../components/widgets/PremiumCard";
+import PopupAdvertisement from "../../../components/home/PopupAdvertisement";
 
 // Activity types with icons and colors
 interface Activity {
@@ -394,6 +395,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="lg:col-span-5 px-0 sm:px-4 h-full mb-5 lg:mb-0">
+                  {/* Popup Advertisement — only for popup-dashboard and all placements */}
+                  <PopupAdvertisement placement="dashboard" />
                   {/* Advertisement Banner */}
                   <AdvertisementBanner className="mb-3 sm:mb-4" />
                   <div className="mb-3 sm:mb-4">
