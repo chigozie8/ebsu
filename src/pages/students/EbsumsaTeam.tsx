@@ -205,8 +205,23 @@ export default function EbsumsaTeam() {
       .eq("team_type", "executive")
       .then(({ data, error }) => {
         if (error || !data || data.length === 0) return;
+        
         const map: Record<string, { image_url?: string; name?: string; role?: string; extra?: string }> = {};
-        data.forEach((row) => { map[row.member_id] = row; });
+        const newMembers: ExecutiveMember[] = [];
+        
+        data.forEach((row) => { 
+          map[row.member_id] = row;
+          
+          // Check if this is a newly added extra member
+          if (row.member_id && row.member_id.includes('extra')) {
+            newMembers.push({
+              name: row.name || 'Name Here',
+              title: row.role || 'Member',
+              image: row.image_url || placeholder,
+              phone: row.extra || '',
+            });
+          }
+        });
 
         const presRow = map["president"];
         if (presRow) {
@@ -219,8 +234,8 @@ export default function EbsumsaTeam() {
           }));
         }
 
-        setExecutiveMembers((prev) =>
-          prev.map((m, idx) => {
+        setExecutiveMembers((prev) => {
+          const updated = prev.map((m, idx) => {
             const patch = map[`exec-${idx}`];
             if (!patch) return m;
             return {
@@ -230,8 +245,11 @@ export default function EbsumsaTeam() {
               image: patch.image_url || m.image,
               phone: patch.extra     || m.phone,
             };
-          })
-        );
+          });
+          
+          // Append newly added extra members
+          return [...updated, ...newMembers];
+        });
       });
 
     // Load drive URL
