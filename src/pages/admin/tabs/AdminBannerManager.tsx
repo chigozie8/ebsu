@@ -43,7 +43,11 @@ const PRESET_COLORS = [
 const FONT_SIZES = [18, 24, 28, 32, 36, 42];
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60];
 
-const SETUP_SQL = `CREATE TABLE IF NOT EXISTS public.hanging_banners (
+const SETUP_SQL = `-- Step 1: Drop the old table (removes old camelCase columns)
+DROP TABLE IF EXISTS public.hanging_banners;
+
+-- Step 2: Recreate with correct snake_case columns
+CREATE TABLE public.hanging_banners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   text TEXT NOT NULL,
   duration INTEGER NOT NULL DEFAULT 15 CHECK (duration BETWEEN 5 AND 60),
@@ -55,9 +59,17 @@ const SETUP_SQL = `CREATE TABLE IF NOT EXISTS public.hanging_banners (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Step 3: Enable RLS and policies
 ALTER TABLE public.hanging_banners ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can view banners" ON public.hanging_banners FOR SELECT USING (true);
-CREATE POLICY "Allow all operations" ON public.hanging_banners FOR ALL USING (true) WITH CHECK (true);`;
+
+DROP POLICY IF EXISTS "Anyone can view banners" ON public.hanging_banners;
+CREATE POLICY "Anyone can view banners"
+  ON public.hanging_banners FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Allow all operations" ON public.hanging_banners;
+CREATE POLICY "Allow all operations"
+  ON public.hanging_banners FOR ALL USING (true) WITH CHECK (true);`;
 
 export default function AdminBannerManager() {
   const [banners, setBanners] = useState<BannerConfig[]>([]);
@@ -234,11 +246,11 @@ export default function AdminBannerManager() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div>
-            <p className="text-sm font-bold text-rose-800">Database table not found</p>
+            <p className="text-sm font-bold text-rose-800">Database table needs to be migrated</p>
             <p className="text-xs text-rose-700 mt-1">
-              The <code className="bg-rose-100 px-1 rounded font-mono">hanging_banners</code> table does not exist in your Supabase project yet.
-              Copy the SQL below, go to your <strong>Supabase Dashboard → SQL Editor</strong>, paste it and click <strong>Run</strong>.
-              Then come back and refresh.
+              The <code className="bg-rose-100 px-1 rounded font-mono">hanging_banners</code> table exists but has the wrong column names from a previous version.
+              The script below <strong>drops the old table and recreates it correctly</strong>.
+              Copy it, go to <strong>Supabase Dashboard &rarr; SQL Editor</strong>, paste and click <strong>Run</strong>, then click Retry below.
             </p>
           </div>
         </div>
