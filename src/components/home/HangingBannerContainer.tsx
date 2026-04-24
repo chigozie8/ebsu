@@ -1,34 +1,24 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { useBannerSettings } from '../../hooks/useBannerSettings';
 import HangingBanner3D from './HangingBanner3D';
 
 export default function HangingBannerContainer() {
   const { banner, loading } = useBannerSettings();
-  const [displayBanner, setDisplayBanner] = useState(false);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!banner.is_active || loading) return;
+    if (loading || !banner.is_active) return;
+    // Small delay to ensure the DOM is fully painted before kicking off GSAP
+    const t = setTimeout(() => setShow(true), 200);
+    return () => clearTimeout(t);
+  }, [banner.is_active, loading, banner.id]);
 
-    // Delay showing banner by 100ms to ensure component is mounted
-    const timer = setTimeout(() => {
-      setDisplayBanner(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [banner.is_active, loading]);
-
-  if (!displayBanner || !banner.is_active) {
-    return null;
-  }
+  if (!show) return null;
 
   return (
     <HangingBanner3D
       config={banner}
-      onComplete={() => {
-        setDisplayBanner(false);
-      }}
+      onComplete={() => setShow(false)}
     />
   );
 }
