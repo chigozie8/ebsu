@@ -95,28 +95,60 @@ export default function AdminTeamUpload() {
     // Load team member overrides from Supabase
     supabase
       .from('team_images')
-      .select('team_type, member_id, image_url, name, role, extra')
+      .select('team_type, member_id, image_url, name, role, extra, id')
       .then(({ data, error }) => {
         if (error || !data) return;
+        
         const updates: Record<string, Partial<TeamMember>> = {};
+        const newMembers: Record<TeamType, TeamMember[]> = {};
+        
+        // Initialize new members arrays
+        (['executive', 'senate', 'press'] as TeamType[]).forEach(t => {
+          newMembers[t] = [];
+        });
+        
         data.forEach((row) => {
           if (row.team_type && row.member_id) {
-            updates[`${row.team_type}_${row.member_id}`] = {
-              ...(row.image_url && { image: row.image_url }),
-              ...(row.name      && { name:  row.name }),
-              ...(row.role      && { role:  row.role }),
-              ...(row.extra     && { extra: row.extra }),
-            };
+            // Check if this is a newly added member (ID contains "extra")
+            if (row.member_id.includes('extra')) {
+              const teamType = row.team_type as TeamType;
+              newMembers[teamType].push({
+                id: row.member_id,
+                name: row.name || 'Unknown',
+                role: row.role || 'Member',
+                image: row.image_url || placeholder,
+                extra: row.extra || '',
+              });
+            } else {
+              // This is an override for an existing member
+              updates[`${row.team_type}_${row.member_id}`] = {
+                ...(row.image_url && { image: row.image_url }),
+                ...(row.name      && { name:  row.name }),
+                ...(row.role      && { role:  row.role }),
+                ...(row.extra     && { extra: row.extra }),
+              };
+            }
           }
         });
+        
         setTeams((prev) => {
-          const merged = {} as Record<TeamType, TeamMember[]>;
+          const merged = { ...prev } as Record<TeamType, TeamMember[]>;
+          
+          // Apply patches to existing members
           (Object.keys(prev) as TeamType[]).forEach((t) => {
             merged[t] = prev[t].map((m) => {
               const patch = updates[`${t}_${m.id}`];
               return patch ? { ...m, ...patch } : m;
             });
           });
+          
+          // Add new extra members
+          (['executive', 'senate', 'press'] as TeamType[]).forEach(t => {
+            if (newMembers[t].length > 0) {
+              merged[t] = [...merged[t], ...newMembers[t]];
+            }
+          });
+          
           return merged;
         });
       });
@@ -190,6 +222,24 @@ export default function AdminTeamUpload() {
     const { teamType } = addModal;
     const newId = `${teamType}-extra-${Date.now()}`;
     try {
+      // First, update local state immediately for instant feedback
+      const newMember = { 
+        id: newId, 
+        name: addName.trim(), 
+        role: addRole.trim() || 'Member', 
+        image: placeholder, 
+        extra: addExtra.trim() 
+      };
+      
+      setTeams((prev) => ({
+        ...prev,
+        [teamType]: [
+          ...prev[teamType],
+          newMember,
+        ],
+      }));
+
+      // Then save to Supabase
       const { error } = await supabase.from('team_images').upsert(
         {
           id: `${teamType}_${newId}`,
@@ -203,16 +253,12 @@ export default function AdminTeamUpload() {
         },
         { onConflict: 'id' }
       );
+      
       if (error) throw error;
-
-      setTeams((prev) => ({
-        ...prev,
-        [teamType]: [
-          ...prev[teamType],
-          { id: newId, name: addName.trim(), role: addRole.trim() || 'Member', image: placeholder, extra: addExtra.trim() },
-        ],
-      }));
+      
       notifyUser('success', 'Member added successfully');
+      
+      // Clear form and close modal
       setAddModal(null);
       setAddName('');
       setAddRole('');
