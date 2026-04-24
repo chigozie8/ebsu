@@ -214,8 +214,11 @@ export default function AdminTeamUpload() {
       }));
       notifyUser('success', 'Member added successfully');
       setAddModal(null);
-    } catch {
-      notifyUser('error', 'Failed to add member');
+      setAddName('');
+      setAddRole('');
+      setAddExtra('');
+    } catch (err) {
+      notifyUser('error', err instanceof Error ? err.message : 'Failed to add member');
     } finally {
       setSaving(false);
     }
