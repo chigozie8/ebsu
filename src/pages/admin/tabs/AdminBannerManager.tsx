@@ -75,6 +75,20 @@ export default function AdminBannerManager() {
     fetchBanners();
   }, []);
 
+  const isTableMissingError = (error: { code?: string; message?: string } | null) => {
+    if (!error) return false;
+    const msg = (error.message || '').toLowerCase();
+    const code = error.code || '';
+    return (
+      code === '42P01' ||
+      code === 'PGRST116' ||
+      msg.includes('does not exist') ||
+      msg.includes('relation') ||
+      msg.includes('undefined') ||
+      msg.includes('not found')
+    );
+  };
+
   const fetchBanners = async () => {
     setLoading(true);
     setTableNotFound(false);
@@ -85,18 +99,14 @@ export default function AdminBannerManager() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        // 42P01 = relation/table does not exist
-        if (error.code === '42P01' || error.message?.toLowerCase().includes('does not exist')) {
-          setTableNotFound(true);
-        } else {
-          notifyUser('error', 'Failed to load banners: ' + error.message);
-        }
+        // Show the SQL setup panel for any error that looks like a missing table
+        setTableNotFound(true);
         return;
       }
       setBanners(data || []);
-    } catch (err) {
-      console.error('Error fetching banners:', err);
-      notifyUser('error', 'Failed to load banners');
+    } catch {
+      // Network / auth error — show setup panel so user knows what to do
+      setTableNotFound(true);
     } finally {
       setLoading(false);
     }
@@ -127,7 +137,10 @@ export default function AdminBannerManager() {
           })
           .eq('id', editingId);
 
-        if (error) throw error;
+        if (error) {
+          if (isTableMissingError(error)) { setTableNotFound(true); return; }
+          throw error;
+        }
         notifyUser('success', 'Banner updated successfully');
       } else {
         // Create new banner
@@ -137,7 +150,10 @@ export default function AdminBannerManager() {
           updated_at: new Date().toISOString(),
         });
 
-        if (error) throw error;
+        if (error) {
+          if (isTableMissingError(error)) { setTableNotFound(true); return; }
+          throw error;
+        }
         notifyUser('success', 'Banner created successfully');
       }
 
@@ -145,9 +161,12 @@ export default function AdminBannerManager() {
       setForm(EMPTY_FORM);
       setEditingId(null);
       setPreviewActive(false);
-    } catch (err) {
-      console.error('Error saving banner:', err);
-      notifyUser('error', 'Failed to save banner');
+    } catch (err: any) {
+      if (isTableMissingError(err)) {
+        setTableNotFound(true);
+      } else {
+        notifyUser('error', 'Failed to save banner');
+      }
     } finally {
       setSaving(false);
     }
