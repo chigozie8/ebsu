@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../config/supabase';
+import { db } from '../config/firebase';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  onSnapshot,
+  limit,
+} from 'firebase/firestore';
 
 export interface BannerConfig {
   id: string;
@@ -25,18 +33,18 @@ const DEFAULT_BANNER: BannerConfig = {
   is_active: false,
 };
 
-function rowToBanner(row: Record<string, unknown>): BannerConfig {
+function docToBanner(id: string, data: Record<string, unknown>): BannerConfig {
   return {
-    id: row.id as string,
-    text: row.text as string,
-    duration: row.duration as number,
-    bg_color: row.bg_color as string,
-    text_color: row.text_color as string,
-    font_size: (row.font_size as number) || 28,
-    font_weight: (row.font_weight as 'normal' | 'bold' | 'bolder') || 'bold',
-    is_active: row.is_active as boolean,
-    created_at: row.created_at as string | undefined,
-    updated_at: row.updated_at as string | undefined,
+    id,
+    text: (data.text as string) || '',
+    duration: (data.duration as number) || 15,
+    bg_color: (data.bg_color as string) || '#00875a',
+    text_color: (data.text_color as string) || '#ffffff',
+    font_size: (data.font_size as number) || 28,
+    font_weight: (data.font_weight as 'normal' | 'bold' | 'bolder') || 'bold',
+    is_active: Boolean(data.is_active),
+    created_at: data.created_at as string | undefined,
+    updated_at: data.updated_at as string | undefined,
   };
 }
 
@@ -46,65 +54,33 @@ export const useBannerSettings = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    // Subscribe to real-time updates for the active banner
+    const q = query(
+      collection(db, 'hanging_banners'),
+      where('is_active', '==', true),
+      limit(1)
+    );
 
-    const fetchBanner = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const { data, error: queryError } = await supabase
-          .from('hanging_banners')
-          .select('*')
-          .eq('is_active', true)
-          .single();
-
-        if (cancelled) return;
-
-        // PGRST116 = no rows found — totally fine, just means no active banner
-        if (queryError && queryError.code !== 'PGRST116') {
-          // Table might not exist yet — fail silently, don't crash the app
-          setBanner(DEFAULT_BANNER);
-          return;
-        }
-
-        if (data) {
-          setBanner(rowToBanner(data as Record<string, unknown>));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          setBanner(docToBanner(doc.id, doc.data() as Record<string, unknown>));
         } else {
           setBanner(DEFAULT_BANNER);
         }
-      } catch {
-        // Any network or unexpected error — silently fall back to default
-        if (!cancelled) setBanner(DEFAULT_BANNER);
-      } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+        setError(null);
+      },
+      () => {
+        // Fail silently — banner is non-critical
+        setBanner(DEFAULT_BANNER);
+        setLoading(false);
       }
-    };
+    );
 
-    fetchBanner();
-
-    // Real-time subscription (Supabase v2 channel API)
-    const channel = supabase
-      .channel('hanging_banners_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'hanging_banners' },
-        (payload) => {
-          const row = payload.new as Record<string, unknown>;
-          if (row?.is_active) {
-            setBanner(rowToBanner(row));
-          } else {
-            // A banner was deactivated — re-fetch to find if another is now active
-            fetchBanner();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
+    return () => unsubscribe();
   }, []);
 
   return { banner, loading, error };
