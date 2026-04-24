@@ -190,7 +190,30 @@ export default function AdminTeamUpload() {
     const { teamType } = addModal;
     const newId = `${teamType}-extra-${Date.now()}`;
     try {
-      const { error } = await supabase.from('team_images').upsert(
+      console.log("[v0] Starting submitAddMember with:", { teamType, newId, name: addName.trim() });
+      
+      // First, update local state immediately for instant feedback
+      const newMember = { 
+        id: newId, 
+        name: addName.trim(), 
+        role: addRole.trim() || 'Member', 
+        image: placeholder, 
+        extra: addExtra.trim() 
+      };
+      
+      setTeams((prev) => {
+        console.log("[v0] Updated teams with new member:", newMember);
+        return {
+          ...prev,
+          [teamType]: [
+            ...prev[teamType],
+            newMember,
+          ],
+        };
+      });
+
+      // Then save to Supabase
+      const { error, data } = await supabase.from('team_images').upsert(
         {
           id: `${teamType}_${newId}`,
           team_type: teamType,
@@ -203,22 +226,24 @@ export default function AdminTeamUpload() {
         },
         { onConflict: 'id' }
       );
-      if (error) throw error;
-
-      setTeams((prev) => ({
-        ...prev,
-        [teamType]: [
-          ...prev[teamType],
-          { id: newId, name: addName.trim(), role: addRole.trim() || 'Member', image: placeholder, extra: addExtra.trim() },
-        ],
-      }));
+      
+      if (error) {
+        console.log("[v0] Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("[v0] Supabase save successful:", data);
       notifyUser('success', 'Member added successfully');
+      
+      // Clear form and close modal
       setAddModal(null);
       setAddName('');
       setAddRole('');
       setAddExtra('');
     } catch (err) {
+      console.log("[v0] submitAddMember error:", err);
       notifyUser('error', err instanceof Error ? err.message : 'Failed to add member');
+      // If Supabase failed but we already updated local state, keep the UI updated
     } finally {
       setSaving(false);
     }
