@@ -39,12 +39,13 @@ const ORB_COLORS = [
 ];
 
 export default function HangingBanner3D({ config, onComplete }: HangingBanner3DProps) {
-  const wrapperRef    = useRef<HTMLDivElement>(null);
-  const backdropRef   = useRef<HTMLDivElement>(null);
-  const bannerRef     = useRef<HTMLDivElement>(null);
-  const leftRopeRef   = useRef<HTMLDivElement>(null);
-  const rightRopeRef  = useRef<HTMLDivElement>(null);
-  const orbitBarRef   = useRef<HTMLDivElement>(null);
+  const wrapperRef      = useRef<HTMLDivElement>(null);
+  const backdropRef     = useRef<HTMLDivElement>(null);
+  const bannerRef       = useRef<HTMLDivElement>(null);
+  const leftRopeRef     = useRef<HTMLDivElement>(null);
+  const rightRopeRef    = useRef<HTMLDivElement>(null);
+  const orbitBarRef     = useRef<HTMLDivElement>(null);
+  const bannerGroupRef  = useRef<HTMLDivElement>(null);
   const [orbCount, setOrbCount] = useState(26);
   const [gone, setGone]         = useState(false);
 
@@ -60,24 +61,26 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
     if (!config.is_active) return;
 
     const raf = requestAnimationFrame(() => {
-      const wrapper   = wrapperRef.current;
-      const backdrop  = backdropRef.current;
-      const banner    = bannerRef.current;
-      const leftRope  = leftRopeRef.current;
-      const rightRope = rightRopeRef.current;
-      const orbitBar  = orbitBarRef.current;
+      const wrapper      = wrapperRef.current;
+      const backdrop     = backdropRef.current;
+      const banner       = bannerRef.current;
+      const leftRope     = leftRopeRef.current;
+      const rightRope    = rightRopeRef.current;
+      const orbitBar     = orbitBarRef.current;
+      const bannerGroup  = bannerGroupRef.current;
 
-      if (!wrapper || !backdrop || !banner || !leftRope || !rightRope || !orbitBar) return;
+      if (!wrapper || !backdrop || !banner || !leftRope || !rightRope || !orbitBar || !bannerGroup) return;
 
       const holdDuration = Math.max(2, config.duration - 3.2);
       const swayCount    = Math.max(1, Math.floor(holdDuration / 1.6));
 
       // Initial hidden state
-      gsap.set(wrapper,   { autoAlpha: 1 });
-      gsap.set(backdrop,  { autoAlpha: 0 });
-      gsap.set(orbitBar,  { autoAlpha: 0, y: -12 });
+      gsap.set(wrapper,    { autoAlpha: 1 });
+      gsap.set(backdrop,   { autoAlpha: 0 });
+      gsap.set(orbitBar,   { autoAlpha: 0, y: -12 });
       gsap.set([leftRope, rightRope], { scaleY: 0, transformOrigin: 'top center' });
-      gsap.set(banner,    { y: -340, autoAlpha: 0, rotationX: 50, scale: 0.85 });
+      // Animate the whole group (ropes + banner) together so they stay in sync
+      gsap.set(bannerGroup, { y: -340, autoAlpha: 0, rotationX: 50, scale: 0.85 });
 
       const tl = gsap.timeline();
 
@@ -88,41 +91,31 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
       // 2. Orb bar descends and lights up
       tl.to(orbitBar, { autoAlpha: 1, y: 0, duration: 0.55, ease: 'back.out(1.6)' }, 0.1);
 
-      // 3. Ropes unfurl
+      // 3. Ropes unfurl (after group is visible)
       tl.to([leftRope, rightRope], {
         scaleY: 1, duration: 0.6, ease: 'back.out(1.4)', stagger: 0.08,
       }, 0.45);
 
-      // 4. Banner snaps down with 3-D flip
-      tl.to(banner, {
+      // 4. Group (ropes + banner) snaps down with 3-D flip
+      tl.to(bannerGroup, {
         y: 0, autoAlpha: 1, rotationX: 0, scale: 1,
         duration: 0.7, ease: 'back.out(1.6)',
-      }, 0.75);
+      }, 0.45);
 
-      // 5. Gentle sway while holding
-      tl.to(banner, {
+      // 5. Gentle sway while holding — sway the whole group so ropes stay attached
+      tl.to(bannerGroup, {
         x: 16, rotationZ: 1.6,
-        duration: 1.6, ease: 'sine.inOut',
-        repeat: swayCount, yoyo: true,
-      }, 1.6);
-      tl.to([leftRope, rightRope], {
-        rotationZ: (i: number) => (i === 0 ? -1.4 : 1.4),
         duration: 1.6, ease: 'sine.inOut',
         repeat: swayCount, yoyo: true,
       }, 1.6);
 
       // --- EXIT — everything shoots back UP ---
-      const exitStart = `>+0.1`;   // immediately after sway finishes
+      const exitStart = `>+0.1`;
 
-      // Banner rockets up with a slight overshoot scale
-      tl.to(banner, {
-        y: -360, autoAlpha: 0, rotationX: -45, scale: 0.8,
+      // Group rockets up
+      tl.to(bannerGroup, {
+        y: -400, autoAlpha: 0, rotationX: -45, scale: 0.8,
         duration: 0.55, ease: 'back.in(1.8)',
-      }, exitStart);
-
-      // Ropes retract
-      tl.to([leftRope, rightRope], {
-        scaleY: 0, duration: 0.45, ease: 'power3.in',
       }, exitStart);
 
       // Orb bar whips up
@@ -178,7 +171,7 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
       <div
         ref={wrapperRef}
         className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none"
-        style={{ height: '300px', visibility: 'hidden' }}
+        style={{ height: '340px', visibility: 'hidden' }}
       >
         {/* Backdrop — neutral dark blur, zero colour tint */}
         <div
@@ -261,43 +254,73 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
           })}
         </div>
 
-        {/* ── Ropes + Banner ── */}
-        <div style={{
-          position: 'absolute', top: '52px', left: 0, right: 0,
-          display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-          perspective: '1400px',
-        }}>
-          {/* Left rope */}
-          <div ref={leftRopeRef} style={{
-            position: 'absolute', left: '14%', top: 0,
-            width: '4px', height: '120px',
-            background: 'repeating-linear-gradient(180deg,#4b2d0f 0px,#8a5022 5px,#4b2d0f 10px)',
-            borderRadius: '3px',
-            boxShadow: 'inset -1px 0 2px rgba(255,255,255,0.15), 3px 3px 8px rgba(0,0,0,0.5)',
-            transformOrigin: 'top center',
-          }} />
+        {/* ── Ropes + Banner group — animated together so ropes always attach ── */}
+        <div
+          ref={bannerGroupRef}
+          style={{
+            position: 'absolute',
+            top: '52px',
+            left: 0,
+            right: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            perspective: '1400px',
+            willChange: 'transform, opacity',
+          }}
+        >
+          {/* Rope row — spans the same width as the banner below */}
+          <div style={{
+            width: '100%',
+            maxWidth: '88vw',
+            position: 'relative',
+            height: '120px',
+            flexShrink: 0,
+          }}>
+            {/* Left rope — anchored to left edge of banner */}
+            <div ref={leftRopeRef} style={{
+              position: 'absolute',
+              left: '28px',
+              top: 0,
+              width: '4px',
+              height: '120px',
+              background: 'repeating-linear-gradient(180deg,#4b2d0f 0px,#8a5022 5px,#4b2d0f 10px)',
+              borderRadius: '3px',
+              boxShadow: 'inset -1px 0 2px rgba(255,255,255,0.15), 3px 3px 8px rgba(0,0,0,0.5)',
+              transformOrigin: 'top center',
+            }} />
+
+            {/* Right rope — anchored to right edge of banner */}
+            <div ref={rightRopeRef} style={{
+              position: 'absolute',
+              right: '28px',
+              top: 0,
+              width: '4px',
+              height: '120px',
+              background: 'repeating-linear-gradient(180deg,#4b2d0f 0px,#8a5022 5px,#4b2d0f 10px)',
+              borderRadius: '3px',
+              boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.15), -3px 3px 8px rgba(0,0,0,0.5)',
+              transformOrigin: 'top center',
+            }} />
+          </div>
 
           {/* Banner panel */}
           <div
             ref={bannerRef}
             className="pointer-events-auto"
             style={{
-              position: 'absolute',
-              top: '120px',
+              width: '100%',
               maxWidth: '88vw',
-              width: 'max-content',
               color: config.text_color,
               padding: '16px 36px',
               borderRadius: '14px',
               fontSize: `clamp(14px, ${config.font_size}px, 5vw)`,
               fontWeight: config.font_weight,
-              // Text wrapping — no overflow
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               overflowWrap: 'break-word',
               textAlign: 'center',
               lineHeight: 1.4,
-              // Premium layered background
               background: `linear-gradient(150deg, ${bgLighter} 0%, ${config.bg_color} 45%, ${bgDark} 100%)`,
               border: `1.5px solid ${adjustBrightness(config.bg_color, 30)}55`,
               boxShadow: `
@@ -310,21 +333,11 @@ export default function HangingBanner3D({ config, onComplete }: HangingBanner3DP
               `,
               textShadow: `0 1px 4px rgba(0,0,0,0.28), 0 0 20px ${config.bg_color}88`,
               backdropFilter: 'blur(8px)',
-              willChange: 'transform, opacity',
+              boxSizing: 'border-box',
             }}
           >
             {config.text}
           </div>
-
-          {/* Right rope */}
-          <div ref={rightRopeRef} style={{
-            position: 'absolute', right: '14%', top: 0,
-            width: '4px', height: '120px',
-            background: 'repeating-linear-gradient(180deg,#4b2d0f 0px,#8a5022 5px,#4b2d0f 10px)',
-            borderRadius: '3px',
-            boxShadow: 'inset 1px 0 2px rgba(255,255,255,0.15), -3px 3px 8px rgba(0,0,0,0.5)',
-            transformOrigin: 'top center',
-          }} />
         </div>
       </div>
     </>
