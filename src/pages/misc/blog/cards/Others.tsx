@@ -22,9 +22,9 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                   }}
                   custom={i}
                   key={i}
-                  className="overflow-hidden cursor-pointer group mb-4 max-h-[400px] md:h-[160px] flex flex-col-reverse items-center bg-white border border-gray-200 rounded-lg shadow md:flex-row md:w-full hover:bg-gray-100 "
+                  className="overflow-hidden cursor-pointer group mb-4 h-auto sm:h-[180px] md:h-[160px] flex flex-col items-center bg-white border border-gray-200 rounded-lg shadow sm:flex-row hover:bg-gray-100"
                 >
-                  <div className="flex items-start flex-col justify-between p-4 leading-normal w-full md:w-2/3 md:h-full">
+                  <div className="flex items-start flex-col justify-between p-3 sm:p-4 leading-normal w-full sm:w-2/3 h-auto sm:h-full">
                     <div>
                       <h5 className="mb-2 text-base md:text-ss lg:text-xs font-bold tracking-tight text-gray-900 dark:text-white">
                         {title}
@@ -41,7 +41,7 @@ export const OthersPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                     </p>
                   </div>
                   <img
-                    className="object-cover h-full w-full transition-all duration-300 ease-in-out transform group-hover:scale-105  overflow-hidden rounded-t-lg md:h-full md:rounded-none md:rounded-r-lg md:w-1/3"
+                    className="object-cover h-[150px] w-full transition-all duration-300 ease-in-out transform group-hover:scale-105 overflow-hidden rounded-t-lg sm:h-full sm:rounded-none sm:rounded-r-lg sm:w-1/3"
                     src={sampleImg}
                     alt={title}
                   />

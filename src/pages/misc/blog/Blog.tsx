@@ -23,7 +23,7 @@ export default function Blog() {
           </h2>
           {blogPosts && blogPosts.length > 0 && (
             <>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
                 <TopPosts blogPosts={blogPosts} />
                 <OthersPosts blogPosts={blogPosts} />
               </div>
