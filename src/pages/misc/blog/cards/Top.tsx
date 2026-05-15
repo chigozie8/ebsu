@@ -17,7 +17,7 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
           viewport={{
             once: true,
           }}
-          className="overflow-hidden h-[380px] sm:h-[450px] md:h-[513px] w-full bg-white border border-gray-200 rounded-lg shadow"
+          className="overflow-hidden h-[320px] xs:h-[360px] sm:h-[420px] md:h-[480px] w-full bg-white border border-gray-200 rounded-lg shadow"
         >
           <Carousel slideInterval={2000} indicators={false}>
             {blogPosts
@@ -30,18 +30,18 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                   <div key={i} className="h-full hover:bg-gray-100">
                     <Link to={`/blog/posts/${encodeURIComponent(title)}/${no}/${postType}`}>
                       <img
-                        className="object-cover rounded-t-lg h-3/5 w-full"
+                        className="object-cover rounded-t-lg h-[55%] sm:h-[60%] w-full"
                         src={sampleImg}
                         alt={title}
                         loading="lazy"
                         decoding="async"
                       />
-                      <div className="p-3 sm:p-4 md:p-5 h-2/5 w-full flex flex-col justify-between">
+                      <div className="p-2 xs:p-3 sm:p-4 md:p-5 h-[45%] sm:h-[40%] w-full flex flex-col justify-between overflow-hidden">
                         <div>
-                          <h5 className="mb-1 sm:mb-2 text-sm sm:text-base md:text-lg lg:text-xl xlg:text-xll font-bold tracking-tight text-gray-900 line-clamp-2">
+                          <h5 className="mb-1 text-xs xs:text-sm sm:text-base md:text-lg font-bold tracking-tight text-gray-900 line-clamp-2">
                             {title}
                           </h5>
-                          <p className="mb-2 sm:mb-3 font-normal text-xs sm:text-sm xl:text-xs text-gray-700 line-clamp-2">
+                          <p className="mb-1 sm:mb-2 font-normal text-xs text-gray-700 line-clamp-2 hidden xs:block">
                             {contents && contents[0] && typeof contents[0].content === "string" &&
                               contents[0].content
                                 .split(" ")
@@ -50,11 +50,11 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                             ...
                           </p>{" "}
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-2 sm:gap-3">
-                          <p className="font-medium text-gray-700 text-xs sm:text-ss lg:text-xs flex-1 min-w-0 truncate">
+                        <div className="flex flex-row items-center justify-between gap-2">
+                          <p className="font-medium text-gray-700 text-[10px] xs:text-xs sm:text-sm flex-1 min-w-0 truncate">
                             {author} on {date}
                           </p>
-                          <EngagementStats likes={likes} className="flex-shrink-0" />
+                          <EngagementStats likes={likes} className="flex-shrink-0 text-xs" />
                         </div>
                       </div>
                     </Link>

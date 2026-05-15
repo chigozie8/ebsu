@@ -114,9 +114,9 @@ export default function Blog() {
   const isFiltering = isSearching || selectedCategory !== null || selectedTag !== null;
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="box-width">
-        <div className="px-3 py-[60px] sm:px-4 md:px-8 lg:px-14 sm:py-[75px] md:py-[85px]">
+    <div className="flex flex-col min-h-screen bg-white">
+      <div className="box-width flex-1">
+        <div className="px-3 py-[60px] sm:px-4 md:px-8 lg:px-14 sm:py-[75px] md:py-[85px] pb-8 sm:pb-12">
           {/* Search Bar and Category Filter */}
           <div className="mb-6 space-y-3 sm:space-y-4">
             {/* Search Input */}
