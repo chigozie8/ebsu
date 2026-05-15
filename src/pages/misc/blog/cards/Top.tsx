@@ -36,12 +36,12 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                         loading="lazy"
                         decoding="async"
                       />
-                      <div className="p-5 h-2/5 w-full flex flex-col justify-between">
+                      <div className="p-3 sm:p-4 md:p-5 h-2/5 w-full flex flex-col justify-between">
                         <div>
-                          <h5 className="mb-2 text-base md:text-lg lg:text-xl xlg:text-xll font-bold tracking-tight text-gray-900">
+                          <h5 className="mb-1 sm:mb-2 text-sm sm:text-base md:text-lg lg:text-xl xlg:text-xll font-bold tracking-tight text-gray-900 line-clamp-2">
                             {title}
                           </h5>
-                          <p className="mb-3 font-normal text-sm xl:text-xs text-gray-700">
+                          <p className="mb-2 sm:mb-3 font-normal text-xs sm:text-sm xl:text-xs text-gray-700 line-clamp-2">
                             {contents && contents[0] && typeof contents[0].content === "string" &&
                               contents[0].content
                                 .split(" ")
@@ -50,8 +50,8 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
                             ...
                           </p>{" "}
                         </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-medium text-gray-700 text-ss lg:text-xs flex-1 min-w-0 truncate">
+                        <div className="flex flex-col sm:flex-row sm:items-center items-start gap-2 sm:gap-3">
+                          <p className="font-medium text-gray-700 text-xs sm:text-ss lg:text-xs flex-1 min-w-0 truncate">
                             {author} on {date}
                           </p>
                           <EngagementStats likes={likes} className="flex-shrink-0" />

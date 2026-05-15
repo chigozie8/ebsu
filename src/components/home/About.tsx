@@ -37,9 +37,21 @@ export default function About() {
                   once: true,
                 }}
                 custom={2}
-                className="text-gray-900 font-medium text-ss ss:text-sm xlg:text-xs mb-4"
+                className="text-gray-900 font-medium text-ss ss:text-sm xlg:text-xs mb-2"
               >
                 EBSUMSA is dedicated to advancing academic excellence, professional development, and community health among medical students at Ebonyi State University through innovative programs and collaborative partnerships.
+              </motion.p>
+              <motion.p
+                variants={fadeInVariants3}
+                initial="initial"
+                whileInView="animate"
+                viewport={{
+                  once: true,
+                }}
+                custom={2}
+                className="text-gray-700 font-medium text-xss ss:text-sm xlg:text-xs mb-4"
+              >
+                <span className="font-semibold text-green1">Founded & Led by Kenneth Okoronkwo</span> — CEO & Principal Software Engineer
               </motion.p>
             <motion.div
               variants={fadeInVariants1}

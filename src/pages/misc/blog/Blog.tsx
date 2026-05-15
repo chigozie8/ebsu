@@ -116,13 +116,13 @@ export default function Blog() {
   return (
     <div className="min-h-screen bg-white">
       <div className="box-width">
-        <div className="px-3 py-[70px] sm:px-8 md:px-14 sm:py-[85px]">
+        <div className="px-3 py-[60px] sm:px-4 md:px-8 lg:px-14 sm:py-[75px] md:py-[85px]">
           {/* Search Bar and Category Filter */}
-          <div className="mb-6 space-y-4">
+          <div className="mb-6 space-y-3 sm:space-y-4">
             {/* Search Input */}
-            <div className="relative max-w-md">
+            <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <IoSearch className="h-5 w-5 text-gray-400" />
+                <IoSearch className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               </div>
               <input
                 type="text"
@@ -131,30 +131,30 @@ export default function Blog() {
                   setSearchQuery(e.target.value);
                   setIsSearching(e.target.value.length > 0);
                 }}
-                placeholder="Search articles by title, author, or category..."
-                className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green2/50 focus:border-green2 transition-colors"
+                placeholder="Search articles..."
+                className="block w-full pl-9 sm:pl-10 pr-10 py-2 sm:py-2.5 text-sm border border-gray-300 rounded-lg bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green2/50 focus:border-green2 transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={clearSearch}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
-                  <IoClose className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  <IoClose className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 hover:text-gray-600" />
                 </button>
               )}
             </div>
 
             {/* Category Filter Pills */}
             {categories.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <IoFilter className="w-4 h-4" />
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2">
+                <span className="text-xs sm:text-sm text-gray-500 flex items-center gap-1 flex-shrink-0">
+                  <IoFilter className="w-3 h-3 sm:w-4 sm:h-4" />
                   Filter:
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelectedCategory(null)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer flex-shrink-0 ${
                     selectedCategory === null
                       ? "bg-green2 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -167,7 +167,7 @@ export default function Blog() {
                     type="button"
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer flex-shrink-0 whitespace-nowrap ${
                       selectedCategory === category
                         ? "bg-green2 text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -181,15 +181,15 @@ export default function Blog() {
 
             {/* Tag Filter Pills */}
             {allTags.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <IoPricetagOutline className="w-4 h-4" />
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2">
+                <span className="text-xs sm:text-sm text-gray-500 flex items-center gap-1 flex-shrink-0">
+                  <IoPricetagOutline className="w-3 h-3 sm:w-4 sm:h-4" />
                   Tags:
                 </span>
                 <button
                   type="button"
                   onClick={() => setSelectedTag(null)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer flex-shrink-0 ${
                     selectedTag === null
                       ? "bg-green2 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -202,7 +202,7 @@ export default function Blog() {
                     type="button"
                     key={tag}
                     onClick={() => setSelectedTag(tag)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors cursor-pointer ${
+                    className={`px-2.5 sm:px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer flex-shrink-0 whitespace-nowrap ${
                       selectedTag === tag
                         ? "bg-green2 text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -212,26 +212,26 @@ export default function Blog() {
                   </button>
                 ))}
                 {allTags.length > 8 && (
-                  <span className="text-xs text-gray-400">+{allTags.length - 8} more</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">+{allTags.length - 8} more</span>
                 )}
               </div>
             )}
 
             {/* Active Filters Indicator */}
             {isFiltering && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs sm:text-sm">
                 <span className="text-gray-500">
                   {filteredPosts?.length || 0} result{filteredPosts?.length !== 1 ? 's' : ''} found
                 </span>
                 {selectedTag && (
-                  <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded-full flex items-center gap-1">
+                  <span className="px-2 py-0.5 bg-green2/10 text-green2 text-xs rounded-full flex items-center gap-1 w-fit">
                     <IoPricetagOutline className="w-3 h-3" />
                     {selectedTag}
                   </span>
                 )}
                 <button
                   onClick={clearFilters}
-                  className="text-green1 hover:underline font-medium"
+                  className="text-green1 hover:underline font-medium text-xs sm:text-sm text-left sm:text-auto"
                 >
                   Clear all filters
                 </button>
@@ -242,27 +242,28 @@ export default function Blog() {
           {/* Filtered Results View */}
           {isFiltering && filteredPosts && (
             <div className="mb-8">
-              <h2 className="py-3 text-green2 border-b border-b-gray-200 w-full font-semibold text-lg ss:text-xll md:text-2xl mb-4">
+              <h2 className="py-2 sm:py-3 text-green2 border-b border-b-gray-200 w-full font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4">
                 {selectedCategory ? `${selectedCategory} Articles` : 'Search Results'}
               </h2>
               
               {paginatedPosts && paginatedPosts.length > 0 ? (
                 <>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {paginatedPosts.map((post, i) => (
                       <Link
                         to={`/blog/posts/${encodeURIComponent(post.title)}/${post.no}/${post.postType}`}
                         key={i}
                       >
                         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all group h-full flex flex-col">
-                          <div className="aspect-video overflow-hidden">
+                          <div className="aspect-video overflow-hidden bg-gray-100">
                             <img
                               src={post.sampleImg}
                               alt={post.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
                             />
                           </div>
-                          <div className="p-4 flex-1 flex flex-col">
+                          <div className="p-3 sm:p-4 flex-1 flex flex-col">
                             {post.category && (
                               <button
                                 onClick={(e) => {
@@ -280,11 +281,11 @@ export default function Blog() {
                                 <Tags tags={(post as { tags?: string[] }).tags} size="sm" maxVisible={2} linkable={false} />
                               </div>
                             )}
-                            <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 group-hover:text-green2 transition-colors flex-1">
+                            <h3 className="font-semibold text-xs sm:text-sm md:text-base text-gray-900 line-clamp-2 group-hover:text-green2 transition-colors flex-1">
                               {post.title}
                             </h3>
-                            <div className="flex items-center justify-between mt-2">
-                              <p className="text-xs text-gray-500">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
+                              <p className="text-xs text-gray-500 truncate">
                                 {post.author} &middot; {post.date}
                               </p>
                               <EngagementStats likes={post.likes} />
@@ -297,24 +298,24 @@ export default function Blog() {
 
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-8">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2 mt-6 sm:mt-8 overflow-x-auto pb-2">
                       <button
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0 ${
                           currentPage === 1
                             ? "text-gray-300 cursor-not-allowed"
                             : "text-gray-600 hover:bg-gray-100"
                         }`}
                       >
-                        <IoChevronBack className="w-5 h-5" />
+                        <IoChevronBack className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                       
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                          className={`min-w-8 h-8 sm:min-w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
                             currentPage === page
                               ? "bg-green2 text-white"
                               : "text-gray-600 hover:bg-gray-100"
@@ -327,22 +328,22 @@ export default function Blog() {
                       <button
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0 ${
                           currentPage === totalPages
                             ? "text-gray-300 cursor-not-allowed"
                             : "text-gray-600 hover:bg-gray-100"
                         }`}
                       >
-                        <IoChevronForward className="w-5 h-5" />
+                        <IoChevronForward className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="text-center py-12">
-                  <IoSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No articles found</p>
-                  <p className="text-sm text-gray-400 mt-1">Try a different search term or category</p>
+                <div className="text-center py-8 sm:py-12">
+                  <IoSearch className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2 sm:mb-3" />
+                  <p className="text-gray-500 text-sm">No articles found</p>
+                  <p className="text-xs text-gray-400 mt-1">Try a different search term or category</p>
                 </div>
               )}
             </div>
@@ -351,36 +352,36 @@ export default function Blog() {
           {/* Regular Blog Content - Only show when not filtering */}
           {!isFiltering && (
             <>
-              <h2 className="py-3 text-green2 border-b border-b-gray-200 w-full font-semibold text-lg ss:text-xll md:text-2xl mb-4">
+              <h2 className="py-2 sm:py-3 text-green2 border-b border-b-gray-200 w-full font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4">
                 Top Articles
               </h2>
               {blogPosts && blogPosts.length > 0 && (
                 <>
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
                     <TopPosts blogPosts={blogPosts} />
                     <OthersPosts blogPosts={blogPosts} />
                   </div>
-                  <h2 className="text-green2 py-3 border-b border-b-gray-200 w-full font-semibold text-lg ss:text-xll md:text-2xl mb-4">
+                  <h2 className="text-green2 py-2 sm:py-3 border-b border-b-gray-200 w-full font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4">
                     Don't Miss
                   </h2>
                   <FeaturedPosts blogPosts={blogPosts} />
                 </>
               )}
               {blogPostsLoading && !blogPosts && !blogPostsError && (
-                <div className="w-full h-[70vh] flex items-center justify-center flex-col">
-                  <Spinner className="w-8 sm:w-8 md:w-10" />
-                  <p className="font-[500] text-sm sm:text-xs md:text-base text-gray-700 mt-2">
+                <div className="w-full h-[50vh] sm:h-[70vh] flex items-center justify-center flex-col">
+                  <Spinner className="w-6 sm:w-8 md:w-10" />
+                  <p className="font-[500] text-xs sm:text-sm md:text-base text-gray-700 mt-2 text-center">
                     Loading posts...
                   </p>
                 </div>
               )}
               {blogPostsError && !blogPostsLoading && !blogPosts && (
-                <div className="w-full h-[70vh] flex items-center justify-center flex-col">
-                  <BadNetworkIcon className="w-10 sm:w-12 md:w-20" />
-                  <p className="font-medium text-gray-700 text-ss sm:text-sm mmd:text-xs text-center">
-                    Sorry, couldn't load posts at the moment.{" "}
+                <div className="w-full h-[50vh] sm:h-[70vh] flex items-center justify-center flex-col">
+                  <BadNetworkIcon className="w-8 sm:w-12 md:w-20" />
+                  <p className="font-medium text-gray-700 text-xs sm:text-sm md:text-base text-center mt-3">
+                    Sorry, couldn&apos;t load posts at the moment.{" "}
                     <button
-                      className="underline hover:no-underline text-green1"
+                      className="underline hover:no-underline text-green1 font-semibold"
                       onClick={() => fetchBlogPosts(true)}
                     >
                       Retry
@@ -389,12 +390,12 @@ export default function Blog() {
                 </div>
               )}
               {blogPosts && blogPosts.length < 1 && (
-                <div className="w-full h-[70vh] flex items-center justify-center flex-col">
-                  <BadNetworkIcon className="w-10 sm:w-12 md:w-20" />
-                  <p className="font-medium text-gray-700 text-ss sm:text-sm mmd:text-xs text-center">
-                    Sorry, couldn't load posts at the moment.{" "}
+                <div className="w-full h-[50vh] sm:h-[70vh] flex items-center justify-center flex-col">
+                  <BadNetworkIcon className="w-8 sm:w-12 md:w-20" />
+                  <p className="font-medium text-gray-700 text-xs sm:text-sm md:text-base text-center mt-3">
+                    Sorry, couldn&apos;t load posts at the moment.{" "}
                     <button
-                      className="underline hover:no-underline text-green1"
+                      className="underline hover:no-underline text-green1 font-semibold"
                       onClick={() => window.location.reload()}
                     >
                       Retry
