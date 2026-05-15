@@ -10,6 +10,7 @@ export default {
     screens: {
       'xxss': '300px',
       'xss': '358px',
+      'xs': '375px',
       'xsss': '390px',
       'ss': '450px',
       'sss': "545px",
