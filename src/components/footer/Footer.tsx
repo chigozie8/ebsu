@@ -93,7 +93,7 @@ export default function Footer() {
               &copy; EBSUMSA 2025/2026 Administration
             </span>
             <span className="text-xss ss:text-ss text-white/70">
-              Founded & Led by <span className="font-semibold">Kenneth Okoronkwo</span> (CEO & Lead Engineer). Built by the EBSUMSA Tech Team. All rights reserved.
+              Built by the EBSUMSA Tech Team (Pioneers, 2025/2026). All rights reserved.
             </span>
           </div>
 
