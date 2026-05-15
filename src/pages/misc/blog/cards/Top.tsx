@@ -17,7 +17,7 @@ export const TopPosts: FC<BlogPostProp> = ({ blogPosts }) => {
           viewport={{
             once: true,
           }}
-          className=" overflow-hidden h-[520px] md:h-[513px] w-full bg-white border border-gray-200 rounded-lg shadow"
+          className="overflow-hidden h-[380px] sm:h-[450px] md:h-[513px] w-full bg-white border border-gray-200 rounded-lg shadow"
         >
           <Carousel slideInterval={2000} indicators={false}>
             {blogPosts
