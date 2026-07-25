@@ -156,6 +156,9 @@ const AppRoutes = () => {
   const SchoolFeesPage = lazy(
     () => import("../pages/user/fees/SchoolFeesPage")
   );
+  const BirthdayPage = lazy(
+    () => import("../pages/birthday/BirthdayPage")
+  );
 
   return (
     <>
@@ -201,6 +204,7 @@ const AppRoutes = () => {
           <Route path="/projects" element={<ProjectsShowcase />} />
           <Route path="/projects/:projectId" element={<ProjectDetails />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/birthday" element={<BirthdayPage />} />
           <Route path="/payment" element={<PaymentPortal />} />
           
           <Route path="/about/about-us" element={<AboutUs />} />
