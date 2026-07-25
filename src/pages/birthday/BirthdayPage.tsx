@@ -1,310 +1,411 @@
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
-import "./BirthdayPage.css";
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+import './BirthdayPage.css';
 
 export default function BirthdayPage() {
-  const containerRef = useRef(null);
-  const titleRef = useRef(null);
-  const messageRef = useRef(null);
-  const nameRef = useRef(null);
-  const confettiRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const balloonRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const rosesRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rosesRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
+  const messageCardRef = useRef<HTMLDivElement>(null);
+  const celebrationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Set body background
-    document.body.style.background = "linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)";
-    document.body.style.margin = "0";
-    document.body.style.padding = "0";
-    document.body.style.overflow = "hidden";
-    
+    document.body.style.background = 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.background = "";
-      document.body.style.overflow = "";
+      document.body.style.background = '';
+      document.body.style.overflow = '';
     };
   }, []);
 
   useEffect(() => {
-    // Ensure container is visible first
-    if (containerRef.current) {
-      gsap.set(containerRef.current, { opacity: 1 });
-    }
+    // Ensure all elements are visible
+    const elements = [rosesRef, titleRef, nameRef, messageCardRef, celebrationRef];
+    elements.forEach((ref) => {
+      if (ref.current) {
+        gsap.set(ref.current, { opacity: 1 });
+      }
+    });
 
-    const tl = gsap.timeline();
+    // Create animations
+    const tl = gsap.timeline({ delay: 0.2 });
 
-    // Roses entrance animation
-    tl.from(
-      rosesRef.current,
-      {
-        opacity: 0,
-        scale: 0.8,
-        duration: 1.5,
-        ease: "back.out",
-      },
-      0.3
-    );
-
-    // Title animation with glow effect
-    tl.from(
-      titleRef.current,
-      {
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        ease: "power2.out",
-      },
-      0.5
-    );
-
-    // Name animation
-    tl.from(
-      nameRef.current,
-      {
+    if (rosesRef.current) {
+      tl.from(rosesRef.current, {
         opacity: 0,
         scale: 0.5,
+        y: 50,
+        duration: 1.2,
+        ease: 'back.out',
+      }, 0);
+    }
+
+    if (titleRef.current) {
+      tl.from(titleRef.current, {
+        opacity: 0,
         y: 30,
         duration: 1,
-        ease: "elastic.out(1, 0.5)",
-      },
-      0.8
-    );
+        ease: 'power2.out',
+      }, 0.3);
+    }
 
-    // Message animation
-    tl.from(
-      messageRef.current,
-      {
+    if (nameRef.current) {
+      tl.from(nameRef.current, {
+        opacity: 0,
+        scale: 0.8,
+        duration: 1.2,
+        ease: 'elastic.out(1, 0.5)',
+      }, 0.5);
+    }
+
+    if (messageCardRef.current) {
+      tl.from(messageCardRef.current, {
+        opacity: 0,
+        y: 40,
+        duration: 1,
+        ease: 'power2.out',
+      }, 0.7);
+    }
+
+    if (celebrationRef.current) {
+      tl.from(celebrationRef.current, {
         opacity: 0,
         y: 20,
-        duration: 1,
-        ease: "power2.out",
-      },
-      1
-    );
+        duration: 0.8,
+        ease: 'power2.out',
+      }, 0.9);
+    }
 
-    // Confetti animations
-    confettiRefs.current.forEach((confetti, index) => {
-      if (confetti) {
-        tl.to(
-          confetti,
-          {
-            opacity: [0, 1, 0],
-            y: gsap.utils.random(-300, -500),
-            x: gsap.utils.random(-150, 150),
-            rotation: gsap.utils.random(0, 360),
-            duration: gsap.utils.random(2.5, 3.5),
-            ease: "power1.in",
-          },
-          1.2 + index * 0.1
-        );
-      }
-    });
-
-    // Balloon animations
-    balloonRefs.current.forEach((balloon, index) => {
-      if (balloon) {
-        tl.to(
-          balloon,
-          {
-            opacity: [0, 1],
-            y: gsap.utils.random(-400, -600),
-            x: gsap.utils.random(-200, 200),
-            duration: gsap.utils.random(4, 6),
-            ease: "sine.inOut",
-            repeat: -1,
-            yoyo: true,
-          },
-          1.2 + index * 0.15
-        );
-      }
-    });
-
-    // Pulse effect on main message
-    gsap.to(nameRef.current, {
-      textShadow: [
-        "0 0 10px rgba(255, 215, 0, 0.5)",
-        "0 0 30px rgba(255, 215, 0, 0.8)",
-        "0 0 10px rgba(255, 215, 0, 0.5)",
-      ],
-      duration: 2,
-      repeat: -1,
-      ease: "sine.inOut",
-    });
+    // Continuous pulse glow on name
+    if (nameRef.current) {
+      gsap.to(nameRef.current, {
+        textShadow: [
+          '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(168, 85, 247, 0.3)',
+          '0 0 40px rgba(255, 215, 0, 0.8), 0 0 80px rgba(168, 85, 247, 0.6)',
+          '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(168, 85, 247, 0.3)',
+        ],
+        duration: 3,
+        repeat: -1,
+        ease: 'sine.inOut',
+      });
+    }
   }, []);
-
-  // Generate confetti pieces
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => i);
-
-  // Generate balloons
-  const balloons = Array.from({ length: 8 }, (_, i) => i);
 
   return (
     <div
       ref={containerRef}
       style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)",
-        position: "fixed",
+        background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)',
+        position: 'fixed',
         top: 0,
         left: 0,
-        width: "100vw",
-        height: "100vh",
+        width: '100vw',
+        height: '100vh',
         zIndex: 9999,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
       }}
     >
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Animated stars */}
-        <div className="absolute top-10 left-10 w-1 h-1 bg-white rounded-full animate-pulse"></div>
-        <div className="absolute top-20 right-20 w-1 h-1 bg-white rounded-full animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse delay-500"></div>
-        <div className="absolute bottom-32 right-1/4 w-1 h-1 bg-white rounded-full animate-pulse delay-700"></div>
-      </div>
-
-      {/* Confetti pieces */}
-      <div className="absolute inset-0 pointer-events-none">
-        {confettiPieces.map((i) => (
+      {/* Animated Stars Background */}
+      <div className="stars" style={{ position: 'absolute', inset: 0 }}>
+        {[...Array(50)].map((_, i) => (
           <div
-            key={`confetti-${i}`}
-            ref={(el) => {
-              if (el) confettiRefs.current[i] = el;
-            }}
-            className="confetti-piece absolute w-2 h-2 rounded-full"
+            key={i}
             style={{
+              position: 'absolute',
+              width: '2px',
+              height: '2px',
+              backgroundColor: 'white',
+              borderRadius: '50%',
               left: `${Math.random() * 100}%`,
-              top: "10%",
-              backgroundColor: [
-                "#FFD700",
-                "#FF69B4",
-                "#00CED1",
-                "#FF6347",
-                "#32CD32",
-                "#FF1493",
-              ][i % 6],
+              top: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.7 + 0.3,
+              animation: `twinkle ${Math.random() * 2 + 2}s infinite`,
+              animationDelay: `${Math.random() * 2}s`,
             }}
-          ></div>
+          />
         ))}
       </div>
 
-      {/* Balloons */}
-      <div className="absolute inset-0 pointer-events-none">
-        {balloons.map((i) => (
-          <div
-            key={`balloon-${i}`}
-            ref={(el) => {
-              if (el) balloonRefs.current[i] = el;
-            }}
-            className="absolute"
-            style={{
-              left: `${(i % 2 === 0 ? 20 : 80) + (i % 4) * 10}%`,
-              top: "100%",
-              opacity: 0,
-            }}
-          >
-            <div
-              className="w-8 h-10 rounded-full"
-              style={{
-                backgroundColor: [
-                  "#FF69B4",
-                  "#FFD700",
-                  "#00CED1",
-                  "#FF6347",
-                  "#32CD32",
-                  "#9370DB",
-                  "#FF1493",
-                  "#00FF7F",
-                ][i],
-              }}
-            ></div>
-            <div className="w-0.5 h-16 bg-white" style={{ margin: "0 auto" }}></div>
-          </div>
-        ))}
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-10 text-center px-4">
-        {/* Decorative roses image */}
+      {/* Main Content Container */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '30px',
+          textAlign: 'center',
+          zIndex: 10,
+          maxWidth: '900px',
+        }}
+      >
+        {/* Roses Image */}
         <div
           ref={rosesRef}
-          className="mb-8 flex justify-center opacity-0"
+          style={{
+            opacity: 1,
+            transition: 'all 0.3s ease',
+          }}
         >
           <img
             src="/birthday-roses.png"
             alt="Beautiful roses"
-            className="w-full max-w-sm h-auto rounded-2xl shadow-2xl"
             style={{
-              boxShadow:
-                "0 0 40px rgba(255, 215, 0, 0.4), 0 0 80px rgba(255, 105, 180, 0.3)",
+              width: '280px',
+              height: 'auto',
+              maxWidth: '90vw',
+              borderRadius: '20px',
+              boxShadow: '0 0 40px rgba(219, 112, 147, 0.6), 0 0 80px rgba(219, 112, 147, 0.3)',
             }}
           />
         </div>
 
-        {/* Title */}
-        <h1
-          ref={titleRef}
-          className="text-5xl md:text-7xl font-bold mb-6 opacity-0"
-          style={{
-            background:
-              "linear-gradient(135deg, #FFD700 0%, #FF69B4 50%, #00CED1 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            letterSpacing: "2px",
-          }}
-        >
-          🎉 Happy Birthday! 🎉
-        </h1>
+        {/* Happy Birthday Title */}
+        <div ref={titleRef} style={{ opacity: 1 }}>
+          <h1
+            style={{
+              fontSize: 'clamp(48px, 10vw, 80px)',
+              fontWeight: '800',
+              margin: '0',
+              background: 'linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #06b6d4 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 30px rgba(168, 85, 247, 0.6))',
+              textShadow: '0 0 20px rgba(219, 112, 147, 0.8), 0 0 40px rgba(168, 85, 247, 0.6)',
+              letterSpacing: '3px',
+              fontFamily: "'Playfair Display', serif",
+            }}
+          >
+            Happy Birthday
+          </h1>
+        </div>
 
-        {/* President name */}
-        <h2
-          ref={nameRef}
-          className="text-4xl md:text-6xl font-black mb-6 opacity-0"
-          style={{
-            color: "#FFD700",
-            textShadow: "0 0 30px rgba(255, 215, 0, 0.5)",
-            letterSpacing: "1px",
-          }}
-        >
-          NWITE NANCY KOSARACHI
-        </h2>
-
-        {/* Main message */}
-        <div
-          ref={messageRef}
-          className="opacity-0 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 md:p-12 max-w-2xl mx-auto shadow-2xl"
-        >
-          <p className="text-2xl md:text-3xl font-bold text-white mb-4">
-            EBSUMSA Tech Team
+        {/* President Name - Main Focus */}
+        <div ref={nameRef} style={{ opacity: 1 }}>
+          <h2
+            style={{
+              fontSize: 'clamp(36px, 8vw, 68px)',
+              fontWeight: '900',
+              margin: '0',
+              background: 'linear-gradient(135deg, #fbbf24 0%, #ec4899 50%, #06b6d4 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 1)) drop-shadow(0 0 40px rgba(236, 72, 153, 0.8))',
+              textShadow: '0 0 40px rgba(255, 215, 0, 0.8), 0 0 80px rgba(168, 85, 247, 0.6)',
+              letterSpacing: '2px',
+              fontFamily: "'Playfair Display', serif",
+            }}
+          >
+            NWITE NANCY KOSARACHI
+          </h2>
+          <p
+            style={{
+              fontSize: '22px',
+              fontWeight: '700',
+              margin: '15px 0 0 0',
+              color: '#fbbf24',
+              filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 1))',
+              textShadow: '0 0 20px rgba(251, 191, 36, 0.8)',
+              letterSpacing: '3px',
+              fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
+            PRESIDENT OF EBSUMSA
           </p>
-          <p className="text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 font-semibold mb-6">
+        </div>
+
+        {/* Message Card */}
+        <div
+          ref={messageCardRef}
+          style={{
+            opacity: 1,
+            background: 'rgba(15, 23, 42, 0.8)',
+            backdropFilter: 'blur(20px)',
+            border: '2px solid rgba(219, 112, 147, 0.3)',
+            borderRadius: '25px',
+            padding: '40px 50px',
+            boxShadow: '0 8px 32px rgba(168, 85, 247, 0.2), 0 0 60px rgba(219, 112, 147, 0.2)',
+            maxWidth: '700px',
+            width: '100%',
+          }}
+        >
+          <h3
+            style={{
+              fontSize: '32px',
+              fontWeight: '700',
+              margin: '0 0 15px 0',
+              color: '#ffffff',
+              textShadow: '0 0 20px rgba(168, 85, 247, 0.6)',
+              fontFamily: "'Playfair Display', serif",
+            }}
+          >
+            🎉 EBSUMSA Tech Team 🎉
+          </h3>
+          <p
+            style={{
+              fontSize: '26px',
+              fontWeight: '600',
+              margin: '15px 0',
+              color: '#ec4899',
+              textShadow: '0 0 15px rgba(236, 72, 153, 0.5)',
+              letterSpacing: '1px',
+              fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
             Wishes You a Happy Birthday!
           </p>
-          <div className="h-1 w-24 bg-gradient-to-r from-yellow-400 to-pink-500 rounded-full mx-auto mb-6"></div>
-          <p className="text-lg md:text-xl text-gray-200 leading-relaxed">
-            Your vision, leadership, and dedication to EBSUMSA have been truly
-            inspiring. May this special day bring you joy, success, and all the
-            happiness you deserve.
+          <div
+            style={{
+              height: '3px',
+              width: '80px',
+              background: 'linear-gradient(90deg, #fbbf24 0%, #ec4899 50%, #06b6d4 100%)',
+              borderRadius: '3px',
+              margin: '20px auto 25px',
+            }}
+          />
+          <p
+            style={{
+              fontSize: '17px',
+              fontWeight: '400',
+              margin: '0',
+              color: '#d1d5db',
+              lineHeight: '1.8',
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            Your exceptional vision, unwavering leadership, and commitment to excellence have been the driving force behind EBSUMSA&apos;s success. Thank you for inspiring and guiding us towards greater heights. May this special day bring you immense joy, good health, and continued success in all your endeavors.
           </p>
         </div>
 
-        {/* Decorative bottom elements */}
-        <div className="mt-12 flex justify-center gap-6">
-          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse delay-200"></div>
-          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse delay-300"></div>
-          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse delay-400"></div>
+        {/* Celebration Message */}
+        <div ref={celebrationRef} style={{ opacity: 1 }}>
+          <p
+            style={{
+              fontSize: '28px',
+              fontWeight: '700',
+              margin: '20px 0',
+              background: 'linear-gradient(90deg, #fbbf24 0%, #06b6d4 50%, #ec4899 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '2px',
+              fontFamily: "'Montserrat', sans-serif",
+            }}
+          >
+            ✨ Celebrating Excellence & Leadership ✨
+          </p>
         </div>
       </div>
 
-      {/* Bottom decorative text */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-center">
-        <p className="text-sm md:text-base text-gray-400 font-semibold">
-          Celebrating Excellence & Leadership
-        </p>
+      {/* Floating Balloons */}
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={`balloon-${i}`}
+          style={{
+            position: 'fixed',
+            left: `${10 + i * 15}%`,
+            bottom: '-50px',
+            zIndex: i % 2 === 0 ? 5 : 8,
+            animation: `float-balloon ${4 + i * 0.5}s infinite ease-in-out`,
+            animationDelay: `${i * 0.3}s`,
+          }}
+        >
+          <div
+            style={{
+              width: '30px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: ['#FF69B4', '#FFD700', '#00CED1', '#FF6347', '#32CD32', '#9370DB'][i],
+              boxShadow: `0 0 20px ${['#FF69B4', '#FFD700', '#00CED1', '#FF6347', '#32CD32', '#9370DB'][i]}`,
+            }}
+          />
+          <div
+            style={{
+              width: '1px',
+              height: '60px',
+              backgroundColor: '#ffffff',
+              margin: '0 auto',
+            }}
+          />
+        </div>
+      ))}
+
+      {/* Pulsing Lights at Bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '40px',
+          display: 'flex',
+          gap: '20px',
+          zIndex: 10,
+        }}
+      >
+        {['#fbbf24', '#ec4899', '#06b6d4', '#a855f7', '#f97316'].map((color, i) => (
+          <div
+            key={`light-${i}`}
+            style={{
+              width: '16px',
+              height: '16px',
+              borderRadius: '50%',
+              backgroundColor: color,
+              boxShadow: `0 0 30px ${color}`,
+              animation: `pulse-light 2s ease-in-out infinite`,
+              animationDelay: `${i * 0.3}s`,
+            }}
+          />
+        ))}
       </div>
+
+      {/* Confetti pieces */}
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={`confetti-${i}`}
+          style={{
+            position: 'fixed',
+            left: `${Math.random() * 100}%`,
+            top: '-20px',
+            width: '8px',
+            height: '8px',
+            backgroundColor: ['#fbbf24', '#ec4899', '#06b6d4', '#a855f7', '#f97316'][i % 5],
+            borderRadius: '50%',
+            animation: `fall-confetti ${3 + Math.random() * 2}s linear infinite`,
+            animationDelay: `${i * 0.2}s`,
+            zIndex: 1,
+          }}
+        />
+      ))}
+
+      {/* Animation Keyframes */}
+      <style>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        @keyframes pulse-light {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        @keyframes float-balloon {
+          0% { transform: translateY(0) translateX(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(-100vh) translateX(${Math.random() * 100 - 50}px); opacity: 0; }
+        }
+        @keyframes fall-confetti {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
