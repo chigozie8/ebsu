@@ -10,6 +10,27 @@ export default function BirthdayPage() {
   const celebrationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Update page title and meta tags for SEO
+    document.title = 'EBSUMSA President Nancy Kosarachi Birthday - Happy Birthday Nwite Nancy Kosarachi | EBSUMSA';
+    
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Celebrating the birthday of Nwite Nancy Kosarachi, President of EBSUMSA. A tribute to her visionary leadership, exceptional commitment to excellence, and transformative impact on the Ebonyi State University Medical Student Association.');
+    }
+
+    // Update OG tags for better social sharing
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      ogTitle.setAttribute('content', 'Celebrating EBSUMSA President Nancy Kosarachi\'s Birthday | EBSUMSA');
+    }
+
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) {
+      ogDescription.setAttribute('content', 'Join the EBSUMSA Tech Team in celebrating the birthday of our visionary President, Nwite Nancy Kosarachi. Her exceptional leadership and dedication drive our mission of excellence.');
+    }
+
+    // Set body background styles
     document.body.style.background = 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
@@ -20,6 +41,7 @@ export default function BirthdayPage() {
       document.body.style.background = '';
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      document.title = 'EBSUMSA | EBSU Medical Student Association';
     };
   }, []);
 
@@ -146,6 +168,39 @@ export default function BirthdayPage() {
           boxSizing: 'border-box',
         }}
       >
+        {/* Birthday Icon SVG */}
+        <svg
+          width="clamp(60px, 15vw, 90px)"
+          height="clamp(60px, 15vw, 90px)"
+          viewBox="0 0 100 100"
+          style={{
+            animation: 'float-icon 3s ease-in-out infinite',
+          }}
+        >
+          {/* Cake */}
+          <rect x="20" y="50" width="60" height="30" rx="4" fill="#ec4899" />
+          <rect x="20" y="45" width="60" height="8" rx="2" fill="#fbbf24" />
+          
+          {/* Candle */}
+          <rect x="47" y="30" width="6" height="15" fill="#ffffff" rx="3" />
+          {/* Flame */}
+          <path d="M 50 25 Q 48 20 50 15 Q 52 20 50 25" fill="#ff6347" />
+          
+          {/* Sprinkles */}
+          <circle cx="30" cy="60" r="3" fill="#06b6d4" />
+          <circle cx="45" cy="62" r="3" fill="#fbbf24" />
+          <circle cx="70" cy="60" r="3" fill="#06b6d4" />
+          <circle cx="55" cy="65" r="2.5" fill="#ec4899" />
+          
+          {/* Celebration sparkles */}
+          <g opacity="0.7">
+            <circle cx="15" cy="40" r="2" fill="#fbbf24" />
+            <circle cx="85" cy="35" r="2" fill="#06b6d4" />
+            <circle cx="10" cy="70" r="1.5" fill="#ec4899" />
+            <circle cx="90" cy="75" r="1.5" fill="#fbbf24" />
+          </g>
+        </svg>
+
         {/* Happy Birthday Title */}
         <div ref={titleRef} style={{ opacity: 1, width: '100%' }}>
           <h1
@@ -244,7 +299,7 @@ export default function BirthdayPage() {
               wordBreak: 'break-word',
             }}
           >
-            Wishes You a Happy Birthday!
+            Wishes You a Very Happy Birthday!
           </p>
           <div
             style={{
@@ -266,7 +321,7 @@ export default function BirthdayPage() {
               wordBreak: 'break-word',
             }}
           >
-            Your exceptional vision, unwavering leadership, and commitment to excellence have been the driving force behind EBSUMSA&apos;s success. Thank you for inspiring and guiding us towards greater heights. May this special day bring you immense joy, good health, and continued success in all your endeavors.
+            Your exceptional vision, unwavering leadership, and steadfast commitment to excellence have been instrumental in driving EBSUMSA&apos;s remarkable success and growth. We are deeply grateful for your inspiring guidance and visionary direction. We wish you a day filled with boundless joy, excellent health, and continued extraordinary success in all your future endeavors.
           </p>
         </div>
 
@@ -376,6 +431,11 @@ export default function BirthdayPage() {
 
       {/* Animation Keyframes */}
       <style>{`
+        @keyframes float-icon {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-15px); }
+        }
+        
         @keyframes twinkle {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 1; }
