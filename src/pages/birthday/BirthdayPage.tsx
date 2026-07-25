@@ -4,7 +4,6 @@ import './BirthdayPage.css';
 
 export default function BirthdayPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rosesRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   const messageCardRef = useRef<HTMLDivElement>(null);
@@ -26,7 +25,7 @@ export default function BirthdayPage() {
 
   useEffect(() => {
     // Ensure all elements are visible
-    const elements = [rosesRef, titleRef, nameRef, messageCardRef, celebrationRef];
+    const elements = [titleRef, nameRef, messageCardRef, celebrationRef];
     elements.forEach((ref) => {
       if (ref.current) {
         gsap.set(ref.current, { opacity: 1 });
@@ -36,23 +35,13 @@ export default function BirthdayPage() {
     // Create animations with shorter duration for better performance
     const tl = gsap.timeline({ delay: 0.1 });
 
-    if (rosesRef.current) {
-      tl.from(rosesRef.current, {
-        opacity: 0,
-        scale: 0.5,
-        y: 30,
-        duration: 0.8,
-        ease: 'back.out',
-      }, 0);
-    }
-
     if (titleRef.current) {
       tl.from(titleRef.current, {
         opacity: 0,
         y: 20,
         duration: 0.6,
         ease: 'power2.out',
-      }, 0.2);
+      }, 0);
     }
 
     if (nameRef.current) {
@@ -157,30 +146,6 @@ export default function BirthdayPage() {
           boxSizing: 'border-box',
         }}
       >
-        {/* Roses Image */}
-        <div
-          ref={rosesRef}
-          style={{
-            opacity: 1,
-            transition: 'all 0.3s ease',
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <img
-            src="/birthday-roses.png"
-            alt="Beautiful roses"
-            style={{
-              width: 'clamp(180px, 60vw, 280px)',
-              height: 'auto',
-              borderRadius: '16px',
-              boxShadow: '0 0 30px rgba(219, 112, 147, 0.5), 0 0 60px rgba(219, 112, 147, 0.2)',
-            }}
-            loading="lazy"
-          />
-        </div>
-
         {/* Happy Birthday Title */}
         <div ref={titleRef} style={{ opacity: 1, width: '100%' }}>
           <h1
