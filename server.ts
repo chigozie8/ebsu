@@ -590,6 +590,28 @@ app.post('/api/send-id-registration', async (req, res) => {
   }
 });
 
+// GET /api/weather  — server-side proxy for Open-Meteo (avoids browser CORS/CSP issues)
+app.get('/api/weather', async (_req, res) => {
+  const EBSU_LAT = 6.3249;
+  const EBSU_LON = 8.1137;
+
+  try {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${EBSU_LAT}&longitude=${EBSU_LON}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&timezone=Africa%2FLagos`
+    );
+
+    if (!response.ok) {
+      return res.status(502).json({ error: `Open-Meteo returned ${response.status}` });
+    }
+
+    const data = await response.json() as any;
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('[weather] fetch error:', error);
+    return res.status(500).json({ error: 'Failed to fetch weather data' });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`API server running on port ${PORT}`);
 });
